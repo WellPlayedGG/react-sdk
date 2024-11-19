@@ -1,0 +1,2016 @@
+# This file was generated. Do not edit manually.
+
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+union ConfigurationProperties = StepConfiguration | TournamentConfiguration
+
+union IdentityProviderConfigurations = OAuthClientConfiguration | OpenidConfiguration
+
+type Account {
+    email: EmailAddress
+    "The ID of the account"
+    id: ID!
+    identities(properties: [String!], providerIds: [ID!]): [AccountIdentity!]!
+    permissions: [GroupPermission!]!
+    profiles: [Player!]!
+}
+
+type AccountIdentity {
+    accountId: ID!
+    createdAt: DateTime!
+    organizationIdentityProvider: PublicOrganizationIdentityProvider
+    organizationIdentityProviderId: ID!
+    properties: [AccountIdentityProperty!]!
+    providerId: String!
+    updatedAt: DateTime!
+}
+
+type AccountIdentityProperty {
+    property: String!
+    value: String!
+}
+
+type Condition {
+    numericCondition: NumericCondition
+    property: String!
+    propertyCondition: PropertyCondition!
+    stringCondition: StringCondition
+}
+
+type Configuration {
+    configuration: ConfigurationProperties!
+    createdAt: DateTime!
+    createdById: ID!
+    description: String!
+    id: ID!
+    name: String!
+    organizationId: ID!
+    updatedAt: DateTime!
+}
+
+type CustomDomainData {
+    hostname: String!
+    ownershipVerification: CustomDomainOwnershipVerification!
+    ssl: CustomDomainSsl!
+    status: CustomDomainStatus!
+    verificationErrors: [String!]
+}
+
+type CustomDomainOwnershipVerification {
+    name: String!
+    value: String!
+}
+
+type CustomDomainSsl {
+    status: CustomDomainValidationStatus!
+    validationErrors: [CustomDomainSslValidationError!]
+    validationRecords: [CustomDomainSslValidationRecord!]!
+}
+
+type CustomDomainSslValidationError {
+    message: [String!]!
+}
+
+type CustomDomainSslValidationRecord {
+    name: String!
+    value: String!
+}
+
+type DataRetrievalConfig {
+    headers: [Header!]!
+    mappingConfiguration: MappingConfiguration!
+    url: String!
+}
+
+type GameConfiguration {
+    matchConfiguration: MatchConfiguration!
+    teamsCount: Float!
+    useMatchScoresAsGameScore: Boolean!
+    wonMatchCountToWinGame: Float!
+}
+
+type GroupConfiguration {
+    description: String
+    name: String!
+    rounds: [RoundConfiguration!]!
+}
+
+type GroupPermission {
+    id: String!
+    resources: [String!]!
+}
+
+type Header {
+    name: String!
+    value: String!
+}
+
+type IdentityProviderRequirements {
+    requiredFields: [String!]!
+}
+
+type KeyMapping {
+    mappedTo: String!
+    path: String!
+    private: Boolean
+}
+
+type Leaderboard {
+    createdAt: DateTime!
+    "The description of the leaderboard"
+    description: String!
+    "The ID of the leaderboard"
+    id: ID!
+    "The name of the leaderboard"
+    name: String!
+    "The ID of the organization this leaderboard belongs to"
+    organizationId: ID!
+    "The ID of the creator of this leaderboard"
+    ownerId: ID!
+    seasons(page: PageInfo): LeaderboardSeasons!
+    updatedAt: DateTime!
+}
+
+type LeaderboardEdge {
+    cursor: String!
+    node: [Leaderboard!]!
+}
+
+type LeaderboardSeason {
+    buckets(page: PageInfo): LeaderboardSeasonBuckets!
+    createdAt: DateTime!
+    end: DateTime!
+    id: ID!
+    leaderboardId: ID!
+    name: String!
+    start: DateTime!
+    startingScore: Float!
+    updatedAt: DateTime!
+}
+
+type LeaderboardSeasonBucket {
+    createdAt: DateTime!
+    id: ID!
+    minScore: Float!
+    name: String!
+    scoreCalculationType: LeaderboardScoreCalculationType!
+    scores(page: PageInfo): LeaderboardSeasonBucketScores!
+    seasonId: ID!
+    updatedAt: DateTime!
+}
+
+type LeaderboardSeasonBucketEdge {
+    cursor: String!
+    node: [LeaderboardSeasonBucket!]!
+}
+
+type LeaderboardSeasonBucketScore {
+    createdAt: DateTime!
+    lastRank: Int
+    lastScore: Float
+    leaderboardSeasonBucketId: ID!
+    player: Player!
+    playerProfileId: ID!
+    rank: Float!
+    score: Float!
+    updatedAt: DateTime!
+}
+
+type LeaderboardSeasonBucketScoreEdge {
+    cursor: String!
+    node: [LeaderboardSeasonBucketScore!]!
+}
+
+type LeaderboardSeasonBucketScores {
+    edges: [LeaderboardSeasonBucketScoreEdge!]!
+    nodes: [LeaderboardSeasonBucketScore!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type LeaderboardSeasonBuckets {
+    edges: [LeaderboardSeasonBucketEdge!]!
+    nodes: [LeaderboardSeasonBucket!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type LeaderboardSeasonEdge {
+    cursor: String!
+    node: [LeaderboardSeason!]!
+}
+
+type LeaderboardSeasons {
+    edges: [LeaderboardSeasonEdge!]!
+    nodes: [LeaderboardSeason!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type Leaderboards {
+    edges: [LeaderboardEdge!]!
+    nodes: [Leaderboard!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type Limit {
+    bucketDuration: BucketDuration
+    default: Float!
+    description: String!
+    id: String!
+    max: Float
+    name: String!
+    scope: LimitScope!
+    type: OrganizationLimitType!
+}
+
+type LimitOverride {
+    limit: OrganizationLimitsType!
+    value: Float!
+}
+
+type Limits {
+    limits: [Limit!]!
+}
+
+type Log {
+    createdAt: DateTime!
+    data: LogData!
+    id: ID!
+    organizationId: ID!
+    resourceId: ID!
+    type: LogType!
+}
+
+type LogData {
+    author: String
+    authorType: LogAuthorType!
+    newValue: JSONObject!
+    oldValue: JSONObject
+}
+
+type LogEdge {
+    cursor: String!
+    node: [Log!]!
+}
+
+type Logs {
+    edges: [LogEdge!]!
+    nodes: [Log!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type MappingConfiguration {
+    mappings: [KeyMapping!]!
+}
+
+type MatchConfiguration {
+    scoreFormula: String
+    variables: [MatchVariable!]!
+}
+
+type MatchVariable {
+    defaultValue: Float!
+    displayIcon: String
+    displayName: String!
+    formulaName: String!
+}
+
+type Mutation {
+    "Generates access token for an account identity provider with the stored refresh token"
+    accountIdentityGenerateAccessToken(
+        "if not provided, the current account id will be used"
+        accountId: ID,
+        identityProviderId: ID!
+    ): String!
+    accountIdentityRefresh(
+        "if not provided, the current account id will be used"
+        accountId: ID,
+        identityProviderId: ID!
+    ): AccountIdentity!
+    answerToTournamentTeamInvite(accept: Boolean!, teamId: ID!): Boolean!
+    attachOrUpdateIdentityToAccount(identityProviderId: ID!, token: String!): AccountIdentity!
+    confirmTournamentAttendance(attendance: Boolean!, tournamentId: ID!): TournamentTeam!
+    confirmTournamentTeam(confirm: Boolean!, teamId: ID!): TournamentTeam!
+    createIdentityProvider(input: CreateOrganizationIdentityProvider!): OrganizationIdentityProvider!
+    createLeaderboard(input: CreateLeaderboardInput!): Leaderboard!
+    createLeaderboardSeason(input: CreateLeaderboardSeasonInput!, leaderboardId: ID!): LeaderboardSeason!
+    createLeaderboardSeasonBucket(input: CreateLeaderboardSeasonBucketInput!, seasonId: ID!): LeaderboardSeasonBucket!
+    createOrUpdateMyPlayerProfile(input: UpdateMePlayerInput!): Player!
+    createOrganization(organization: CreateOrganizationInput!): Organization!
+    createOrganizationApp(input: CreateOrganizationAppInput!): OrganizationApp!
+    createOrganizationGroup(input: CreateOrganizationGroupInput!): OrganizationGroup!
+    createPlayer(input: CreatePlayerInput!): Player!
+    "Create a new tournament"
+    createTournament(input: CreateTournamentInput!): Tournament!
+    createTournamentStep(configuration: StepConfigurationInput!, step: CreateTournamentStepInput!, tournamentId: ID!): TournamentStep!
+    createWebhook(input: CreateWebhookInput!): Webhook!
+    deleteAccount(id: ID!): Boolean!
+    deleteAnyTournamentTeam(teamId: ID!): Boolean!
+    deleteConfiguration(id: ID!): Boolean!
+    deleteIdentityProvider(id: ID!): Boolean!
+    deleteLeaderboard(id: ID!): Void!
+    deleteLeaderboardSeason(id: ID!): Void!
+    deleteLeaderboardSeasonBucket(id: ID!): Void!
+    deleteOrganizationApp(id: String!): Boolean!
+    deleteOrganizationAttachedApp(input: DeleteOrganizationAttachedAppInput!): Boolean!
+    deleteOrganizationGroup(id: ID!): Boolean!
+    deleteOrganizationMembership(input: DeleteOrganizationMembershipInput!): Boolean!
+    deletePlayer(customId: ID, id: ID): Boolean!
+    "Delete a tournament"
+    deleteTournament(id: ID!): Boolean!
+    deleteTournamentStep(stepId: ID!): Boolean!
+    deleteTournamentTeam(tournamentId: ID!): Boolean!
+    deleteTournamentTeamInvite(playerId: ID!, teamId: ID!): Boolean!
+    deleteWebhook(id: ID!): Webhook!
+    generateTournamentStep(stepId: ID!, teamsCount: Int!): Boolean!
+    inviteTournamentTeamMember(playerId: ID!, tournamentId: ID!): Boolean!
+    leaderboardRegisterPlayerScore(input: LeaderboardRegisterPlayerScoreInput!): LeaderboardSeasonBucketScore!
+    organizationSkillRatingCreate(input: OrganizationSkillRatingCreateInput!): OrganizationSkillRating!
+    organizationSkillRatingDelete(id: ID!): Void!
+    organizationSkillRatingUpdate(id: ID!, input: OrganizationSkillRatingUpdateInput!): OrganizationSkillRating!
+    organizationSkillRatingsRegisterMatch(input: OrganizationSkillRatingsRegisterMatchInput!, organizationSkillRatingId: ID!): Void!
+    organizationSubscriptionItemsUpdate(coupon: String, items: [OrganizationSubscriptionItemUpdateInput!]!): Void!
+    platformCreate(input: CreatePlatformInput!): Platform!
+    platformDelete(id: ID!): Void!
+    "returns the s3 signed upload URL"
+    platformFileCreate(input: PlatformCdnFileCreateInput!, platformId: ID!): PlatformCdnFile!
+    platformFileDelete(id: ID!): Void!
+    platformFilePublish(id: ID!): Void!
+    platformFileUpdate(id: ID!, input: PlatformFileUpdateInput!): PlatformCdnFile!
+    platformForceCustomDomainRecheck(hostname: String!): CustomDomainData!
+    platformRegisterCustomDomain(hostname: String!, platformId: ID!): CustomDomainData!
+    platformRemoveCustomDomain(hostname: String!): Void!
+    platformUpdate(id: ID!, input: UpdatePlatformInput!): Platform!
+    regenerateWebhookSecret(id: ID!): Webhook!
+    registerCustomTournamentTeams(input: RegisterCustomTeamsInput!, tournamentId: ID!): [TournamentTeam!]!
+    registerTournamentTeam(input: RegisterTournamentTeamInput!, tournamentId: ID!): TournamentTeam!
+    resetOrganizationAppSecret(id: String!): String!
+    seedTournamentStep(input: SeedingInput!, stepId: ID!): Boolean!
+    setOrganizationAttachedApp(input: SetOrganizationAttachedAppInput!): OrganizationAttachedApp!
+    setOrganizationMembership(input: SetOrganizationMembershipInput!): OrganizationMember!
+    startTournamentStep(stepId: ID!): Boolean!
+    stripeCreatePortalSession: String!
+    tournamentAdminDelete(input: TournamentAdminDeleteInput!): Boolean!
+    tournamentAdminUpsert(input: TournamentAdminUpsertInput!): TournamentAdmin!
+    updateConfiguration(id: ID!, input: CreateConfigurationInput!): Configuration!
+    updateIdentityProvider(input: UpdateOrganizationIdentityProvider!, providerId: ID!): OrganizationIdentityProvider!
+    updateLeaderboard(id: ID!, input: UpdateLeaderboardInput!): Leaderboard!
+    updateLeaderboardSeason(id: ID!, input: UpdateLeaderboardSeasonInput!): LeaderboardSeason!
+    updateLeaderboardSeasonBucket(id: ID!, input: UpdateLeaderboardSeasonBucketInput!): LeaderboardSeasonBucket!
+    updateMatchScores(input: [UpdateMatchScoreInput!]!, matchId: ID!): TournamentStepGroupRoundGameMatch!
+    updateOrganization(organization: UpdateOrganizationInput!): Organization!
+    updateOrganizationApp(id: String!, input: UpdateOrganizationAppInput!): OrganizationApp!
+    updateOrganizationGroup(id: ID!, input: CreateOrganizationGroupInput!): OrganizationGroup!
+    updatePlayer(customId: String, id: ID, input: UpdatePlayerInput!): Player!
+    "Update a tournament"
+    updateTournament(id: ID!, input: UpdateTournamentInput!): Tournament!
+    updateTournamentStep(configuration: StepConfigurationInput!, step: CreateTournamentStepInput!, stepId: ID!): TournamentStep!
+    updateTournamentTeam(input: UpdateTournamentTeamInput!, teamId: ID, tournamentId: ID): TournamentTeam!
+    updateTournamentTeamStatus(status: TournamentTeamStatus!, tournamentTeamId: ID!): TournamentTeam!
+    updateWebhook(id: ID!, input: UpdateWebhookInput!): Webhook!
+}
+
+type NumericCondition {
+    conditionType: NumberConditionType!
+    value: Float!
+}
+
+type OAuthClientConfiguration {
+    authorizationEndpoint: String
+    authorizationUrl: String
+    clientId: String!
+    clientSecret: String!
+    dataRetrievers: [DataRetrievalConfig!]!
+    issuer: String
+    providerType: IdentityProviderType!
+    redirectUrl: String!
+    tokenEndpoint: String
+    tokenEndpointAuthMethod: OauthEndpointAuthMethod
+}
+
+type OpenidConfiguration {
+    authorizationEndpoint: String
+    clientId: String!
+    clientSecret: String!
+    dataRetrievers: [DataRetrievalConfig!]!
+    issuer: String
+    providerType: IdentityProviderType!
+    redirectUrl: String!
+}
+
+type Organization {
+    configuration: OrganizationConfiguration!
+    description: String!
+    groups: [OrganizationGroup!]!
+    id: ID!
+    identityProviders(login: Boolean!): [PublicOrganizationIdentityProvider!]!
+    members: [OrganizationMember!]!
+    name: String!
+    ownerId: ID
+    stripeConfigured: Boolean
+    tournaments: [Tournament!]!
+}
+
+type OrganizationApp {
+    configuration: OrganizationAppConfig!
+    createdAt: DateTime!
+    creator: Account!
+    creatorId: ID!
+    description: String!
+    id: String!
+    name: String!
+    organizationId: ID!
+    public: Boolean
+    secret: String
+    updatedAt: DateTime!
+}
+
+type OrganizationAppConfig {
+    logoutRedirectUrls: [String!]!
+    metadata: OrganizationAppConfigMetadata!
+    name: String!
+    organizationId: ID!
+    redirectUrls: [String!]!
+    scope: String!
+}
+
+type OrganizationAppConfigMetadata {
+    consentUrl: String!
+    creatorId: String!
+    loginUrl: String!
+    public: Boolean!
+    requiresConsent: Boolean!
+}
+
+type OrganizationAppEdge {
+    cursor: String!
+    node: [OrganizationApp!]!
+}
+
+type OrganizationApps {
+    edges: [OrganizationAppEdge!]!
+    nodes: [OrganizationApp!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type OrganizationAttachedApp {
+    app: OrganizationApp!
+    appId: String!
+    createdAt: DateTime!
+    group: OrganizationGroup!
+    groupId: ID!
+    organizationId: ID!
+    permissions: [GroupPermission!]
+    updatedAt: DateTime!
+}
+
+type OrganizationAttachedAppEdge {
+    cursor: String!
+    node: [OrganizationAttachedApp!]!
+}
+
+type OrganizationAttachedApps {
+    edges: [OrganizationAttachedAppEdge!]!
+    nodes: [OrganizationAttachedApp!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type OrganizationConfiguration {
+    customFields: [Property!]!
+}
+
+type OrganizationGroup {
+    createdAt: DateTime!
+    id: ID!
+    name: String!
+    organizationId: ID!
+    permissions: [GroupPermission!]!
+    type: OrganizationGroupType!
+    updatedAt: DateTime!
+}
+
+type OrganizationGroupEdge {
+    cursor: String!
+    node: [OrganizationGroup!]!
+}
+
+type OrganizationGroups {
+    edges: [OrganizationGroupEdge!]!
+    nodes: [OrganizationGroup!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type OrganizationIdentityProvider {
+    allowLogin: Boolean!
+    configuration: IdentityProviderConfigurations
+    createdAt: DateTime!
+    description: String!
+    icon: String
+    id: ID!
+    identityProviderId: ID
+    name: String!
+    organizationId: ID
+    parentIdentityProvider: PublicIdentityProvider
+    updatedAt: DateTime!
+}
+
+type OrganizationLimit {
+    current: Float!
+    id: String!
+    max: Float!
+}
+
+type OrganizationLimits {
+    limits: [OrganizationLimit!]!
+}
+
+type OrganizationMember {
+    account: Account!
+    createdAt: DateTime!
+    group: OrganizationGroup!
+    groupId: ID!
+    memberId: ID!
+    organizationId: ID!
+    permissions: [GroupPermission!]
+    updatedAt: DateTime!
+}
+
+type OrganizationMemberEdge {
+    cursor: String!
+    node: [OrganizationMember!]!
+}
+
+type OrganizationMembers {
+    edges: [OrganizationMemberEdge!]!
+    nodes: [OrganizationMember!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type OrganizationSkillRating {
+    configuration: SkillRatingConfiguration!
+    createdAt: DateTime!
+    description: String!
+    id: ID!
+    name: String!
+    organizationId: String!
+    type: SkillRatingType!
+    updatedAt: DateTime!
+}
+
+type OrganizationSubscriptionItem {
+    count: Float!
+    createdAt: DateTime!
+    endAt: DateTime!
+    organizationId: ID!
+    subscriptionItem: SubscriptionItem!
+    subscriptionItemId: ID!
+    updatedAt: DateTime!
+}
+
+type Permission {
+    availableVariables: [String!]!
+    description: String!
+    id: String!
+    resources: [String!]!
+}
+
+type Permissions {
+    organizationPermissions: [Permission!]!
+}
+
+type Platform {
+    configuration: PlatformConfiguration
+    createdAt: DateTime!
+    customDomains: [PlatformCustomDomainData!]!
+    id: ID!
+    name: String!
+    organizationId: ID!
+    updatedAt: DateTime!
+}
+
+type PlatformCdnFile {
+    config: PlatformCdnFileConfigs
+    contents: String
+    createdAt: DateTime!
+    id: ID!
+    name: String!
+    platformId: ID!
+    size: Float!
+    type: PlatformCdnFileType!
+    updatedAt: DateTime!
+}
+
+type PlatformCdnFileConfigs {
+    pageConfig: PlatformCdnFilePageConfig
+}
+
+type PlatformCdnFilePageConfig {
+    path: String!
+}
+
+type PlatformConfiguration {
+    whitelabel: Boolean
+}
+
+type PlatformCustomDomainData {
+    configuration: CustomDomainData
+    domain: String!
+}
+
+type Player {
+    createdAt: DateTime!
+    customFields(properties: [String!]): [PropertyConfigWithValue!]!
+    description: String!
+    id: ID!
+    identities: [AccountIdentity!]
+    organizationCustomId: ID
+    owner: Account
+    ownerId: ID
+    profilePicUrl: String
+    updatedAt: DateTime!
+    username: String!
+}
+
+type PlayerCondition {
+    condition: Condition!
+    errorMessage: String
+    propertySource: PlayerConditionDataSource!
+    propertySourceId: ID
+    ruleDescription: String
+}
+
+type PlayerEdge {
+    cursor: String!
+    node: [Player!]!
+}
+
+type PlayerSkillRating {
+    createdAt: DateTime!
+    player: Player!
+    playerProfileId: ID!
+    ratingId: ID!
+    updatedAt: DateTime!
+    value: Float!
+}
+
+type Players {
+    edges: [PlayerEdge!]!
+    nodes: [Player!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type Property {
+    editability: ProperyEditability
+    name: String!
+    order: Float!
+    property: String!
+    public: Boolean @deprecated(reason: "use visibility instead")
+    required: Boolean!
+    type: PropertyType!
+    unique: Boolean!
+    visibility: PropertyVisibility
+}
+
+type PropertyConfigWithValue {
+    editability: ProperyEditability
+    name: String!
+    order: Float!
+    property: String!
+    public: Boolean @deprecated(reason: "use visibility instead")
+    required: Boolean!
+    type: PropertyType!
+    unique: Boolean!
+    value: String!
+    visibility: PropertyVisibility
+}
+
+type PublicIdentityProvider {
+    "The availability of the identity provider."
+    availability: IdentityProviderAvailability!
+    createdAt: DateTime!
+    "The description of the identity provider."
+    description: String
+    "The icon URL of the identity provider."
+    icon: String
+    "The ID of the identity provider."
+    id: ID!
+    "The name of the identity provider."
+    name: String!
+    "Identity provider create and update requirements"
+    requirements: IdentityProviderRequirements!
+    updatedAt: DateTime!
+}
+
+type PublicOrganizationIdentityProvider {
+    allowLogin: Boolean!
+    authorizationUrl: String!
+    description: String!
+    icon: String
+    id: ID!
+    name: String!
+}
+
+type Query {
+    availablePermissions: Permissions!
+    availableRootIdentityProvider(id: ID!): PublicIdentityProvider!
+    configuration(id: ID!): Configuration!
+    currentLeaderboardSeason(leaderboardId: ID!): LeaderboardSeason!
+    getAvailableRootIdentityProviders: [PublicIdentityProvider!]!
+    getMyAccount: Account!
+    identityProvider(id: ID!): OrganizationIdentityProvider!
+    identityProviders: [OrganizationIdentityProvider!]!
+    leaderboard(id: ID!): Leaderboard!
+    leaderboardCurrentPlayerRanking(input: LeaderboardGetPlayerRankingInput!): LeaderboardSeasonBucketScore!
+    leaderboardSeason(id: ID!): LeaderboardSeason!
+    leaderboardSeasonBucket(id: ID!): LeaderboardSeasonBucket!
+    leaderboardSeasonBuckets(page: PageInfo!, seasonId: ID!): LeaderboardSeasonBuckets!
+    leaderboardSeasons(leaderboardId: ID!, page: PageInfo!): LeaderboardSeasons!
+    leaderboards(page: PageInfo!): Leaderboards!
+    limitDefinitions(limits: [String!]): Limits!
+    logs(page: PageInfo, resourceId: ID, types: [LogType!]): Logs!
+    match(matchId: ID!): TournamentStepGroupRoundGameMatch!
+    organization(id: ID!): Organization!
+    organizationApp(id: String!): OrganizationApp!
+    organizationApps(page: PageInfo!): OrganizationApps!
+    organizationAttachedApps(page: PageInfo!): OrganizationAttachedApps!
+    organizationCurrentSubscriptionItems: [OrganizationSubscriptionItem!]!
+    organizationGroup(id: ID!): OrganizationGroup!
+    organizationGroups(page: PageInfo!): OrganizationGroups!
+    organizationLimits(limits: [OrganizationLimitsType!]): OrganizationLimits!
+    organizationMembers(page: PageInfo!): OrganizationMembers!
+    organizationSkillRating(id: ID!): OrganizationSkillRating!
+    organizationSkillRatings: [OrganizationSkillRating!]!
+    platform(platformId: ID!): Platform
+    platformCheckDomainAvailability(domain: URL!): Boolean!
+    platformCustomDomains(platformId: ID!): [PlatformCustomDomainData!]!
+    platformFile(id: ID!): PlatformCdnFile!
+    platformFiles(platformId: ID!, type: PlatformCdnFileType): [PlatformCdnFile!]!
+    platformFindFromDomain(domain: String!): Platform!
+    platforms: [Platform!]!
+    player(customId: String, id: ID, ownerId: ID): Player!
+    playerMatchesHistory(page: PageInfo!, playerId: ID!): TournamentStepGroupRoundGameMatches!
+    playerSkillRatings(
+        playerId: ID!,
+        "Filter by specific skill rating ids"
+        skillRatingIds: [ID!]
+    ): [PlayerSkillRating!]!
+    players(identityProviderProperties: [String!], identityProviders: [ID!], ids: [ID!], page: PageInfo!, query: QueryPlayersInput): Players!
+    searchPlayer(username: String!): [Player!]!
+    subscriptionItems: [SubscriptionItem!]!
+    tournament(id: ID!): Tournament!
+    tournamentAdmins(tournamentId: ID!): [TournamentAdmin!]!
+    tournamentPlayers(orderByProperty: OrderByProperty, page: PageInfo!, playerPropertiesFilter: [PropertyValueInput!], playerUsernameQuery: String, status: TournamentTeamStatus!, tournamentId: ID!): TeamMembers!
+    tournamentStep(id: ID!): TournamentStep!
+    tournamentStepGeneratedShape(stepId: ID!): [TournamentStepGroup!]!
+    tournamentStepGroupRoundGameMatchScoresGetForStep(page: PageInfo!, stepId: ID!): TournamentStepGroupRoundGameMatchScores!
+    tournamentSteps(tournamentId: ID!): [TournamentStep!]!
+    tournamentTeam(memberStatus: TournamentTeamMemberStatus, teamId: ID!): TournamentTeam!
+    tournamentTeamInvites(page: PageInfo!, status: TournamentTeamMemberStatus, tournamentId: ID): TeamMembers!
+    tournamentTeams(memberStatus: TournamentTeamMemberStatus, page: PageInfo!, playerIdentityProviderPropertiesFilter: [IdentityProviderPropertyInput!], playerPropertiesFilter: [PropertyValueInput!], playerUsernameQuery: String, propertiesFilter: [PropertyValueInput!], status: TournamentTeamStatus, tournamentId: ID!): TournamentTeams!
+    tournaments(page: PageInfo!, query: TournamentsQuery!): Tournaments!
+    userOrganizations: [Organization!]!
+    webhook(id: ID!): Webhook!
+    webhookAvailableEvents: [WebhookEventConfiguration!]!
+    webhooks: [Webhook!]!
+}
+
+type RegistrationConditions {
+    memberConditions: [PlayerCondition!]!
+    teamConditions: [TeamCondition!]!
+}
+
+type ResponsePageInfo {
+    endCursor: String
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+}
+
+type RoundConfiguration {
+    game: GameConfiguration!
+    name: String!
+    order: Float!
+}
+
+type SkillRatingConfiguration {
+    updateLeaderboardId: ID
+}
+
+type StepConfiguration {
+    groups: [GroupConfiguration!]!
+    type: ConfigurationType!
+}
+
+type StringCondition {
+    conditionType: StringConditionType!
+    value: String!
+}
+
+type SubscriptionItem {
+    description: String!
+    id: ID!
+    limitsOverride: [LimitOverride!]!
+    maxCount: Float
+    name: String!
+    price: Float!
+}
+
+type TeamCondition {
+    errorMessage: String
+    numericCondition: TeamNumericCondition
+    property: String!
+    propertyCondition: PropertyCondition!
+    stringCondition: StringCondition
+}
+
+type TeamMembers {
+    edges: [TournamentTeamMemberEdge!]!
+    nodes: [TournamentTeamMemberDto!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type TeamNumericCondition {
+    aggregationType: AggregationType
+    conditionType: NumberConditionType!
+    propertySource: PlayerConditionDataSource
+    propertySourceId: ID
+    value: Float!
+}
+
+type Tournament {
+    configuration: TournamentConfiguration
+    createdAt: DateTime!
+    "Account that created this tournament"
+    createdBy: Account!
+    createdById: ID!
+    description: String!
+    endAt: DateTime
+    endRegistrationsAt: DateTime
+    id: ID!
+    "Current authenticated team registered to this event"
+    myTeam: TournamentTeam
+    organizationId: ID!
+    startAt: DateTime
+    startRegistrationsAt: DateTime
+    "Steps registered for this tournament"
+    steps: [TournamentStep!]!
+    teamScores: [TournamentTeamScore!]!
+    "Teams registered to this tournament"
+    teams(page: PageInfo!, status: TournamentTeamStatus): TournamentTeams!
+    title: String!
+    tournamentSeriesId: ID
+    updatedAt: DateTime!
+    visibleAt: DateTime
+}
+
+type TournamentAdmin {
+    account: Account!
+    accountId: ID!
+    createdAt: DateTime!
+    permissions: [TournamentAdminPermissions!]!
+    tournamentId: ID!
+    updatedAt: DateTime!
+}
+
+type TournamentConfiguration {
+    "Custom fields that are defined on each teams"
+    customFields: [Property!]
+    "Condition rules to register to the tournament"
+    registrationConditions: RegistrationConditions
+    "Maximum team size to register to the tournament"
+    teamMaxSize: Float
+    "Minimum team size to register to the tournament"
+    teamMinSize: Float
+    "Status of the team after registration, REGISTERED is the default state, VALIDATED means that the team has been validated by an admin, AWAITING_FOR_PAYMENT means that the team has to pay to be validated"
+    teamStatusAfterRegistration: TeamStatusAfterRegistration
+    "Maximum number of registered teams"
+    teamsCount: Float
+    type: ConfigurationType!
+}
+
+type TournamentEdge {
+    cursor: String!
+    node: [Tournament!]!
+}
+
+type TournamentStep {
+    configuration: StepConfiguration!
+    createdAt: DateTime!
+    description: String!
+    id: ID!
+    name: String!
+    order: Float!
+    status: StepStatus!
+    teamScores: [TournamentTeamScore!]!
+    tournament: Tournament!
+    tournamentId: ID!
+    type: StepType!
+    updatedAt: DateTime!
+}
+
+type TournamentStepGroup {
+    configuration: GroupConfiguration!
+    createdAt: DateTime!
+    description: String!
+    id: ID!
+    name: String!
+    rounds: [TournamentStepGroupRound!]!
+    tournamentStepId: ID!
+    updatedAt: DateTime!
+}
+
+type TournamentStepGroupRound {
+    configuration: RoundConfiguration!
+    createdAt: DateTime!
+    games: [TournamentStepGroupRoundGame!]!
+    id: ID!
+    name: String!
+    order: Float!
+    tournamentStepGroupId: ID!
+    updatedAt: DateTime!
+}
+
+type TournamentStepGroupRoundGame {
+    configuration: GameConfiguration!
+    createdAt: DateTime!
+    id: ID!
+    losingGameId: ID
+    matches: [TournamentStepGroupRoundGameMatch!]!
+    order: Float!
+    status: TournamentGameStatus!
+    tournamentStepGroupRoundId: ID!
+    updatedAt: DateTime!
+    winningGameId: ID
+}
+
+type TournamentStepGroupRoundGameMatch {
+    configuration: MatchConfiguration!
+    createdAt: DateTime!
+    id: ID!
+    order: Float!
+    status: MatchStatus!
+    tournamentStepGroupRoundGameId: ID!
+    updatedAt: DateTime!
+}
+
+type TournamentStepGroupRoundGameMatchEdge {
+    cursor: String!
+    node: [TournamentStepGroupRoundGameMatch!]!
+}
+
+type TournamentStepGroupRoundGameMatchScore {
+    createdAt: DateTime!
+    matchId: ID!
+    score: Float!
+    status: MatchScoreStatus!
+    teamId: ID!
+    updatedAt: DateTime!
+}
+
+type TournamentStepGroupRoundGameMatchScoreEdge {
+    cursor: String!
+    node: [TournamentStepGroupRoundGameMatchScore!]!
+}
+
+type TournamentStepGroupRoundGameMatchScores {
+    edges: [TournamentStepGroupRoundGameMatchScoreEdge!]!
+    nodes: [TournamentStepGroupRoundGameMatchScore!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type TournamentStepGroupRoundGameMatches {
+    edges: [TournamentStepGroupRoundGameMatchEdge!]!
+    nodes: [TournamentStepGroupRoundGameMatch!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type TournamentTeam {
+    createdAt: DateTime!
+    customFields(properties: [String!]): [PropertyConfigWithValue!]!
+    id: ID!
+    managerId: ID
+    members: [TournamentTeamMemberDto!]!
+    name: String!
+    status: TournamentTeamStatus!
+    tag: String!
+    teamId: ID
+    tournament: Tournament!
+    tournamentId: ID!
+    updatedAt: DateTime!
+}
+
+type TournamentTeamEdge {
+    cursor: String!
+    node: [TournamentTeam!]!
+}
+
+type TournamentTeamMemberDto {
+    createdAt: DateTime!
+    playerProfileId: ID!
+    status: TournamentTeamMemberStatus!
+    team: TournamentTeam!
+    tournamentTeamId: ID!
+    updatedAt: DateTime!
+}
+
+type TournamentTeamMemberEdge {
+    cursor: String!
+    node: [TournamentTeamMemberDto!]!
+}
+
+type TournamentTeamScore {
+    score: Float!
+    team: TournamentTeam!
+    teamId: ID!
+}
+
+type TournamentTeams {
+    edges: [TournamentTeamEdge!]!
+    nodes: [TournamentTeam!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type Tournaments {
+    edges: [TournamentEdge!]!
+    nodes: [Tournament!]!
+    pageInfo: ResponsePageInfo!
+    totalCount: Float
+}
+
+type Variable {
+    defaultValue: Float!
+    name: String!
+}
+
+type Webhook {
+    active: Boolean!
+    description: String!
+    events: [WebhookEventType!]!
+    id: ID!
+    organizationId: ID!
+    secret: String!
+    url: String!
+}
+
+type WebhookEventConfiguration {
+    "If this property is available, it means that the event is a \"RPC\" event and that an answer is expected from the webhook called"
+    answerPayload: WebhookEventConfigurationProperties
+    description: String!
+    payload: WebhookEventConfigurationProperties!
+    type: WebhookEventType!
+}
+
+type WebhookEventConfigurationProperties {
+    array: Boolean!
+    description: String
+    example: String
+    name: String!
+    optional: Boolean!
+    properties: [WebhookEventConfigurationProperties!]
+    type: String!
+}
+
+enum AggregationType {
+    AVG
+    MAX
+    MIN
+    SUM
+}
+
+enum BucketDuration {
+    DAILY
+    HOUR
+    MINUTE
+    MONTHLY
+    YEARLY
+}
+
+enum ConfigurationType {
+    STEP
+    TOURNAMENT
+}
+
+enum CustomDomainStatus {
+    active
+    active_redeploying
+    blocked
+    deleted
+    moved
+    pending
+    pending_blocked
+    pending_deletion
+    pending_migration
+    pending_provisioned
+    provisioned
+    test_active
+    test_active_apex
+    test_blocked
+    test_failed
+    test_pending
+}
+
+enum CustomDomainValidationStatus {
+    active
+    backup_issued
+    deactivating
+    deleted
+    deletion_timed_out
+    deployment_timed_out
+    expired
+    holding_deployment
+    inactive
+    initializing
+    initializing_timed_out
+    issuance_timed_out
+    pending_cleanup
+    pending_deletion
+    pending_deployment
+    pending_expiration
+    pending_issuance
+    pending_validation
+    staging_active
+    staging_deployment
+    validation_timed_out
+}
+
+enum GroupRepartitionMechanism {
+    BALANCED
+    SEED_OPTIMIZED
+}
+
+enum IdentityProviderAvailability {
+    PREVIEW
+    PRIVATE
+    PUBLIC
+}
+
+enum IdentityProviderType {
+    OAUTH2
+    OPENID
+}
+
+enum LeaderboardScoreCalculationType {
+    SCORE
+}
+
+enum LimitScope {
+    ORGANIZATION
+    RESOURCE
+}
+
+enum LogAuthorType {
+    APP
+    SYSTEM
+    USER
+}
+
+enum LogType {
+    WEBHOOK_CALL
+    WEBHOOK_CALL_ERROR
+}
+
+enum MatchScoreStatus {
+    FORFEIT
+    LOSER
+    WAITING
+    WINNER
+}
+
+enum MatchStatus {
+    ENDED
+    STARTED
+    WAITING
+}
+
+enum NumberConditionType {
+    BT
+    BTE
+    EQ
+    LT
+    LTE
+    NEQ
+}
+
+enum OauthEndpointAuthMethod {
+    CLIENT_SECRET_BASIC
+    CLIENT_SECRET_JWT
+    CLIENT_SECRET_POST
+    NONE
+    PRIVATE_KEY_JWT
+    SELF_SIGNED_TLS_CLIENT_AUTH
+    TLS_CLIENT_AUTH
+}
+
+enum OrderDirection {
+    ASC
+    DESC
+}
+
+enum OrganizationGroupType {
+    ADMIN
+    ANONYMOUS
+    CONNECTED
+    MEMBER
+}
+
+enum OrganizationLimitType {
+    BOOLEAN
+    BYTES
+    DAYS
+    NUMBER
+}
+
+enum OrganizationLimitsType {
+    ANONYMOUS_PLAYER_PROFILES
+    APPS
+    ATTACHED_APPS
+    CUSTOM_FIELDS
+    CUSTOM_IDENTITY_PROVIDERS
+    LEADERBOARDS
+    LEADERBOARD_BUCKETS
+    LEADERBOARD_ENTRIES
+    LEADERBOARD_SEASONS
+    ORGANIZATION_GROUPS
+    ORGANIZATION_MEMBERS
+    ORGANIZATION_STORAGE_SIZE
+    PLATFORMS
+    PLATFORM_CUSTOM_DOMAINS
+    REGISTERED_USERS
+    SKILL_RATINGS
+    TOURNAMENT_REGISTRATION_RULES
+    TOURNAMENT_STEPS
+    TOURNAMENT_STEP_GROUPS
+    TOURNAMENT_TEAMS_REGISTERED
+    TOURNAMENT_TEAM_SIZE
+    WEBHOOKS
+    WHITE_LABEL
+}
+
+enum PlatformCdnFileType {
+    COMPONENT
+    IMAGE
+    PAGE
+    TEXT
+}
+
+enum PlayerConditionDataSource {
+    IDENTITY_PROVIDER
+    PLAYER
+}
+
+enum PropertyCondition {
+    DONT_EXIST
+    EXISTS
+}
+
+enum PropertyType {
+    BOOLEAN
+    COUNTRY
+    DATE
+    PHONE
+    STRING
+}
+
+enum PropertyVisibility {
+    OWNER
+    OWNER_OR_PERMISSION
+    PUBLIC
+    WITH_PERMISSION
+}
+
+enum ProperyEditability {
+    ALWAYS
+    ONE_TIME
+    WITH_PERMISSION
+}
+
+enum SeedingMechanism {
+    HALF_SHIFT
+    NONE
+    PAIR_FLIP
+    REVERSE
+    REVERSE_HALF_SHIFT
+}
+
+enum SkillRatingType {
+    BRADLEY_TERRY_PART
+    BREDLEY_TERRY_FULL
+    PLACKETT_LUCE
+    THURSTONE_MOSTELLER_FULL
+    THURSTONE_MOSTELLER_PART
+}
+
+enum StepStatus {
+    CONFIGURED
+    ENDED
+    GENERATED
+    GENERATING
+    SEEDED
+    SEEDING
+    STARTED
+}
+
+enum StepType {
+    CUSTOM
+    DOUBLE_ELIM
+    ROUND_ROBIN
+    SCORE
+    SINGLE_ELIM
+}
+
+enum StringConditionType {
+    EQ
+    NEQ
+}
+
+enum TeamStatusAfterRegistration {
+    AWAITING_FOR_PAYMENT
+    AWAITING_FOR_PRESENCE_CONFIRMATION
+    REGISTERED
+}
+
+enum TournamentAdminPermissions {
+    MANAGE_PERMISSIONS
+    MANAGE_SCORES
+    MANAGE_TEAMS
+    MANAGE_TOURNAMENT
+}
+
+enum TournamentGameStatus {
+    ENDED
+    STARTED
+    WAITING
+}
+
+enum TournamentTeamMemberStatus {
+    ACCEPTED
+    AWAITING
+    DENIED
+}
+
+enum TournamentTeamStatus {
+    AWAITING_FOR_PAYMENT
+    AWAITING_FOR_PRESENCE_CONFIRMATION
+    CONFIRMED
+    DENIED
+    NOT_ATTENDING
+    NOT_VALID
+    REGISTERED
+}
+
+enum TournamentsQueryOrderBy {
+    END_AT
+    REGISTRATIONS_END_AT
+    REGISTRATIONS_START_AT
+    START_AT
+}
+
+enum TournamentsQueryStatus {
+    ALL
+    ENDED
+    REGISTRATIONS_CLOSED
+    REGISTRATIONS_ENDED
+    REGISTRATIONS_OPEN
+    STARTED
+}
+
+enum WebhookEventType {
+    TOURNAMENT_TEAM_ATTENDANCE_UPDATED
+    TOURNAMENT_TEAM_CONFIRMATION_UPDATED
+    TOURNAMENT_TEAM_DELETED
+    TOURNAMENT_TEAM_DELETED_ADMIN
+    TOURNAMENT_TEAM_STATUS_UPDATED
+}
+
+"A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format."
+scalar DateTime
+
+"A field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
+scalar EmailAddress
+
+"The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."
+scalar JSONObject
+
+"Integers that will have a value greater than 0."
+scalar PositiveInt
+
+"A field whose value conforms to the standard URL format as specified in RFC3986: https://www.ietf.org/rfc/rfc3986.txt."
+scalar URL
+
+"Represents NULL values"
+scalar Void
+
+input AutomaticSeedingInput {
+    groupRepartitionMechanism: GroupRepartitionMechanism!
+    seedingMechanism: SeedingMechanism!
+    teams: [ID!]!
+}
+
+input ConditionInput {
+    numericCondition: NumberConditionInput
+    property: String!
+    propertyCondition: PropertyCondition!
+    stringCondition: StringConditionInput
+}
+
+input CreateConfigurationInput {
+    configuration: JSONObject!
+    description: String!
+    name: String!
+}
+
+input CreateLeaderboardInput {
+    "The description of the leaderboard"
+    description: String!
+    "The name of the leaderboard"
+    name: String!
+}
+
+input CreateLeaderboardSeasonBucketInput {
+    minScore: Float!
+    name: String!
+    scoreCalculationType: LeaderboardScoreCalculationType!
+}
+
+input CreateLeaderboardSeasonInput {
+    end: DateTime!
+    name: String!
+    start: DateTime!
+    startingScore: Float!
+}
+
+input CreateOrganizationAppInput {
+    consentUrl: String!
+    description: String!
+    loginUrl: String!
+    logoutRedirectUrls: [String!]!
+    name: String!
+    public: Boolean
+    redirectUrls: [String!]!
+    requiresConsent: Boolean!
+    secret: String
+}
+
+input CreateOrganizationGroupInput {
+    name: String!
+    permissions: [GroupPermissionInput!]!
+}
+
+input CreateOrganizationIdentityProvider {
+    allowLogin: Boolean!
+    description: String!
+    icon: String
+    identityProviderId: ID
+    name: String!
+    oauth2Configuration: OAuthClientConfigurationInput
+    openidConfiguration: OpenidConfigurationInput
+}
+
+input CreateOrganizationInput {
+    configuration: OrganizationConfigurationInput!
+    description: String!
+    name: String!
+}
+
+input CreatePlatformInput {
+    configuration: PlatformConfigurationInput
+    name: String!
+    subdomain: String!
+}
+
+input CreatePlayerInput {
+    customFields: [PlayerCustomFieldInput!]!
+    description: String!
+    organizationCustomId: String
+    ownerId: ID
+    profilePicUrl: String
+    username: String!
+}
+
+input CreateTournamentInput {
+    "Tournament configuration"
+    configuration: UpdateTournamentConfigurationOrImportFromIdInput
+    "Tournament description"
+    description: String!
+    "Tournament end date"
+    endAt: DateTime
+    "Tournament registrations end date"
+    endRegistrationsAt: DateTime
+    "Tournament start date"
+    startAt: DateTime
+    "Tournament registrations start date"
+    startRegistrationsAt: DateTime
+    "Tournament title"
+    title: String!
+    "Tournament visibility date, the tournament will be visible from this date in the tournaments list"
+    visibleAt: DateTime
+}
+
+input CreateTournamentStepInput {
+    description: String!
+    name: String!
+    order: Float!
+    properties: [PropertyValueInput!]
+    type: StepType!
+}
+
+input CreateWebhookInput {
+    active: Boolean!
+    description: String!
+    events: [WebhookEventType!]!
+    url: String!
+}
+
+input CustomTeamMemberInput {
+    "A custom created player, will create a real player profile if set. You should set either player or playerId, not both"
+    player: CreatePlayerInput
+    "An existing player profile ID to use for this team, you have to set either playerId or player, not both"
+    playerId: ID
+}
+
+input DataRetrievalConfigInput {
+    headers: [HeaderInput!]!
+    mappingConfiguration: MappingConfigurationInput!
+    url: String!
+}
+
+input DeleteOrganizationAttachedAppInput {
+    appId: String!
+}
+
+input DeleteOrganizationMembershipInput {
+    userId: ID!
+}
+
+input GameConfigurationInput {
+    matchConfiguration: MatchConfigurationInput!
+    teamsCount: Float!
+    useMatchScoresAsGameScore: Boolean!
+    wonMatchCountToWinGame: Float!
+}
+
+input GroupConfigurationInput {
+    description: String
+    name: String!
+    rounds: [RoundConfigurationInput!]!
+}
+
+input GroupPermissionInput {
+    id: String!
+    resources: [String!]!
+}
+
+input HeaderInput {
+    name: String!
+    value: String!
+}
+
+input IdentityProviderPropertyInput {
+    identityProviderId: ID!
+    property: String!
+    value: String!
+}
+
+input KeyMappingInput {
+    mappedTo: String!
+    path: String!
+    private: Boolean
+}
+
+input LeaderboardGetPlayerRankingInput {
+    leaderboardId: ID!
+    playerId: ID!
+    "If not set, the current active season will be selected"
+    seasonId: ID
+}
+
+input LeaderboardRegisterPlayerScoreInput {
+    "The ID of the leaderboard to register the score to"
+    leaderboardId: ID!
+    playerId: ID!
+    score: PositiveInt!
+}
+
+input ManualSeedingGroupInput {
+    group: ID!
+    teams: [ID!]!
+}
+
+input ManualSeedingInput {
+    groups: [ManualSeedingGroupInput!]!
+}
+
+input MappingConfigurationInput {
+    mappings: [KeyMappingInput!]!
+}
+
+input MatchConfigurationInput {
+    scoreFormula: String
+    variables: [MatchVariableInput!]!
+}
+
+input MatchVariableInput {
+    defaultValue: Float!
+    displayIcon: String
+    displayName: String!
+    formulaName: String!
+}
+
+input NumberConditionInput {
+    conditionType: NumberConditionType!
+    value: Float!
+}
+
+input OAuthClientConfigurationInput {
+    authorizationEndpoint: String
+    authorizationUrl: String
+    clientId: String!
+    clientSecret: String!
+    dataRetrievers: [DataRetrievalConfigInput!]!
+    issuer: String
+    providerType: IdentityProviderType!
+    redirectUrl: String!
+    tokenEndpoint: String
+    tokenEndpointAuthMethod: OauthEndpointAuthMethod = CLIENT_SECRET_POST
+}
+
+input OpenidConfigurationInput {
+    authorizationEndpoint: String
+    clientId: String!
+    clientSecret: String!
+    dataRetrievers: [DataRetrievalConfigInput!]!
+    issuer: String
+    providerType: IdentityProviderType!
+    redirectUrl: String!
+}
+
+input OrderByProperty {
+    order: OrderDirection
+    property: String!
+}
+
+input OrganizationConfigurationInput {
+    customFields: [PropertyInput!]!
+}
+
+input OrganizationSkillRatingCreateInput {
+    configuration: SkillRatingConfigurationInput!
+    description: String!
+    name: String!
+    type: SkillRatingType!
+}
+
+input OrganizationSkillRatingUpdateInput {
+    configuration: SkillRatingConfigurationInput
+    description: String
+    name: String
+    type: SkillRatingType
+}
+
+input OrganizationSkillRatingsRegisterMatchInput {
+    teams: [OrganizationSkillRatingsRegisterMatchTeamInput!]!
+}
+
+input OrganizationSkillRatingsRegisterMatchTeamInput {
+    players: [ID!]!
+}
+
+input OrganizationSubscriptionItemUpdateInput {
+    count: Float!
+    subscriptionItemId: ID!
+}
+
+input PageInfo {
+    after: String
+    first: Float
+}
+
+input PlatformCdnFileConfigsInput {
+    pageConfig: PlatformCdnFilePageConfigInput
+}
+
+input PlatformCdnFileCreateInput {
+    config: PlatformCdnFileConfigsInput
+    contents: String!
+    name: String!
+    type: PlatformCdnFileType!
+}
+
+input PlatformCdnFilePageConfigInput {
+    path: String!
+}
+
+input PlatformConfigurationInput {
+    whitelabel: Boolean
+}
+
+input PlatformFileUpdateInput {
+    config: PlatformCdnFileConfigsInput
+    contents: String
+}
+
+input PlayerConditionInput {
+    condition: ConditionInput!
+    errorMessage: String
+    propertySource: PlayerConditionDataSource!
+    propertySourceId: ID
+    ruleDescription: String
+}
+
+input PlayerCustomFieldInput {
+    property: String!
+    value: String!
+}
+
+input PropertyInput {
+    editability: ProperyEditability
+    name: String!
+    order: Float!
+    property: String!
+    public: Boolean
+    required: Boolean!
+    type: PropertyType!
+    unique: Boolean!
+    visibility: PropertyVisibility
+}
+
+input PropertyValueInput {
+    property: String!
+    value: String!
+}
+
+input QueryPlayersInput {
+    anonymous: Boolean
+}
+
+input RegisterCustomTeamInput {
+    customFields: [PropertyValueInput!]
+    fromExistingTeamId: ID
+    members: [CustomTeamMemberInput!]
+    name: String!
+    status: TournamentTeamStatus!
+    tag: String!
+}
+
+input RegisterCustomTeamsInput {
+    customTeams: [RegisterCustomTeamInput!]!
+}
+
+input RegisterTournamentTeamInput {
+    customFields: [PropertyValueInput!]
+    fromExistingTeamId: ID
+    name: String!
+    tag: String!
+}
+
+input RegistrationConditionsInput {
+    memberConditions: [PlayerConditionInput!]!
+    teamConditions: [TeamConditionInput!]!
+}
+
+input RoundConfigurationInput {
+    game: GameConfigurationInput!
+    name: String!
+    order: Float!
+}
+
+"automaticSeeding or manualSeeding must be set"
+input SeedingInput {
+    automaticSeeding: AutomaticSeedingInput
+    manualSeeding: ManualSeedingInput
+}
+
+input SetOrganizationAttachedAppInput {
+    appId: String!
+    groupId: ID
+    permissions: [GroupPermissionInput!]
+}
+
+input SetOrganizationMembershipInput {
+    email: EmailAddress
+    groupId: ID
+    permissions: [GroupPermissionInput!]
+    userId: ID
+}
+
+input SkillRatingConfigurationInput {
+    updateLeaderboardId: ID
+}
+
+input StepConfigurationInput {
+    groups: [GroupConfigurationInput!]!
+    type: ConfigurationType! = STEP
+}
+
+input StringConditionInput {
+    conditionType: StringConditionType!
+    value: String!
+}
+
+input TeamConditionInput {
+    errorMessage: String
+    numericCondition: TeamNumericConditionInput
+    property: String!
+    propertyCondition: PropertyCondition!
+    stringCondition: StringConditionInput
+}
+
+input TeamNumericConditionInput {
+    aggregationType: AggregationType
+    conditionType: NumberConditionType!
+    propertySource: PlayerConditionDataSource
+    propertySourceId: ID
+    value: Float!
+}
+
+input TournamentAdminDeleteInput {
+    accountId: ID!
+    tournamentId: ID!
+}
+
+input TournamentAdminUpsertInput {
+    accountId: ID!
+    permissions: [TournamentAdminPermissions!]!
+    tournamentId: ID!
+}
+
+input TournamentConfigurationInput {
+    "Custom fields that are defined on each teams"
+    customFields: [PropertyInput!]
+    "Condition rules to register to the tournament"
+    registrationConditions: RegistrationConditionsInput
+    "Maximum team size to register to the tournament"
+    teamMaxSize: Float
+    "Minimum team size to register to the tournament"
+    teamMinSize: Float
+    "Status of the team after registration, REGISTERED is the default state, VALIDATED means that the team has been validated by an admin, AWAITING_FOR_PAYMENT means that the team has to pay to be validated"
+    teamStatusAfterRegistration: TeamStatusAfterRegistration
+    "Maximum number of registered teams"
+    teamsCount: Float
+    type: ConfigurationType! = TOURNAMENT
+}
+
+input TournamentsQuery {
+    "Order by type"
+    orderBy: TournamentsQueryOrderBy! = START_AT
+    "Order direction"
+    orderDirection: OrderDirection! = ASC
+    "Show not visible tournaments, only usable if the user has the correct permission"
+    showNotVisible: Boolean
+    "Filter by tournament status"
+    status: TournamentsQueryStatus! = ALL
+}
+
+input UpdateLeaderboardInput {
+    "The description of the leaderboard"
+    description: String
+    "The name of the leaderboard"
+    name: String
+}
+
+input UpdateLeaderboardSeasonBucketInput {
+    minScore: Float
+    name: String
+    scoreCalculationType: LeaderboardScoreCalculationType
+}
+
+input UpdateLeaderboardSeasonInput {
+    end: DateTime
+    name: String
+    start: DateTime
+    startingScore: Float
+}
+
+input UpdateMatchScoreInput {
+    forcedScoreValue: Float
+    status: MatchScoreStatus
+    teamId: ID!
+    variables: [UpdateTournamentMatchScoreVariablesInput!]
+}
+
+input UpdateMePlayerInput {
+    customFields: [PlayerCustomFieldInput!]!
+    description: String!
+    profilePicUrl: String
+    username: String!
+}
+
+input UpdateOrganizationAppInput {
+    consentUrl: String!
+    description: String
+    loginUrl: String!
+    logoutRedirectUrls: [String!]!
+    name: String
+    redirectUrls: [String!]!
+    requiresConsent: Boolean!
+    secret: String
+}
+
+input UpdateOrganizationIdentityProvider {
+    allowLogin: Boolean!
+    description: String!
+    icon: String
+    name: String!
+    oauth2Configuration: OAuthClientConfigurationInput
+    openidConfiguration: OpenidConfigurationInput
+}
+
+input UpdateOrganizationInput {
+    configuration: OrganizationConfigurationInput!
+    description: String!
+    name: String!
+}
+
+input UpdatePlatformInput {
+    configuration: PlatformConfigurationInput
+    name: String!
+}
+
+input UpdatePlayerInput {
+    customFields: [PlayerCustomFieldInput!]
+    description: String
+    organizationCustomId: String
+    ownerId: ID
+    profilePicUrl: String
+    username: String
+}
+
+input UpdateTournamentConfigurationInput {
+    "Custom fields that are defined on each teams"
+    customFields: [PropertyInput!]
+    "Condition rules to register to the tournament"
+    registrationConditions: RegistrationConditionsInput
+    "Maximum team size to register to the tournament"
+    teamMaxSize: Float
+    "Minimum team size to register to the tournament"
+    teamMinSize: Float
+    "Status of the team after registration, REGISTERED is the default state, VALIDATED means that the team has been validated by an admin, AWAITING_FOR_PAYMENT means that the team has to pay to be validated"
+    teamStatusAfterRegistration: TeamStatusAfterRegistration
+    "Maximum number of registered teams"
+    teamsCount: Float
+    type: ConfigurationType = TOURNAMENT
+}
+
+input UpdateTournamentConfigurationOrImportFromIdInput {
+    "Tournament configuration"
+    configuration: UpdateTournamentConfigurationInput
+    "Import configuration from a saved configuration"
+    fromId: ID
+}
+
+input UpdateTournamentInput {
+    "Tournament configuration"
+    configuration: UpdateTournamentConfigurationOrImportFromIdInput
+    "Tournament description"
+    description: String
+    "Tournament end date"
+    endAt: DateTime
+    "Tournament registrations end date"
+    endRegistrationsAt: DateTime
+    "Tournament start date"
+    startAt: DateTime
+    "Tournament registrations start date"
+    startRegistrationsAt: DateTime
+    "Tournament title"
+    title: String
+    "Tournament visibility date, the tournament will be visible from this date in the tournaments list"
+    visibleAt: DateTime
+}
+
+input UpdateTournamentMatchScoreVariablesInput {
+    formulaName: String!
+    value: Float!
+}
+
+input UpdateTournamentTeamInput {
+    customFields: [PropertyValueInput!]
+    name: String!
+    tag: String!
+}
+
+input UpdateWebhookInput {
+    active: Boolean
+    description: String
+    events: [WebhookEventType!]
+    url: String
+}
+
+input VariableInput {
+    defaultValue: Float!
+    name: String!
+}
