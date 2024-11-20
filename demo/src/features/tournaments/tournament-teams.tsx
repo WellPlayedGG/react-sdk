@@ -1,5 +1,5 @@
+import { useTournamentTeams } from "@well-played.gg/react-sdk";
 import { useParams } from "react-router-dom";
-import { useTournamentTeams } from "../../../../src";
 
 export const TournamentTeams = () => {
 	const { id } = useParams<{ id: string }>();

@@ -1,7 +1,10 @@
 import { ApolloProvider } from "@apollo/client";
 import type { OidcConfiguration } from "@axa-fr/oidc-client";
-import { OidcProvider, useOidcAccessToken } from "@axa-fr/react-oidc";
-import type { OidcProviderProps } from "@axa-fr/react-oidc/src/OidcProvider";
+import {
+	OidcProvider,
+	type OidcProviderProps,
+	useOidcAccessToken,
+} from "@axa-fr/react-oidc";
 import React, { createContext, type PropsWithChildren } from "react";
 import { type ClientProps, client } from "./api/apollo";
 
@@ -77,7 +80,7 @@ const ProviderWithOidc = ({
 	return (
 		<ApolloProvider
 			client={client({
-				token: accessToken?.accessToken,
+				token: accessToken?.accessToken ?? undefined,
 				organizationId,
 				...clientConfig,
 			})}

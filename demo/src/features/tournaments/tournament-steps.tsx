@@ -1,6 +1,6 @@
 import { useQuery } from "@apollo/client";
+import { graphql } from "@well-played.gg/react-sdk";
 import { Link, useParams } from "react-router-dom";
-import { graphql } from "../../../../src";
 
 const TOURNAMENT_STEPS_QUERY = graphql(`
 	query tournamentSteps($tournamentId: ID!) {

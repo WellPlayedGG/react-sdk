@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 // vite.config.ts
 import { defineConfig } from "vite";
+import dts from "vite-plugin-dts";
 
 export default defineConfig(({ command }) => {
 	if (command === "serve") {
@@ -14,7 +15,16 @@ export default defineConfig(({ command }) => {
 	}
 	// Build settings
 	return {
-		plugins: [react()],
+		plugins: [
+			react(),
+			dts({
+				insertTypesEntry: true,
+				rollupTypes: true,
+				copyDtsFiles: true,
+				outDir: "dist",
+				include: ["src"],
+			}),
+		],
 		build: {
 			lib: {
 				entry: "src/index.ts",
@@ -23,13 +33,11 @@ export default defineConfig(({ command }) => {
 				fileName: (format) => `wp-react-sdk.${format}.js`,
 			},
 			rollupOptions: {
-				external: ["react", "react-dom", "@apollo/client", "graphql"],
+				external: ["react", "react-dom"],
 				output: {
 					globals: {
 						react: "React",
 						"react-dom": "ReactDOM",
-						"@apollo/client": "apolloClient",
-						graphql: "graphql",
 					},
 				},
 			},

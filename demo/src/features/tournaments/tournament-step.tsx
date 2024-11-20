@@ -1,5 +1,5 @@
+import { useTournamentStep } from "@well-played.gg/react-sdk";
 import { useParams } from "react-router-dom";
-import { useTournamentStep } from "../../../../src";
 
 export const TournamentStep = () => {
 	const { tournamentId, stepId } = useParams<{
@@ -15,6 +15,39 @@ export const TournamentStep = () => {
 		return <div>Loading...</div>;
 	}
 
-	// TODO Show all groups as trees
-	return <></>;
+	return (
+		<div>
+			<h1>Tournament Step</h1>
+			{groups?.map((group) => (
+				<div key={group.id}>
+					{group.name}
+					<div style={{ display: "flex" }}>
+						{group.rounds.map((round) => (
+							<div
+								key={round.id}
+								style={{ flex: 1, border: "1px solid black" }}
+							>
+								{round.name}
+								{round.games.map((game) => (
+									<div key={game.id}>
+										{game.id}
+										{game.matches.map((match) => (
+											<div key={match.id}>
+												{match.id}
+												{match.teamScores.map((team) => (
+													<div key={team.id}>
+														{team.name} - {team.score}
+													</div>
+												))}
+											</div>
+										))}
+									</div>
+								))}
+							</div>
+						))}
+					</div>
+				</div>
+			))}
+		</div>
+	);
 };

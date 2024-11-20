@@ -8,7 +8,7 @@
 		"skipLibCheck": true,
 		"jsx": "react-jsx",
 		"declaration": true,
-		"declarationDir": "dist/types",
+		"declarationDir": "dist",
 		"emitDeclarationOnly": false,
 		"moduleResolution": "node",
 		"lib": ["DOM", "ESNext"],
@@ -21,8 +21,9 @@
 				"schema": "./schema.graphql",
 				"tadaOutputLocation": "./src/graphql-env.d.ts"
 			}
-		]
+		],
+		"types": []
 	},
-	"include": ["src"],
+	"include": ["src", "src/graphql-env.d.ts"],
 	"exclude": ["node_modules", "dist", "demo"]
 }

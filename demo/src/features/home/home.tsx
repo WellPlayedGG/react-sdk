@@ -1,6 +1,6 @@
 import { useQuery } from "@apollo/client";
+import { graphql } from "@well-played.gg/react-sdk";
 import { Link } from "react-router-dom";
-import { graphql } from "../../../../src";
 import { formatDate } from "../../utils/date.utils";
 
 const LIST_TOURNAMENTS_QUERY = graphql(`

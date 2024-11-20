@@ -1,3 +1,5 @@
+/// <reference path="./graphql-env.d.ts" />
+export * from "./graphql-env.d";
 export * from "./wp.provider";
 export * from "./api/hooks/paginated-query.hook";
 export * from "./api/hooks/players.hook";

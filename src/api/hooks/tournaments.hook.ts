@@ -47,11 +47,50 @@ const TOURNAMENT_STEP_SCOERS_QUERY = graphql(`
     }
 `);
 
+type BaseMatch = ResultOf<
+	typeof TOURNAMENT_STEP_SHAPE_QUERY
+>["tournamentStepGeneratedShape"][0]["rounds"][0]["games"][0]["matches"][0];
+
+type TeamScore = ReturnType<typeof useTournamentTeams>["results"][0] & {
+	score: number;
+};
+
+type MatchWithTeams = BaseMatch & {
+	teamScores: TeamScore[];
+};
+
+type BaseGame = ResultOf<
+	typeof TOURNAMENT_STEP_SHAPE_QUERY
+>["tournamentStepGeneratedShape"][0]["rounds"][0]["games"][0];
+
+type GameWithMatches = Omit<BaseGame, "matches"> & {
+	matches: MatchWithTeams[];
+};
+
+type BaseRound = ResultOf<
+	typeof TOURNAMENT_STEP_SHAPE_QUERY
+>["tournamentStepGeneratedShape"][0]["rounds"][0];
+
+type RoundWithGames = Omit<BaseRound, "games"> & {
+	games: GameWithMatches[];
+};
+
+type BaseGroup = ResultOf<
+	typeof TOURNAMENT_STEP_SHAPE_QUERY
+>["tournamentStepGeneratedShape"][0];
+
+type Group = Omit<BaseGroup, "rounds"> & {
+	rounds: RoundWithGames[];
+};
+
 export const useTournamentStep = ({
 	tournamentId,
 	stepId,
 	skip,
-}: { stepId: string; skip?: boolean; tournamentId: string }) => {
+}: { stepId: string; skip?: boolean; tournamentId: string }): {
+	loading: boolean;
+	groups: Group[] | undefined;
+} => {
 	const { loading: loadingStepShape, data: stepShape } = useQuery(
 		TOURNAMENT_STEP_SHAPE_QUERY,
 		{
@@ -103,7 +142,11 @@ export const useTournamentStep = ({
 			> = {};
 			for (const score of scores) {
 				const team = teamsRecord[score.teamId];
-				if (!team) return;
+				if (!team) {
+					throw new Error(
+						`No team for score ${score.teamId}, match ${score.matchId}`,
+					);
+				}
 				const matchTeamScore = matchTeamScores[score.matchId] ?? [];
 				matchTeamScores[score.matchId] = matchTeamScore.concat({
 					...team,
@@ -111,27 +154,21 @@ export const useTournamentStep = ({
 				});
 			}
 
-			type MatchWithTeams =
-				(typeof group.rounds)[0]["games"][0]["matches"][0] & {
-					teamScores: ReturnType<typeof useTournamentTeams>["results"][0][];
-				};
 			for (const round of group.rounds) {
 				for (const game of round.games) {
 					for (const match of game.matches) {
 						const team = matchTeamScores[match.id];
-						if (!team) return;
+						if (!team) {
+							throw new Error(
+								`No team scores for match ${match.id}, game ${game.id}, round ${round.id}`,
+							);
+						}
 						(match as MatchWithTeams).teamScores = team;
 					}
 				}
 			}
 
-			return group as ReturnType<typeof useTournamentTeams>["results"][0] & {
-				rounds: ((typeof group.rounds)[0] & {
-					games: ((typeof group.rounds)[0]["games"][0] & {
-						matches: MatchWithTeams[];
-					})[];
-				})[];
-			};
+			return group as Group;
 		}),
 	};
 };

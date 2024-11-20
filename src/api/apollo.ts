@@ -20,7 +20,7 @@ import { createWSClient } from "./ws";
 export const GQL_URL = "api.warrior.well-played.gg/graphql";
 
 export type ClientProps = {
-	token: string;
+	token?: string;
 	organizationId: string;
 	invalidationPolicies?: InvalidationPolicies;
 	handlers?: {

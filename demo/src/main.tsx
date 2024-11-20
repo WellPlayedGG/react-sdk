@@ -1,8 +1,7 @@
-// demo/main.tsx
+import { WellPlayedProvider } from "@well-played.gg/react-sdk";
 import React from "react";
 import ReactDOM from "react-dom";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import { WellPlayedProvider } from "../../src";
 import { Home } from "./features/home/home";
 import { Tournament } from "./features/tournaments/tournament";
 import { TournamentStep } from "./features/tournaments/tournament-step";
