@@ -22,24 +22,22 @@ const router = createBrowserRouter([
 		element: <TournamentTeams />,
 	},
 	{
-		path: "tournament/:id/steps",
+		path: "tournaments/:id/steps",
 		element: <TournamentSteps />,
 	},
 	{
-		path: "tournament/:tournamentId/steps/:stepId",
+		path: "tournaments/:tournamentId/steps/:stepId",
 		element: <TournamentStep />,
 	},
 ]);
 
 const App = () => (
 	<WellPlayedProvider
-		organizationId={"replace-with-yours"}
+		organizationId="vHFLeYcHvCJS4fmZW4uDrN" // Replace with your organizationId
 		wpAppConfig={{
 			scope: "offline_access",
-			client_id: "replace-with-yours",
-			redirect_uri: `${
-				window.location.protocol
-			}//${window.location.origin}/redirect`,
+			client_id: "02b0313b-5dbc-4285-8240-afe192b83b4f", // Replace with your client_id
+			redirect_uri: `${window.location.protocol}//${window.location.origin}`,
 		}}
 	>
 		<RouterProvider router={router} />

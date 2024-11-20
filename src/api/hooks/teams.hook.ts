@@ -24,10 +24,6 @@ const TOURNAMENT_TEAM_QUERY = graphql(`
         id
         name
         status
-		  customFields {
-			  property
-			  value
-		  }
         members {
           status
           playerProfileId

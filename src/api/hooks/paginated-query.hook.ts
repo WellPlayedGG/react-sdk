@@ -120,7 +120,7 @@ export const usePaginatedLoadAll = <TNodeChild, TData, TVariables>(
 		let cursor = null;
 		const nodes: TNodeChild[] = [];
 		while (hasNextPage) {
-			const { data } = await fetchResults({
+			const { data, error } = await fetchResults({
 				variables: {
 					...options?.variables,
 					...variables,
@@ -130,6 +130,11 @@ export const usePaginatedLoadAll = <TNodeChild, TData, TVariables>(
 					},
 				} as TVariables,
 			});
+
+			if (error) {
+				throw error;
+			}
+
 			const dataFromElem = (
 				data as Record<string, PaginatedData<TNodeChild>>
 			)?.[elemName];

@@ -31,6 +31,7 @@ export const Tournament = () => {
 				<>
 					<h1>{data.tournament.title}</h1>
 					<Link to={`/tournaments/${data.tournament.id}/teams`}>Teams</Link>
+					<br />
 					<Link to={`/tournaments/${data.tournament.id}/steps`}>Steps</Link>
 					<RichTextEditorContent content={data.tournament.description} />
 					<p>

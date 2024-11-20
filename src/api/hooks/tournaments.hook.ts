@@ -1,5 +1,6 @@
 import { useQuery } from "@apollo/client";
 import type { ResultOf, VariablesOf } from "gql.tada";
+import { cloneDeep } from "lodash";
 import { graphql } from "../../graphql";
 import { usePaginatedLoadAll } from "./paginated-query.hook";
 import { useTournamentTeams } from "./teams.hook";
@@ -120,7 +121,8 @@ export const useTournamentStep = ({
 
 	return {
 		loading: loadingStepShape || loadingScores || teamsLoading,
-		groups: stepShape?.tournamentStepGeneratedShape.map((group) => {
+		groups: stepShape?.tournamentStepGeneratedShape.map((groupDto) => {
+			const group = cloneDeep(groupDto);
 			const teamsRecord: Record<
 				string,
 				ReturnType<typeof useTournamentTeams>["results"][0]
@@ -143,9 +145,10 @@ export const useTournamentStep = ({
 			for (const score of scores) {
 				const team = teamsRecord[score.teamId];
 				if (!team) {
-					throw new Error(
+					console.warn(
 						`No team for score ${score.teamId}, match ${score.matchId}`,
 					);
+					continue;
 				}
 				const matchTeamScore = matchTeamScores[score.matchId] ?? [];
 				matchTeamScores[score.matchId] = matchTeamScore.concat({
@@ -157,13 +160,8 @@ export const useTournamentStep = ({
 			for (const round of group.rounds) {
 				for (const game of round.games) {
 					for (const match of game.matches) {
-						const team = matchTeamScores[match.id];
-						if (!team) {
-							throw new Error(
-								`No team scores for match ${match.id}, game ${game.id}, round ${round.id}`,
-							);
-						}
-						(match as MatchWithTeams).teamScores = team;
+						(match as MatchWithTeams).teamScores =
+							matchTeamScores[match.id] ?? [];
 					}
 				}
 			}

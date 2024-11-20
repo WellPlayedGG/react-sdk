@@ -27,13 +27,13 @@ export const TournamentStep = () => {
 								key={round.id}
 								style={{ flex: 1, border: "1px solid black" }}
 							>
-								{round.name}
+								Round #{round.id} - {round.name}
 								{round.games.map((game) => (
 									<div key={game.id}>
-										{game.id}
+										Game #{game.id}
 										{game.matches.map((match) => (
 											<div key={match.id}>
-												{match.id}
+												Match #{match.id}
 												{match.teamScores.map((team) => (
 													<div key={team.id}>
 														{team.name} - {team.score}
