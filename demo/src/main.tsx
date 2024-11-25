@@ -7,27 +7,34 @@ import { Tournament } from "./features/tournaments/tournament";
 import { TournamentStep } from "./features/tournaments/tournament-step";
 import { TournamentSteps } from "./features/tournaments/tournament-steps";
 import { TournamentTeams } from "./features/tournaments/tournament-teams";
+import { Layout } from "./layout";
 
 const router = createBrowserRouter([
 	{
 		path: "",
-		element: <Home />,
-	},
-	{
-		path: "tournaments/:id",
-		element: <Tournament />,
-	},
-	{
-		path: "tournaments/:id/teams",
-		element: <TournamentTeams />,
-	},
-	{
-		path: "tournaments/:id/steps",
-		element: <TournamentSteps />,
-	},
-	{
-		path: "tournaments/:tournamentId/steps/:stepId",
-		element: <TournamentStep />,
+		element: <Layout />,
+		children: [
+			{
+				path: "",
+				element: <Home />,
+			},
+			{
+				path: "tournaments/:id",
+				element: <Tournament />,
+			},
+			{
+				path: "tournaments/:id/teams",
+				element: <TournamentTeams />,
+			},
+			{
+				path: "tournaments/:id/steps",
+				element: <TournamentSteps />,
+			},
+			{
+				path: "tournaments/:tournamentId/steps/:stepId",
+				element: <TournamentStep />,
+			},
+		],
 	},
 ]);
 
@@ -36,8 +43,8 @@ const App = () => (
 		organizationId="vHFLeYcHvCJS4fmZW4uDrN" // Replace with your organizationId
 		wpAppConfig={{
 			scope: "offline_access",
-			client_id: "02b0313b-5dbc-4285-8240-afe192b83b4f", // Replace with your client_id
-			redirect_uri: `${window.location.protocol}//${window.location.origin}`,
+			client_id: "9e53e218-d77d-48fd-8bd3-2c4f597b94ef", // Replace with your client_id
+			redirect_uri: `${window.location.origin}/login`,
 		}}
 	>
 		<RouterProvider router={router} />

@@ -1,4 +1,5 @@
-import { useLazyQuery } from "@apollo/client";
+import { useLazyQuery, useQuery } from "@apollo/client";
+import { useOidc } from "@axa-fr/react-oidc";
 import type { ResultOf } from "gql.tada";
 import { useEffect, useState } from "react";
 import { graphql } from "../../graphql";
@@ -78,5 +79,48 @@ export const usePlayers = ({
 		results: players,
 		refetch,
 		loading: loading || organizationLoading,
+	};
+};
+
+const GET_MY_PLAYER_QUERY = graphql(`
+	query getMyAccount {
+		getMyAccount {
+			id
+			permissions {
+				id
+				resources
+			}
+			profiles {
+				id
+				username
+				customFields {
+					property
+					value
+				}
+			}
+			identities {
+				properties {
+					property
+					value
+				}
+			}
+		}
+	}
+`);
+
+export const useConnectedPlayer = () => {
+	const oidc = useOidc();
+	const { data, loading, refetch } = useQuery(GET_MY_PLAYER_QUERY, {
+		skip: !oidc.isAuthenticated,
+		notifyOnNetworkStatusChange: true,
+	});
+
+	return {
+		loading,
+		data,
+		refetch,
+		authenticated: oidc.isAuthenticated,
+		login: oidc.login,
+		logout: oidc.logout,
 	};
 };
