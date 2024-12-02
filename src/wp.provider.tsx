@@ -1,4 +1,8 @@
-import { ApolloProvider } from "@apollo/client";
+import {
+	type ApolloClient,
+	ApolloProvider,
+	type NormalizedCacheObject,
+} from "@apollo/client";
 import type { OidcConfiguration } from "@axa-fr/oidc-client";
 import {
 	OidcProvider,
@@ -57,6 +61,7 @@ type WPConfigProps = {
 // Create a context
 const WPContext = createContext<{
 	organizationId: string;
+	apiClient: ApolloClient<NormalizedCacheObject>;
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 }>({} as any);
 
@@ -77,17 +82,18 @@ const ProviderWithOidc = ({
 }: PropsWithChildren<Omit<WPConfigProps, "oidcConfig" | "wpAppConfig">>) => {
 	const accessToken = useOidcAccessToken();
 
+	const apiClient = client({
+		token: accessToken?.accessToken ?? undefined,
+		organizationId,
+		...clientConfig,
+	});
+
 	return (
-		<ApolloProvider
-			client={client({
-				token: accessToken?.accessToken ?? undefined,
-				organizationId,
-				...clientConfig,
-			})}
-		>
+		<ApolloProvider client={apiClient}>
 			<WPContext.Provider
 				value={{
 					organizationId,
+					apiClient,
 				}}
 			>
 				{children}
