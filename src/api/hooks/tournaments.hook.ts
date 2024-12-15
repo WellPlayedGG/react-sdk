@@ -3,7 +3,7 @@ import type { ResultOf, VariablesOf } from "gql.tada";
 import { cloneDeep } from "lodash";
 import { graphql } from "../../graphql";
 import { usePaginatedLoadAll } from "./paginated-query.hook";
-import { useTournamentTeams } from "./teams.hook";
+import { useTournamentTeams } from "./tournament-teams.hook";
 
 const TOURNAMENT_STEP_SHAPE_QUERY = graphql(`
     query tournamentStepGeneratedShape($stepId: ID!) {
