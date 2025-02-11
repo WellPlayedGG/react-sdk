@@ -1,3 +1,4 @@
+import { createRoot } from "react-dom/client";
 import { WellPlayedProvider } from "@well-played.gg/react-sdk";
 import React from "react";
 import ReactDOM from "react-dom";
@@ -51,4 +52,5 @@ const App = () => (
 	</WellPlayedProvider>
 );
 
-ReactDOM.render(<App />, document.getElementById("root"));
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
