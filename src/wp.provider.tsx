@@ -56,6 +56,10 @@ type WPConfigProps = {
 	 * GraphQL client configurations
 	 */
 	clientConfig?: Omit<ClientProps, "token">;
+	/**
+	 * API Base URL
+	 */
+	apiBaseUrl?: string;
 };
 
 // Create a context
@@ -113,7 +117,7 @@ export const WellPlayedProvider = ({
 		configuration={{
 			...wpAppConfig,
 			...oidcConfig?.configuration,
-			authority: "https://oauth.warrior.well-played.gg",
+			authority: `https://oauth.warrior.${configs.apiBaseUrl ?? "well-played.gg"}`,
 		}}
 	>
 		<ProviderWithOidc {...configs}>{children}</ProviderWithOidc>

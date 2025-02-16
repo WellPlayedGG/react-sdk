@@ -17,8 +17,6 @@ import type {
 import { isNil, omitBy } from "lodash";
 import { createWSClient } from "./ws";
 
-export const GQL_URL = "api.warrior.well-played.gg/graphql";
-
 export type ClientProps = {
 	token?: string;
 	organizationId: string;
@@ -33,6 +31,7 @@ export type ClientProps = {
 			onError?: EventErrorListener;
 		};
 	};
+	apiBaseUrl?: string;
 };
 
 export const client = ({
@@ -40,6 +39,7 @@ export const client = ({
 	organizationId,
 	invalidationPolicies,
 	handlers,
+	apiBaseUrl,
 }: ClientProps) => {
 	const cache = new InvalidationPolicyCache({
 		invalidationPolicies: {
@@ -54,6 +54,7 @@ export const client = ({
 		storage: new LocalStorageWrapper(window.localStorage),
 	});
 
+	const graphqlUrl = `api.warrior.${apiBaseUrl ?? "well-played.gg"}/graphql`;
 	const link = split(
 		({ query }) => {
 			const def = getMainDefinition(query);
@@ -62,7 +63,7 @@ export const client = ({
 			);
 		},
 		new GraphQLWsLink(
-			createWSClient({ apiUrl: GQL_URL, listeners: handlers?.webSocket }),
+			createWSClient({ apiUrl: graphqlUrl, listeners: handlers?.webSocket }),
 		),
 		from([
 			setContext(async () => {
@@ -82,7 +83,7 @@ export const client = ({
 				return forward(operation);
 			}),
 			new HttpLink({
-				uri: `https://${GQL_URL}`,
+				uri: `https://${graphqlUrl}`,
 			}),
 		]),
 	);
