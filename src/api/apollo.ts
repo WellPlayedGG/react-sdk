@@ -17,6 +17,8 @@ import type {
 import { isNil, omitBy } from "lodash";
 import { createWSClient } from "./ws";
 
+export type ApiBaseUrl = "well-played.gg" | "stg.well-played.gg";
+
 export type ClientProps = {
 	token?: string;
 	organizationId: string;
@@ -31,7 +33,7 @@ export type ClientProps = {
 			onError?: EventErrorListener;
 		};
 	};
-	apiBaseUrl?: string;
+	apiBaseUrl?: ApiBaseUrl;
 };
 
 export const client = ({

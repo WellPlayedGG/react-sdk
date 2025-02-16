@@ -10,7 +10,7 @@ import {
 	useOidcAccessToken,
 } from "@axa-fr/react-oidc";
 import React, { createContext, type PropsWithChildren } from "react";
-import { type ClientProps, client } from "./api/apollo";
+import { type ApiBaseUrl, type ClientProps, client } from "./api/apollo";
 
 type WPConfigProps = {
 	/**
@@ -59,7 +59,7 @@ type WPConfigProps = {
 	/**
 	 * API Base URL
 	 */
-	apiBaseUrl?: string;
+	apiBaseUrl?: ApiBaseUrl;
 };
 
 // Create a context
