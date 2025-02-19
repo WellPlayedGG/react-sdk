@@ -128,12 +128,29 @@ type EventReservation {
     id: ID!
     sessionValidUntil: DateTime!
     status: EventReservationStatus!
+    tickets: [EventReservationTicket!]!
     updatedAt: DateTime!
 }
 
-type EventReservationEdge {
-    cursor: String!
-    node: [EventReservation!]!
+type EventReservationTicket {
+    createdAt: DateTime!
+    groupMemberId: ID
+    id: ID!
+    reservationId: ID!
+    seatId: ID
+    ticketId: ID!
+    updatedAt: DateTime!
+}
+
+type EventReservationTicketWithQrCode {
+    createdAt: DateTime!
+    groupMemberId: ID
+    id: ID!
+    qrCode: String!
+    reservationId: ID!
+    seatId: ID
+    ticketId: ID!
+    updatedAt: DateTime!
 }
 
 type EventReservationValidateAndPay {
@@ -141,9 +158,20 @@ type EventReservationValidateAndPay {
     paymentUrl: String
 }
 
+type EventReservationWithTicketsAndQrCode {
+    createdAt: DateTime!
+    eventId: ID!
+    groupId: ID!
+    id: ID!
+    sessionValidUntil: DateTime!
+    status: EventReservationStatus!
+    tickets: [EventReservationTicketWithQrCode!]!
+    updatedAt: DateTime!
+}
+
 type EventReservations {
-    edges: [EventReservationEdge!]!
-    nodes: [EventReservation!]!
+    edges: [OmitObjectTypeEdge!]!
+    nodes: [OmitObjectType!]!
     pageInfo: ResponsePageInfo!
     totalCount: Float
 }
@@ -173,7 +201,7 @@ type EventWithUserReservation {
     eventVenueId: String
     id: ID!
     "The reservation of the current user for this event"
-    myReservation: EventReservation
+    myReservation: EventReservationWithTicketsAndQrCode
     organizationId: String!
     startAt: DateTime
     startRegistrationsAt: DateTime
@@ -511,6 +539,21 @@ type OAuthClientConfiguration {
     redirectUrl: String!
     tokenEndpoint: String
     tokenEndpointAuthMethod: OauthEndpointAuthMethod
+}
+
+type OmitObjectType {
+    createdAt: DateTime!
+    eventId: ID!
+    groupId: ID!
+    id: ID!
+    sessionValidUntil: DateTime!
+    status: EventReservationStatus!
+    updatedAt: DateTime!
+}
+
+type OmitObjectTypeEdge {
+    cursor: String!
+    node: [OmitObjectType!]!
 }
 
 type OpenidConfiguration {

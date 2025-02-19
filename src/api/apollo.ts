@@ -90,6 +90,7 @@ export const client = ({
 		]),
 	);
 
+	// TODO Add batching
 	return new ApolloClient({
 		cache,
 		link,
