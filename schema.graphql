@@ -126,6 +126,7 @@ type EventReservation {
     eventId: ID!
     groupId: ID!
     id: ID!
+    name: String!
     sessionValidUntil: DateTime!
     status: EventReservationStatus!
     tickets: [EventReservationTicket!]!
@@ -163,6 +164,7 @@ type EventReservationWithTicketsAndQrCode {
     eventId: ID!
     groupId: ID!
     id: ID!
+    name: String!
     sessionValidUntil: DateTime!
     status: EventReservationStatus!
     tickets: [EventReservationTicketWithQrCode!]!
@@ -463,7 +465,7 @@ type Mutation {
     eventReservationConfirmPresence(confirmed: Boolean!, eventId: ID!): EventReservation!
     eventReservationStartRegistrationSession(eventId: ID!, input: EventReservationRegisterTicketsInput!): EventReservation!
     eventReservationUpdateStatus(confirmPaymentRefundOrCancel: Boolean, reservationId: ID!, status: EventReservationStatus!): EventReservation!
-    eventReservationValidateAndPay(eventId: ID!): EventReservationValidateAndPay!
+    eventReservationValidateAndPay(eventId: ID!, options: EventReservationValidateAndPayInput!): EventReservationValidateAndPay!
     eventTicketConfigurationCreate(input: EventTicketConfigurationCreateInput!): EventTicketConfiguration!
     eventTicketConfigurationDelete(ticketConfigurationId: ID!): EventTicketConfiguration!
     eventTicketConfigurationUpdate(input: EventTicketConfigurationUpdateInput!, ticketConfigurationId: ID!): EventTicketConfiguration!
@@ -546,6 +548,7 @@ type OmitObjectType {
     eventId: ID!
     groupId: ID!
     id: ID!
+    name: String!
     sessionValidUntil: DateTime!
     status: EventReservationStatus!
     updatedAt: DateTime!
@@ -928,6 +931,7 @@ type Query {
     event(id: ID!): EventWithUserReservation!
     eventReservation(reservationId: ID!): EventReservation!
     eventReservations(eventId: ID!, page: PageInfo!, query: EventReservationsQueryInput!): EventReservations!
+    eventTicketConfiguration(id: ID!): EventTicketConfiguration!
     eventTicketConfigurations(eventId: ID!): [EventTicketConfiguration!]!
     events(page: PageInfo!, query: EventsQuery!): Events!
     getAvailableRootIdentityProviders: [PublicIdentityProvider!]!
@@ -1625,6 +1629,11 @@ enum StringConditionType {
     NEQ
 }
 
+enum StripeUiMode {
+    EMBEDDED
+    HOSTED
+}
+
 enum TeamStatusAfterRegistration {
     AWAITING_FOR_PAYMENT
     AWAITING_FOR_PRESENCE_CONFIRMATION
@@ -1891,6 +1900,16 @@ input EventReservationRegisterTicketsInput {
     tickets: [EventReservationRegisterTicketInput!]!
 }
 
+input EventReservationValidateAndPayInput {
+    "The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method’s app or site. This parameter is required if uiMode is 'embedded'."
+    canceledUrl: URL
+    "If set, Checkout displays a back button and customers will be directed to this URL if they decide to cancel payment and return to your website. This parameter is not allowed if uiMode is 'embedded'."
+    returnUrl: URL
+    "The URL to which Stripe should send customers when payment or setup is complete. This parameter is not allowed if uiMode is \"embedded\"."
+    successUrl: URL
+    uiMode: StripeUiMode
+}
+
 input EventReservationsQueryInput {
     filterByPlayerIdentityProviderProperties: [IdentityProviderPropertyInput!]
     filterByPlayerProperties: [PropertyValueInput!]
@@ -1909,7 +1928,6 @@ input EventReservationsQueryPlayerIdWithGroupStatusInput {
 
 input EventTicketConfigurationCreateInput {
     currency: Currencies!
-    currentCount: Float!
     description: String!
     eventId: ID!
     maxCount: Float!
@@ -1920,7 +1938,6 @@ input EventTicketConfigurationCreateInput {
 
 input EventTicketConfigurationUpdateInput {
     currency: Currencies
-    currentCount: Float
     description: String
     maxCount: Float
     name: String
