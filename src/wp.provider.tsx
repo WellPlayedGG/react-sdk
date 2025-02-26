@@ -55,7 +55,7 @@ type WPConfigProps = {
 	/**
 	 * GraphQL client configurations
 	 */
-	clientConfig?: Omit<ClientProps, "token">;
+	clientConfig?: Omit<ClientProps, "token" | "organizationId">;
 	/**
 	 * API Base URL
 	 */
