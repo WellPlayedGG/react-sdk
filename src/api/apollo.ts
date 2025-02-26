@@ -1,6 +1,6 @@
 import { ApolloClient, HttpLink, from, split } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
-import { type ErrorResponse, onError } from "@apollo/client/link/error";
+import {type ErrorHandler, type ErrorResponse, onError} from "@apollo/client/link/error";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import {
@@ -24,9 +24,7 @@ export type ClientProps = {
 	organizationId: string;
 	invalidationPolicies?: InvalidationPolicies;
 	handlers?: {
-		onError?: (
-			error: Omit<ErrorResponse, "operation" | "forward" | "response">,
-		) => void;
+		onError?: ErrorHandler;
 		webSocket?: {
 			onConnected?: EventConnectedListener;
 			onClosed?: EventClosedListener;
@@ -79,11 +77,7 @@ export const client = ({
 					),
 				};
 			}),
-			onError(({ graphQLErrors, networkError, operation, forward }) => {
-				handlers?.onError?.({ graphQLErrors, networkError });
-
-				return forward(operation);
-			}),
+			...(handlers?.onError ? [onError(handlers?.onError)] : []),
 			new HttpLink({
 				uri: `https://${graphqlUrl}`,
 			}),
