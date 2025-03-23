@@ -46,12 +46,18 @@ jobs:
           echo "HAS_BREAKING=$(grep -q BREAKING schema.diff && echo true || echo false)" >> $GITHUB_ENV
           echo "HAS_DANGEROUS=$(grep -q DANGEROUS schema.diff && echo true || echo false)" >> $GITHUB_ENV
           echo "HAS_SAFE=$(grep -q SAFE schema.diff && echo true || echo false)" >> $GITHUB_ENV
+          rm schema.diff || true
 
       - name: Skip if no changes and not manual/push
         if: env.HAS_BREAKING == 'false' && env.HAS_DANGEROUS == 'false' && env.HAS_SAFE == 'false' && github.event_name != 'workflow_dispatch' && github.event_name != 'push'
         run: |
           echo "No schema changes detected and not manually triggered. Skipping release."
           exit 0
+
+      - name: Clean git working directory
+        run: |
+          git clean -fd
+          git reset --hard
 
       - name: Bump version based on schema diff or manual trigger
         run: |
