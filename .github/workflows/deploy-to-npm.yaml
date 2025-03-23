@@ -60,6 +60,7 @@ jobs:
         run: |
           if [[ -n "$(git status --porcelain schema.graphql)" ]]; then
             git add schema.graphql
+            git add src/graphql-env.d.ts
             git commit -m "chore: update GraphQL schema"
           fi
 
