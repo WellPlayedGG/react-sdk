@@ -26,13 +26,9 @@ jobs:
 
       - run: yarn --frozen-lockfile
 
-      - name: Get latest released schema
+      - name: Generate current GraphQL schema
         run: |
           mkdir -p old-schema
-          git fetch --tags
-          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
-          git checkout $LATEST_TAG -- schema.graphql || true
           mv schema.graphql old-schema/schema.graphql || true
 
       - name: Generate current GraphQL schema
@@ -46,18 +42,14 @@ jobs:
           echo "HAS_BREAKING=$(grep -q BREAKING schema.diff && echo true || echo false)" >> $GITHUB_ENV
           echo "HAS_DANGEROUS=$(grep -q DANGEROUS schema.diff && echo true || echo false)" >> $GITHUB_ENV
           echo "HAS_SAFE=$(grep -q SAFE schema.diff && echo true || echo false)" >> $GITHUB_ENV
-          rm schema.diff || true
+          rm -rf old-schema
+          rm -f schema.diff
 
       - name: Skip if no changes and not manual/push
         if: env.HAS_BREAKING == 'false' && env.HAS_DANGEROUS == 'false' && env.HAS_SAFE == 'false' && github.event_name != 'workflow_dispatch' && github.event_name != 'push'
         run: |
           echo "No schema changes detected and not manually triggered. Skipping release."
           exit 0
-
-      - name: Clean git working directory
-        run: |
-          git clean -fd
-          git reset --hard
 
       - name: Configure Git
         run: |
@@ -78,6 +70,7 @@ jobs:
 
       - name: Push changes and tags
         run: |
+          git add schema.graphql
           git push
           git push --tags
 
