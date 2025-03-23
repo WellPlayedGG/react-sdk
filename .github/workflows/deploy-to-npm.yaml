@@ -47,20 +47,22 @@ jobs:
           echo "HAS_DANGEROUS=$(grep -q DANGEROUS schema.diff && echo true || echo false)" >> $GITHUB_ENV
           echo "HAS_SAFE=$(grep -q SAFE schema.diff && echo true || echo false)" >> $GITHUB_ENV
 
-      - name: Skip if no changes
-        if: env.HAS_BREAKING == 'false' && env.HAS_DANGEROUS == 'false' && env.HAS_SAFE == 'false'
+      - name: Skip if no changes and not manual/push
+        if: env.HAS_BREAKING == 'false' && env.HAS_DANGEROUS == 'false' && env.HAS_SAFE == 'false' && github.event_name != 'workflow_dispatch' && github.event_name != 'push'
         run: |
-          echo "No schema changes detected. Skipping release."
+          echo "No schema changes detected and not manually triggered. Skipping release."
           exit 0
 
-      - name: Bump version based on schema diff
+      - name: Bump version based on schema diff or manual trigger
         run: |
           if [[ "$HAS_BREAKING" == "true" ]]; then
             npm version major -m "chore(release): v%s (breaking changes)"
           elif [[ "$HAS_DANGEROUS" == "true" ]]; then
             npm version minor -m "chore(release): v%s (dangerous changes)"
-          else
+          elif [[ "$HAS_SAFE" == "true" ]]; then
             npm version patch -m "chore(release): v%s (safe changes)"
+          else
+            npm version minor -m "chore(release): v%s (package updates)"
           fi
 
       - name: Push changes and tags
