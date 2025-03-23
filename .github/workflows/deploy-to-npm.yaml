@@ -1,8 +1,11 @@
 name: Auto Release on Schema Change
 
 on:
+  push:
+    branches: [main]
   repository_dispatch:
     types: [trigger-deployment]
+  workflow_dispatch:
 
 jobs:
   release-if-schema-changed:
