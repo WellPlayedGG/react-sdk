@@ -81,6 +81,9 @@ jobs:
           git push
           git push --tags
 
+      - name: Reinstall dependencies
+        run: yarn --frozen-lockfile
+
       - name: Generate changelog
         run: |
           yarn conventional-changelog -p angular -i CHANGELOG.md -s
