@@ -31,7 +31,7 @@
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
 		"@vitejs/plugin-react": "^4.3.3",
-		"conventional-changelog": "^6.0.0",
+		"conventional-changelog-cli": "^5.0.0",
 		"gql.tada": "^1.8.10",
 		"graphql": "^16.9.0",
 		"graphql-ws": "^5.16.0",
