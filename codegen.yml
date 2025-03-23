@@ -1,0 +1,6 @@
+schema: https://api.warrior.stg.well-played.gg/graphql
+emitLegacyCommonJSImports: false
+generates:
+  schema.graphql:
+    plugins:
+      - schema-ast

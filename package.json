@@ -5,7 +5,9 @@
 	"main": "dist/wp-react-sdk.cjs.js",
 	"module": "dist/wp-react-sdk.es.js",
 	"types": "dist/index.d.ts",
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"peerDependencies": {
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"
@@ -13,10 +15,15 @@
 	"devDependencies": {
 		"@apollo/client": "^3.11.10",
 		"@biomejs/biome": "1.9.4",
+		"@graphql-codegen/cli": "4.0.1",
+		"@graphql-codegen/client-preset": "4.0.1",
+		"@graphql-codegen/introspection": "4.0.0",
+		"@graphql-inspector/cli": "^5.0.8",
 		"@types/lodash": "^4.17.13",
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
 		"@vitejs/plugin-react": "^4.3.3",
+		"conventional-changelog": "^6.0.0",
 		"gql.tada": "^1.8.10",
 		"graphql": "^16.9.0",
 		"graphql-ws": "^5.16.0",
@@ -32,7 +39,8 @@
 		"prepublishOnly": "yarn test && yarn build",
 		"test": "echo \"No tests specified\" && exit 0",
 		"lint": "biome check .",
-		"format": "biome format --write ."
+		"format": "biome format --write .",
+		"graphql:generate": "graphql-codegen --config codegen.yml && gql-tada generate output && gql-tada check"
 	},
 	"dependencies": {
 		"@apollo/client": "^3.11.10",
@@ -50,5 +58,6 @@
 		"graphql": "^16.9.0",
 		"graphql-ws": "^5.16.0",
 		"lodash": "^4.17.21"
-	}
+	},
+	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
