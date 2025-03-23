@@ -86,7 +86,7 @@ jobs:
 
       - name: Generate changelog
         run: |
-          yarn conventional-changelog -p angular -i CHANGELOG.md -s
+          npx conventional-changelog -p angular -i CHANGELOG.md -s
 
       - name: Commit changelog
         run: |
