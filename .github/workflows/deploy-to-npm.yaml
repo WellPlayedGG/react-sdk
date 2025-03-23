@@ -26,9 +26,6 @@ jobs:
 
       - run: yarn --frozen-lockfile
 
-      - name: Generate current GraphQL schema
-        run: yarn graphql:generate
-
       - name: Get latest released schema
         run: |
           mkdir -p old-schema
@@ -37,6 +34,9 @@ jobs:
           echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
           git checkout $LATEST_TAG -- schema.graphql || true
           mv schema.graphql old-schema/schema.graphql || true
+
+      - name: Generate current GraphQL schema
+        run: yarn graphql:generate
 
       - name: Compare schema
         id: diff
