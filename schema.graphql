@@ -320,24 +320,24 @@ A field whose value conforms to the standard internet email address format as sp
 """
 scalar EmailAddress
 
-type Event {
+type Event implements EventInterface {
   configuration: EventConfiguration
   createdAt: DateTime!
-  createdById: String!
+  createdById: ID!
   decryptionKey: String!
   description: String!
   endAt: DateTime
   endRegistrationsAt: DateTime
-  eventVenueId: String
+  eventVenueId: ID
   id: ID!
-  organizationId: String!
+  organizationId: ID!
   startAt: DateTime
   startRegistrationsAt: DateTime
   title: String!
   updatedAt: DateTime!
 
   """The venue where this event is taking place"""
-  venue: EventVenue!
+  venue: EventVenue
   visibleAt: DateTime
 }
 
@@ -388,7 +388,7 @@ input EventCreateInput {
   description: String!
   endAt: DateTime
   endRegistrationsAt: DateTime
-  eventVenueId: String
+  eventVenueId: ID
   startAt: DateTime
   startRegistrationsAt: DateTime
   title: String!
@@ -398,6 +398,27 @@ input EventCreateInput {
 type EventEdge {
   cursor: String!
   node: [Event!]!
+}
+
+interface EventInterface {
+  configuration: EventConfiguration
+  createdAt: DateTime!
+  createdById: ID!
+  decryptionKey: String!
+  description: String!
+  endAt: DateTime
+  endRegistrationsAt: DateTime
+  eventVenueId: ID
+  id: ID!
+  organizationId: ID!
+  startAt: DateTime
+  startRegistrationsAt: DateTime
+  title: String!
+  updatedAt: DateTime!
+
+  """The venue where this event is taking place"""
+  venue: EventVenue
+  visibleAt: DateTime
 }
 
 type EventReservation {
@@ -527,16 +548,28 @@ type EventSeat {
   createdAt: DateTime!
   id: ID!
   name: String!
+  reservedByTicketId: ID
   seatTypeId: ID!
   status: EventSeatStatus!
   updatedAt: DateTime!
-  venueId: ID!
+}
+
+type EventSeatEdge {
+  cursor: String!
+  node: [EventSeat!]!
 }
 
 enum EventSeatStatus {
   AVAILABLE
   RESERVED
   SOLD
+}
+
+type EventSeats {
+  edges: [EventSeatEdge!]!
+  nodes: [EventSeat!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
 }
 
 type EventTicketConfiguration {
@@ -559,7 +592,7 @@ input EventTicketConfigurationCreateInput {
   currency: Currencies!
   description: String!
   eventId: ID!
-  maxCount: Float!
+  maxCount: Float
   name: String!
   price: Float!
   seatTypeId: ID
@@ -580,7 +613,7 @@ input EventUpdateInput {
   description: String
   endAt: DateTime
   endRegistrationsAt: DateTime
-  eventVenueId: String
+  eventVenueId: ID
   startAt: DateTime
   startRegistrationsAt: DateTime
   title: String
@@ -632,7 +665,6 @@ type EventVenueSeat {
   name: String!
   seatTypeId: ID!
   updatedAt: DateTime!
-  venueId: ID!
 }
 
 type EventVenueSeatConfiguration {
@@ -743,27 +775,27 @@ type EventVenues {
   totalCount: Float
 }
 
-type EventWithUserReservation {
+type EventWithUserReservation implements EventInterface {
   configuration: EventConfiguration
   createdAt: DateTime!
-  createdById: String!
+  createdById: ID!
   decryptionKey: String!
   description: String!
   endAt: DateTime
   endRegistrationsAt: DateTime
-  eventVenueId: String
+  eventVenueId: ID
   id: ID!
 
   """The reservation of the current user for this event"""
   myReservation: EventReservationWithTicketsAndQrCode
-  organizationId: String!
+  organizationId: ID!
   startAt: DateTime
   startRegistrationsAt: DateTime
   title: String!
   updatedAt: DateTime!
 
   """The venue where this event is taking place"""
-  venue: EventVenue!
+  venue: EventVenue
   visibleAt: DateTime
 }
 
@@ -1533,6 +1565,9 @@ enum OrganizationLimitsType {
   EVENTS_MAX_REGISTRATION_RULES
   EVENTS_MAX_TICKETS
   EVENTS_MAX_TICKETS_TYPES
+  EVENT_VENUES
+  EVENT_VENUE_MAX_SEATS
+  EVENT_VENUE_MAX_SEAT_TYPES
   LEADERBOARDS
   LEADERBOARD_BUCKETS
   LEADERBOARD_ENTRIES
@@ -1927,6 +1962,7 @@ type Query {
   event(id: ID!): EventWithUserReservation!
   eventReservation(reservationId: ID!): EventReservation!
   eventReservations(eventId: ID!, page: PageInfo!, query: EventReservationsQueryInput!): EventReservations!
+  eventSeats(eventId: ID!, eventVenueId: ID, page: PageInfo!): EventSeats!
   eventTicketConfiguration(id: ID!): EventTicketConfiguration!
   eventTicketConfigurations(eventId: ID!): [EventTicketConfiguration!]!
   eventVenue(id: ID!): EventVenue!
