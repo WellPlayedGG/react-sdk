@@ -348,6 +348,9 @@ type EventConfiguration {
   """Maximum number of users that can join the same group"""
   maxGroupSize: Float
 
+  """Maximum number of tickets per reservation"""
+  maxTicketsPerReservation: Float
+
   """Condition rules to register to the tournament"""
   registrationConditions: RegistrationConditions
 
@@ -368,6 +371,9 @@ input EventConfigurationInput {
 
   """Maximum number of users that can join the same group"""
   maxGroupSize: Float
+
+  """Maximum number of tickets per reservation"""
+  maxTicketsPerReservation: Float
 
   """Condition rules to register to the tournament"""
   registrationConditions: RegistrationConditionsInput
