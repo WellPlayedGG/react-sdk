@@ -598,7 +598,7 @@ input EventTicketConfigurationCreateInput {
   currency: Currencies!
   description: String!
   eventId: ID!
-  maxCount: Float
+  maxCount: Float!
   name: String!
   price: Float!
   seatTypeId: ID
@@ -1973,7 +1973,7 @@ type Query {
   eventTicketConfigurations(eventId: ID!): [EventTicketConfiguration!]!
   eventVenue(id: ID!): EventVenue!
   eventVenueSeatTypes(page: PageInfo!, venueId: ID!): EventVenueSeatTypes!
-  eventVenueSeats(page: PageInfo!, venueId: ID!): EventVenueSeats!
+  eventVenueSeats(page: PageInfo!, seatTypeId: ID, venueId: ID!): EventVenueSeats!
   eventVenues(page: PageInfo!): EventVenues!
   events(page: PageInfo!, query: EventsQuery!): Events!
   getAvailableRootIdentityProviders: [PublicIdentityProvider!]!
