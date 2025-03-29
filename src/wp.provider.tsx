@@ -9,7 +9,7 @@ import {
 	type OidcProviderProps,
 	useOidcAccessToken,
 } from "@axa-fr/react-oidc";
-import React, { createContext, type PropsWithChildren } from "react";
+import React, { type PropsWithChildren, createContext, useMemo } from "react";
 import { type ApiBaseUrl, type ClientProps, client } from "./api/apollo";
 
 type WPConfigProps = {
@@ -86,11 +86,14 @@ const ProviderWithOidc = ({
 }: PropsWithChildren<Omit<WPConfigProps, "oidcConfig" | "wpAppConfig">>) => {
 	const accessToken = useOidcAccessToken();
 
-	const apiClient = client({
-		token: accessToken?.accessToken ?? undefined,
-		organizationId,
-		...clientConfig,
-	});
+	const apiClient = useMemo(() => {
+		console.log("accessToken", accessToken?.accessToken);
+		return client({
+			token: accessToken?.accessToken ?? undefined,
+			organizationId,
+			...clientConfig,
+		});
+	}, [accessToken?.accessToken, organizationId, clientConfig]);
 
 	return (
 		<ApolloProvider client={apiClient}>
