@@ -1,10 +1,13 @@
 import {
+	type Client,
 	type EventClosedListener,
 	type EventConnectedListener,
 	type EventErrorListener,
 	createClient,
 } from "graphql-ws";
 import { isNil, omitBy } from "lodash";
+
+let oldClient: Client | undefined;
 
 export const createWSClient = ({
 	apiUrl,
@@ -35,6 +38,12 @@ export const createWSClient = ({
 		),
 		keepAlive: 10_000,
 	});
+
+	if (oldClient) {
+		oldClient.dispose();
+	}
+
+	oldClient = client;
 
 	if (listeners) {
 		if (listeners.onConnected) {
