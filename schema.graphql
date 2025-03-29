@@ -1851,6 +1851,12 @@ input PositionInput {
 """Integers that will have a value greater than 0."""
 scalar PositiveInt
 
+type PresenceAnalytics {
+  anonymousSessions: Int!
+  authenticatedSessions: Int!
+  totalSessions: Int!
+}
+
 type PresignedUrl {
   fields: [PresignedUrlField!]!
   url: URL!
@@ -2022,6 +2028,7 @@ type Query {
     skillRatingIds: [ID!]
   ): [PlayerSkillRating!]!
   players(identityProviderProperties: [String!], identityProviders: [ID!], ids: [ID!], page: PageInfo!, query: QueryPlayersInput): Players!
+  presenceAnalytics: PresenceAnalytics!
   searchPlayer(username: String!): [Player!]!
   subscriptionItems: [SubscriptionItem!]!
   tournament(id: ID!): Tournament!
@@ -2184,6 +2191,11 @@ enum StringConditionType {
 enum StripeUiMode {
   EMBEDDED
   HOSTED
+}
+
+type Subscription {
+  presenceUserConnected: UsersConnectedEvent!
+  presenceUserDisconnected: UsersDisconnectedEvent!
 }
 
 type SubscriptionItem {
@@ -2725,6 +2737,22 @@ input UpdateWebhookInput {
   url: String
 }
 
+type UserConnectionEvent {
+  accountId: ID
+  organizationId: ID!
+  playerId: ID
+  serverId: ID!
+  sessionId: ID!
+}
+
+type UserDisconnectEvent {
+  accountId: ID
+  organizationId: ID!
+  playerId: ID
+  serverId: ID!
+  sessionId: ID!
+}
+
 type UserGroup {
   createdAt: DateTime!
   id: ID!
@@ -2763,6 +2791,14 @@ type UserGroups {
 
 input UserGroupsQueryInput {
   ids: [ID!]!
+}
+
+type UsersConnectedEvent {
+  usersConnected: [UserConnectionEvent!]!
+}
+
+type UsersDisconnectedEvent {
+  usersDisconnected: [UserDisconnectEvent!]!
 }
 
 type Variable {
