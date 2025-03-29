@@ -3,7 +3,6 @@ import { useOidc } from "@axa-fr/react-oidc";
 import type { ResultOf } from "gql.tada";
 import { useEffect, useState } from "react";
 import { graphql } from "../../graphql";
-import { useOrganization } from "./organization.hook";
 
 const GET_PLAYERS_QUERY = graphql(`
   query players(
@@ -40,8 +39,6 @@ export const usePlayers = ({
 	playerIds?: string[];
 	skip?: boolean;
 }) => {
-	const { loading: organizationLoading, data: organization } =
-		useOrganization();
 	const [players, setPlayers] = useState<
 		ResultOf<typeof GET_PLAYERS_QUERY>["players"]["nodes"][0][]
 	>([]);
@@ -69,16 +66,16 @@ export const usePlayers = ({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
-		if (!skip && playerIds && organization) {
+		if (!skip && playerIds) {
 			setLoading(true);
 			refetch(playerIds).finally(() => setLoading(false));
 		}
-	}, [skip, playerIds, organization]);
+	}, [skip, playerIds]);
 
 	return {
 		results: players,
 		refetch,
-		loading: loading || organizationLoading,
+		loading,
 	};
 };
 

@@ -1,11 +1,9 @@
 # WellPlayed React SDK
 
-This is the official WellPlayed React SDK. It provides a set of components and hooks to help you integrate WellPlayed
+This is the official [WellPlayed](https://well-played.gg) React SDK. It provides a set of components and hooks to help you integrate WellPlayed
 into your React application and interact with the WellPlayed API.
 
 ## Installation
-
-**WARNING: Not published yet**
 
 ```bash
 yarn add @well-played.gg/react-sdk
@@ -29,7 +27,7 @@ const App = () => {
             client_id: "replace-with-yours", // Your App Client ID
             redirect_uri: `${
                 window.location.protocol
-            }//${window.location.origin}`, // Your redirect URL
+            }//${window.location.origin}/login`, // The /login is required here (any path will work, but it needs a path or you'll get an error)
         }}
     >
         <RouterProvider router={router} />
@@ -38,19 +36,22 @@ const App = () => {
 };
 ```
 
-You can find more usage examples in the [demo](/demo) folder.
+You can find more usage examples in the [demo](https://github.com/WellPlayedGG/react-sdk/tree/master/demo) folder.
 
 ### Components
 
-TODO
+* RichTextEditorContent: A component to show up, securely, HTML-based user content (tournament description, event description, ...)
 
 ### Hooks
 
-TODO
+* usePlayers: Retrieve player profiles from a list of playersIds
+* useConnectedPlayer: Retrieve current connected player profile, permissions, and identities
+* useTournamentTeams: Retrieve the list of teams for a specific tournament, depending on their status
+* useTournamentStep: Retrieve all the data needed to reconstruct a tournament step
 
 ## License
 
-WellPlayed React SDK is [MIT licensed](/LICENSE).
+WellPlayed React SDK is [MIT licensed](https://github.com/WellPlayedGG/react-sdk/tree/master/LICENSE).
 
 ## Stay in touch
 

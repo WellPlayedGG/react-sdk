@@ -4,25 +4,35 @@ import {
 	type EventErrorListener,
 	createClient,
 } from "graphql-ws";
+import { isNil, omitBy } from "lodash";
 
 export const createWSClient = ({
 	apiUrl,
+	organizationId,
 	listeners,
+	lazy = false,
+	token,
 }: {
 	apiUrl: string;
+	organizationId: string;
 	listeners?: {
 		onConnected?: EventConnectedListener;
 		onClosed?: EventClosedListener;
 		onError?: EventErrorListener;
 	};
+	lazy?: boolean;
+	token?: string;
 }) => {
 	const client = createClient({
 		url: `wss://${apiUrl}`,
-		connectionParams: localStorage.getItem("token")
-			? {
-					authorization: `Bearer ${localStorage.getItem("token")}`,
-				}
-			: undefined,
+		lazy,
+		connectionParams: omitBy(
+			{
+				"organization-id": organizationId,
+				authorization: token ? `Bearer ${token}` : undefined,
+			},
+			isNil,
+		),
 		keepAlive: 10_000,
 	});
 

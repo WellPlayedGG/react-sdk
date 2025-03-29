@@ -1,6 +1,12 @@
-import { ApolloClient, HttpLink, from, split } from "@apollo/client";
+import {
+	ApolloClient,
+	type FetchPolicy,
+	HttpLink,
+	from,
+	split,
+} from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
-import {type ErrorHandler, type ErrorResponse, onError} from "@apollo/client/link/error";
+import { type ErrorHandler, onError } from "@apollo/client/link/error";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import {
@@ -23,6 +29,7 @@ export type ClientProps = {
 	token?: string;
 	organizationId: string;
 	invalidationPolicies?: InvalidationPolicies;
+	fetchPolicy?: FetchPolicy;
 	handlers?: {
 		onError?: ErrorHandler;
 		webSocket?: {
@@ -30,6 +37,9 @@ export type ClientProps = {
 			onClosed?: EventClosedListener;
 			onError?: EventErrorListener;
 		};
+	};
+	websocket?: {
+		lazy?: boolean;
 	};
 	apiBaseUrl?: ApiBaseUrl;
 };
@@ -39,6 +49,8 @@ export const client = ({
 	organizationId,
 	invalidationPolicies,
 	handlers,
+	fetchPolicy,
+	websocket,
 	apiBaseUrl,
 }: ClientProps) => {
 	const cache = new InvalidationPolicyCache({
@@ -63,7 +75,13 @@ export const client = ({
 			);
 		},
 		new GraphQLWsLink(
-			createWSClient({ apiUrl: graphqlUrl, listeners: handlers?.webSocket }),
+			createWSClient({
+				apiUrl: graphqlUrl,
+				listeners: handlers?.webSocket,
+				organizationId,
+				lazy: websocket?.lazy,
+				token,
+			}),
 		),
 		from([
 			setContext(async () => {
@@ -90,11 +108,11 @@ export const client = ({
 		link,
 		defaultOptions: {
 			watchQuery: {
-				fetchPolicy: "network-only", // TODO Replace with: "cache-first" and options
+				fetchPolicy: fetchPolicy ?? "network-only",
 				errorPolicy: "ignore",
 			},
 			query: {
-				fetchPolicy: "network-only", // TODO Replace with: "cache-first" and options
+				fetchPolicy: fetchPolicy ?? "network-only",
 				errorPolicy: "all",
 			},
 			mutate: {
