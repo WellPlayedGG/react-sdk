@@ -83,17 +83,18 @@ const ProviderWithOidc = ({
 	children,
 	clientConfig,
 	organizationId,
+	apiBaseUrl,
 }: PropsWithChildren<Omit<WPConfigProps, "oidcConfig" | "wpAppConfig">>) => {
 	const accessToken = useOidcAccessToken();
 
 	const apiClient = useMemo(() => {
-		console.log("accessToken", accessToken?.accessToken);
 		return client({
 			token: accessToken?.accessToken ?? undefined,
 			organizationId,
 			...clientConfig,
+			apiBaseUrl,
 		});
-	}, [accessToken?.accessToken, organizationId, clientConfig]);
+	}, [accessToken?.accessToken, organizationId, clientConfig, apiBaseUrl]);
 
 	return (
 		<ApolloProvider client={apiClient}>
