@@ -5,6 +5,7 @@ import {
 	createClient,
 } from "graphql-ws";
 import { isNil, omitBy } from "lodash";
+import { getToken } from "./auth";
 
 export const createWSClient = ({
 	apiUrl,
@@ -12,6 +13,7 @@ export const createWSClient = ({
 	listeners,
 	lazy = false,
 	token,
+	application,
 }: {
 	apiUrl: string;
 	organizationId: string;
@@ -22,17 +24,29 @@ export const createWSClient = ({
 	};
 	lazy?: boolean;
 	token?: string;
+	application?: {
+		clientId: string;
+		clientSecret: string;
+		oauthUrl: string;
+	};
 }) => {
 	const client = createClient({
 		url: `wss://${apiUrl}`,
 		lazy,
-		connectionParams: omitBy(
-			{
+		connectionParams: async () => {
+			const headers: Record<string, string> = {
 				"organization-id": organizationId,
-				authorization: token ? `Bearer ${token}` : undefined,
-			},
-			isNil,
-		),
+			};
+
+			if (token) {
+				headers.authorization = `Bearer ${token}`;
+			} else if (application) {
+				const accessToken = await getToken(application.clientId, application.clientSecret, application.oauthUrl);
+				headers.authorization = `Bearer ${accessToken}`;
+			}
+
+			return omitBy(headers, isNil);
+		},
 		keepAlive: 10_000,
 	});
 

@@ -21,15 +21,31 @@ import type {
 	EventErrorListener,
 } from "graphql-ws";
 import { isNil, omitBy } from "lodash";
+import { createAuthLink } from "./auth";
 import { createWSClient } from "./ws";
 
 export type ApiBaseUrl = "well-played.gg" | "stg.well-played.gg";
 
 export type ClientProps = {
+	/**
+	 * The authentication token to use for the client.
+	 */
 	token?: string;
+	/**
+	 * The organization ID to use for the client.
+	 */
 	organizationId: string;
+	/**
+	 * The invalidation policies to use for the client.
+	 */
 	invalidationPolicies?: InvalidationPolicies;
+	/**
+	 * The fetch policy to use for the client.
+	 */
 	fetchPolicy?: FetchPolicy;
+	/**
+	 * The handlers to use for the client.
+	 */
 	handlers?: {
 		onError?: ErrorHandler;
 		webSocket?: {
@@ -38,11 +54,27 @@ export type ClientProps = {
 			onError?: EventErrorListener;
 		};
 	};
+	/**
+	 * The websocket options to use for the client.
+	 */
 	websocket?: {
 		lazy?: boolean;
 	};
+	/**
+	 * The base URL to use for the client.
+	 */
 	apiBaseUrl?: ApiBaseUrl;
+	/**
+	 * Whether the client is running in Server mode.
+	 */
 	ssr?: boolean;
+	/**
+	 * The application to use for the client. Only used when running in Server mode as an application (authenticate as the application).
+	 */
+	application?: {
+		clientId: string;
+		clientSecret: string;
+	};
 };
 
 export const createWellPlayedClient = ({
@@ -54,6 +86,7 @@ export const createWellPlayedClient = ({
 	websocket,
 	apiBaseUrl,
 	ssr,
+	application,
 }: ClientProps) => {
 	const cache = new InvalidationPolicyCache({
 		invalidationPolicies: {
@@ -71,6 +104,7 @@ export const createWellPlayedClient = ({
 	}
 
 	const graphqlUrl = `api.warrior.${apiBaseUrl ?? "well-played.gg"}/graphql`;
+	const oauthUrl = `https://oauth.warrior.${apiBaseUrl ?? "well-played.gg"}`;
 	const link = split(
 		({ query }) => {
 			const def = getMainDefinition(query);
@@ -85,6 +119,10 @@ export const createWellPlayedClient = ({
 				organizationId,
 				lazy: websocket?.lazy,
 				token,
+				application: application ? {
+					...application,
+					oauthUrl,
+				} : undefined,
 			}),
 		),
 		from([
@@ -99,6 +137,10 @@ export const createWellPlayedClient = ({
 					),
 				};
 			}),
+			...(application ? [createAuthLink({
+				...application,
+				oauthUrl,
+			})] : []),
 			...(handlers?.onError ? [onError(handlers?.onError)] : []),
 			new HttpLink({
 				uri: `https://${graphqlUrl}`,

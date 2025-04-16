@@ -45,6 +45,7 @@
 	"dependencies": {
 		"@nerdwallet/apollo-cache-policies": "^3.3.3",
 		"apollo3-cache-persist": "^0.15.0",
+		"axios": "^1.8.4",
 		"graphql": "^16.9.0",
 		"graphql-ws": "^5.16.0",
 		"lodash": "^4.17.21"
