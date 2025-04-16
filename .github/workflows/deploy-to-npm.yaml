@@ -64,37 +64,46 @@ jobs:
             git commit -m "chore: update GraphQL schema"
           fi
 
-#      - name: Bump version based on schema diff or manual trigger
-#        run: |
-#          cd packages/typescript-sdk
-#          if [[ "$HAS_BREAKING" == "true" ]]; then
-#            npm version major -m "chore(release): v%s (breaking changes)"
-#          elif [[ "$HAS_DANGEROUS" == "true" ]]; then
-#            npm version minor -m "chore(release): v%s (dangerous changes)"
-#          elif [[ "$HAS_SAFE" == "true" ]]; then
-#            npm version patch -m "chore(release): v%s (safe changes)"
-#          else
-#            npm version minor -m "chore(release): v%s (package updates)"
-#          fi
+      - name: Bump version based on schema diff or manual trigger
+        run: |
+          # Function to bump version in a workspace
+          bump_version() {
+            local pkg=$1
+            cd packages/$pkg
+            if [[ "$HAS_BREAKING" == "true" ]]; then
+              yarn version major -m "chore(release): v%s (breaking changes)"
+            elif [[ "$HAS_DANGEROUS" == "true" ]]; then
+              yarn version minor -m "chore(release): v%s (dangerous changes)"
+            elif [[ "$HAS_SAFE" == "true" ]]; then
+              yarn version patch -m "chore(release): v%s (safe changes)"
+            else
+              yarn version minor -m "chore(release): v%s (package updates)"
+            fi
+            cd ../..
+          }
+
+          # Bump versions for both packages
+          bump_version "typescript-sdk"
+          bump_version "react-sdk"
 
       - name: Push changes and tags
         run: |
           git push
           git push --tags
 
-#      - name: Generate changelog
-#        run: |
-#          yarn conventional-changelog -p angular -i CHANGELOG.md -s
+      - name: Generate changelog
+        run: |
+          yarn conventional-changelog -p angular -i CHANGELOG.md -s
 
-#      - name: Commit changelog
-#        run: |
-#          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
-#            git add CHANGELOG.md
-#            git commit -m "docs(changelog): update for release"
-#            git push
-#          else
-#            echo "No changes to CHANGELOG.md, skipping commit"
-#          fi
+      - name: Commit changelog
+        run: |
+          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
+            git add CHANGELOG.md
+            git commit -m "docs(changelog): update for release"
+            git push
+          else
+            echo "No changes to CHANGELOG.md, skipping commit"
+          fi
 
       - name: Extract version
         id: version
