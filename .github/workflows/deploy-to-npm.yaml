@@ -64,18 +64,18 @@ jobs:
             git commit -m "chore: update GraphQL schema"
           fi
 
-      - name: Bump version based on schema diff or manual trigger
-        run: |
-          cd packages/typescript-sdk
-          if [[ "$HAS_BREAKING" == "true" ]]; then
-            npm version major -m "chore(release): v%s (breaking changes)"
-          elif [[ "$HAS_DANGEROUS" == "true" ]]; then
-            npm version minor -m "chore(release): v%s (dangerous changes)"
-          elif [[ "$HAS_SAFE" == "true" ]]; then
-            npm version patch -m "chore(release): v%s (safe changes)"
-          else
-            npm version minor -m "chore(release): v%s (package updates)"
-          fi
+#      - name: Bump version based on schema diff or manual trigger
+#        run: |
+#          cd packages/typescript-sdk
+#          if [[ "$HAS_BREAKING" == "true" ]]; then
+#            npm version major -m "chore(release): v%s (breaking changes)"
+#          elif [[ "$HAS_DANGEROUS" == "true" ]]; then
+#            npm version minor -m "chore(release): v%s (dangerous changes)"
+#          elif [[ "$HAS_SAFE" == "true" ]]; then
+#            npm version patch -m "chore(release): v%s (safe changes)"
+#          else
+#            npm version minor -m "chore(release): v%s (package updates)"
+#          fi
 
       - name: Push changes and tags
         run: |

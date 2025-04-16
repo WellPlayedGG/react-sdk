@@ -48,6 +48,6 @@
 		"@tiptap/extension-underline": "^2.9.1",
 		"@tiptap/react": "^2.9.1",
 		"@tiptap/starter-kit": "^2.9.1",
-		"@well-played.gg/typescript-sdk": "2.0.0"
+		"@well-played.gg/typescript-sdk": "1.0.0"
 	}
 }
