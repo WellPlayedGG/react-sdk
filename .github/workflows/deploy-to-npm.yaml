@@ -121,7 +121,7 @@ jobs:
 
       - name: Publish to npm
         run: |
-          yarn install --frozen-lockfile
+          yarn install
           cd packages/typescript-sdk
           npm publish --access public
           cd ../react-sdk
