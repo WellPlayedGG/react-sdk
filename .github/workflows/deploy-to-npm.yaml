@@ -82,19 +82,19 @@ jobs:
           git push
           git push --tags
 
-      - name: Generate changelog
-        run: |
-          yarn conventional-changelog -p angular -i CHANGELOG.md -s
+#      - name: Generate changelog
+#        run: |
+#          yarn conventional-changelog -p angular -i CHANGELOG.md -s
 
-      - name: Commit changelog
-        run: |
-          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
-            git add CHANGELOG.md
-            git commit -m "docs(changelog): update for release"
-            git push
-          else
-            echo "No changes to CHANGELOG.md, skipping commit"
-          fi
+#      - name: Commit changelog
+#        run: |
+#          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
+#            git add CHANGELOG.md
+#            git commit -m "docs(changelog): update for release"
+#            git push
+#          else
+#            echo "No changes to CHANGELOG.md, skipping commit"
+#          fi
 
       - name: Extract version
         id: version
