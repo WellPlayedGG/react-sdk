@@ -91,33 +91,33 @@ jobs:
           git push
           git push --tags
 
-      - name: Generate changelog
-        run: |
-          yarn conventional-changelog -p angular -i CHANGELOG.md -s
+#      - name: Generate changelog
+#        run: |
+#          yarn conventional-changelog -p angular -i CHANGELOG.md -s
 
-      - name: Commit changelog
-        run: |
-          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
-            git add CHANGELOG.md
-            git commit -m "docs(changelog): update for release"
-            git push
-          else
-            echo "No changes to CHANGELOG.md, skipping commit"
-          fi
+#      - name: Commit changelog
+#        run: |
+#          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
+#            git add CHANGELOG.md
+#            git commit -m "docs(changelog): update for release"
+#            git push
+#          else
+#            echo "No changes to CHANGELOG.md, skipping commit"
+#          fi
 
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+#      - name: Extract version
+#        id: version
+#        run: |
+#          VERSION=$(node -p "require('./package.json').version")
+#          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Create GitHub Release with Conventional Changelog
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ env.VERSION }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Create GitHub Release with Conventional Changelog
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          tag_name: v${{ env.VERSION }}
+#          generate_release_notes: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npm
         run: |
