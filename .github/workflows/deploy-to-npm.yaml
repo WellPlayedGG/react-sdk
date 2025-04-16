@@ -71,13 +71,13 @@ jobs:
             local pkg=$1
             cd packages/$pkg
             if [[ "$HAS_BREAKING" == "true" ]]; then
-              yarn version major -m "chore(release): v%s (breaking changes)"
+              npm version major -m "chore(release): v%s (breaking changes)"
             elif [[ "$HAS_DANGEROUS" == "true" ]]; then
-              yarn version minor -m "chore(release): v%s (dangerous changes)"
+              npm version minor -m "chore(release): v%s (dangerous changes)"
             elif [[ "$HAS_SAFE" == "true" ]]; then
-              yarn version patch -m "chore(release): v%s (safe changes)"
+              npm version patch -m "chore(release): v%s (safe changes)"
             else
-              yarn version minor -m "chore(release): v%s (package updates)"
+              npm version minor -m "chore(release): v%s (package updates)"
             fi
             cd ../..
           }
