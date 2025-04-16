@@ -1,6 +1,6 @@
-import type { ResultOf, VariablesOf } from "gql.tada";
+import type { ResultOf, VariablesOf } from "@well-played.gg/typescript-sdk";
+import { graphql } from "@well-played.gg/typescript-sdk";
 import { useState } from "react";
-import { graphql } from "../../graphql";
 import { usePaginatedLoadAll } from "./paginated-query.hook";
 import { usePlayers } from "./players.hook";
 

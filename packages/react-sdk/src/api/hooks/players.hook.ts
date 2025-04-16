@@ -1,8 +1,10 @@
 import { useLazyQuery, useQuery } from "@apollo/client";
 import { useOidc } from "@axa-fr/react-oidc";
-import type { ResultOf } from "gql.tada";
+import {
+	type ResultOf,
+	graphql,
+} from "@well-played.gg/typescript-sdk";
 import { useEffect, useState } from "react";
-import { graphql } from "../../graphql";
 
 const GET_PLAYERS_QUERY = graphql(`
   query players(

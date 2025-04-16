@@ -60,12 +60,13 @@ jobs:
         run: |
           if [[ -n "$(git status --porcelain schema.graphql)" ]]; then
             git add schema.graphql
-            git add src/graphql-env.d.ts
+            git add packages/typescript-sdk/src/graphql-env.d.ts
             git commit -m "chore: update GraphQL schema"
           fi
 
       - name: Bump version based on schema diff or manual trigger
         run: |
+          cd packages/typescript-sdk
           if [[ "$HAS_BREAKING" == "true" ]]; then
             npm version major -m "chore(release): v%s (breaking changes)"
           elif [[ "$HAS_DANGEROUS" == "true" ]]; then
@@ -110,6 +111,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npm
-        run: yarn publish --access public
+        run: |
+          cd packages/typescript-sdk
+          npm publish --access public
+          cd ../react-sdk
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -42,9 +42,10 @@ export type ClientProps = {
 		lazy?: boolean;
 	};
 	apiBaseUrl?: ApiBaseUrl;
+	ssr?: boolean;
 };
 
-export const client = ({
+export const createWellPlayedClient = ({
 	token,
 	organizationId,
 	invalidationPolicies,
@@ -52,6 +53,7 @@ export const client = ({
 	fetchPolicy,
 	websocket,
 	apiBaseUrl,
+	ssr,
 }: ClientProps) => {
 	const cache = new InvalidationPolicyCache({
 		invalidationPolicies: {
@@ -61,10 +63,12 @@ export const client = ({
 		},
 	});
 
-	persistCacheSync({
-		cache,
-		storage: new LocalStorageWrapper(window.localStorage),
-	});
+	if (!ssr) {
+		persistCacheSync({
+			cache,
+			storage: new LocalStorageWrapper(window.localStorage),
+		});
+	}
 
 	const graphqlUrl = `api.warrior.${apiBaseUrl ?? "well-played.gg"}/graphql`;
 	const link = split(
@@ -106,6 +110,7 @@ export const client = ({
 	return new ApolloClient({
 		cache,
 		link,
+		ssrMode: ssr,
 		defaultOptions: {
 			watchQuery: {
 				fetchPolicy: fetchPolicy ?? "network-only",

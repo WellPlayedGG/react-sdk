@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client";
-import type { ResultOf, VariablesOf } from "gql.tada";
+import type { ResultOf, VariablesOf } from "@well-played.gg/typescript-sdk";
+import { graphql } from "@well-played.gg/typescript-sdk";
 import { cloneDeep } from "lodash";
-import { graphql } from "../../graphql";
 import { usePaginatedLoadAll } from "./paginated-query.hook";
 import { useTournamentTeams } from "./teams.hook";
 

@@ -4,15 +4,6 @@ import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
 
 export default defineConfig(({ command }) => {
-	if (command === "serve") {
-		// Development settings
-		return {
-			plugins: [react()],
-			server: {
-				open: "/demo/index.html",
-			},
-		};
-	}
 	// Build settings
 	return {
 		plugins: [
@@ -20,7 +11,6 @@ export default defineConfig(({ command }) => {
 			dts({
 				insertTypesEntry: true,
 				rollupTypes: true,
-				copyDtsFiles: true,
 				outDir: "dist",
 				include: ["src"],
 			}),
@@ -33,7 +23,7 @@ export default defineConfig(({ command }) => {
 				fileName: (format) => `wp-react-sdk.${format}.js`,
 			},
 			rollupOptions: {
-				external: ["react", "react-dom"],
+				external: ["react", "react-dom", "@well-played.gg/typescript-sdk"],
 				output: {
 					globals: {
 						react: "React",

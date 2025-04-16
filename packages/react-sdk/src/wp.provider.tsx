@@ -1,16 +1,16 @@
-import {
-	type ApolloClient,
-	ApolloProvider,
-	type NormalizedCacheObject,
-} from "@apollo/client";
+import { ApolloClient, ApolloProvider, NormalizedCacheObject } from "@apollo/client";
 import type { OidcConfiguration } from "@axa-fr/oidc-client";
 import {
 	OidcProvider,
 	type OidcProviderProps,
 	useOidcAccessToken,
 } from "@axa-fr/react-oidc";
+import {
+	type ApiBaseUrl,
+	type ClientProps,
+	createWellPlayedClient,
+} from "@well-played.gg/typescript-sdk";
 import React, { type PropsWithChildren, createContext, useMemo } from "react";
-import { type ApiBaseUrl, type ClientProps, client } from "./api/apollo";
 
 type WPConfigProps = {
 	/**
@@ -88,7 +88,7 @@ const ProviderWithOidc = ({
 	const accessToken = useOidcAccessToken();
 
 	const apiClient = useMemo(() => {
-		return client({
+		return createWellPlayedClient({
 			token: accessToken?.accessToken ?? undefined,
 			organizationId,
 			...clientConfig,

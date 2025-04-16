@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"jsx": "react-jsx",
+		"declaration": true,
+		"declarationDir": "dist",
+		"emitDeclarationOnly": false,
+		"moduleResolution": "bundler",
+		"lib": ["DOM", "ESNext"],
+		"outDir": "dist",
+		"allowSyntheticDefaultImports": true,
+		"sourceMap": true,
+		"types": []
+	},
+	"include": ["src", "src/graphql-env.d.ts"],
+	"exclude": ["node_modules", "dist"]
+}

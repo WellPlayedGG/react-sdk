@@ -1,71 +1,23 @@
 {
-	"name": "@well-played.gg/react-sdk",
-	"version": "1.17.0",
+	"name": "well-played",
+	"private": true,
 	"license": "MIT",
-	"main": "dist/wp-react-sdk.cjs.js",
-	"module": "dist/wp-react-sdk.es.js",
-	"types": "dist/index.d.ts",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/WellPlayedGG/react-sdk.git"
-	},
-	"bugs": {
-		"url": "https://github.com/WellPlayedGG/react-sdk/issues"
-	},
-	"homepage": "https://github.com/WellPlayedGG/react-sdk#readme",
-	"files": [
-		"dist"
+	"workspaces": [
+		"packages/*"
 	],
-	"peerDependencies": {
-		"react": "^18.3.1",
-		"react-dom": "^18.3.1"
-	},
 	"devDependencies": {
-		"@apollo/client": "^3.11.10",
 		"@biomejs/biome": "1.9.4",
 		"@graphql-codegen/cli": "4.0.1",
 		"@graphql-codegen/client-preset": "4.0.1",
 		"@graphql-codegen/introspection": "4.0.0",
-		"@graphql-inspector/cli": "^5.0.8",
-		"@types/lodash": "^4.17.13",
-		"@types/react": "^19.0.0",
-		"@types/react-dom": "^19.0.0",
-		"@vitejs/plugin-react": "^4.3.3",
-		"conventional-changelog-cli": "^5.0.0",
-		"gql.tada": "^1.8.10",
-		"graphql": "^16.9.0",
-		"graphql-ws": "^5.16.0",
-		"react": "^19.0.0",
-		"react-dom": "^19.0.0",
-		"typescript": "^5.6.3",
-		"vite": "^5.4.11",
-		"vite-plugin-dts": "^4.3.0"
-	},
-	"scripts": {
-		"build": "vite build",
-		"dev": "vite",
-		"prepublishOnly": "yarn test && yarn build",
-		"test": "echo \"No tests specified\" && exit 0",
-		"lint": "biome check .",
-		"format": "biome format --write .",
-		"graphql:generate": "graphql-codegen --config codegen.yml && gql-tada generate output && gql-tada check"
+		"@graphql-inspector/cli": "^5.0.8"
 	},
 	"dependencies": {
 		"@apollo/client": "^3.11.10",
-		"@axa-fr/react-oidc": "^7.22.32",
-		"@nerdwallet/apollo-cache-policies": "^3.3.3",
-		"@tiptap/extension-highlight": "^2.9.1",
-		"@tiptap/extension-link": "^2.10.0",
-		"@tiptap/extension-subscript": "^2.9.1",
-		"@tiptap/extension-superscript": "^2.9.1",
-		"@tiptap/extension-text-align": "^2.9.1",
-		"@tiptap/extension-underline": "^2.9.1",
-		"@tiptap/react": "^2.9.1",
-		"@tiptap/starter-kit": "^2.9.1",
-		"apollo3-cache-persist": "^0.15.0",
-		"graphql": "^16.9.0",
-		"graphql-ws": "^5.16.0",
-		"lodash": "^4.17.21"
+		"graphql": "^16.10.0"
 	},
-	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+	"scripts": {
+		"graphql:generate": "graphql-codegen --config codegen.yml && yarn workspace @well-played.gg/typescript-sdk gql-tada:generate && yarn workspace @well-played.gg/typescript-sdk gql-tada:check"
+	},
+	"packageManager": "yarn@4.8.1"
 }
