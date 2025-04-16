@@ -121,9 +121,12 @@ jobs:
 
       - name: Publish to npm
         run: |
-          yarn install
+          # Install dependencies without modifying lockfile
+          yarn install --immutable
+          # Build and publish typescript-sdk
           cd packages/typescript-sdk
           npm publish --access public
+          # Build and publish react-sdk
           cd ../react-sdk
           npm publish --access public
         env:
