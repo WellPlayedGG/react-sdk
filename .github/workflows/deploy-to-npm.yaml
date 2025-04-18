@@ -26,70 +26,70 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
-      - name: Generate current GraphQL schema
-        run: |
-          mkdir -p old-schema
-          mv schema.graphql old-schema/schema.graphql || true
+#      - name: Generate current GraphQL schema
+#        run: |
+#          mkdir -p old-schema
+#          mv schema.graphql old-schema/schema.graphql || true
 
       - name: Generate current GraphQL schema
         run: yarn graphql:generate
 
-      - name: Compare schema
-        id: diff
-        run: |
-          yarn graphql-inspector diff old-schema/schema.graphql schema.graphql > schema.diff || true
-          cat schema.diff
-          echo "HAS_BREAKING=$(grep -q BREAKING schema.diff && echo true || echo false)" >> $GITHUB_ENV
-          echo "HAS_DANGEROUS=$(grep -q DANGEROUS schema.diff && echo true || echo false)" >> $GITHUB_ENV
-          echo "HAS_SAFE=$(grep -q SAFE schema.diff && echo true || echo false)" >> $GITHUB_ENV
-          rm -rf old-schema
-          rm -f schema.diff
+#      - name: Compare schema
+#        id: diff
+#        run: |
+#          yarn graphql-inspector diff old-schema/schema.graphql schema.graphql > schema.diff || true
+#          cat schema.diff
+#          echo "HAS_BREAKING=$(grep -q BREAKING schema.diff && echo true || echo false)" >> $GITHUB_ENV
+#          echo "HAS_DANGEROUS=$(grep -q DANGEROUS schema.diff && echo true || echo false)" >> $GITHUB_ENV
+#          echo "HAS_SAFE=$(grep -q SAFE schema.diff && echo true || echo false)" >> $GITHUB_ENV
+#          rm -rf old-schema
+#          rm -f schema.diff
 
-      - name: Skip if no changes and not manual/push
-        if: env.HAS_BREAKING == 'false' && env.HAS_DANGEROUS == 'false' && env.HAS_SAFE == 'false' && github.event_name != 'workflow_dispatch' && github.event_name != 'push'
-        run: |
-          echo "No schema changes detected and not manually triggered. Skipping release."
-          exit 0
+#      - name: Skip if no changes and not manual/push
+#        if: env.HAS_BREAKING == 'false' && env.HAS_DANGEROUS == 'false' && env.HAS_SAFE == 'false' && github.event_name != 'workflow_dispatch' && github.event_name != 'push'
+#        run: |
+#          echo "No schema changes detected and not manually triggered. Skipping release."
+#          exit 0
 
-      - name: Configure Git
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
+#      - name: Configure Git
+#        run: |
+#          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+#          git config --global user.name "github-actions[bot]"
 
-      - name: Commit schema changes
-        run: |
-          if [[ -n "$(git status --porcelain schema.graphql)" ]]; then
-            git add schema.graphql
-            git add packages/typescript-sdk/src/graphql-env.d.ts
-            git commit -m "chore: update GraphQL schema"
-          fi
+#      - name: Commit schema changes
+#        run: |
+#          if [[ -n "$(git status --porcelain schema.graphql)" ]]; then
+#            git add schema.graphql
+#            git add packages/typescript-sdk/src/graphql-env.d.ts
+#            git commit -m "chore: update GraphQL schema"
+#          fi
 
-      - name: Bump version based on schema diff or manual trigger
-        run: |
-          # Function to bump version in a workspace
-          bump_version() {
-            local pkg=$1
-            cd packages/$pkg
-            if [[ "$HAS_BREAKING" == "true" ]]; then
-              npm version major -m "chore(release): v%s (breaking changes)"
-            elif [[ "$HAS_DANGEROUS" == "true" ]]; then
-              npm version minor -m "chore(release): v%s (dangerous changes)"
-            elif [[ "$HAS_SAFE" == "true" ]]; then
-              npm version patch -m "chore(release): v%s (safe changes)"
-            else
-              npm version minor -m "chore(release): v%s (package updates)"
-            fi
-            cd ../..
-          }
+#      - name: Bump version based on schema diff or manual trigger
+#        run: |
+#          # Function to bump version in a workspace
+#          bump_version() {
+#            local pkg=$1
+#            cd packages/$pkg
+#            if [[ "$HAS_BREAKING" == "true" ]]; then
+#              npm version major -m "chore(release): v%s (breaking changes)"
+#            elif [[ "$HAS_DANGEROUS" == "true" ]]; then
+#              npm version minor -m "chore(release): v%s (dangerous changes)"
+#            elif [[ "$HAS_SAFE" == "true" ]]; then
+#              npm version patch -m "chore(release): v%s (safe changes)"
+#            else
+#              npm version minor -m "chore(release): v%s (package updates)"
+#            fi
+#            cd ../..
+#          }
 
-          # Bump versions for both packages
-          bump_version "typescript-sdk"
-          bump_version "react-sdk"
+#          # Bump versions for both packages
+#          bump_version "typescript-sdk"
+#          bump_version "react-sdk"
 
-      - name: Push changes and tags
-        run: |
-          git push
-          git push --tags
+#      - name: Push changes and tags
+#        run: |
+#          git push
+#          git push --tags
 
 #      - name: Generate changelog
 #        run: |
@@ -121,8 +121,6 @@ jobs:
 
       - name: Publish to npm
         run: |
-          # Install dependencies without modifying lockfile
-          yarn install --immutable
           # Build and publish typescript-sdk
           cd packages/typescript-sdk
           npm publish --access public
