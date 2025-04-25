@@ -3108,7 +3108,7 @@ __metadata:
     "@types/react": "npm:^19.0.0"
     "@types/react-dom": "npm:^19.0.0"
     "@vitejs/plugin-react": "npm:^4.3.3"
-    "@well-played.gg/typescript-sdk": "npm:1.1.0"
+    "@well-played.gg/typescript-sdk": "npm:1.2.0"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
     typescript: "npm:^5.6.3"
@@ -3120,7 +3120,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@well-played.gg/typescript-sdk@npm:1.1.0, @well-played.gg/typescript-sdk@workspace:packages/typescript-sdk":
+"@well-played.gg/typescript-sdk@npm:1.2.0, @well-played.gg/typescript-sdk@workspace:packages/typescript-sdk":
   version: 0.0.0-use.local
   resolution: "@well-played.gg/typescript-sdk@workspace:packages/typescript-sdk"
   dependencies:

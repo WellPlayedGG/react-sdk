@@ -1,6 +1,6 @@
 {
 	"name": "@well-played.gg/react-sdk",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"license": "MIT",
 	"main": "dist/wp-react-sdk.cjs.js",
 	"module": "dist/wp-react-sdk.es.js",
@@ -48,6 +48,6 @@
 		"@tiptap/extension-underline": "^2.9.1",
 		"@tiptap/react": "^2.9.1",
 		"@tiptap/starter-kit": "^2.9.1",
-		"@well-played.gg/typescript-sdk": "1.1.0"
+		"@well-played.gg/typescript-sdk": "1.2.0"
 	}
 }
