@@ -2005,6 +2005,17 @@ type PublicOrganizationIdentityProvider {
   name: String!
 }
 
+type PublicOrganizationIdentityProviderV2 {
+  allowLogin: Boolean!
+  description: String!
+  icon: String
+  id: ID!
+  name: String!
+  organizationId: ID
+  redirectUrl: String
+  requiredForPlayerValidation: Boolean!
+}
+
 type Query {
   availablePermissions: Permissions!
   availableRootIdentityProvider(id: ID!): PublicIdentityProvider!
@@ -2024,7 +2035,7 @@ type Query {
   getAvailableRootIdentityProviders: [PublicIdentityProvider!]!
   getMyAccount: Account!
   identityProvider(id: ID!): OrganizationIdentityProvider!
-  identityProviders: [OrganizationIdentityProvider!]!
+  identityProviders: [PublicOrganizationIdentityProviderV2!]!
   leaderboard(id: ID!): Leaderboard!
   leaderboardCurrentPlayerRanking(input: LeaderboardGetPlayerRankingInput!): LeaderboardSeasonBucketScore!
   leaderboardSeason(id: ID!): LeaderboardSeason!

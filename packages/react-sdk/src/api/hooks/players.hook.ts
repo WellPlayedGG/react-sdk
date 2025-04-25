@@ -24,6 +24,7 @@ const GET_PLAYERS_QUERY = graphql(`
 			  value
 		  }
         identities {
+		  providerId
           properties {
             property
             value
@@ -98,6 +99,7 @@ const GET_MY_PLAYER_QUERY = graphql(`
 				}
 			}
 			identities {
+				providerId
 				properties {
 					property
 					value
