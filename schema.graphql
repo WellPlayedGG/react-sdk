@@ -123,11 +123,13 @@ input CreateOrganizationGroupInput {
 input CreateOrganizationIdentityProvider {
   allowLogin: Boolean!
   description: String!
+  enabled: Boolean!
   icon: String
   identityProviderId: ID
   name: String!
   oauth2Configuration: OAuthClientConfigurationInput
   openidConfiguration: OpenidConfigurationInput
+  requiredForPlayerValidation: Boolean!
 }
 
 input CreateOrganizationInput {
@@ -342,6 +344,11 @@ type Event implements EventInterface {
 }
 
 type EventConfiguration {
+  """
+  If true, a new session will be allowed after the previous one has expired
+  """
+  allowForNewSessionAfterTimeout: Boolean
+
   """Custom fields that are defined on each teams"""
   customFields: [Property!]
 
@@ -357,6 +364,11 @@ type EventConfiguration {
   """
   Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet
   """
+  reservationStatusAfterPayment: EventReservationStatusAfterPayment
+
+  """
+  Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started.
+  """
   reservationStatusAfterRegistration: EventReservationStatusAfterRegistration
 
   """
@@ -366,6 +378,11 @@ type EventConfiguration {
 }
 
 input EventConfigurationInput {
+  """
+  If true, a new session will be allowed after the previous one has expired
+  """
+  allowForNewSessionAfterTimeout: Boolean
+
   """Custom fields that are defined on each teams"""
   customFields: [PropertyInput!]
 
@@ -380,6 +397,11 @@ input EventConfigurationInput {
 
   """
   Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet
+  """
+  reservationStatusAfterPayment: EventReservationStatusAfterPayment
+
+  """
+  Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started.
   """
   reservationStatusAfterRegistration: EventReservationStatusAfterRegistration
 
@@ -453,6 +475,7 @@ enum EventReservationStatus {
   CONFIRMED
   DENIED
   GROUP_NOT_VALID
+  NONE
   NOT_ATTENDING
   PAYMENT_FAILED
   PAYMENT_PENDING
@@ -460,13 +483,20 @@ enum EventReservationStatus {
   PENDING
   PRESENCE_CONFIRMATION_PENDING
   REGISTERED
+  REQUIRES_ADMIN_APPROVAL
   SESSION_EXPIRED
 }
 
-enum EventReservationStatusAfterRegistration {
+enum EventReservationStatusAfterPayment {
   CONFIRMED
   PRESENCE_CONFIRMATION_PENDING
   REGISTERED
+}
+
+enum EventReservationStatusAfterRegistration {
+  NONE
+  PENDING
+  REQUIRES_ADMIN_APPROVAL
 }
 
 type EventReservationTicket {
@@ -488,6 +518,11 @@ type EventReservationTicketWithQrCode {
   seatId: ID
   ticketId: ID!
   updatedAt: DateTime!
+}
+
+input EventReservationUpdateTicketsInput {
+  ticketIdsToAdd: [EventReservationRegisterTicketInput!]
+  ticketIdsToRelease: [ID!]
 }
 
 type EventReservationValidateAndPay {
@@ -1240,8 +1275,10 @@ type Mutation {
   """Delete an event"""
   eventDelete(id: ID!): Boolean!
   eventReservationConfirmPresence(confirmed: Boolean!, eventId: ID!): EventReservation!
+  eventReservationCreate(eventId: ID!): EventReservation!
   eventReservationStartRegistrationSession(eventId: ID!, input: EventReservationRegisterTicketsInput!): EventReservation!
   eventReservationUpdateStatus(confirmPaymentRefundOrCancel: Boolean, reservationId: ID!, status: EventReservationStatus!): EventReservation!
+  eventReservationUpdateTickets(input: EventReservationUpdateTicketsInput!, reservationId: ID!): EventReservation!
   eventReservationValidateAndPay(eventId: ID!, options: EventReservationValidateAndPayInput!): EventReservationValidateAndPay!
   eventTicketConfigurationCreate(input: EventTicketConfigurationCreateInput!): EventTicketConfiguration!
   eventTicketConfigurationDelete(ticketConfigurationId: ID!): EventTicketConfiguration!
@@ -1535,12 +1572,14 @@ type OrganizationIdentityProvider {
   configuration: IdentityProviderConfigurations
   createdAt: DateTime!
   description: String!
+  enabled: Boolean!
   icon: String
   id: ID!
   identityProviderId: ID
   name: String!
   organizationId: ID
   parentIdentityProvider: PublicIdentityProvider
+  requiredForPlayerValidation: Boolean!
   updatedAt: DateTime!
 }
 
@@ -2627,10 +2666,12 @@ input UpdateOrganizationAppInput {
 input UpdateOrganizationIdentityProvider {
   allowLogin: Boolean!
   description: String!
+  enabled: Boolean!
   icon: String
   name: String!
   oauth2Configuration: OAuthClientConfigurationInput
   openidConfiguration: OpenidConfigurationInput
+  requiredForPlayerValidation: Boolean!
 }
 
 input UpdateOrganizationInput {
