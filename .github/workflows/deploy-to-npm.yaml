@@ -27,6 +27,7 @@ jobs:
       - name: Build SDKs
         run: |
           yarn install --immutable
+          yarn graphql:generate
           yarn workspace @well-played.gg/typescript-sdk build
           yarn workspace @well-played.gg/react-sdk build
 
@@ -34,9 +35,6 @@ jobs:
 #        run: |
 #          mkdir -p old-schema
 #          mv schema.graphql old-schema/schema.graphql || true
-
-      - name: Generate current GraphQL schema
-        run: yarn graphql:generate
 
 #      - name: Compare schema
 #        id: diff
