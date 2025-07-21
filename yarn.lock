@@ -3541,7 +3541,7 @@ __metadata:
 
 "@well-played.gg/react-sdk@file:../packages/react-sdk::locator=demo%40workspace%3Ademo":
   version: 2.0.2
-  resolution: "@well-played.gg/react-sdk@file:../packages/react-sdk#../packages/react-sdk::hash=bbf8b5&locator=demo%40workspace%3Ademo"
+  resolution: "@well-played.gg/react-sdk@file:../packages/react-sdk#../packages/react-sdk::hash=a68301&locator=demo%40workspace%3Ademo"
   dependencies:
     "@axa-fr/react-oidc": "npm:^7.22.32"
     "@tiptap/extension-highlight": "npm:^2.9.1"
@@ -3556,7 +3556,7 @@ __metadata:
   peerDependencies:
     react: ^18.3.1
     react-dom: ^18.3.1
-  checksum: 10c0/aa3f4b7fee2799695161a969307c48d75c3c9edecd62e0e85cd1d8111b44b8a75a70310c74631282f68dd825aa45828bc9358249627cb214117dd3f7f9b07928
+  checksum: 10c0/f5e892c4fa57a3472e57736f291a0d81e809923a7d540e66fb7a581606f520b28ce5251cbffeb57e5860e5a9287c70f54db01fe9d0055fe90c63aefd3b748feb
   languageName: node
   linkType: hard
 

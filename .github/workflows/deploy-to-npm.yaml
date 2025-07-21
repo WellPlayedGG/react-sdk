@@ -24,7 +24,7 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - run: yarn install --frozen-lockfile
+      - run: yarn install --immutable
 
 #      - name: Generate current GraphQL schema
 #        run: |
