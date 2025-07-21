@@ -1,6 +1,6 @@
 {
 	"name": "@well-played.gg/typescript-sdk",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"license": "MIT",
 	"main": "dist/wp-ts-sdk.cjs.js",
 	"module": "dist/wp-ts-sdk.es.js",
@@ -25,6 +25,7 @@
 	},
 	"devDependencies": {
 		"@apollo/client": "^3.11.10",
+		"@genql/cli": "^6.3.3",
 		"@types/lodash": "^4.17.13",
 		"conventional-changelog-cli": "^5.0.0",
 		"gql.tada": "^1.8.10",
@@ -39,7 +40,7 @@
 		"test": "echo \"No tests specified\" && exit 0",
 		"lint": "biome check .",
 		"format": "biome format --write .",
-		"gql-tada:generate": "gql-tada generate output",
+		"gql-tada:generate": "gql-tada generate output && genql --endpoint https://api.warrior.well-played.gg/graphql --output ./src/generated",
 		"gql-tada:check": "gql-tada check"
 	},
 	"dependencies": {

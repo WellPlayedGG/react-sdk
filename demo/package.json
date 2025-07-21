@@ -4,7 +4,8 @@
 	"license": "MIT",
 	"private": true,
 	"dependencies": {
-		"@well-played.gg/react-sdk": "file:../",
+		"@well-played.gg/react-sdk": "file:../packages/react-sdk",
+		"@well-played.gg/typescript-sdk": "file:../packages/typescript-sdk",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
 		"react-router-dom": "^6.28.0"

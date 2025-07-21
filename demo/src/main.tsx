@@ -1,7 +1,6 @@
-import { createRoot } from "react-dom/client";
 import { WellPlayedProvider } from "@well-played.gg/react-sdk";
 import React from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { Home } from "./features/home/home";
 import { Tournament } from "./features/tournaments/tournament";
@@ -52,5 +51,6 @@ const App = () => (
 	</WellPlayedProvider>
 );
 
-const root = createRoot(document.getElementById("root"));
+// biome-ignore lint/style/noNonNullAssertion: <explanation>
+const root = createRoot(document.getElementById("root")!);
 root.render(<App />);

@@ -1,6 +1,7 @@
 import { useMutation } from "@apollo/client";
-import { graphql, useConnectedPlayer } from "@well-played.gg/react-sdk";
-import { useEffect } from "react";
+import { useConnectedPlayer } from "@well-played.gg/react-sdk";
+import { graphql } from "@well-played.gg/typescript-sdk";
+import React, { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 
 const UPDATE_ME_PLAYER_PROFILE_MUTATION = graphql(`

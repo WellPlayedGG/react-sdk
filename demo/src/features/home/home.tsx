@@ -1,27 +1,59 @@
-import { useQuery } from "@apollo/client";
-import { graphql } from "@well-played.gg/react-sdk";
+import { useWellPlayed } from "@well-played.gg/react-sdk";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDate } from "../../utils/date.utils";
 
-const LIST_TOURNAMENTS_QUERY = graphql(`
-    query tournaments {
-        tournaments(query: {
-            status: REGISTRATIONS_OPEN,
-            orderBy: REGISTRATIONS_END_AT,
-            orderDirection: ASC,
-        }, page: {first: 10}) {
-            nodes {
-                id
-                title
-                startAt
-                endAt
-            }
-        }
-    }
-`);
+// This file contains an example on how to use the typed client with the useEffect
 
 export const Home = () => {
-	const { loading, error, data } = useQuery(LIST_TOURNAMENTS_QUERY);
+	const { typedClient } = useWellPlayed();
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<Error | null>(null);
+	const [data, setData] = useState<{
+		tournaments: {
+			nodes: {
+				id: string;
+				title: string;
+				startAt: string;
+				endAt: string;
+			}[];
+		};
+	}>();
+
+	useEffect(() => {
+		typedClient
+			.query({
+				tournaments: {
+					__args: {
+						page: {
+							first: 10,
+						},
+						query: {
+							status: "REGISTRATIONS_OPEN",
+							orderBy: "REGISTRATIONS_END_AT",
+							orderDirection: "ASC",
+						},
+					},
+					nodes: {
+						id: true,
+						title: true,
+						startAt: true,
+						endAt: true,
+					},
+				},
+			})
+			.then((data) => {
+				// This data is typed, so the usage is more adapted for server-side tasks, prefer using Apollo Client for client-side
+				// We do not recommend using typedClient for client-side tasks, prefer using Apollo Client for client-side, we also highly recommand using the typed queries generated using gql.tada
+				setData(data);
+			})
+			.catch((error) => {
+				setError(error);
+			})
+			.finally(() => {
+				setLoading(false);
+			});
+	}, [typedClient]);
 
 	return (
 		<div>

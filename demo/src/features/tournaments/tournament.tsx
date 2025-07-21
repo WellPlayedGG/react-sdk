@@ -1,5 +1,7 @@
 import { useQuery } from "@apollo/client";
-import { RichTextEditorContent, graphql } from "@well-played.gg/react-sdk";
+import { RichTextEditorContent } from "@well-played.gg/react-sdk";
+import { graphql } from "@well-played.gg/typescript-sdk";
+import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { formatDate } from "../../utils/date.utils";
 

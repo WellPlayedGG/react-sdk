@@ -1,4 +1,5 @@
 import { useTournamentTeams } from "@well-played.gg/react-sdk";
+import React from "react";
 import { useParams } from "react-router-dom";
 
 export const TournamentTeams = () => {

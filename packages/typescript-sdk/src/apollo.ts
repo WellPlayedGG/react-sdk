@@ -119,10 +119,12 @@ export const createWellPlayedClient = ({
 				organizationId,
 				lazy: websocket?.lazy,
 				token,
-				application: application ? {
-					...application,
-					oauthUrl,
-				} : undefined,
+				application: application
+					? {
+							...application,
+							oauthUrl,
+						}
+					: undefined,
 			}),
 		),
 		from([
@@ -137,10 +139,14 @@ export const createWellPlayedClient = ({
 					),
 				};
 			}),
-			...(application ? [createAuthLink({
-				...application,
-				oauthUrl,
-			})] : []),
+			...(application
+				? [
+						createAuthLink({
+							...application,
+							oauthUrl,
+						}),
+					]
+				: []),
 			...(handlers?.onError ? [onError(handlers?.onError)] : []),
 			new HttpLink({
 				uri: `https://${graphqlUrl}`,

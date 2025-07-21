@@ -1,4 +1,8 @@
-import { ApolloClient, ApolloProvider, NormalizedCacheObject } from "@apollo/client";
+import {
+	type ApolloClient,
+	ApolloProvider,
+	type NormalizedCacheObject,
+} from "@apollo/client";
 import type { OidcConfiguration } from "@axa-fr/oidc-client";
 import {
 	OidcProvider,
@@ -8,6 +12,7 @@ import {
 import {
 	type ApiBaseUrl,
 	type ClientProps,
+	createTypedClient,
 	createWellPlayedClient,
 } from "@well-played.gg/typescript-sdk";
 import React, { type PropsWithChildren, createContext, useMemo } from "react";
@@ -60,12 +65,20 @@ type WPConfigProps = {
 	 * API Base URL
 	 */
 	apiBaseUrl?: ApiBaseUrl;
+	/**
+	 * Typed client configuration
+	 */
+	typedClientConfig?: Omit<
+		Parameters<typeof createTypedClient>[0],
+		"url" | "headers" | "batch" | "keepalive" | "method"
+	>;
 };
 
 // Create a context
 const WPContext = createContext<{
 	organizationId: string;
 	apiClient: ApolloClient<NormalizedCacheObject>;
+	typedClient: ReturnType<typeof createTypedClient>;
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 }>({} as any);
 
@@ -84,6 +97,7 @@ const ProviderWithOidc = ({
 	clientConfig,
 	organizationId,
 	apiBaseUrl,
+	typedClientConfig,
 }: PropsWithChildren<Omit<WPConfigProps, "oidcConfig" | "wpAppConfig">>) => {
 	const accessToken = useOidcAccessToken();
 
@@ -102,6 +116,12 @@ const ProviderWithOidc = ({
 				value={{
 					organizationId,
 					apiClient,
+					typedClient: createTypedClient({
+						apiBaseUrl,
+						organizationId,
+						token: accessToken?.accessToken ?? undefined,
+						...typedClientConfig,
+					}),
 				}}
 			>
 				{children}
