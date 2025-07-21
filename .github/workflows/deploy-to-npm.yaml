@@ -24,7 +24,11 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - run: yarn install --immutable
+      - name: Build SDKs
+        run: |
+          yarn install --immutable
+          yarn workspace @well-played.gg/typescript-sdk build
+          yarn workspace @well-played.gg/react-sdk build
 
 #      - name: Generate current GraphQL schema
 #        run: |

@@ -3541,7 +3541,7 @@ __metadata:
 
 "@well-played.gg/react-sdk@file:../packages/react-sdk::locator=demo%40workspace%3Ademo":
   version: 2.0.2
-  resolution: "@well-played.gg/react-sdk@file:../packages/react-sdk#../packages/react-sdk::hash=285382&locator=demo%40workspace%3Ademo"
+  resolution: "@well-played.gg/react-sdk@file:../packages/react-sdk#../packages/react-sdk::hash=8755cc&locator=demo%40workspace%3Ademo"
   dependencies:
     "@axa-fr/react-oidc": "npm:^7.22.32"
     "@tiptap/extension-highlight": "npm:^2.9.1"
@@ -3556,7 +3556,7 @@ __metadata:
   peerDependencies:
     react: ^18.3.1
     react-dom: ^18.3.1
-  checksum: 10c0/968377ccaaf39b290659b80732843a1d97cfb3168002144928fe698bff56a1ccc19e0e81386e6466310b7ffac19e89547f5c3453a78ba1531074d23e22e01694
+  checksum: 10c0/42aca64681d23b23267e0f9cdecbbf4a9125d879929f0f20fa5b56ae176a460eaa0faf66c6213bc3e26f6b38f7e56cde8386acaf788dc9e78be2b05518f7d032
   languageName: node
   linkType: hard
 
@@ -3590,7 +3590,7 @@ __metadata:
 
 "@well-played.gg/typescript-sdk@file:../packages/typescript-sdk::locator=demo%40workspace%3Ademo":
   version: 1.2.2
-  resolution: "@well-played.gg/typescript-sdk@file:../packages/typescript-sdk#../packages/typescript-sdk::hash=004555&locator=demo%40workspace%3Ademo"
+  resolution: "@well-played.gg/typescript-sdk@file:../packages/typescript-sdk#../packages/typescript-sdk::hash=9be4fd&locator=demo%40workspace%3Ademo"
   dependencies:
     "@nerdwallet/apollo-cache-policies": "npm:^3.3.3"
     apollo3-cache-persist: "npm:^0.15.0"
@@ -3598,7 +3598,7 @@ __metadata:
     graphql: "npm:^16.9.0"
     graphql-ws: "npm:^5.16.0"
     lodash: "npm:^4.17.21"
-  checksum: 10c0/969b67915b31e9ff0c7090141522c1fb1c68d02c3019a5c0f04a92dec0bd9cde9bc74c4b173e8b63a94294cbfbcb664bc4585c94fd88a010297ea8df5359b757
+  checksum: 10c0/cf33f0f7f9bf8151e33b01c001582efbfeb375f14b6697597ef2b57bb001f757470611fd9c754ab480fdd3d3e14c8902664741dd96bc2753c369cd4462dcc5c7
   languageName: node
   linkType: hard
 
