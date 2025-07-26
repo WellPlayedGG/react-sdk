@@ -46,3 +46,5 @@ export const createTypedClient = (
 		method: "POST",
 	});
 };
+
+export type TypedClient = ReturnType<typeof createTypedClient>;
