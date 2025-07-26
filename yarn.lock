@@ -3539,28 +3539,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@well-played.gg/react-sdk@file:../packages/react-sdk::locator=demo%40workspace%3Ademo":
-  version: 2.0.3
-  resolution: "@well-played.gg/react-sdk@file:../packages/react-sdk#../packages/react-sdk::hash=61ab8e&locator=demo%40workspace%3Ademo"
-  dependencies:
-    "@axa-fr/react-oidc": "npm:^7.22.32"
-    "@tiptap/extension-highlight": "npm:^2.9.1"
-    "@tiptap/extension-link": "npm:^2.10.0"
-    "@tiptap/extension-subscript": "npm:^2.9.1"
-    "@tiptap/extension-superscript": "npm:^2.9.1"
-    "@tiptap/extension-text-align": "npm:^2.9.1"
-    "@tiptap/extension-underline": "npm:^2.9.1"
-    "@tiptap/react": "npm:^2.9.1"
-    "@tiptap/starter-kit": "npm:^2.9.1"
-    "@well-played.gg/typescript-sdk": "workspace:*"
-  peerDependencies:
-    react: ^18.3.1
-    react-dom: ^18.3.1
-  checksum: 10c0/80f4036659724cc8e3a44a124bca53966546474a3ae1db282221148e739cf83caef0c818f76f2bbe772a081e75475a3ef931ed716ba65c0fa584952d8d5ba3f1
-  languageName: node
-  linkType: hard
-
-"@well-played.gg/react-sdk@workspace:packages/react-sdk":
+"@well-played.gg/react-sdk@workspace:*, @well-played.gg/react-sdk@workspace:packages/react-sdk":
   version: 0.0.0-use.local
   resolution: "@well-played.gg/react-sdk@workspace:packages/react-sdk"
   dependencies:
@@ -3587,20 +3566,6 @@ __metadata:
     react-dom: ^18.3.1
   languageName: unknown
   linkType: soft
-
-"@well-played.gg/typescript-sdk@file:../packages/typescript-sdk::locator=demo%40workspace%3Ademo":
-  version: 1.2.3
-  resolution: "@well-played.gg/typescript-sdk@file:../packages/typescript-sdk#../packages/typescript-sdk::hash=fabd25&locator=demo%40workspace%3Ademo"
-  dependencies:
-    "@nerdwallet/apollo-cache-policies": "npm:^3.3.3"
-    apollo3-cache-persist: "npm:^0.15.0"
-    axios: "npm:^1.8.4"
-    graphql: "npm:^16.9.0"
-    graphql-ws: "npm:^5.16.0"
-    lodash: "npm:^4.17.21"
-  checksum: 10c0/dc7737bd94d38526a0baa648448753c358a5ca7923ed446ac31d663a94b40fded058d3f87ec8a18e78ab0eae0de251949b7af94000a2d0e7104f14d1c13c06e2
-  languageName: node
-  linkType: hard
 
 "@well-played.gg/typescript-sdk@workspace:*, @well-played.gg/typescript-sdk@workspace:packages/typescript-sdk":
   version: 0.0.0-use.local
@@ -4768,8 +4733,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "demo@workspace:demo"
   dependencies:
-    "@well-played.gg/react-sdk": "file:../packages/react-sdk"
-    "@well-played.gg/typescript-sdk": "file:../packages/typescript-sdk"
+    "@well-played.gg/react-sdk": "workspace:*"
+    "@well-played.gg/typescript-sdk": "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-router-dom: "npm:^6.28.0"
