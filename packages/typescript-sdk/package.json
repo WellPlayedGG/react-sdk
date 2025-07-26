@@ -13,7 +13,9 @@
 		"url": "https://github.com/WellPlayedGG/react-sdk/issues"
 	},
 	"homepage": "https://github.com/WellPlayedGG/react-sdk#readme",
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"exports": {
 		".": {
 			"import": "./dist/wp-ts-sdk.es.js",

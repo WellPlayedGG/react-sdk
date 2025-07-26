@@ -3540,8 +3540,8 @@ __metadata:
   linkType: hard
 
 "@well-played.gg/react-sdk@file:../packages/react-sdk::locator=demo%40workspace%3Ademo":
-  version: 2.0.2
-  resolution: "@well-played.gg/react-sdk@file:../packages/react-sdk#../packages/react-sdk::hash=8755cc&locator=demo%40workspace%3Ademo"
+  version: 2.0.3
+  resolution: "@well-played.gg/react-sdk@file:../packages/react-sdk#../packages/react-sdk::hash=da447c&locator=demo%40workspace%3Ademo"
   dependencies:
     "@axa-fr/react-oidc": "npm:^7.22.32"
     "@tiptap/extension-highlight": "npm:^2.9.1"
@@ -3556,7 +3556,7 @@ __metadata:
   peerDependencies:
     react: ^18.3.1
     react-dom: ^18.3.1
-  checksum: 10c0/42aca64681d23b23267e0f9cdecbbf4a9125d879929f0f20fa5b56ae176a460eaa0faf66c6213bc3e26f6b38f7e56cde8386acaf788dc9e78be2b05518f7d032
+  checksum: 10c0/db020115e82a52908e057a498489d0ce4b0c19a7286b9b25f1b24ae0c0e037eaa0c3c814881099a209d4c83300652a4befc85d01510f150658dc1bddfedd7764
   languageName: node
   linkType: hard
 
@@ -3589,8 +3589,8 @@ __metadata:
   linkType: soft
 
 "@well-played.gg/typescript-sdk@file:../packages/typescript-sdk::locator=demo%40workspace%3Ademo":
-  version: 1.2.2
-  resolution: "@well-played.gg/typescript-sdk@file:../packages/typescript-sdk#../packages/typescript-sdk::hash=9be4fd&locator=demo%40workspace%3Ademo"
+  version: 1.2.3
+  resolution: "@well-played.gg/typescript-sdk@file:../packages/typescript-sdk#../packages/typescript-sdk::hash=255065&locator=demo%40workspace%3Ademo"
   dependencies:
     "@nerdwallet/apollo-cache-policies": "npm:^3.3.3"
     apollo3-cache-persist: "npm:^0.15.0"
@@ -3598,7 +3598,7 @@ __metadata:
     graphql: "npm:^16.9.0"
     graphql-ws: "npm:^5.16.0"
     lodash: "npm:^4.17.21"
-  checksum: 10c0/cf33f0f7f9bf8151e33b01c001582efbfeb375f14b6697597ef2b57bb001f757470611fd9c754ab480fdd3d3e14c8902664741dd96bc2753c369cd4462dcc5c7
+  checksum: 10c0/8c74fc0e59ce2316afa2a14b998a8a01e0f291f94b05cad7af734bc06d732c9dda0dad4d81bd2ff570c37e025ca83943617c84d7bfe50d16f1058d15eb61ee7d
   languageName: node
   linkType: hard
 
