@@ -79,6 +79,7 @@ const WPContext = createContext<{
 	organizationId: string;
 	apiClient: ApolloClient<NormalizedCacheObject>;
 	typedClient: ReturnType<typeof createTypedClient>;
+	accessToken?: string;
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 }>({} as any);
 
@@ -122,6 +123,7 @@ const ProviderWithOidc = ({
 						token: accessToken?.accessToken ?? undefined,
 						...typedClientConfig,
 					}),
+					accessToken: accessToken?.accessToken ?? undefined,
 				}}
 			>
 				{children}
