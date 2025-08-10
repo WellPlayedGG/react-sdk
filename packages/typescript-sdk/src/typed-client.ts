@@ -1,4 +1,4 @@
-import { isNil, omitBy } from "lodash";
+import { isNil, omit, omitBy } from "lodash";
 import { getToken } from "./auth";
 import { createClient } from "./generated";
 import type { ClientOptions } from "./generated/runtime";
@@ -14,10 +14,9 @@ export const createTypedClient = (
 		};
 	} & Omit<ClientOptions, "url" | "headers" | "batch" | "keepalive" | "method">,
 ) => {
-	const url = props.apiBaseUrl
-		? `https://api.warrior.${props.apiBaseUrl}/graphql`
-		: undefined;
-	const oauthUrl = `https://oauth.warrior.${props.apiBaseUrl ?? "well-played.gg"}`;
+	const apiBaseUrl = props.apiBaseUrl ?? "well-played.gg";
+	const url = `https://api.warrior.${apiBaseUrl}/graphql`;
+	const oauthUrl = `https://oauth.warrior.${apiBaseUrl}`;
 	return createClient({
 		url,
 		batch: {
@@ -44,6 +43,7 @@ export const createTypedClient = (
 		},
 		keepalive: true,
 		method: "POST",
+		...omit(props, "apiBaseUrl", "application", "token", "organizationId"),
 	});
 };
 

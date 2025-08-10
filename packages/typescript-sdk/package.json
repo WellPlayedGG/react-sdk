@@ -1,6 +1,6 @@
 {
 	"name": "@well-played.gg/typescript-sdk",
-	"version": "1.2.4",
+	"version": "1.2.5",
 	"license": "MIT",
 	"main": "dist/wp-ts-sdk.cjs.js",
 	"module": "dist/wp-ts-sdk.es.js",
