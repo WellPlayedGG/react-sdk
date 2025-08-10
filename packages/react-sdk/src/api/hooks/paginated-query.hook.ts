@@ -7,6 +7,7 @@ import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { TadaDocumentNode } from "gql.tada";
 import type { FieldNode, OperationDefinitionNode } from "graphql/language/ast";
 import { useEffect, useState } from "react";
+import { useWellPlayed } from "../../wp.provider";
 
 /**
  * Fetches a paginated query and provides methods to fetch more data
@@ -26,6 +27,7 @@ export const usePaginatedQuery = <TNodeChild, TData, TVariables>(
 		pageSize?: number;
 	},
 ) => {
+	const {apiClient} = useWellPlayed();
 	const { data, loading, refetch, fetchMore } = useQuery(query, {
 		...options,
 		notifyOnNetworkStatusChange: true,
@@ -36,6 +38,7 @@ export const usePaginatedQuery = <TNodeChild, TData, TVariables>(
 			},
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} as any,
+		client: apiClient,
 	});
 	const elemName = (
 		(query.definitions[0] as OperationDefinitionNode).selectionSet
@@ -108,7 +111,11 @@ export const usePaginatedLoadAll = <TNodeChild, TData, TVariables>(
 ) => {
 	const [loading, setLoading] = useState(!options?.skip);
 	const [results, setResults] = useState<TNodeChild[]>([]);
-	const [fetchResults] = useLazyQuery(query, options);
+	const {apiClient} = useWellPlayed();
+	const [fetchResults] = useLazyQuery(query, {
+		...options,
+		client: apiClient,
+	});
 
 	const fetchAll = async (variables?: NoInfer<Omit<TVariables, "page">>) => {
 		const elemName = (

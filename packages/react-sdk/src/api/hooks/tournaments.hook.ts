@@ -2,6 +2,7 @@ import { useQuery } from "@apollo/client";
 import type { ResultOf, VariablesOf } from "@well-played.gg/typescript-sdk";
 import { graphql } from "@well-played.gg/typescript-sdk";
 import { cloneDeep } from "lodash";
+import { useWellPlayed } from "../../wp.provider";
 import { usePaginatedLoadAll } from "./paginated-query.hook";
 import { useTournamentTeams } from "./teams.hook";
 
@@ -92,6 +93,7 @@ export const useTournamentStep = ({
 	loading: boolean;
 	groups: Group[] | undefined;
 } => {
+	const {apiClient} = useWellPlayed();
 	const { loading: loadingStepShape, data: stepShape } = useQuery(
 		TOURNAMENT_STEP_SHAPE_QUERY,
 		{
@@ -99,6 +101,7 @@ export const useTournamentStep = ({
 				stepId,
 			},
 			skip,
+			client: apiClient,
 		},
 	);
 	const { loading: loadingScores, results: scores } = usePaginatedLoadAll<

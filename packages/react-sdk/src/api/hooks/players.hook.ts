@@ -5,6 +5,7 @@ import {
 	graphql,
 } from "@well-played.gg/typescript-sdk";
 import { useEffect, useState } from "react";
+import { useWellPlayed } from "../../wp.provider";
 
 const GET_PLAYERS_QUERY = graphql(`
   query players(
@@ -42,12 +43,15 @@ export const usePlayers = ({
 	playerIds?: string[];
 	skip?: boolean;
 }) => {
+	const {apiClient} = useWellPlayed();
 	const [players, setPlayers] = useState<
 		ResultOf<typeof GET_PLAYERS_QUERY>["players"]["nodes"][0][]
 	>([]);
 	const [loading, setLoading] = useState(!skip);
 
-	const [fetch] = useLazyQuery(GET_PLAYERS_QUERY);
+	const [fetch] = useLazyQuery(GET_PLAYERS_QUERY, {
+		client: apiClient,
+	});
 
 	const refetch = async (playerIds: string[]) => {
 		const result: ResultOf<typeof GET_PLAYERS_QUERY>["players"]["nodes"][0][] =
@@ -111,9 +115,11 @@ const GET_MY_PLAYER_QUERY = graphql(`
 
 export const useConnectedPlayer = () => {
 	const oidc = useOidc();
+	const {apiClient} = useWellPlayed();
 	const { data, loading, refetch } = useQuery(GET_MY_PLAYER_QUERY, {
 		skip: !oidc.isAuthenticated,
 		notifyOnNetworkStatusChange: true,
+		client: apiClient,
 	});
 
 	return {
