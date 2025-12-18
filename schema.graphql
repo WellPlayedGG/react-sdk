@@ -139,6 +139,7 @@ input CreateOrganizationInput {
 }
 
 input CreatePlatformInput {
+  appId: String
   configuration: PlatformConfigurationInput
   name: String!
   subdomain: String!
@@ -156,7 +157,6 @@ input CreatePlayerInput {
   description: String!
   organizationCustomId: String
   ownerId: ID
-  profilePicUrl: String
   username: String!
 }
 
@@ -203,10 +203,47 @@ input CreateWebhookInput {
   url: String!
 }
 
-enum Currencies {
-  EUR
-  GBP
-  USD
+type Currencies {
+  edges: [CurrencyEdge!]!
+  nodes: [Currency!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+type Currency {
+  createdAt: DateTime!
+  description: String!
+  externalId: String
+  hidden: Boolean!
+  id: ID!
+  metadata: [PropertyValue!]!
+  name: String!
+  organizationId: String!
+  symbol: String!
+  updatedAt: DateTime!
+}
+
+input CurrencyCreateInput {
+  description: String!
+  externalId: String
+  hidden: Boolean!
+  metadata: [PropertyValueInput!]!
+  name: String!
+  symbol: String!
+}
+
+type CurrencyEdge {
+  cursor: String!
+  node: [Currency!]!
+}
+
+input CurrencyUpdateInput {
+  description: String
+  externalId: String
+  hidden: Boolean
+  metadata: [PropertyValueInput!]
+  name: String
+  symbol: String
 }
 
 type CustomDomainData {
@@ -322,6 +359,111 @@ A field whose value conforms to the standard internet email address format as sp
 """
 scalar EmailAddress
 
+type EmailConfiguration {
+  emailField: PlayerField!
+  from: String!
+  fromName: String
+  host: String!
+  password: String
+  port: Float
+  replyTo: String
+  replyToName: String
+  secure: Boolean!
+  username: String
+}
+
+input EmailConfigurationInput {
+  emailField: PlayerFieldInput!
+  from: String!
+  fromName: String
+  host: String!
+  password: String
+  port: Float
+  replyTo: String
+  replyToName: String
+  secure: Boolean!
+  username: String
+}
+
+input EmailSentFromCustomInput {
+  body: String!
+  emailField: PlayerFieldInput!
+  playerIds: ID
+  subject: String!
+}
+
+input EmailSentFromTemplateInput {
+  playerIds: ID
+  triggerEvent: EmailTriggerEvents!
+  variables: [PropertyValueInput!]!
+}
+
+type EmailTemplate {
+  contents: String!
+  createdAt: DateTime!
+  default: Boolean!
+  id: ID!
+  name: String!
+  organizationId: ID!
+  title: String!
+  triggerEvent: EmailTriggerEvents!
+  updatedAt: DateTime!
+}
+
+type EmailTemplateConfiguration {
+  availableVariables: [EmailTemplateConfigurationAvailableVariables!]!
+  description: String!
+  name: String!
+  triggerEvent: EmailTriggerEvents!
+}
+
+type EmailTemplateConfigurationAvailableVariables {
+  description: String!
+  name: String!
+}
+
+input EmailTemplateCreateInput {
+  contents: String!
+  default: Boolean!
+  name: String!
+  title: String!
+  triggerEvent: EmailTriggerEvents!
+}
+
+type EmailTemplateEdge {
+  cursor: String!
+  node: [EmailTemplate!]!
+}
+
+input EmailTemplateUpdateInput {
+  contents: String
+  default: Boolean
+  name: String
+  title: String
+  triggerEvent: EmailTriggerEvents
+}
+
+type EmailTemplates {
+  edges: [EmailTemplateEdge!]!
+  nodes: [EmailTemplate!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+enum EmailTriggerEvents {
+  EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_CONFIRMED
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_DENIED
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NONE
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NOT_ATTENDING
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PENDING
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PRESENCE_CONFIRMATION_PENDING
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REGISTERED
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REQUIRES_ADMIN_APPROVAL
+  EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_SESSION_EXPIRED
+  EVENT_REGISTRATION_COMPLETED
+}
+
 type Event implements EventInterface {
   configuration: EventConfiguration
   createdAt: DateTime!
@@ -344,6 +486,9 @@ type Event implements EventInterface {
 }
 
 type EventConfiguration {
+  """Allow to reserve more tickets than group members"""
+  allowForMoreTicketsThanGroupMembers: Boolean
+
   """
   If true, a new session will be allowed after the previous one has expired
   """
@@ -352,14 +497,11 @@ type EventConfiguration {
   """Custom fields that are defined on each teams"""
   customFields: [Property!]
 
-  """Maximum number of users that can join the same group"""
-  maxGroupSize: Float
+  """Configuration of the group"""
+  groupConfiguration: UserGroupConfiguration
 
   """Maximum number of tickets per reservation"""
   maxTicketsPerReservation: Float
-
-  """Condition rules to register to the tournament"""
-  registrationConditions: RegistrationConditions
 
   """
   Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet
@@ -370,6 +512,11 @@ type EventConfiguration {
   Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started.
   """
   reservationStatusAfterRegistration: EventReservationStatusAfterRegistration
+
+  """
+  If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL
+  """
+  seatAssignmentMode: SeatAssignmentMode
 
   """
   The number of seconds before registration session expires, default is 15 minutes
@@ -378,6 +525,9 @@ type EventConfiguration {
 }
 
 input EventConfigurationInput {
+  """Allow to reserve more tickets than group members"""
+  allowForMoreTicketsThanGroupMembers: Boolean
+
   """
   If true, a new session will be allowed after the previous one has expired
   """
@@ -386,14 +536,11 @@ input EventConfigurationInput {
   """Custom fields that are defined on each teams"""
   customFields: [PropertyInput!]
 
-  """Maximum number of users that can join the same group"""
-  maxGroupSize: Float
+  """Configuration of the group"""
+  groupConfiguration: UserGroupConfigurationInput
 
   """Maximum number of tickets per reservation"""
   maxTicketsPerReservation: Float
-
-  """Condition rules to register to the tournament"""
-  registrationConditions: RegistrationConditionsInput
 
   """
   Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet
@@ -404,6 +551,11 @@ input EventConfigurationInput {
   Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started.
   """
   reservationStatusAfterRegistration: EventReservationStatusAfterRegistration
+
+  """
+  If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL
+  """
+  seatAssignmentMode: SeatAssignmentMode
 
   """
   The number of seconds before registration session expires, default is 15 minutes
@@ -453,6 +605,7 @@ type EventReservation {
   createdAt: DateTime!
   eventId: ID!
   groupId: ID!
+  groupStatus: UserGroupStatus!
   id: ID!
   name: String!
   sessionValidUntil: DateTime!
@@ -474,7 +627,6 @@ input EventReservationRegisterTicketsInput {
 enum EventReservationStatus {
   CONFIRMED
   DENIED
-  GROUP_NOT_VALID
   NONE
   NOT_ATTENDING
   PAYMENT_FAILED
@@ -500,6 +652,7 @@ enum EventReservationStatusAfterRegistration {
 }
 
 type EventReservationTicket {
+  configuration: EventReservationTicketConfiguration
   createdAt: DateTime!
   groupMemberId: ID
   id: ID!
@@ -509,7 +662,17 @@ type EventReservationTicket {
   updatedAt: DateTime!
 }
 
+type EventReservationTicketConfiguration {
+  customFields: [PropertyConfigWithValue!]!
+}
+
+input EventReservationTicketConfigurationInput {
+  customFields: [PropertyValueInput!]!
+  ticketId: ID!
+}
+
 type EventReservationTicketWithQrCode {
+  configuration: EventReservationTicketConfiguration
   createdAt: DateTime!
   groupMemberId: ID
   id: ID!
@@ -521,6 +684,7 @@ type EventReservationTicketWithQrCode {
 }
 
 input EventReservationUpdateTicketsInput {
+  ticketConfigurations: [EventReservationTicketConfigurationInput!]
   ticketIdsToAdd: [EventReservationRegisterTicketInput!]
   ticketIdsToRelease: [ID!]
 }
@@ -537,7 +701,7 @@ input EventReservationValidateAndPayInput {
   canceledUrl: String
 
   """
-  The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method’s app or site. This parameter is required if uiMode is 'embedded'.
+  The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method's app or site. This parameter is required if uiMode is 'embedded'.
   """
   returnUrl: String
 
@@ -552,6 +716,7 @@ type EventReservationWithTicketsAndQrCode {
   createdAt: DateTime!
   eventId: ID!
   groupId: ID!
+  groupStatus: UserGroupStatus!
   id: ID!
   name: String!
   sessionValidUntil: DateTime!
@@ -568,6 +733,7 @@ type EventReservations {
 }
 
 input EventReservationsQueryInput {
+  filterByGroupStatus: UserGroupStatus
   filterByPlayerIdentityProviderProperties: [IdentityProviderPropertyInput!]
   filterByPlayerProperties: [PropertyValueInput!]
   filterByPlayerUsernameQuery: String
@@ -589,6 +755,8 @@ type EventSeat {
   createdAt: DateTime!
   id: ID!
   name: String!
+  reservedByGroupMemberId: ID
+  reservedByReservationId: ID
   reservedByTicketId: ID
   seatTypeId: ID!
   status: EventSeatStatus!
@@ -615,8 +783,9 @@ type EventSeats {
 
 type EventTicketConfiguration {
   buyable: Boolean!
+  configuration: EventTicketConfigurationConfiguration
   createdAt: DateTime!
-  currency: Currencies!
+  currency: ShopCurrencies!
   currentCount: Float!
   description: String!
   eventId: ID!
@@ -628,9 +797,18 @@ type EventTicketConfiguration {
   updatedAt: DateTime!
 }
 
+type EventTicketConfigurationConfiguration {
+  customFields: [Property!]!
+}
+
+input EventTicketConfigurationConfigurationInput {
+  customFields: [PropertyInput!]!
+}
+
 input EventTicketConfigurationCreateInput {
   buyable: Boolean!
-  currency: Currencies!
+  configuration: EventTicketConfigurationConfigurationInput
+  currency: ShopCurrencies!
   description: String!
   eventId: ID!
   maxCount: Float!
@@ -641,7 +819,8 @@ input EventTicketConfigurationCreateInput {
 
 input EventTicketConfigurationUpdateInput {
   buyable: Boolean
-  currency: Currencies
+  configuration: EventTicketConfigurationConfigurationInput
+  currency: ShopCurrencies
   description: String
   maxCount: Float
   name: String
@@ -963,6 +1142,83 @@ enum IdentityProviderType {
   OPENID
 }
 
+type Item {
+  categoryId: ID
+  createdAt: DateTime!
+  description: String!
+  externalId: String
+  id: ID!
+  metadata: [PropertyValue!]!
+  name: String!
+  organizationId: ID!
+  updatedAt: DateTime!
+}
+
+type ItemCategories {
+  edges: [ItemCategoryEdge!]!
+  nodes: [ItemCategory!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+type ItemCategory {
+  createdAt: DateTime!
+  description: String!
+  externalId: String
+  id: ID!
+  metadata: [PropertyValue!]!
+  name: String!
+  organizationId: ID!
+  updatedAt: DateTime!
+}
+
+input ItemCategoryCreateInput {
+  description: String!
+  externalId: String
+  metadata: [PropertyValueInput!]!
+  name: String!
+}
+
+type ItemCategoryEdge {
+  cursor: String!
+  node: [ItemCategory!]!
+}
+
+input ItemCategoryUpdateInput {
+  description: String
+  externalId: String
+  metadata: [PropertyValueInput!]
+  name: String
+}
+
+input ItemCreateInput {
+  categoryId: ID
+  description: String!
+  externalId: String
+  metadata: [PropertyValueInput!]!
+  name: String!
+}
+
+type ItemEdge {
+  cursor: String!
+  node: [Item!]!
+}
+
+input ItemUpdateInput {
+  categoryId: ID
+  description: String
+  externalId: String
+  metadata: [PropertyValueInput!]
+  name: String
+}
+
+type Items {
+  edges: [ItemEdge!]!
+  nodes: [Item!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -1249,6 +1505,9 @@ type Mutation {
   createTournament(input: CreateTournamentInput!): Tournament!
   createTournamentStep(configuration: StepConfigurationInput!, step: CreateTournamentStepInput!, tournamentId: ID!): TournamentStep!
   createWebhook(input: CreateWebhookInput!): Webhook!
+  currencyCreate(input: CurrencyCreateInput!): Currency!
+  currencyDelete(id: ID!): Currency!
+  currencyUpdate(id: ID!, input: CurrencyUpdateInput!): Currency!
   deleteAccount(id: ID!): Boolean!
   deleteAnyTournamentTeam(teamId: ID!): Boolean!
   deleteConfiguration(id: ID!): Boolean!
@@ -1268,18 +1527,24 @@ type Mutation {
   deleteTournamentTeam(tournamentId: ID!): Boolean!
   deleteTournamentTeamInvite(playerId: ID!, teamId: ID!): Boolean!
   deleteWebhook(id: ID!): Webhook!
+  emailConfigurationUpdate(input: EmailConfigurationInput!): EmailConfiguration!
+  emailSent(fromCustom: EmailSentFromCustomInput, fromTemplate: EmailSentFromTemplateInput): Boolean!
+  emailTemplateCreate(input: EmailTemplateCreateInput!): EmailTemplate!
+  emailTemplateDelete(id: ID!): EmailTemplate!
+  emailTemplateUpdate(id: ID!, input: EmailTemplateUpdateInput!): EmailTemplate!
 
   """Create a new event"""
   eventCreate(input: EventCreateInput!): Event!
 
   """Delete an event"""
   eventDelete(id: ID!): Boolean!
+  eventReservationCancel(reservationId: ID!): EventReservation!
   eventReservationConfirmPresence(confirmed: Boolean!, eventId: ID!): EventReservation!
   eventReservationCreate(eventId: ID!): EventReservation!
   eventReservationStartRegistrationSession(eventId: ID!, input: EventReservationRegisterTicketsInput!): EventReservation!
   eventReservationUpdateStatus(confirmPaymentRefundOrCancel: Boolean, reservationId: ID!, status: EventReservationStatus!): EventReservation!
   eventReservationUpdateTickets(input: EventReservationUpdateTicketsInput!, reservationId: ID!): EventReservation!
-  eventReservationValidateAndPay(eventId: ID!, options: EventReservationValidateAndPayInput!): EventReservationValidateAndPay!
+  eventReservationValidateAndPay(eventId: ID!, options: EventReservationValidateAndPayInput!, ticketConfigurations: [EventReservationTicketConfigurationInput!]): EventReservationValidateAndPay!
   eventTicketConfigurationCreate(input: EventTicketConfigurationCreateInput!): EventTicketConfiguration!
   eventTicketConfigurationDelete(ticketConfigurationId: ID!): EventTicketConfiguration!
   eventTicketConfigurationUpdate(input: EventTicketConfigurationUpdateInput!, ticketConfigurationId: ID!): EventTicketConfiguration!
@@ -1297,13 +1562,19 @@ type Mutation {
   eventVenueValidateImage(id: ID!): EventVenue!
   generateTournamentStep(stepId: ID!, teamsCount: Int!): Boolean!
   inviteTournamentTeamMember(playerId: ID!, tournamentId: ID!): Boolean!
+  itemCategoryCreate(input: ItemCategoryCreateInput!): ItemCategory!
+  itemCategoryDelete(id: ID!): ItemCategory!
+  itemCategoryUpdate(id: ID!, input: ItemCategoryUpdateInput!): ItemCategory!
+  itemCreate(input: ItemCreateInput!): Item!
+  itemDelete(id: ID!): Item!
+  itemUpdate(id: ID!, input: ItemUpdateInput!): Item!
   leaderboardRegisterPlayerScore(input: LeaderboardRegisterPlayerScoreInput!): LeaderboardSeasonBucketScore!
   organizationPaymentCollectionConfigurationCreateOrUpdateAccount: String!
   organizationSkillRatingCreate(input: OrganizationSkillRatingCreateInput!): OrganizationSkillRating!
   organizationSkillRatingDelete(id: ID!): Void!
   organizationSkillRatingUpdate(id: ID!, input: OrganizationSkillRatingUpdateInput!): OrganizationSkillRating!
   organizationSkillRatingsRegisterMatch(input: OrganizationSkillRatingsRegisterMatchInput!, organizationSkillRatingId: ID!): [OrganizationSkillRatingsRegisterMatchPlayer!]!
-  organizationSubscriptionItemsUpdate(coupon: String, items: [OrganizationSubscriptionItemUpdateInput!]!): Void!
+  organizationSubscriptionItemsUpdate(coupon: String, items: [OrganizationSubscriptionItemUpdateInput!]!, referral: String): Void!
   platformCreate(input: CreatePlatformInput!): Platform!
   platformDelete(id: ID!): Void!
   platformFileCreate(input: PlatformCdnFileCreateInput!, platformId: ID, templateId: ID): PlatformCdnFile!
@@ -1320,6 +1591,9 @@ type Mutation {
   platformTemplateDelete(id: ID!): Void!
   platformTemplateUpdate(id: ID!, input: UpdatePlatformTemplateInput!): PlatformTemplate!
   platformUpdate(id: ID!, input: UpdatePlatformInput!): Platform!
+  playerCurrencyUpdate(input: [PlayerCurrencyUpdateInput!]!, playerId: ID!): PlayerCurrency!
+  playerItemsUpdate(input: PlayerItemsUpdateInput!, playerId: ID!): [PlayerItem!]!
+  playerShopProductPurshase(input: PlayerShopProductPurshaseInput!, paymentConfig: PaymentInput, shopId: ID!): PaymentUrlAndClientSecret!
   regenerateWebhookSecret(id: ID!): Webhook!
   registerCustomTournamentTeams(input: RegisterCustomTeamsInput!, tournamentId: ID!): [TournamentTeam!]!
   registerTournamentTeam(input: RegisterTournamentTeamInput!, tournamentId: ID!): TournamentTeam!
@@ -1327,6 +1601,15 @@ type Mutation {
   seedTournamentStep(input: SeedingInput!, stepId: ID!): Boolean!
   setOrganizationAttachedApp(input: SetOrganizationAttachedAppInput!): OrganizationAttachedApp!
   setOrganizationMembership(input: SetOrganizationMembershipInput!): OrganizationMember!
+  shopCategoryCreate(input: ShopCategoryCreateInput!): ShopCategory!
+  shopCategoryDelete(id: ID!): ShopCategory!
+  shopCategoryUpdate(id: ID!, input: ShopCategoryUpdateInput!): ShopCategory!
+  shopCreate(input: ShopCreateInput!): Shop!
+  shopDelete(id: ID!): Shop!
+  shopProductCreate(input: ShopProductCreateInput!, shopId: ID!): ShopProduct!
+  shopProductDelete(productId: ID!): ShopProduct!
+  shopProductUpdate(input: ShopProductUpdateInput!, productId: ID!): ShopProduct!
+  shopUpdate(id: ID!, input: ShopUpdateInput!): Shop!
   startTournamentStep(stepId: ID!): Boolean!
   stripeCreatePortalSession: String!
   tournamentAdminDelete(input: TournamentAdminDeleteInput!): Boolean!
@@ -1348,6 +1631,14 @@ type Mutation {
   updateTournamentTeam(input: UpdateTournamentTeamInput!, teamId: ID, tournamentId: ID): TournamentTeam!
   updateTournamentTeamStatus(status: TournamentTeamStatus!, tournamentTeamId: ID!): TournamentTeam!
   updateWebhook(id: ID!, input: UpdateWebhookInput!): Webhook!
+  userGroupDeleteInvite(
+    groupId: ID!
+
+    """Used by manager of the group to delete the invite of a player"""
+    playerId: ID
+  ): UserGroupMember!
+  userGroupInvite(groupId: ID!, playerId: ID!): UserGroupMember!
+  userGroupUpdateInvite(groupId: ID!, status: UserGroupMemberStatus!): UserGroupMember!
 }
 
 input NumberConditionInput {
@@ -1409,6 +1700,7 @@ type OmitObjectType {
   createdAt: DateTime!
   eventId: ID!
   groupId: ID!
+  groupStatus: UserGroupStatus!
   id: ID!
   name: String!
   sessionValidUntil: DateTime!
@@ -1583,6 +1875,8 @@ type OrganizationIdentityProvider {
   updatedAt: DateTime!
 }
 
+union OrganizationIdentityProviderInfo = OrganizationIdentityProvider | PublicOrganizationIdentityProviderV2
+
 type OrganizationLimit {
   current: Float!
   id: String!
@@ -1604,15 +1898,19 @@ enum OrganizationLimitsType {
   ANONYMOUS_PLAYER_PROFILES
   APPS
   ATTACHED_APPS
+  CURRENCIES
   CUSTOM_FIELDS
   CUSTOM_IDENTITY_PROVIDERS
   EVENTS_MAX_GROUP_SIZE
   EVENTS_MAX_REGISTRATION_RULES
   EVENTS_MAX_TICKETS
   EVENTS_MAX_TICKETS_TYPES
+  EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS
   EVENT_VENUES
   EVENT_VENUE_MAX_SEATS
   EVENT_VENUE_MAX_SEAT_TYPES
+  ITEMS
+  ITEM_CATEGORIES
   LEADERBOARDS
   LEADERBOARD_BUCKETS
   LEADERBOARD_ENTRIES
@@ -1624,6 +1922,9 @@ enum OrganizationLimitsType {
   PLATFORM_CUSTOM_DOMAINS
   PLATFORM_TEMPLATES
   REGISTERED_USERS
+  SHOPS
+  SHOP_CATEGORIES
+  SHOP_PRODUCTS
   SKILL_RATINGS
   TOURNAMENT_REGISTRATION_RULES
   TOURNAMENT_STEPS
@@ -1722,6 +2023,29 @@ input PageInfo {
   first: Float
 }
 
+input PaymentInput {
+  """
+  If set, Checkout displays a back button and customers will be directed to this URL if they decide to cancel payment and return to your website. This parameter is not allowed if uiMode is 'embedded'.
+  """
+  canceledUrl: String
+
+  """
+  The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method's app or site. This parameter is required if uiMode is 'embedded'.
+  """
+  returnUrl: String
+
+  """
+  The URL to which Stripe should send customers when payment or setup is complete. This parameter is not allowed if uiMode is "embedded".
+  """
+  successUrl: String
+  uiMode: StripeUiMode
+}
+
+type PaymentUrlAndClientSecret {
+  clientSecret: String
+  paymentUrl: String
+}
+
 type Permission {
   availableVariables: [String!]!
   description: String!
@@ -1734,6 +2058,7 @@ type Permissions {
 }
 
 type Platform {
+  appId: String
   configuration: PlatformConfiguration
   createdAt: DateTime!
   customDomains: [PlatformCustomDomainData!]!
@@ -1825,7 +2150,6 @@ type Player {
   organizationCustomId: ID
   owner: Account
   ownerId: ID
-  profilePicUrl: String
   updatedAt: DateTime!
   username: String!
 }
@@ -1851,6 +2175,38 @@ input PlayerConditionInput {
   ruleDescription: String
 }
 
+type PlayerCurrencies {
+  edges: [PlayerCurrencyEdge!]!
+  nodes: [PlayerCurrency!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+type PlayerCurrency {
+  balance: Float!
+  createdAt: DateTime!
+  currencyId: ID!
+  id: ID!
+  playerProfileId: ID!
+  updatedAt: DateTime!
+}
+
+type PlayerCurrencyEdge {
+  cursor: String!
+  node: [PlayerCurrency!]!
+}
+
+input PlayerCurrencyUpdateInput {
+  items: [PlayerCurrencyUpdateItemInput!]!
+}
+
+input PlayerCurrencyUpdateItemInput {
+  add: Float
+  currencyId: ID!
+  forceBalance: Float
+  remove: Float
+}
+
 input PlayerCustomFieldInput {
   property: String!
   value: String!
@@ -1859,6 +2215,81 @@ input PlayerCustomFieldInput {
 type PlayerEdge {
   cursor: String!
   node: [Player!]!
+}
+
+type PlayerField {
+  property: String!
+  propertySource: PlayerConditionDataSource!
+  propertySourceId: ID
+}
+
+input PlayerFieldInput {
+  property: String!
+  propertySource: PlayerConditionDataSource!
+  propertySourceId: ID
+}
+
+type PlayerItem {
+  createdAt: DateTime!
+  id: ID!
+  itemId: ID!
+  metadata: [PropertyValue!]!
+  playerProfileId: ID!
+  quantity: Int!
+  updatedAt: DateTime!
+}
+
+type PlayerItemEdge {
+  cursor: String!
+  node: [PlayerItem!]!
+}
+
+type PlayerItems {
+  edges: [PlayerItemEdge!]!
+  nodes: [PlayerItem!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+input PlayerItemsUpdateInput {
+  items: [PlayerItemsUpdateItemInput!]!
+}
+
+input PlayerItemsUpdateItemInput {
+  add: Int
+  itemId: ID!
+  remove: Int
+  set: Int
+}
+
+type PlayerShopProductPurshase {
+  createdAt: DateTime!
+  id: ID!
+  playerProfileId: ID!
+  quantity: Float!
+  shopProductId: ID!
+  updatedAt: DateTime!
+}
+
+type PlayerShopProductPurshaseEdge {
+  cursor: String!
+  node: [PlayerShopProductPurshase!]!
+}
+
+input PlayerShopProductPurshaseInput {
+  items: [PlayerShopProductPurshaseItemInput!]!
+}
+
+input PlayerShopProductPurshaseItemInput {
+  quantity: Int!
+  shopProductId: ID!
+}
+
+type PlayerShopProductPurshasesDto {
+  edges: [PlayerShopProductPurshaseEdge!]!
+  nodes: [PlayerShopProductPurshase!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
 }
 
 type PlayerSkillRating {
@@ -1932,7 +2363,7 @@ type PropertyConfigWithValue {
   required: Boolean!
   type: PropertyType!
   unique: Boolean!
-  value: String!
+  value: String
   visibility: PropertyVisibility
 }
 
@@ -1952,8 +2383,16 @@ enum PropertyType {
   BOOLEAN
   COUNTRY
   DATE
+  EMAIL
+  NUMBER
   PHONE
   STRING
+  URL
+}
+
+type PropertyValue {
+  property: String!
+  value: String!
 }
 
 input PropertyValueInput {
@@ -2020,22 +2459,30 @@ type Query {
   availablePermissions: Permissions!
   availableRootIdentityProvider(id: ID!): PublicIdentityProvider!
   configuration(id: ID!): Configuration!
+  currencies(page: PageInfo): Currencies!
   currentLeaderboardSeason(leaderboardId: ID!): LeaderboardSeason!
+  emailConfiguration: EmailConfiguration
+  emailTemplate(id: ID!): EmailTemplate!
+  emailTemplateConfigurations: [EmailTemplateConfiguration!]!
+  emailTemplates(page: PageInfo!): EmailTemplates!
   event(id: ID!): EventWithUserReservation!
   eventReservation(reservationId: ID!): EventReservation!
   eventReservations(eventId: ID!, page: PageInfo!, query: EventReservationsQueryInput!): EventReservations!
-  eventSeats(eventId: ID!, eventVenueId: ID, page: PageInfo!): EventSeats!
+  eventReservationsMyReservations(eventIds: [ID!], groupStatus: UserGroupStatus, page: PageInfo!, status: EventReservationStatus): EventReservations!
+  eventSeats(eventId: ID!, eventVenueId: ID, page: PageInfo!, reservationIds: [ID!]): EventSeats!
   eventTicketConfiguration(id: ID!): EventTicketConfiguration!
   eventTicketConfigurations(eventId: ID!): [EventTicketConfiguration!]!
   eventVenue(id: ID!): EventVenue!
   eventVenueSeatTypes(page: PageInfo!, venueId: ID!): EventVenueSeatTypes!
   eventVenueSeats(page: PageInfo!, seatTypeId: ID, venueId: ID!): EventVenueSeats!
   eventVenues(page: PageInfo!): EventVenues!
-  events(page: PageInfo!, query: EventsQuery!): Events!
+  events(eventIds: [ID!], page: PageInfo!, query: EventsQuery): Events!
   getAvailableRootIdentityProviders: [PublicIdentityProvider!]!
   getMyAccount: Account!
   identityProvider(id: ID!): OrganizationIdentityProvider!
-  identityProviders: [PublicOrganizationIdentityProviderV2!]!
+  identityProviders: [OrganizationIdentityProviderInfo!]!
+  itemCategories(page: PageInfo): ItemCategories!
+  items(page: PageInfo): Items!
   leaderboard(id: ID!): Leaderboard!
   leaderboardCurrentPlayerRanking(input: LeaderboardGetPlayerRankingInput!): LeaderboardSeasonBucketScore!
   leaderboardSeason(id: ID!): LeaderboardSeason!
@@ -2070,7 +2517,10 @@ type Query {
   platformTemplatesPublic: [PlatformTemplate!]!
   platforms: [Platform!]!
   player(customId: String, id: ID, ownerId: ID): Player!
+  playerCurrencies(page: PageInfo, playerId: ID): PlayerCurrencies!
+  playerItems(page: PageInfo, playerId: ID): PlayerItems!
   playerMatchesHistory(page: PageInfo!, playerId: ID!): TournamentStepGroupRoundGameMatches!
+  playerShopProductPurshases(page: PageInfo, playerId: ID, shopId: ID!): PlayerShopProductPurshasesDto!
   playerSkillRatings(
     playerId: ID!
 
@@ -2080,6 +2530,10 @@ type Query {
   players(identityProviderProperties: [String!], identityProviders: [ID!], ids: [ID!], page: PageInfo!, query: QueryPlayersInput): Players!
   presenceAnalytics: PresenceAnalytics!
   searchPlayer(username: String!): [Player!]!
+  shopCategories(page: PageInfo): ShopCategories!
+  shopProductItems(page: PageInfo, shopProductId: ID!): ShopProductItems!
+  shopProducts(page: PageInfo, shopId: ID!): ShopProducts!
+  shops(page: PageInfo): Shops!
   subscriptionItems: [SubscriptionItem!]!
   tournament(id: ID!): Tournament!
   tournamentAdmins(tournamentId: ID!): [TournamentAdmin!]!
@@ -2092,6 +2546,8 @@ type Query {
   tournamentTeamInvites(page: PageInfo!, status: TournamentTeamMemberStatus, tournamentId: ID): TeamMembers!
   tournamentTeams(memberStatus: TournamentTeamMemberStatus, page: PageInfo!, playerIdentityProviderPropertiesFilter: [IdentityProviderPropertyInput!], playerPropertiesFilter: [PropertyValueInput!], playerUsernameQuery: String, propertiesFilter: [PropertyValueInput!], status: TournamentTeamStatus, tournamentId: ID!): TournamentTeams!
   tournaments(page: PageInfo!, query: TournamentsQuery!): Tournaments!
+  userGroupMembers(groupIds: [ID!]!, page: PageInfo!, status: UserGroupMemberStatus): UserGroupMembers!
+  userGroupMyMemberships(entityId: ID, entityType: String, page: PageInfo!, status: UserGroupMemberStatus): UserGroupMembers!
   userGroups(page: PageInfo!, query: UserGroupsQueryInput!): UserGroups!
   userOrganizations: [Organization!]!
   webhook(id: ID!): Webhook!
@@ -2152,6 +2608,12 @@ input RoundConfigurationInput {
   order: Float!
 }
 
+enum SeatAssignmentMode {
+  NONE
+  OPTIONAL
+  REQUIRED
+}
+
 """automaticSeeding or manualSeeding must be set"""
 input SeedingInput {
   automaticSeeding: AutomaticSeedingInput
@@ -2177,6 +2639,173 @@ input SetOrganizationMembershipInput {
   groupId: ID
   permissions: [GroupPermissionInput!]
   userId: ID
+}
+
+type Shop {
+  createdAt: DateTime!
+  description: String!
+  id: ID!
+  metadata: [PropertyValue!]!
+  name: String!
+  organizationId: ID!
+  updatedAt: DateTime!
+}
+
+type ShopCategories {
+  edges: [ShopCategoryEdge!]!
+  nodes: [ShopCategory!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+type ShopCategory {
+  createdAt: DateTime!
+  description: String!
+  id: ID!
+  metadata: [PropertyValue!]!
+  name: String!
+  shopId: ID!
+  updatedAt: DateTime!
+}
+
+input ShopCategoryCreateInput {
+  description: String!
+  metadata: [PropertyValueInput!]!
+  name: String!
+  shopId: ID!
+}
+
+type ShopCategoryEdge {
+  cursor: String!
+  node: [ShopCategory!]!
+}
+
+input ShopCategoryUpdateInput {
+  description: String
+  metadata: [PropertyValueInput!]
+  name: String
+}
+
+input ShopCreateInput {
+  description: String!
+  metadata: [PropertyValueInput!]!
+  name: String!
+}
+
+enum ShopCurrencies {
+  EUR
+  GBP
+  USD
+}
+
+type ShopEdge {
+  cursor: String!
+  node: [Shop!]!
+}
+
+type ShopProduct {
+  categoryId: ID
+  configuration: ShopProductConfiguration!
+  createdAt: DateTime!
+  currency: ShopCurrencies!
+  description: String!
+  externalId: String
+  id: ID!
+  metadata: [PropertyValue!]!
+  name: String!
+  price: Float
+  shopId: ID!
+  updatedAt: DateTime!
+  visibleAt: DateTime
+}
+
+type ShopProductConfiguration {
+  maxBoughtQuantity: Int
+  maxQuantity: Int
+  minQuantity: Int
+}
+
+input ShopProductConfigurationInput {
+  maxBoughtQuantity: Int
+  maxQuantity: Int
+  minQuantity: Int
+}
+
+input ShopProductCreateInput {
+  categoryId: ID
+  configuration: ShopProductConfigurationInput!
+  currency: ShopCurrencies!
+  description: String!
+  externalId: String
+  metadata: [PropertyValueInput!]!
+  name: String!
+  price: Float
+  visibleAt: DateTime
+}
+
+type ShopProductEdge {
+  cursor: String!
+  node: [ShopProduct!]!
+}
+
+type ShopProductItem {
+  createdAt: DateTime!
+  currencyId: ID
+  id: ID!
+  itemId: ID
+  quantity: Int!
+  shopItemId: ID!
+  type: ShopProductItemType!
+  updatedAt: DateTime!
+}
+
+type ShopProductItemEdge {
+  cursor: String!
+  node: [ShopProductItem!]!
+}
+
+enum ShopProductItemType {
+  CURRENCY
+  ITEM
+}
+
+type ShopProductItems {
+  edges: [ShopProductItemEdge!]!
+  nodes: [ShopProductItem!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+input ShopProductUpdateInput {
+  categoryId: ID
+  configuration: ShopProductConfigurationInput
+  currency: ShopCurrencies
+  description: String
+  externalId: String
+  metadata: [PropertyValueInput!]
+  name: String
+  price: Float
+  visibleAt: DateTime
+}
+
+type ShopProducts {
+  edges: [ShopProductEdge!]!
+  nodes: [ShopProduct!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+input ShopUpdateInput {
+  description: String
+  metadata: [PropertyValueInput!]
+  name: String
+}
+
+type Shops {
+  edges: [ShopEdge!]!
+  nodes: [Shop!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
 }
 
 type SkillRatingConfiguration {
@@ -2659,7 +3288,6 @@ input UpdateMatchScoreInput {
 input UpdateMePlayerInput {
   customFields: [PlayerCustomFieldInput!]!
   description: String!
-  profilePicUrl: String
   username: String!
 }
 
@@ -2692,6 +3320,7 @@ input UpdateOrganizationInput {
 }
 
 input UpdatePlatformInput {
+  appId: String
   configuration: PlatformConfigurationInput
   name: String!
 }
@@ -2708,7 +3337,6 @@ input UpdatePlayerInput {
   description: String
   organizationCustomId: String
   ownerId: ID
-  profilePicUrl: String
   username: String
 }
 
@@ -2808,10 +3436,21 @@ type UserDisconnectEvent {
 type UserGroup {
   createdAt: DateTime!
   id: ID!
+  locked: Boolean!
   managerId: ID!
-  members: [UserGroupMember!]!
   organizationId: ID!
+  status: UserGroupStatus!
   updatedAt: DateTime!
+}
+
+type UserGroupConfiguration {
+  maxSize: Int!
+  minSize: Int!
+}
+
+input UserGroupConfigurationInput {
+  maxSize: Int!
+  minSize: Int!
 }
 
 type UserGroupEdge {
@@ -2828,10 +3467,27 @@ type UserGroupMember {
   updatedAt: DateTime!
 }
 
+type UserGroupMemberEdge {
+  cursor: String!
+  node: [UserGroupMember!]!
+}
+
 enum UserGroupMemberStatus {
   ACCEPTED
   DENIED
   PENDING
+}
+
+type UserGroupMembers {
+  edges: [UserGroupMemberEdge!]!
+  nodes: [UserGroupMember!]!
+  pageInfo: ResponsePageInfo!
+  totalCount: Float
+}
+
+enum UserGroupStatus {
+  INVALID
+  VALID
 }
 
 type UserGroups {

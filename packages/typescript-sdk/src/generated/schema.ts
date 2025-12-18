@@ -153,8 +153,14 @@ export interface PropertyConfigWithValue {
     public: (Scalars['Boolean'] | null)
     visibility: (PropertyVisibility | null)
     editability: (ProperyEditability | null)
-    value: Scalars['String']
+    value: (Scalars['String'] | null)
     __typename: 'PropertyConfigWithValue'
+}
+
+export interface PropertyValue {
+    property: Scalars['String']
+    value: Scalars['String']
+    __typename: 'PropertyValue'
 }
 
 export interface MatchVariable {
@@ -1012,6 +1018,58 @@ export interface TournamentAdmin {
 
 export type TournamentAdminPermissions = 'MANAGE_TOURNAMENT' | 'MANAGE_TEAMS' | 'MANAGE_SCORES' | 'MANAGE_PERMISSIONS'
 
+export interface Currency {
+    id: Scalars['ID']
+    symbol: Scalars['String']
+    name: Scalars['String']
+    externalId: (Scalars['String'] | null)
+    description: Scalars['String']
+    hidden: Scalars['Boolean']
+    organizationId: Scalars['String']
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    metadata: PropertyValue[]
+    __typename: 'Currency'
+}
+
+export interface Currencies {
+    edges: CurrencyEdge[]
+    nodes: Currency[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'Currencies'
+}
+
+export interface CurrencyEdge {
+    cursor: Scalars['String']
+    node: Currency[]
+    __typename: 'CurrencyEdge'
+}
+
+export interface PlayerCurrency {
+    id: Scalars['ID']
+    playerProfileId: Scalars['ID']
+    currencyId: Scalars['ID']
+    balance: Scalars['Float']
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    __typename: 'PlayerCurrency'
+}
+
+export interface PlayerCurrencies {
+    edges: PlayerCurrencyEdge[]
+    nodes: PlayerCurrency[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'PlayerCurrencies'
+}
+
+export interface PlayerCurrencyEdge {
+    cursor: Scalars['String']
+    node: PlayerCurrency[]
+    __typename: 'PlayerCurrencyEdge'
+}
+
 export interface EmailTemplateConfigurationAvailableVariables {
     name: Scalars['String']
     description: Scalars['String']
@@ -1026,7 +1084,7 @@ export interface EmailTemplateConfiguration {
     __typename: 'EmailTemplateConfiguration'
 }
 
-export type EmailTriggerEvents = 'EVENT_REGISTRATION_COMPLETED' | 'EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED'
+export type EmailTriggerEvents = 'EVENT_REGISTRATION_COMPLETED' | 'EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NONE' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REQUIRES_ADMIN_APPROVAL' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PENDING' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_SESSION_EXPIRED' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NOT_ATTENDING' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REGISTERED' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PRESENCE_CONFIRMATION_PENDING' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_CONFIRMED' | 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_DENIED'
 
 export interface EmailConfiguration {
     host: Scalars['String']
@@ -1260,6 +1318,11 @@ export interface EventEdge {
     __typename: 'EventEdge'
 }
 
+export interface EventReservationTicketConfiguration {
+    customFields: PropertyConfigWithValue[]
+    __typename: 'EventReservationTicketConfiguration'
+}
+
 export interface EventReservationTicket {
     id: Scalars['ID']
     ticketId: Scalars['ID']
@@ -1268,6 +1331,7 @@ export interface EventReservationTicket {
     seatId: (Scalars['ID'] | null)
     createdAt: Scalars['DateTime']
     updatedAt: Scalars['DateTime']
+    configuration: (EventReservationTicketConfiguration | null)
     __typename: 'EventReservationTicket'
 }
 
@@ -1279,6 +1343,7 @@ export interface EventReservationTicketWithQrCode {
     seatId: (Scalars['ID'] | null)
     createdAt: Scalars['DateTime']
     updatedAt: Scalars['DateTime']
+    configuration: (EventReservationTicketConfiguration | null)
     qrCode: Scalars['String']
     __typename: 'EventReservationTicketWithQrCode'
 }
@@ -1481,6 +1546,11 @@ export interface EventVenueEdge {
     __typename: 'EventVenueEdge'
 }
 
+export interface EventTicketConfigurationConfiguration {
+    customFields: Property[]
+    __typename: 'EventTicketConfigurationConfiguration'
+}
+
 export interface EventTicketConfiguration {
     id: Scalars['ID']
     name: Scalars['String']
@@ -1488,16 +1558,95 @@ export interface EventTicketConfiguration {
     createdAt: Scalars['DateTime']
     updatedAt: Scalars['DateTime']
     price: Scalars['Float']
-    currency: Currencies
+    currency: ShopCurrencies
     maxCount: Scalars['Float']
     currentCount: Scalars['Float']
     buyable: Scalars['Boolean']
     eventId: Scalars['ID']
     seatTypeId: (Scalars['ID'] | null)
+    configuration: (EventTicketConfigurationConfiguration | null)
     __typename: 'EventTicketConfiguration'
 }
 
-export type Currencies = 'USD' | 'EUR' | 'GBP'
+export type ShopCurrencies = 'USD' | 'EUR' | 'GBP'
+
+export interface Item {
+    id: Scalars['ID']
+    name: Scalars['String']
+    externalId: (Scalars['String'] | null)
+    description: Scalars['String']
+    metadata: PropertyValue[]
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    organizationId: Scalars['ID']
+    categoryId: (Scalars['ID'] | null)
+    __typename: 'Item'
+}
+
+export interface Items {
+    edges: ItemEdge[]
+    nodes: Item[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'Items'
+}
+
+export interface ItemEdge {
+    cursor: Scalars['String']
+    node: Item[]
+    __typename: 'ItemEdge'
+}
+
+export interface PlayerItem {
+    id: Scalars['ID']
+    playerProfileId: Scalars['ID']
+    itemId: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    metadata: PropertyValue[]
+    quantity: Scalars['Int']
+    __typename: 'PlayerItem'
+}
+
+export interface PlayerItems {
+    edges: PlayerItemEdge[]
+    nodes: PlayerItem[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'PlayerItems'
+}
+
+export interface PlayerItemEdge {
+    cursor: Scalars['String']
+    node: PlayerItem[]
+    __typename: 'PlayerItemEdge'
+}
+
+export interface ItemCategory {
+    id: Scalars['ID']
+    name: Scalars['String']
+    externalId: (Scalars['String'] | null)
+    description: Scalars['String']
+    metadata: PropertyValue[]
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    organizationId: Scalars['ID']
+    __typename: 'ItemCategory'
+}
+
+export interface ItemCategories {
+    edges: ItemCategoryEdge[]
+    nodes: ItemCategory[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'ItemCategories'
+}
+
+export interface ItemCategoryEdge {
+    cursor: Scalars['String']
+    node: ItemCategory[]
+    __typename: 'ItemCategoryEdge'
+}
 
 export interface Log {
     id: Scalars['ID']
@@ -1596,6 +1745,152 @@ export interface UsersDisconnectedEvent {
     __typename: 'UsersDisconnectedEvent'
 }
 
+export interface PaymentUrlAndClientSecret {
+    paymentUrl: (Scalars['String'] | null)
+    clientSecret: (Scalars['String'] | null)
+    __typename: 'PaymentUrlAndClientSecret'
+}
+
+export interface PlayerShopProductPurshase {
+    id: Scalars['ID']
+    playerProfileId: Scalars['ID']
+    shopProductId: Scalars['ID']
+    quantity: Scalars['Float']
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    __typename: 'PlayerShopProductPurshase'
+}
+
+export interface PlayerShopProductPurshasesDto {
+    edges: PlayerShopProductPurshaseEdge[]
+    nodes: PlayerShopProductPurshase[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'PlayerShopProductPurshasesDto'
+}
+
+export interface PlayerShopProductPurshaseEdge {
+    cursor: Scalars['String']
+    node: PlayerShopProductPurshase[]
+    __typename: 'PlayerShopProductPurshaseEdge'
+}
+
+export interface ShopCategory {
+    id: Scalars['ID']
+    name: Scalars['String']
+    description: Scalars['String']
+    metadata: PropertyValue[]
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    shopId: Scalars['ID']
+    __typename: 'ShopCategory'
+}
+
+export interface ShopCategories {
+    edges: ShopCategoryEdge[]
+    nodes: ShopCategory[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'ShopCategories'
+}
+
+export interface ShopCategoryEdge {
+    cursor: Scalars['String']
+    node: ShopCategory[]
+    __typename: 'ShopCategoryEdge'
+}
+
+export interface ShopProductConfiguration {
+    minQuantity: (Scalars['Int'] | null)
+    maxQuantity: (Scalars['Int'] | null)
+    maxBoughtQuantity: (Scalars['Int'] | null)
+    __typename: 'ShopProductConfiguration'
+}
+
+export interface ShopProduct {
+    id: Scalars['ID']
+    name: Scalars['String']
+    externalId: (Scalars['String'] | null)
+    description: Scalars['String']
+    categoryId: (Scalars['ID'] | null)
+    price: (Scalars['Float'] | null)
+    configuration: ShopProductConfiguration
+    metadata: PropertyValue[]
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    visibleAt: (Scalars['DateTime'] | null)
+    shopId: Scalars['ID']
+    currency: ShopCurrencies
+    __typename: 'ShopProduct'
+}
+
+export interface ShopProducts {
+    edges: ShopProductEdge[]
+    nodes: ShopProduct[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'ShopProducts'
+}
+
+export interface ShopProductEdge {
+    cursor: Scalars['String']
+    node: ShopProduct[]
+    __typename: 'ShopProductEdge'
+}
+
+export interface Shop {
+    id: Scalars['ID']
+    name: Scalars['String']
+    description: Scalars['String']
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    organizationId: Scalars['ID']
+    metadata: PropertyValue[]
+    __typename: 'Shop'
+}
+
+export interface Shops {
+    edges: ShopEdge[]
+    nodes: Shop[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'Shops'
+}
+
+export interface ShopEdge {
+    cursor: Scalars['String']
+    node: Shop[]
+    __typename: 'ShopEdge'
+}
+
+export interface ShopProductItem {
+    id: Scalars['ID']
+    currencyId: (Scalars['ID'] | null)
+    createdAt: Scalars['DateTime']
+    updatedAt: Scalars['DateTime']
+    type: ShopProductItemType
+    shopItemId: Scalars['ID']
+    itemId: (Scalars['ID'] | null)
+    quantity: Scalars['Int']
+    __typename: 'ShopProductItem'
+}
+
+export type ShopProductItemType = 'CURRENCY' | 'ITEM'
+
+export interface ShopProductItems {
+    edges: ShopProductItemEdge[]
+    nodes: ShopProductItem[]
+    pageInfo: ResponsePageInfo
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'ShopProductItems'
+}
+
+export interface ShopProductItemEdge {
+    cursor: Scalars['String']
+    node: ShopProductItem[]
+    __typename: 'ShopProductItemEdge'
+}
+
 export interface SkillRatingConfiguration {
     updateLeaderboardId: (Scalars['ID'] | null)
     __typename: 'SkillRatingConfiguration'
@@ -1629,7 +1924,7 @@ export interface LimitOverride {
     __typename: 'LimitOverride'
 }
 
-export type OrganizationLimitsType = 'REGISTERED_USERS' | 'ORGANIZATION_GROUPS' | 'ORGANIZATION_MEMBERS' | 'CUSTOM_FIELDS' | 'TOURNAMENT_STEPS' | 'TOURNAMENT_STEP_GROUPS' | 'TOURNAMENT_TEAMS_REGISTERED' | 'TOURNAMENT_TEAM_SIZE' | 'TOURNAMENT_REGISTRATION_RULES' | 'WEBHOOKS' | 'ANONYMOUS_PLAYER_PROFILES' | 'WHITE_LABEL' | 'LEADERBOARDS' | 'LEADERBOARD_ENTRIES' | 'LEADERBOARD_BUCKETS' | 'LEADERBOARD_SEASONS' | 'SKILL_RATINGS' | 'PLATFORMS' | 'PLATFORM_TEMPLATES' | 'ORGANIZATION_STORAGE_SIZE' | 'PLATFORM_CUSTOM_DOMAINS' | 'CUSTOM_IDENTITY_PROVIDERS' | 'APPS' | 'ATTACHED_APPS' | 'EVENTS_MAX_TICKETS_TYPES' | 'EVENTS_MAX_TICKETS' | 'EVENTS_MAX_GROUP_SIZE' | 'EVENTS_MAX_REGISTRATION_RULES' | 'EVENT_VENUES' | 'EVENT_VENUE_MAX_SEAT_TYPES' | 'EVENT_VENUE_MAX_SEATS'
+export type OrganizationLimitsType = 'REGISTERED_USERS' | 'ORGANIZATION_GROUPS' | 'ORGANIZATION_MEMBERS' | 'CUSTOM_FIELDS' | 'TOURNAMENT_STEPS' | 'TOURNAMENT_STEP_GROUPS' | 'TOURNAMENT_TEAMS_REGISTERED' | 'TOURNAMENT_TEAM_SIZE' | 'TOURNAMENT_REGISTRATION_RULES' | 'WEBHOOKS' | 'ANONYMOUS_PLAYER_PROFILES' | 'WHITE_LABEL' | 'LEADERBOARDS' | 'LEADERBOARD_ENTRIES' | 'LEADERBOARD_BUCKETS' | 'LEADERBOARD_SEASONS' | 'SKILL_RATINGS' | 'PLATFORMS' | 'PLATFORM_TEMPLATES' | 'ORGANIZATION_STORAGE_SIZE' | 'PLATFORM_CUSTOM_DOMAINS' | 'CUSTOM_IDENTITY_PROVIDERS' | 'APPS' | 'ATTACHED_APPS' | 'EVENTS_MAX_TICKETS_TYPES' | 'EVENTS_MAX_TICKETS' | 'EVENTS_MAX_GROUP_SIZE' | 'EVENTS_MAX_REGISTRATION_RULES' | 'EVENT_VENUES' | 'EVENT_VENUE_MAX_SEAT_TYPES' | 'EVENT_VENUE_MAX_SEATS' | 'EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS' | 'CURRENCIES' | 'ITEM_CATEGORIES' | 'ITEMS' | 'SHOPS' | 'SHOP_CATEGORIES' | 'SHOP_PRODUCTS'
 
 export interface SubscriptionItem {
     id: Scalars['ID']
@@ -1735,6 +2030,16 @@ export interface Query {
     userGroups: UserGroups
     userGroupMyMemberships: UserGroupMembers
     presenceAnalytics: PresenceAnalytics
+    shops: Shops
+    shopCategories: ShopCategories
+    playerShopProductPurshases: PlayerShopProductPurshasesDto
+    shopProducts: ShopProducts
+    shopProductItems: ShopProductItems
+    items: Items
+    playerItems: PlayerItems
+    itemCategories: ItemCategories
+    currencies: Currencies
+    playerCurrencies: PlayerCurrencies
     __typename: 'Query'
 }
 
@@ -1878,6 +2183,7 @@ export interface Mutation {
     eventVenueSeatTypeUpdate: EventVenueSeatType
     eventVenueSeatTypeDelete: EventVenueSeatType
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount: Scalars['String']
+    emailSent: Scalars['Boolean']
     emailConfigurationUpdate: EmailConfiguration
     emailTemplateCreate: EmailTemplate
     emailTemplateUpdate: EmailTemplate
@@ -1885,6 +2191,27 @@ export interface Mutation {
     userGroupInvite: UserGroupMember
     userGroupUpdateInvite: UserGroupMember
     userGroupDeleteInvite: UserGroupMember
+    shopCreate: Shop
+    shopUpdate: Shop
+    shopDelete: Shop
+    shopCategoryCreate: ShopCategory
+    shopCategoryUpdate: ShopCategory
+    shopCategoryDelete: ShopCategory
+    playerShopProductPurshase: PaymentUrlAndClientSecret
+    shopProductCreate: ShopProduct
+    shopProductUpdate: ShopProduct
+    shopProductDelete: ShopProduct
+    itemCreate: Item
+    itemUpdate: Item
+    itemDelete: Item
+    playerItemsUpdate: PlayerItem[]
+    itemCategoryCreate: ItemCategory
+    itemCategoryUpdate: ItemCategory
+    itemCategoryDelete: ItemCategory
+    currencyCreate: Currency
+    currencyUpdate: Currency
+    currencyDelete: Currency
+    playerCurrencyUpdate: PlayerCurrency
     __typename: 'Mutation'
 }
 
@@ -2043,6 +2370,13 @@ export interface PropertyConfigWithValueGenqlSelection{
     public?: boolean | number
     visibility?: boolean | number
     editability?: boolean | number
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PropertyValueGenqlSelection{
+    property?: boolean | number
     value?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -2948,6 +3282,64 @@ export interface TournamentAdminGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface CurrencyGenqlSelection{
+    id?: boolean | number
+    symbol?: boolean | number
+    name?: boolean | number
+    externalId?: boolean | number
+    description?: boolean | number
+    hidden?: boolean | number
+    organizationId?: boolean | number
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    metadata?: PropertyValueGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface CurrenciesGenqlSelection{
+    edges?: CurrencyEdgeGenqlSelection
+    nodes?: CurrencyGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface CurrencyEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: CurrencyGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerCurrencyGenqlSelection{
+    id?: boolean | number
+    playerProfileId?: boolean | number
+    currencyId?: boolean | number
+    balance?: boolean | number
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerCurrenciesGenqlSelection{
+    edges?: PlayerCurrencyEdgeGenqlSelection
+    nodes?: PlayerCurrencyGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerCurrencyEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: PlayerCurrencyGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface EmailTemplateConfigurationAvailableVariablesGenqlSelection{
     name?: boolean | number
     description?: boolean | number
@@ -3230,6 +3622,12 @@ export interface EventEdgeGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface EventReservationTicketConfigurationGenqlSelection{
+    customFields?: PropertyConfigWithValueGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface EventReservationTicketGenqlSelection{
     id?: boolean | number
     ticketId?: boolean | number
@@ -3238,6 +3636,7 @@ export interface EventReservationTicketGenqlSelection{
     seatId?: boolean | number
     createdAt?: boolean | number
     updatedAt?: boolean | number
+    configuration?: EventReservationTicketConfigurationGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -3250,6 +3649,7 @@ export interface EventReservationTicketWithQrCodeGenqlSelection{
     seatId?: boolean | number
     createdAt?: boolean | number
     updatedAt?: boolean | number
+    configuration?: EventReservationTicketConfigurationGenqlSelection
     qrCode?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -3469,6 +3869,12 @@ export interface EventVenueEdgeGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface EventTicketConfigurationConfigurationGenqlSelection{
+    customFields?: PropertyGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface EventTicketConfigurationGenqlSelection{
     id?: boolean | number
     name?: boolean | number
@@ -3482,6 +3888,94 @@ export interface EventTicketConfigurationGenqlSelection{
     buyable?: boolean | number
     eventId?: boolean | number
     seatTypeId?: boolean | number
+    configuration?: EventTicketConfigurationConfigurationGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ItemGenqlSelection{
+    id?: boolean | number
+    name?: boolean | number
+    externalId?: boolean | number
+    description?: boolean | number
+    metadata?: PropertyValueGenqlSelection
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    organizationId?: boolean | number
+    categoryId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ItemsGenqlSelection{
+    edges?: ItemEdgeGenqlSelection
+    nodes?: ItemGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ItemEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: ItemGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerItemGenqlSelection{
+    id?: boolean | number
+    playerProfileId?: boolean | number
+    itemId?: boolean | number
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    metadata?: PropertyValueGenqlSelection
+    quantity?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerItemsGenqlSelection{
+    edges?: PlayerItemEdgeGenqlSelection
+    nodes?: PlayerItemGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerItemEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: PlayerItemGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ItemCategoryGenqlSelection{
+    id?: boolean | number
+    name?: boolean | number
+    externalId?: boolean | number
+    description?: boolean | number
+    metadata?: PropertyValueGenqlSelection
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    organizationId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ItemCategoriesGenqlSelection{
+    edges?: ItemCategoryEdgeGenqlSelection
+    nodes?: ItemCategoryGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ItemCategoryEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: ItemCategoryGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -3593,6 +4087,167 @@ export interface UsersDisconnectedEventGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface PaymentUrlAndClientSecretGenqlSelection{
+    paymentUrl?: boolean | number
+    clientSecret?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerShopProductPurshaseGenqlSelection{
+    id?: boolean | number
+    playerProfileId?: boolean | number
+    shopProductId?: boolean | number
+    quantity?: boolean | number
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerShopProductPurshasesDtoGenqlSelection{
+    edges?: PlayerShopProductPurshaseEdgeGenqlSelection
+    nodes?: PlayerShopProductPurshaseGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PlayerShopProductPurshaseEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: PlayerShopProductPurshaseGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopCategoryGenqlSelection{
+    id?: boolean | number
+    name?: boolean | number
+    description?: boolean | number
+    metadata?: PropertyValueGenqlSelection
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    shopId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopCategoriesGenqlSelection{
+    edges?: ShopCategoryEdgeGenqlSelection
+    nodes?: ShopCategoryGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopCategoryEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: ShopCategoryGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopProductConfigurationGenqlSelection{
+    minQuantity?: boolean | number
+    maxQuantity?: boolean | number
+    maxBoughtQuantity?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopProductGenqlSelection{
+    id?: boolean | number
+    name?: boolean | number
+    externalId?: boolean | number
+    description?: boolean | number
+    categoryId?: boolean | number
+    price?: boolean | number
+    configuration?: ShopProductConfigurationGenqlSelection
+    metadata?: PropertyValueGenqlSelection
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    visibleAt?: boolean | number
+    shopId?: boolean | number
+    currency?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopProductsGenqlSelection{
+    edges?: ShopProductEdgeGenqlSelection
+    nodes?: ShopProductGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopProductEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: ShopProductGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopGenqlSelection{
+    id?: boolean | number
+    name?: boolean | number
+    description?: boolean | number
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    organizationId?: boolean | number
+    metadata?: PropertyValueGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopsGenqlSelection{
+    edges?: ShopEdgeGenqlSelection
+    nodes?: ShopGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: ShopGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopProductItemGenqlSelection{
+    id?: boolean | number
+    currencyId?: boolean | number
+    createdAt?: boolean | number
+    updatedAt?: boolean | number
+    type?: boolean | number
+    shopItemId?: boolean | number
+    itemId?: boolean | number
+    quantity?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopProductItemsGenqlSelection{
+    edges?: ShopProductItemEdgeGenqlSelection
+    nodes?: ShopProductItemGenqlSelection
+    pageInfo?: ResponsePageInfoGenqlSelection
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopProductItemEdgeGenqlSelection{
+    cursor?: boolean | number
+    node?: ShopProductItemGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface SkillRatingConfigurationGenqlSelection{
     updateLeaderboardId?: boolean | number
     __typename?: boolean | number
@@ -3662,6 +4317,8 @@ export interface DataRetrievalConfigInput {url: Scalars['String'],headers: Heade
 export interface GroupPermissionInput {id: Scalars['String'],resources: Scalars['String'][]}
 
 export interface PropertyInput {property: Scalars['String'],name: Scalars['String'],type: PropertyType,required: Scalars['Boolean'],order: Scalars['Float'],unique: Scalars['Boolean'],public?: (Scalars['Boolean'] | null),visibility?: (PropertyVisibility | null),editability?: (ProperyEditability | null)}
+
+export interface PropertyValueInput {property: Scalars['String'],value: Scalars['String']}
 
 export interface MatchVariableInput {formulaName: Scalars['String'],displayName: Scalars['String'],displayIcon?: (Scalars['String'] | null),defaultValue: Scalars['Float']}
 
@@ -3743,7 +4400,11 @@ export interface PlatformCdnFileConfigsInput {pageConfig?: (PlatformCdnFilePageC
 
 export interface EventVenueConfigurationInput {imageUrl?: (Scalars['String'] | null)}
 
+export interface EventTicketConfigurationConfigurationInput {customFields: PropertyInput[]}
+
 export interface PlatformConfigurationInput {whitelabel?: (Scalars['Boolean'] | null)}
+
+export interface ShopProductConfigurationInput {minQuantity?: (Scalars['Int'] | null),maxQuantity?: (Scalars['Int'] | null),maxBoughtQuantity?: (Scalars['Int'] | null)}
 
 export interface SkillRatingConfigurationInput {updateLeaderboardId?: (Scalars['ID'] | null)}
 
@@ -3832,6 +4493,16 @@ export interface QueryGenqlSelection{
     userGroups?: (UserGroupsGenqlSelection & { __args: {query: UserGroupsQueryInput, page: PageInfo} })
     userGroupMyMemberships?: (UserGroupMembersGenqlSelection & { __args: {page: PageInfo, status?: (UserGroupMemberStatus | null), entityType?: (Scalars['String'] | null), entityId?: (Scalars['ID'] | null)} })
     presenceAnalytics?: PresenceAnalyticsGenqlSelection
+    shops?: (ShopsGenqlSelection & { __args?: {page?: (PageInfo | null)} })
+    shopCategories?: (ShopCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null)} })
+    playerShopProductPurshases?: (PlayerShopProductPurshasesDtoGenqlSelection & { __args: {shopId: Scalars['ID'], playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
+    shopProducts?: (ShopProductsGenqlSelection & { __args: {shopId: Scalars['ID'], page?: (PageInfo | null)} })
+    shopProductItems?: (ShopProductItemsGenqlSelection & { __args: {shopProductId: Scalars['ID'], page?: (PageInfo | null)} })
+    items?: (ItemsGenqlSelection & { __args?: {page?: (PageInfo | null)} })
+    playerItems?: (PlayerItemsGenqlSelection & { __args?: {playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
+    itemCategories?: (ItemCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null)} })
+    currencies?: (CurrenciesGenqlSelection & { __args?: {page?: (PageInfo | null)} })
+    playerCurrencies?: (PlayerCurrenciesGenqlSelection & { __args?: {playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -3876,8 +4547,6 @@ export interface TournamentsQueryPlayerIdWithTeamStatus {
 playerId: Scalars['ID'],
 /** Team status */
 teamStatus: TournamentTeamStatus,memberStatus: TournamentTeamMemberStatus}
-
-export interface PropertyValueInput {property: Scalars['String'],value: Scalars['String']}
 
 export interface IdentityProviderPropertyInput {identityProviderId: Scalars['ID'],property: Scalars['String'],value: Scalars['String']}
 
@@ -4010,7 +4679,7 @@ export interface MutationGenqlSelection{
     eventTicketConfigurationDelete?: (EventTicketConfigurationGenqlSelection & { __args: {ticketConfigurationId: Scalars['ID']} })
     eventReservationUpdateStatus?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], status: EventReservationStatus, confirmPaymentRefundOrCancel?: (Scalars['Boolean'] | null)} })
     eventReservationConfirmPresence?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID'], confirmed: Scalars['Boolean']} })
-    eventReservationValidateAndPay?: (EventReservationValidateAndPayGenqlSelection & { __args: {eventId: Scalars['ID'], options: EventReservationValidateAndPayInput} })
+    eventReservationValidateAndPay?: (EventReservationValidateAndPayGenqlSelection & { __args: {eventId: Scalars['ID'], options: EventReservationValidateAndPayInput, ticketConfigurations?: (EventReservationTicketConfigurationInput[] | null)} })
     eventReservationCreate?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID']} })
     eventReservationUpdateTickets?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], input: EventReservationUpdateTicketsInput} })
     eventReservationStartRegistrationSession?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID'], input: EventReservationRegisterTicketsInput} })
@@ -4025,6 +4694,7 @@ export interface MutationGenqlSelection{
     eventVenueSeatTypeUpdate?: (EventVenueSeatTypeGenqlSelection & { __args: {id: Scalars['ID'], input: EventVenueSeatTypeUpdateInput} })
     eventVenueSeatTypeDelete?: (EventVenueSeatTypeGenqlSelection & { __args: {id: Scalars['ID']} })
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount?: boolean | number
+    emailSent?: { __args: {fromTemplate?: (EmailSentFromTemplateInput | null), fromCustom?: (EmailSentFromCustomInput | null)} } | boolean | number
     emailConfigurationUpdate?: (EmailConfigurationGenqlSelection & { __args: {input: EmailConfigurationInput} })
     emailTemplateCreate?: (EmailTemplateGenqlSelection & { __args: {input: EmailTemplateCreateInput} })
     emailTemplateUpdate?: (EmailTemplateGenqlSelection & { __args: {id: Scalars['ID'], input: EmailTemplateUpdateInput} })
@@ -4034,6 +4704,27 @@ export interface MutationGenqlSelection{
     userGroupDeleteInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], 
     /** Used by manager of the group to delete the invite of a player */
     playerId?: (Scalars['ID'] | null)} })
+    shopCreate?: (ShopGenqlSelection & { __args: {input: ShopCreateInput} })
+    shopUpdate?: (ShopGenqlSelection & { __args: {id: Scalars['ID'], input: ShopUpdateInput} })
+    shopDelete?: (ShopGenqlSelection & { __args: {id: Scalars['ID']} })
+    shopCategoryCreate?: (ShopCategoryGenqlSelection & { __args: {input: ShopCategoryCreateInput} })
+    shopCategoryUpdate?: (ShopCategoryGenqlSelection & { __args: {id: Scalars['ID'], input: ShopCategoryUpdateInput} })
+    shopCategoryDelete?: (ShopCategoryGenqlSelection & { __args: {id: Scalars['ID']} })
+    playerShopProductPurshase?: (PaymentUrlAndClientSecretGenqlSelection & { __args: {shopId: Scalars['ID'], paymentConfig?: (PaymentInput | null), input: PlayerShopProductPurshaseInput} })
+    shopProductCreate?: (ShopProductGenqlSelection & { __args: {shopId: Scalars['ID'], input: ShopProductCreateInput} })
+    shopProductUpdate?: (ShopProductGenqlSelection & { __args: {productId: Scalars['ID'], input: ShopProductUpdateInput} })
+    shopProductDelete?: (ShopProductGenqlSelection & { __args: {productId: Scalars['ID']} })
+    itemCreate?: (ItemGenqlSelection & { __args: {input: ItemCreateInput} })
+    itemUpdate?: (ItemGenqlSelection & { __args: {id: Scalars['ID'], input: ItemUpdateInput} })
+    itemDelete?: (ItemGenqlSelection & { __args: {id: Scalars['ID']} })
+    playerItemsUpdate?: (PlayerItemGenqlSelection & { __args: {playerId: Scalars['ID'], input: PlayerItemsUpdateInput} })
+    itemCategoryCreate?: (ItemCategoryGenqlSelection & { __args: {input: ItemCategoryCreateInput} })
+    itemCategoryUpdate?: (ItemCategoryGenqlSelection & { __args: {id: Scalars['ID'], input: ItemCategoryUpdateInput} })
+    itemCategoryDelete?: (ItemCategoryGenqlSelection & { __args: {id: Scalars['ID']} })
+    currencyCreate?: (CurrencyGenqlSelection & { __args: {input: CurrencyCreateInput} })
+    currencyUpdate?: (CurrencyGenqlSelection & { __args: {id: Scalars['ID'], input: CurrencyUpdateInput} })
+    currencyDelete?: (CurrencyGenqlSelection & { __args: {id: Scalars['ID']} })
+    playerCurrencyUpdate?: (PlayerCurrencyGenqlSelection & { __args: {playerId: Scalars['ID'], input: PlayerCurrencyUpdateInput[]} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -4220,9 +4911,9 @@ export interface EventCreateInput {title: Scalars['String'],description: Scalars
 
 export interface EventUpdateInput {title?: (Scalars['String'] | null),description?: (Scalars['String'] | null),startAt?: (Scalars['DateTime'] | null),endAt?: (Scalars['DateTime'] | null),startRegistrationsAt?: (Scalars['DateTime'] | null),endRegistrationsAt?: (Scalars['DateTime'] | null),visibleAt?: (Scalars['DateTime'] | null),configuration?: (EventConfigurationInput | null),eventVenueId?: (Scalars['ID'] | null)}
 
-export interface EventTicketConfigurationCreateInput {name: Scalars['String'],description: Scalars['String'],price: Scalars['Float'],currency: Currencies,maxCount: Scalars['Float'],buyable: Scalars['Boolean'],eventId: Scalars['ID'],seatTypeId?: (Scalars['ID'] | null)}
+export interface EventTicketConfigurationCreateInput {name: Scalars['String'],description: Scalars['String'],price: Scalars['Float'],currency: ShopCurrencies,maxCount: Scalars['Float'],buyable: Scalars['Boolean'],eventId: Scalars['ID'],seatTypeId?: (Scalars['ID'] | null),configuration?: (EventTicketConfigurationConfigurationInput | null)}
 
-export interface EventTicketConfigurationUpdateInput {name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),price?: (Scalars['Float'] | null),currency?: (Currencies | null),maxCount?: (Scalars['Float'] | null),buyable?: (Scalars['Boolean'] | null),seatTypeId?: (Scalars['ID'] | null)}
+export interface EventTicketConfigurationUpdateInput {name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),price?: (Scalars['Float'] | null),currency?: (ShopCurrencies | null),maxCount?: (Scalars['Float'] | null),buyable?: (Scalars['Boolean'] | null),seatTypeId?: (Scalars['ID'] | null),configuration?: (EventTicketConfigurationConfigurationInput | null)}
 
 export interface EventReservationValidateAndPayInput {
 /** The URL to which Stripe should send customers when payment or setup is complete. This parameter is not allowed if uiMode is "embedded". */
@@ -4232,7 +4923,9 @@ canceledUrl?: (Scalars['String'] | null),
 /** The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method's app or site. This parameter is required if uiMode is 'embedded'. */
 returnUrl?: (Scalars['String'] | null),uiMode?: (StripeUiMode | null)}
 
-export interface EventReservationUpdateTicketsInput {ticketIdsToRelease?: (Scalars['ID'][] | null),ticketIdsToAdd?: (EventReservationRegisterTicketInput[] | null)}
+export interface EventReservationTicketConfigurationInput {ticketId: Scalars['ID'],customFields: PropertyValueInput[]}
+
+export interface EventReservationUpdateTicketsInput {ticketIdsToRelease?: (Scalars['ID'][] | null),ticketIdsToAdd?: (EventReservationRegisterTicketInput[] | null),ticketConfigurations?: (EventReservationTicketConfigurationInput[] | null)}
 
 export interface EventReservationRegisterTicketInput {ticketConfigurationId: Scalars['ID'],quantity: Scalars['Float'],reservedSeats: Scalars['ID'][]}
 
@@ -4252,9 +4945,57 @@ export interface EventVenueSeatTypeCreateInput {name: Scalars['String'],descript
 
 export interface EventVenueSeatTypeUpdateInput {name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),configuration?: (EventVenueSeatTypeConfigurationInput | null)}
 
+export interface EmailSentFromTemplateInput {triggerEvent: EmailTriggerEvents,playerIds?: (Scalars['ID'] | null),variables: PropertyValueInput[]}
+
+export interface EmailSentFromCustomInput {emailField: PlayerFieldInput,playerIds?: (Scalars['ID'] | null),subject: Scalars['String'],body: Scalars['String']}
+
 export interface EmailTemplateCreateInput {triggerEvent: EmailTriggerEvents,default: Scalars['Boolean'],name: Scalars['String'],title: Scalars['String'],contents: Scalars['String']}
 
 export interface EmailTemplateUpdateInput {triggerEvent?: (EmailTriggerEvents | null),default?: (Scalars['Boolean'] | null),name?: (Scalars['String'] | null),title?: (Scalars['String'] | null),contents?: (Scalars['String'] | null)}
+
+export interface ShopCreateInput {name: Scalars['String'],description: Scalars['String'],metadata: PropertyValueInput[]}
+
+export interface ShopUpdateInput {name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null)}
+
+export interface ShopCategoryCreateInput {name: Scalars['String'],description: Scalars['String'],metadata: PropertyValueInput[],shopId: Scalars['ID']}
+
+export interface ShopCategoryUpdateInput {name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null)}
+
+export interface PaymentInput {
+/** The URL to which Stripe should send customers when payment or setup is complete. This parameter is not allowed if uiMode is "embedded". */
+successUrl?: (Scalars['String'] | null),
+/** If set, Checkout displays a back button and customers will be directed to this URL if they decide to cancel payment and return to your website. This parameter is not allowed if uiMode is 'embedded'. */
+canceledUrl?: (Scalars['String'] | null),
+/** The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method's app or site. This parameter is required if uiMode is 'embedded'. */
+returnUrl?: (Scalars['String'] | null),uiMode?: (StripeUiMode | null)}
+
+export interface PlayerShopProductPurshaseInput {items: PlayerShopProductPurshaseItemInput[]}
+
+export interface PlayerShopProductPurshaseItemInput {shopProductId: Scalars['ID'],quantity: Scalars['Int']}
+
+export interface ShopProductCreateInput {name: Scalars['String'],externalId?: (Scalars['String'] | null),description: Scalars['String'],categoryId?: (Scalars['ID'] | null),price?: (Scalars['Float'] | null),configuration: ShopProductConfigurationInput,metadata: PropertyValueInput[],visibleAt?: (Scalars['DateTime'] | null),currency: ShopCurrencies}
+
+export interface ShopProductUpdateInput {name?: (Scalars['String'] | null),externalId?: (Scalars['String'] | null),description?: (Scalars['String'] | null),categoryId?: (Scalars['ID'] | null),price?: (Scalars['Float'] | null),configuration?: (ShopProductConfigurationInput | null),metadata?: (PropertyValueInput[] | null),visibleAt?: (Scalars['DateTime'] | null),currency?: (ShopCurrencies | null)}
+
+export interface ItemCreateInput {name: Scalars['String'],externalId?: (Scalars['String'] | null),description: Scalars['String'],metadata: PropertyValueInput[],categoryId?: (Scalars['ID'] | null)}
+
+export interface ItemUpdateInput {name?: (Scalars['String'] | null),externalId?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null),categoryId?: (Scalars['ID'] | null)}
+
+export interface PlayerItemsUpdateInput {items: PlayerItemsUpdateItemInput[]}
+
+export interface PlayerItemsUpdateItemInput {itemId: Scalars['ID'],set?: (Scalars['Int'] | null),add?: (Scalars['Int'] | null),remove?: (Scalars['Int'] | null)}
+
+export interface ItemCategoryCreateInput {name: Scalars['String'],externalId?: (Scalars['String'] | null),description: Scalars['String'],metadata: PropertyValueInput[]}
+
+export interface ItemCategoryUpdateInput {name?: (Scalars['String'] | null),externalId?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null)}
+
+export interface CurrencyCreateInput {symbol: Scalars['String'],name: Scalars['String'],externalId?: (Scalars['String'] | null),description: Scalars['String'],hidden: Scalars['Boolean'],metadata: PropertyValueInput[]}
+
+export interface CurrencyUpdateInput {symbol?: (Scalars['String'] | null),name?: (Scalars['String'] | null),externalId?: (Scalars['String'] | null),description?: (Scalars['String'] | null),hidden?: (Scalars['Boolean'] | null),metadata?: (PropertyValueInput[] | null)}
+
+export interface PlayerCurrencyUpdateInput {items: PlayerCurrencyUpdateItemInput[]}
+
+export interface PlayerCurrencyUpdateItemInput {currencyId: Scalars['ID'],forceBalance?: (Scalars['Float'] | null),add?: (Scalars['Float'] | null),remove?: (Scalars['Float'] | null)}
 
 export interface SubscriptionGenqlSelection{
     presenceUserConnected?: UsersConnectedEventGenqlSelection
@@ -4388,6 +5129,14 @@ export interface SubscriptionGenqlSelection{
     export const isPropertyConfigWithValue = (obj?: { __typename?: any } | null): obj is PropertyConfigWithValue => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isPropertyConfigWithValue"')
       return PropertyConfigWithValue_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PropertyValue_possibleTypes: string[] = ['PropertyValue']
+    export const isPropertyValue = (obj?: { __typename?: any } | null): obj is PropertyValue => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPropertyValue"')
+      return PropertyValue_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -5104,6 +5853,54 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const Currency_possibleTypes: string[] = ['Currency']
+    export const isCurrency = (obj?: { __typename?: any } | null): obj is Currency => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrency"')
+      return Currency_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Currencies_possibleTypes: string[] = ['Currencies']
+    export const isCurrencies = (obj?: { __typename?: any } | null): obj is Currencies => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencies"')
+      return Currencies_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CurrencyEdge_possibleTypes: string[] = ['CurrencyEdge']
+    export const isCurrencyEdge = (obj?: { __typename?: any } | null): obj is CurrencyEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencyEdge"')
+      return CurrencyEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrency_possibleTypes: string[] = ['PlayerCurrency']
+    export const isPlayerCurrency = (obj?: { __typename?: any } | null): obj is PlayerCurrency => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrency"')
+      return PlayerCurrency_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrencies_possibleTypes: string[] = ['PlayerCurrencies']
+    export const isPlayerCurrencies = (obj?: { __typename?: any } | null): obj is PlayerCurrencies => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencies"')
+      return PlayerCurrencies_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrencyEdge_possibleTypes: string[] = ['PlayerCurrencyEdge']
+    export const isPlayerCurrencyEdge = (obj?: { __typename?: any } | null): obj is PlayerCurrencyEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencyEdge"')
+      return PlayerCurrencyEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const EmailTemplateConfigurationAvailableVariables_possibleTypes: string[] = ['EmailTemplateConfigurationAvailableVariables']
     export const isEmailTemplateConfigurationAvailableVariables = (obj?: { __typename?: any } | null): obj is EmailTemplateConfigurationAvailableVariables => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplateConfigurationAvailableVariables"')
@@ -5304,6 +6101,14 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const EventReservationTicketConfiguration_possibleTypes: string[] = ['EventReservationTicketConfiguration']
+    export const isEventReservationTicketConfiguration = (obj?: { __typename?: any } | null): obj is EventReservationTicketConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventReservationTicketConfiguration"')
+      return EventReservationTicketConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const EventReservationTicket_possibleTypes: string[] = ['EventReservationTicket']
     export const isEventReservationTicket = (obj?: { __typename?: any } | null): obj is EventReservationTicket => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventReservationTicket"')
@@ -5496,10 +6301,90 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const EventTicketConfigurationConfiguration_possibleTypes: string[] = ['EventTicketConfigurationConfiguration']
+    export const isEventTicketConfigurationConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfigurationConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfigurationConfiguration"')
+      return EventTicketConfigurationConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const EventTicketConfiguration_possibleTypes: string[] = ['EventTicketConfiguration']
     export const isEventTicketConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfiguration"')
       return EventTicketConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Item_possibleTypes: string[] = ['Item']
+    export const isItem = (obj?: { __typename?: any } | null): obj is Item => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isItem"')
+      return Item_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Items_possibleTypes: string[] = ['Items']
+    export const isItems = (obj?: { __typename?: any } | null): obj is Items => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isItems"')
+      return Items_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ItemEdge_possibleTypes: string[] = ['ItemEdge']
+    export const isItemEdge = (obj?: { __typename?: any } | null): obj is ItemEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isItemEdge"')
+      return ItemEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerItem_possibleTypes: string[] = ['PlayerItem']
+    export const isPlayerItem = (obj?: { __typename?: any } | null): obj is PlayerItem => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerItem"')
+      return PlayerItem_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerItems_possibleTypes: string[] = ['PlayerItems']
+    export const isPlayerItems = (obj?: { __typename?: any } | null): obj is PlayerItems => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerItems"')
+      return PlayerItems_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerItemEdge_possibleTypes: string[] = ['PlayerItemEdge']
+    export const isPlayerItemEdge = (obj?: { __typename?: any } | null): obj is PlayerItemEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerItemEdge"')
+      return PlayerItemEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ItemCategory_possibleTypes: string[] = ['ItemCategory']
+    export const isItemCategory = (obj?: { __typename?: any } | null): obj is ItemCategory => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isItemCategory"')
+      return ItemCategory_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ItemCategories_possibleTypes: string[] = ['ItemCategories']
+    export const isItemCategories = (obj?: { __typename?: any } | null): obj is ItemCategories => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isItemCategories"')
+      return ItemCategories_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ItemCategoryEdge_possibleTypes: string[] = ['ItemCategoryEdge']
+    export const isItemCategoryEdge = (obj?: { __typename?: any } | null): obj is ItemCategoryEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isItemCategoryEdge"')
+      return ItemCategoryEdge_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -5596,6 +6481,142 @@ export interface SubscriptionGenqlSelection{
     export const isUsersDisconnectedEvent = (obj?: { __typename?: any } | null): obj is UsersDisconnectedEvent => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isUsersDisconnectedEvent"')
       return UsersDisconnectedEvent_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PaymentUrlAndClientSecret_possibleTypes: string[] = ['PaymentUrlAndClientSecret']
+    export const isPaymentUrlAndClientSecret = (obj?: { __typename?: any } | null): obj is PaymentUrlAndClientSecret => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPaymentUrlAndClientSecret"')
+      return PaymentUrlAndClientSecret_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerShopProductPurshase_possibleTypes: string[] = ['PlayerShopProductPurshase']
+    export const isPlayerShopProductPurshase = (obj?: { __typename?: any } | null): obj is PlayerShopProductPurshase => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerShopProductPurshase"')
+      return PlayerShopProductPurshase_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerShopProductPurshasesDto_possibleTypes: string[] = ['PlayerShopProductPurshasesDto']
+    export const isPlayerShopProductPurshasesDto = (obj?: { __typename?: any } | null): obj is PlayerShopProductPurshasesDto => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerShopProductPurshasesDto"')
+      return PlayerShopProductPurshasesDto_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerShopProductPurshaseEdge_possibleTypes: string[] = ['PlayerShopProductPurshaseEdge']
+    export const isPlayerShopProductPurshaseEdge = (obj?: { __typename?: any } | null): obj is PlayerShopProductPurshaseEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerShopProductPurshaseEdge"')
+      return PlayerShopProductPurshaseEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopCategory_possibleTypes: string[] = ['ShopCategory']
+    export const isShopCategory = (obj?: { __typename?: any } | null): obj is ShopCategory => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopCategory"')
+      return ShopCategory_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopCategories_possibleTypes: string[] = ['ShopCategories']
+    export const isShopCategories = (obj?: { __typename?: any } | null): obj is ShopCategories => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopCategories"')
+      return ShopCategories_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopCategoryEdge_possibleTypes: string[] = ['ShopCategoryEdge']
+    export const isShopCategoryEdge = (obj?: { __typename?: any } | null): obj is ShopCategoryEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopCategoryEdge"')
+      return ShopCategoryEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopProductConfiguration_possibleTypes: string[] = ['ShopProductConfiguration']
+    export const isShopProductConfiguration = (obj?: { __typename?: any } | null): obj is ShopProductConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopProductConfiguration"')
+      return ShopProductConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopProduct_possibleTypes: string[] = ['ShopProduct']
+    export const isShopProduct = (obj?: { __typename?: any } | null): obj is ShopProduct => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopProduct"')
+      return ShopProduct_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopProducts_possibleTypes: string[] = ['ShopProducts']
+    export const isShopProducts = (obj?: { __typename?: any } | null): obj is ShopProducts => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopProducts"')
+      return ShopProducts_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopProductEdge_possibleTypes: string[] = ['ShopProductEdge']
+    export const isShopProductEdge = (obj?: { __typename?: any } | null): obj is ShopProductEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopProductEdge"')
+      return ShopProductEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Shop_possibleTypes: string[] = ['Shop']
+    export const isShop = (obj?: { __typename?: any } | null): obj is Shop => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShop"')
+      return Shop_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Shops_possibleTypes: string[] = ['Shops']
+    export const isShops = (obj?: { __typename?: any } | null): obj is Shops => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShops"')
+      return Shops_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopEdge_possibleTypes: string[] = ['ShopEdge']
+    export const isShopEdge = (obj?: { __typename?: any } | null): obj is ShopEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopEdge"')
+      return ShopEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopProductItem_possibleTypes: string[] = ['ShopProductItem']
+    export const isShopProductItem = (obj?: { __typename?: any } | null): obj is ShopProductItem => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopProductItem"')
+      return ShopProductItem_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopProductItems_possibleTypes: string[] = ['ShopProductItems']
+    export const isShopProductItems = (obj?: { __typename?: any } | null): obj is ShopProductItems => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopProductItems"')
+      return ShopProductItems_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopProductItemEdge_possibleTypes: string[] = ['ShopProductItemEdge']
+    export const isShopProductItemEdge = (obj?: { __typename?: any } | null): obj is ShopProductItemEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopProductItemEdge"')
+      return ShopProductItemEdge_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -5924,7 +6945,16 @@ export const enumTournamentAdminPermissions = {
 
 export const enumEmailTriggerEvents = {
    EVENT_REGISTRATION_COMPLETED: 'EVENT_REGISTRATION_COMPLETED' as const,
-   EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED: 'EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED' as const
+   EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED: 'EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NONE: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NONE' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REQUIRES_ADMIN_APPROVAL: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REQUIRES_ADMIN_APPROVAL' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PENDING: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PENDING' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_SESSION_EXPIRED: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_SESSION_EXPIRED' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NOT_ATTENDING: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NOT_ATTENDING' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REGISTERED: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REGISTERED' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PRESENCE_CONFIRMATION_PENDING: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PRESENCE_CONFIRMATION_PENDING' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_CONFIRMED: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_CONFIRMED' as const,
+   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_DENIED: 'EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_DENIED' as const
 }
 
 export const enumUserGroupMemberStatus = {
@@ -5984,7 +7014,7 @@ export const enumPlatformCdnFileType = {
    IMAGE: 'IMAGE' as const
 }
 
-export const enumCurrencies = {
+export const enumShopCurrencies = {
    USD: 'USD' as const,
    EUR: 'EUR' as const,
    GBP: 'GBP' as const
@@ -5993,6 +7023,11 @@ export const enumCurrencies = {
 export const enumLogType = {
    WEBHOOK_CALL: 'WEBHOOK_CALL' as const,
    WEBHOOK_CALL_ERROR: 'WEBHOOK_CALL_ERROR' as const
+}
+
+export const enumShopProductItemType = {
+   CURRENCY: 'CURRENCY' as const,
+   ITEM: 'ITEM' as const
 }
 
 export const enumSkillRatingType = {
@@ -6034,7 +7069,14 @@ export const enumOrganizationLimitsType = {
    EVENTS_MAX_REGISTRATION_RULES: 'EVENTS_MAX_REGISTRATION_RULES' as const,
    EVENT_VENUES: 'EVENT_VENUES' as const,
    EVENT_VENUE_MAX_SEAT_TYPES: 'EVENT_VENUE_MAX_SEAT_TYPES' as const,
-   EVENT_VENUE_MAX_SEATS: 'EVENT_VENUE_MAX_SEATS' as const
+   EVENT_VENUE_MAX_SEATS: 'EVENT_VENUE_MAX_SEATS' as const,
+   EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS: 'EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS' as const,
+   CURRENCIES: 'CURRENCIES' as const,
+   ITEM_CATEGORIES: 'ITEM_CATEGORIES' as const,
+   ITEMS: 'ITEMS' as const,
+   SHOPS: 'SHOPS' as const,
+   SHOP_CATEGORIES: 'SHOP_CATEGORIES' as const,
+   SHOP_PRODUCTS: 'SHOP_PRODUCTS' as const
 }
 
 export const enumTournamentsQueryOrderBy = {
