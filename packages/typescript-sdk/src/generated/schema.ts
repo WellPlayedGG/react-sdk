@@ -1807,6 +1807,21 @@ export interface ShopProductConfiguration {
     __typename: 'ShopProductConfiguration'
 }
 
+export interface EntityQuantity {
+    id: Scalars['ID']
+    quantity: Scalars['Int']
+    __typename: 'EntityQuantity'
+}
+
+export interface ShopItemQuantity {
+    type: ShopProductItemType
+    id: Scalars['ID']
+    quantity: Scalars['Int']
+    __typename: 'ShopItemQuantity'
+}
+
+export type ShopProductItemType = 'CURRENCY' | 'ITEM'
+
 export interface ShopProduct {
     id: Scalars['ID']
     name: Scalars['String']
@@ -1821,6 +1836,8 @@ export interface ShopProduct {
     visibleAt: (Scalars['DateTime'] | null)
     shopId: Scalars['ID']
     currency: ShopCurrencies
+    items: ShopItemQuantity[]
+    currencyPrices: EntityQuantity[]
     __typename: 'ShopProduct'
 }
 
@@ -1874,8 +1891,6 @@ export interface ShopProductItem {
     quantity: Scalars['Int']
     __typename: 'ShopProductItem'
 }
-
-export type ShopProductItemType = 'CURRENCY' | 'ITEM'
 
 export interface ShopProductItems {
     edges: ShopProductItemEdge[]
@@ -4157,6 +4172,21 @@ export interface ShopProductConfigurationGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface EntityQuantityGenqlSelection{
+    id?: boolean | number
+    quantity?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ShopItemQuantityGenqlSelection{
+    type?: boolean | number
+    id?: boolean | number
+    quantity?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface ShopProductGenqlSelection{
     id?: boolean | number
     name?: boolean | number
@@ -4171,6 +4201,8 @@ export interface ShopProductGenqlSelection{
     visibleAt?: boolean | number
     shopId?: boolean | number
     currency?: boolean | number
+    items?: ShopItemQuantityGenqlSelection
+    currencyPrices?: EntityQuantityGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -4406,6 +4438,10 @@ export interface PlatformConfigurationInput {whitelabel?: (Scalars['Boolean'] | 
 
 export interface ShopProductConfigurationInput {minQuantity?: (Scalars['Int'] | null),maxQuantity?: (Scalars['Int'] | null),maxBoughtQuantity?: (Scalars['Int'] | null)}
 
+export interface EntityQuantityInput {id: Scalars['ID'],quantity: Scalars['Int']}
+
+export interface ShopItemQuantityInput {type: ShopProductItemType,id: Scalars['ID'],quantity: Scalars['Int']}
+
 export interface SkillRatingConfigurationInput {updateLeaderboardId?: (Scalars['ID'] | null)}
 
 export interface QueryGenqlSelection{
@@ -4496,13 +4532,13 @@ export interface QueryGenqlSelection{
     shops?: (ShopsGenqlSelection & { __args?: {page?: (PageInfo | null)} })
     shopCategories?: (ShopCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null)} })
     playerShopProductPurshases?: (PlayerShopProductPurshasesDtoGenqlSelection & { __args: {shopId: Scalars['ID'], playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
-    shopProducts?: (ShopProductsGenqlSelection & { __args: {shopId: Scalars['ID'], page?: (PageInfo | null)} })
+    shopProducts?: (ShopProductsGenqlSelection & { __args: {shopId: Scalars['ID'], page?: (PageInfo | null), filter?: (ShopProductsFilterInput | null)} })
     shopProductItems?: (ShopProductItemsGenqlSelection & { __args: {shopProductId: Scalars['ID'], page?: (PageInfo | null)} })
-    items?: (ItemsGenqlSelection & { __args?: {page?: (PageInfo | null)} })
+    items?: (ItemsGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (ItemsFilterInput | null)} })
     playerItems?: (PlayerItemsGenqlSelection & { __args?: {playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
-    itemCategories?: (ItemCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null)} })
-    currencies?: (CurrenciesGenqlSelection & { __args?: {page?: (PageInfo | null)} })
-    playerCurrencies?: (PlayerCurrenciesGenqlSelection & { __args?: {playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
+    itemCategories?: (ItemCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (ItemCategoriesFilterInput | null)} })
+    currencies?: (CurrenciesGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (CurrenciesFilterInput | null)} })
+    playerCurrencies?: (PlayerCurrenciesGenqlSelection & { __args?: {playerId?: (Scalars['ID'] | null), page?: (PageInfo | null), filter?: (PlayerCurrenciesFilterInput | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -4573,6 +4609,16 @@ export interface EventReservationsQueryPlayerIdWithGroupStatusInput {
 playerId: Scalars['ID'],memberStatus?: (UserGroupMemberStatus | null)}
 
 export interface UserGroupsQueryInput {ids: Scalars['ID'][]}
+
+export interface ShopProductsFilterInput {categoryIds?: (Scalars['ID'][] | null),ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
+
+export interface ItemsFilterInput {categoryIds?: (Scalars['ID'][] | null),ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
+
+export interface ItemCategoriesFilterInput {ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
+
+export interface CurrenciesFilterInput {ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
+
+export interface PlayerCurrenciesFilterInput {currencyIds?: (Scalars['ID'][] | null)}
 
 export interface MutationGenqlSelection{
     deleteAccount?: { __args: {id: Scalars['ID']} }
@@ -4973,9 +5019,9 @@ export interface PlayerShopProductPurshaseInput {items: PlayerShopProductPurshas
 
 export interface PlayerShopProductPurshaseItemInput {shopProductId: Scalars['ID'],quantity: Scalars['Int']}
 
-export interface ShopProductCreateInput {name: Scalars['String'],externalId?: (Scalars['String'] | null),description: Scalars['String'],categoryId?: (Scalars['ID'] | null),price?: (Scalars['Float'] | null),configuration: ShopProductConfigurationInput,metadata: PropertyValueInput[],visibleAt?: (Scalars['DateTime'] | null),currency: ShopCurrencies}
+export interface ShopProductCreateInput {name: Scalars['String'],externalId?: (Scalars['String'] | null),description: Scalars['String'],categoryId?: (Scalars['ID'] | null),price?: (Scalars['Float'] | null),configuration: ShopProductConfigurationInput,metadata: PropertyValueInput[],visibleAt?: (Scalars['DateTime'] | null),currency: ShopCurrencies,items: ShopItemQuantityInput[],currencyPrices: EntityQuantityInput[]}
 
-export interface ShopProductUpdateInput {name?: (Scalars['String'] | null),externalId?: (Scalars['String'] | null),description?: (Scalars['String'] | null),categoryId?: (Scalars['ID'] | null),price?: (Scalars['Float'] | null),configuration?: (ShopProductConfigurationInput | null),metadata?: (PropertyValueInput[] | null),visibleAt?: (Scalars['DateTime'] | null),currency?: (ShopCurrencies | null)}
+export interface ShopProductUpdateInput {name?: (Scalars['String'] | null),externalId?: (Scalars['String'] | null),description?: (Scalars['String'] | null),categoryId?: (Scalars['ID'] | null),price?: (Scalars['Float'] | null),configuration?: (ShopProductConfigurationInput | null),metadata?: (PropertyValueInput[] | null),visibleAt?: (Scalars['DateTime'] | null),currency?: (ShopCurrencies | null),items?: (ShopItemQuantityInput[] | null),currencyPrices?: (EntityQuantityInput[] | null)}
 
 export interface ItemCreateInput {name: Scalars['String'],externalId?: (Scalars['String'] | null),description: Scalars['String'],metadata: PropertyValueInput[],categoryId?: (Scalars['ID'] | null)}
 
@@ -6545,6 +6591,22 @@ export interface SubscriptionGenqlSelection{
     export const isShopProductConfiguration = (obj?: { __typename?: any } | null): obj is ShopProductConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isShopProductConfiguration"')
       return ShopProductConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EntityQuantity_possibleTypes: string[] = ['EntityQuantity']
+    export const isEntityQuantity = (obj?: { __typename?: any } | null): obj is EntityQuantity => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEntityQuantity"')
+      return EntityQuantity_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ShopItemQuantity_possibleTypes: string[] = ['ShopItemQuantity']
+    export const isShopItemQuantity = (obj?: { __typename?: any } | null): obj is ShopItemQuantity => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isShopItemQuantity"')
+      return ShopItemQuantity_possibleTypes.includes(obj.__typename)
     }
     
 

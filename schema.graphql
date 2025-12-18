@@ -210,6 +210,11 @@ type Currencies {
   totalCount: Float
 }
 
+input CurrenciesFilterInput {
+  externalIds: [String!]
+  ids: [ID!]
+}
+
 type Currency {
   createdAt: DateTime!
   description: String!
@@ -462,6 +467,16 @@ enum EmailTriggerEvents {
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REQUIRES_ADMIN_APPROVAL
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_SESSION_EXPIRED
   EVENT_REGISTRATION_COMPLETED
+}
+
+type EntityQuantity {
+  id: ID!
+  quantity: Int!
+}
+
+input EntityQuantityInput {
+  id: ID!
+  quantity: Int!
 }
 
 type Event implements EventInterface {
@@ -1161,6 +1176,11 @@ type ItemCategories {
   totalCount: Float
 }
 
+input ItemCategoriesFilterInput {
+  externalIds: [String!]
+  ids: [ID!]
+}
+
 type ItemCategory {
   createdAt: DateTime!
   description: String!
@@ -1217,6 +1237,12 @@ type Items {
   nodes: [Item!]!
   pageInfo: ResponsePageInfo!
   totalCount: Float
+}
+
+input ItemsFilterInput {
+  categoryIds: [ID!]
+  externalIds: [String!]
+  ids: [ID!]
 }
 
 """
@@ -2182,6 +2208,10 @@ type PlayerCurrencies {
   totalCount: Float
 }
 
+input PlayerCurrenciesFilterInput {
+  currencyIds: [ID!]
+}
+
 type PlayerCurrency {
   balance: Float!
   createdAt: DateTime!
@@ -2459,7 +2489,7 @@ type Query {
   availablePermissions: Permissions!
   availableRootIdentityProvider(id: ID!): PublicIdentityProvider!
   configuration(id: ID!): Configuration!
-  currencies(page: PageInfo): Currencies!
+  currencies(filter: CurrenciesFilterInput, page: PageInfo): Currencies!
   currentLeaderboardSeason(leaderboardId: ID!): LeaderboardSeason!
   emailConfiguration: EmailConfiguration
   emailTemplate(id: ID!): EmailTemplate!
@@ -2481,8 +2511,8 @@ type Query {
   getMyAccount: Account!
   identityProvider(id: ID!): OrganizationIdentityProvider!
   identityProviders: [OrganizationIdentityProviderInfo!]!
-  itemCategories(page: PageInfo): ItemCategories!
-  items(page: PageInfo): Items!
+  itemCategories(filter: ItemCategoriesFilterInput, page: PageInfo): ItemCategories!
+  items(filter: ItemsFilterInput, page: PageInfo): Items!
   leaderboard(id: ID!): Leaderboard!
   leaderboardCurrentPlayerRanking(input: LeaderboardGetPlayerRankingInput!): LeaderboardSeasonBucketScore!
   leaderboardSeason(id: ID!): LeaderboardSeason!
@@ -2517,7 +2547,7 @@ type Query {
   platformTemplatesPublic: [PlatformTemplate!]!
   platforms: [Platform!]!
   player(customId: String, id: ID, ownerId: ID): Player!
-  playerCurrencies(page: PageInfo, playerId: ID): PlayerCurrencies!
+  playerCurrencies(filter: PlayerCurrenciesFilterInput, page: PageInfo, playerId: ID): PlayerCurrencies!
   playerItems(page: PageInfo, playerId: ID): PlayerItems!
   playerMatchesHistory(page: PageInfo!, playerId: ID!): TournamentStepGroupRoundGameMatches!
   playerShopProductPurshases(page: PageInfo, playerId: ID, shopId: ID!): PlayerShopProductPurshasesDto!
@@ -2532,7 +2562,7 @@ type Query {
   searchPlayer(username: String!): [Player!]!
   shopCategories(page: PageInfo): ShopCategories!
   shopProductItems(page: PageInfo, shopProductId: ID!): ShopProductItems!
-  shopProducts(page: PageInfo, shopId: ID!): ShopProducts!
+  shopProducts(filter: ShopProductsFilterInput, page: PageInfo, shopId: ID!): ShopProducts!
   shops(page: PageInfo): Shops!
   subscriptionItems: [SubscriptionItem!]!
   tournament(id: ID!): Tournament!
@@ -2703,14 +2733,28 @@ type ShopEdge {
   node: [Shop!]!
 }
 
+type ShopItemQuantity {
+  id: ID!
+  quantity: Int!
+  type: ShopProductItemType!
+}
+
+input ShopItemQuantityInput {
+  id: ID!
+  quantity: Int!
+  type: ShopProductItemType!
+}
+
 type ShopProduct {
   categoryId: ID
   configuration: ShopProductConfiguration!
   createdAt: DateTime!
   currency: ShopCurrencies!
+  currencyPrices: [EntityQuantity!]!
   description: String!
   externalId: String
   id: ID!
+  items: [ShopItemQuantity!]!
   metadata: [PropertyValue!]!
   name: String!
   price: Float
@@ -2735,8 +2779,10 @@ input ShopProductCreateInput {
   categoryId: ID
   configuration: ShopProductConfigurationInput!
   currency: ShopCurrencies!
+  currencyPrices: [EntityQuantityInput!]!
   description: String!
   externalId: String
+  items: [ShopItemQuantityInput!]!
   metadata: [PropertyValueInput!]!
   name: String!
   price: Float
@@ -2780,8 +2826,10 @@ input ShopProductUpdateInput {
   categoryId: ID
   configuration: ShopProductConfigurationInput
   currency: ShopCurrencies
+  currencyPrices: [EntityQuantityInput!]
   description: String
   externalId: String
+  items: [ShopItemQuantityInput!]
   metadata: [PropertyValueInput!]
   name: String
   price: Float
@@ -2793,6 +2841,12 @@ type ShopProducts {
   nodes: [ShopProduct!]!
   pageInfo: ResponsePageInfo!
   totalCount: Float
+}
+
+input ShopProductsFilterInput {
+  categoryIds: [ID!]
+  externalIds: [String!]
+  ids: [ID!]
 }
 
 input ShopUpdateInput {

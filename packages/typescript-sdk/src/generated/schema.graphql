@@ -1920,6 +1920,22 @@ type ShopProductConfiguration {
   maxBoughtQuantity: Int
 }
 
+type EntityQuantity {
+  id: ID!
+  quantity: Int!
+}
+
+type ShopItemQuantity {
+  type: ShopProductItemType!
+  id: ID!
+  quantity: Int!
+}
+
+enum ShopProductItemType {
+  CURRENCY
+  ITEM
+}
+
 type ShopProduct {
   id: ID!
   name: String!
@@ -1934,6 +1950,8 @@ type ShopProduct {
   visibleAt: DateTime
   shopId: ID!
   currency: ShopCurrencies!
+  items: [ShopItemQuantity!]!
+  currencyPrices: [EntityQuantity!]!
 }
 
 type ShopProducts {
@@ -1979,11 +1997,6 @@ type ShopProductItem {
   shopItemId: ID!
   itemId: ID
   quantity: Int!
-}
-
-enum ShopProductItemType {
-  CURRENCY
-  ITEM
 }
 
 type ShopProductItems {
@@ -2351,6 +2364,17 @@ input ShopProductConfigurationInput {
   maxBoughtQuantity: Int
 }
 
+input EntityQuantityInput {
+  id: ID!
+  quantity: Int!
+}
+
+input ShopItemQuantityInput {
+  type: ShopProductItemType!
+  id: ID!
+  quantity: Int!
+}
+
 input SkillRatingConfigurationInput {
   updateLeaderboardId: ID
 }
@@ -2446,13 +2470,13 @@ type Query {
   shops(page: PageInfo): Shops!
   shopCategories(page: PageInfo): ShopCategories!
   playerShopProductPurshases(shopId: ID!, playerId: ID, page: PageInfo): PlayerShopProductPurshasesDto!
-  shopProducts(shopId: ID!, page: PageInfo): ShopProducts!
+  shopProducts(shopId: ID!, page: PageInfo, filter: ShopProductsFilterInput): ShopProducts!
   shopProductItems(shopProductId: ID!, page: PageInfo): ShopProductItems!
-  items(page: PageInfo): Items!
+  items(page: PageInfo, filter: ItemsFilterInput): Items!
   playerItems(playerId: ID, page: PageInfo): PlayerItems!
-  itemCategories(page: PageInfo): ItemCategories!
-  currencies(page: PageInfo): Currencies!
-  playerCurrencies(playerId: ID, page: PageInfo): PlayerCurrencies!
+  itemCategories(page: PageInfo, filter: ItemCategoriesFilterInput): ItemCategories!
+  currencies(page: PageInfo, filter: CurrenciesFilterInput): Currencies!
+  playerCurrencies(playerId: ID, page: PageInfo, filter: PlayerCurrenciesFilterInput): PlayerCurrencies!
 }
 
 input LeaderboardGetPlayerRankingInput {
@@ -2597,6 +2621,32 @@ input EventReservationsQueryPlayerIdWithGroupStatusInput {
 
 input UserGroupsQueryInput {
   ids: [ID!]!
+}
+
+input ShopProductsFilterInput {
+  categoryIds: [ID!]
+  ids: [ID!]
+  externalIds: [String!]
+}
+
+input ItemsFilterInput {
+  categoryIds: [ID!]
+  ids: [ID!]
+  externalIds: [String!]
+}
+
+input ItemCategoriesFilterInput {
+  ids: [ID!]
+  externalIds: [String!]
+}
+
+input CurrenciesFilterInput {
+  ids: [ID!]
+  externalIds: [String!]
+}
+
+input PlayerCurrenciesFilterInput {
+  currencyIds: [ID!]
 }
 
 type Mutation {
@@ -3471,6 +3521,8 @@ input ShopProductCreateInput {
   metadata: [PropertyValueInput!]!
   visibleAt: DateTime
   currency: ShopCurrencies!
+  items: [ShopItemQuantityInput!]!
+  currencyPrices: [EntityQuantityInput!]!
 }
 
 input ShopProductUpdateInput {
@@ -3483,6 +3535,8 @@ input ShopProductUpdateInput {
   metadata: [PropertyValueInput!]
   visibleAt: DateTime
   currency: ShopCurrencies
+  items: [ShopItemQuantityInput!]
+  currencyPrices: [EntityQuantityInput!]
 }
 
 input ItemCreateInput {
