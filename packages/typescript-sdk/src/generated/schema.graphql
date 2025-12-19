@@ -1894,6 +1894,7 @@ type PlayerShopProductPurshaseEdge {
 
 type ShopCategory {
   id: ID!
+  externalId: String
   name: String!
   description: String!
   metadata: [PropertyValue!]!
@@ -1968,6 +1969,7 @@ type ShopProductEdge {
 
 type Shop {
   id: ID!
+  externalId: String
   name: String!
   description: String!
   createdAt: DateTime!
@@ -2467,16 +2469,16 @@ type Query {
   userGroups(query: UserGroupsQueryInput!, page: PageInfo!): UserGroups!
   userGroupMyMemberships(page: PageInfo!, status: UserGroupMemberStatus, entityType: String, entityId: ID): UserGroupMembers!
   presenceAnalytics: PresenceAnalytics!
-  shops(page: PageInfo): Shops!
-  shopCategories(page: PageInfo): ShopCategories!
-  playerShopProductPurshases(shopId: ID!, playerId: ID, page: PageInfo): PlayerShopProductPurshasesDto!
+  shops(page: PageInfo, filter: ShopsFilterInput): Shops!
+  shopCategories(page: PageInfo, filter: ShopCategoriesFilterInput): ShopCategories!
+  playerShopProductPurshases(page: PageInfo, filter: PlayerShopProductPurshasesFilterInput): PlayerShopProductPurshasesDto!
   shopProducts(shopId: ID!, page: PageInfo, filter: ShopProductsFilterInput): ShopProducts!
   shopProductItems(shopProductId: ID!, page: PageInfo): ShopProductItems!
   items(page: PageInfo, filter: ItemsFilterInput): Items!
-  playerItems(playerId: ID, page: PageInfo): PlayerItems!
+  playerItems(page: PageInfo, filter: PlayerItemsFilterInput): PlayerItems!
   itemCategories(page: PageInfo, filter: ItemCategoriesFilterInput): ItemCategories!
   currencies(page: PageInfo, filter: CurrenciesFilterInput): Currencies!
-  playerCurrencies(playerId: ID, page: PageInfo, filter: PlayerCurrenciesFilterInput): PlayerCurrencies!
+  playerCurrencies(page: PageInfo, filter: PlayerCurrenciesFilterInput): PlayerCurrencies!
 }
 
 input LeaderboardGetPlayerRankingInput {
@@ -2623,6 +2625,24 @@ input UserGroupsQueryInput {
   ids: [ID!]!
 }
 
+input ShopsFilterInput {
+  ids: [ID!]
+  externalIds: [String!]
+}
+
+input ShopCategoriesFilterInput {
+  ids: [ID!]
+  externalIds: [String!]
+  shopIds: [ID!]
+}
+
+input PlayerShopProductPurshasesFilterInput {
+  shopProductIds: [ID!]
+  playerProfileIds: [ID!]
+  shopIds: [ID!]
+  ids: [ID!]
+}
+
 input ShopProductsFilterInput {
   categoryIds: [ID!]
   ids: [ID!]
@@ -2633,6 +2653,11 @@ input ItemsFilterInput {
   categoryIds: [ID!]
   ids: [ID!]
   externalIds: [String!]
+}
+
+input PlayerItemsFilterInput {
+  itemIds: [ID!]
+  playerProfileIds: [ID!]
 }
 
 input ItemCategoriesFilterInput {
@@ -2647,6 +2672,7 @@ input CurrenciesFilterInput {
 
 input PlayerCurrenciesFilterInput {
   currencyIds: [ID!]
+  playerProfileIds: [ID!]
 }
 
 type Mutation {
@@ -3460,18 +3486,21 @@ input EmailTemplateUpdateInput {
 }
 
 input ShopCreateInput {
+  externalId: String
   name: String!
   description: String!
   metadata: [PropertyValueInput!]!
 }
 
 input ShopUpdateInput {
+  externalId: String
   name: String
   description: String
   metadata: [PropertyValueInput!]
 }
 
 input ShopCategoryCreateInput {
+  externalId: String
   name: String!
   description: String!
   metadata: [PropertyValueInput!]!
@@ -3479,6 +3508,7 @@ input ShopCategoryCreateInput {
 }
 
 input ShopCategoryUpdateInput {
+  externalId: String
   name: String
   description: String
   metadata: [PropertyValueInput!]

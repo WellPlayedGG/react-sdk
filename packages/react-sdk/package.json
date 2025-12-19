@@ -1,6 +1,6 @@
 {
 	"name": "@well-played.gg/react-sdk",
-	"version": "2.1.1",
+	"version": "2.1.2",
 	"license": "MIT",
 	"main": "dist/wp-react-sdk.cjs.js",
 	"module": "dist/wp-react-sdk.es.js",

@@ -1777,6 +1777,7 @@ export interface PlayerShopProductPurshaseEdge {
 
 export interface ShopCategory {
     id: Scalars['ID']
+    externalId: (Scalars['String'] | null)
     name: Scalars['String']
     description: Scalars['String']
     metadata: PropertyValue[]
@@ -1857,6 +1858,7 @@ export interface ShopProductEdge {
 
 export interface Shop {
     id: Scalars['ID']
+    externalId: (Scalars['String'] | null)
     name: Scalars['String']
     description: Scalars['String']
     createdAt: Scalars['DateTime']
@@ -4138,6 +4140,7 @@ export interface PlayerShopProductPurshaseEdgeGenqlSelection{
 
 export interface ShopCategoryGenqlSelection{
     id?: boolean | number
+    externalId?: boolean | number
     name?: boolean | number
     description?: boolean | number
     metadata?: PropertyValueGenqlSelection
@@ -4225,6 +4228,7 @@ export interface ShopProductEdgeGenqlSelection{
 
 export interface ShopGenqlSelection{
     id?: boolean | number
+    externalId?: boolean | number
     name?: boolean | number
     description?: boolean | number
     createdAt?: boolean | number
@@ -4529,16 +4533,16 @@ export interface QueryGenqlSelection{
     userGroups?: (UserGroupsGenqlSelection & { __args: {query: UserGroupsQueryInput, page: PageInfo} })
     userGroupMyMemberships?: (UserGroupMembersGenqlSelection & { __args: {page: PageInfo, status?: (UserGroupMemberStatus | null), entityType?: (Scalars['String'] | null), entityId?: (Scalars['ID'] | null)} })
     presenceAnalytics?: PresenceAnalyticsGenqlSelection
-    shops?: (ShopsGenqlSelection & { __args?: {page?: (PageInfo | null)} })
-    shopCategories?: (ShopCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null)} })
-    playerShopProductPurshases?: (PlayerShopProductPurshasesDtoGenqlSelection & { __args: {shopId: Scalars['ID'], playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
+    shops?: (ShopsGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (ShopsFilterInput | null)} })
+    shopCategories?: (ShopCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (ShopCategoriesFilterInput | null)} })
+    playerShopProductPurshases?: (PlayerShopProductPurshasesDtoGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (PlayerShopProductPurshasesFilterInput | null)} })
     shopProducts?: (ShopProductsGenqlSelection & { __args: {shopId: Scalars['ID'], page?: (PageInfo | null), filter?: (ShopProductsFilterInput | null)} })
     shopProductItems?: (ShopProductItemsGenqlSelection & { __args: {shopProductId: Scalars['ID'], page?: (PageInfo | null)} })
     items?: (ItemsGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (ItemsFilterInput | null)} })
-    playerItems?: (PlayerItemsGenqlSelection & { __args?: {playerId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
+    playerItems?: (PlayerItemsGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (PlayerItemsFilterInput | null)} })
     itemCategories?: (ItemCategoriesGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (ItemCategoriesFilterInput | null)} })
     currencies?: (CurrenciesGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (CurrenciesFilterInput | null)} })
-    playerCurrencies?: (PlayerCurrenciesGenqlSelection & { __args?: {playerId?: (Scalars['ID'] | null), page?: (PageInfo | null), filter?: (PlayerCurrenciesFilterInput | null)} })
+    playerCurrencies?: (PlayerCurrenciesGenqlSelection & { __args?: {page?: (PageInfo | null), filter?: (PlayerCurrenciesFilterInput | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -4610,15 +4614,23 @@ playerId: Scalars['ID'],memberStatus?: (UserGroupMemberStatus | null)}
 
 export interface UserGroupsQueryInput {ids: Scalars['ID'][]}
 
+export interface ShopsFilterInput {ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
+
+export interface ShopCategoriesFilterInput {ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null),shopIds?: (Scalars['ID'][] | null)}
+
+export interface PlayerShopProductPurshasesFilterInput {shopProductIds?: (Scalars['ID'][] | null),playerProfileIds?: (Scalars['ID'][] | null),shopIds?: (Scalars['ID'][] | null),ids?: (Scalars['ID'][] | null)}
+
 export interface ShopProductsFilterInput {categoryIds?: (Scalars['ID'][] | null),ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
 
 export interface ItemsFilterInput {categoryIds?: (Scalars['ID'][] | null),ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
+
+export interface PlayerItemsFilterInput {itemIds?: (Scalars['ID'][] | null),playerProfileIds?: (Scalars['ID'][] | null)}
 
 export interface ItemCategoriesFilterInput {ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
 
 export interface CurrenciesFilterInput {ids?: (Scalars['ID'][] | null),externalIds?: (Scalars['String'][] | null)}
 
-export interface PlayerCurrenciesFilterInput {currencyIds?: (Scalars['ID'][] | null)}
+export interface PlayerCurrenciesFilterInput {currencyIds?: (Scalars['ID'][] | null),playerProfileIds?: (Scalars['ID'][] | null)}
 
 export interface MutationGenqlSelection{
     deleteAccount?: { __args: {id: Scalars['ID']} }
@@ -4999,13 +5011,13 @@ export interface EmailTemplateCreateInput {triggerEvent: EmailTriggerEvents,defa
 
 export interface EmailTemplateUpdateInput {triggerEvent?: (EmailTriggerEvents | null),default?: (Scalars['Boolean'] | null),name?: (Scalars['String'] | null),title?: (Scalars['String'] | null),contents?: (Scalars['String'] | null)}
 
-export interface ShopCreateInput {name: Scalars['String'],description: Scalars['String'],metadata: PropertyValueInput[]}
+export interface ShopCreateInput {externalId?: (Scalars['String'] | null),name: Scalars['String'],description: Scalars['String'],metadata: PropertyValueInput[]}
 
-export interface ShopUpdateInput {name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null)}
+export interface ShopUpdateInput {externalId?: (Scalars['String'] | null),name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null)}
 
-export interface ShopCategoryCreateInput {name: Scalars['String'],description: Scalars['String'],metadata: PropertyValueInput[],shopId: Scalars['ID']}
+export interface ShopCategoryCreateInput {externalId?: (Scalars['String'] | null),name: Scalars['String'],description: Scalars['String'],metadata: PropertyValueInput[],shopId: Scalars['ID']}
 
-export interface ShopCategoryUpdateInput {name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null)}
+export interface ShopCategoryUpdateInput {externalId?: (Scalars['String'] | null),name?: (Scalars['String'] | null),description?: (Scalars['String'] | null),metadata?: (PropertyValueInput[] | null)}
 
 export interface PaymentInput {
 /** The URL to which Stripe should send customers when payment or setup is complete. This parameter is not allowed if uiMode is "embedded". */

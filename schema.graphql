@@ -2210,6 +2210,7 @@ type PlayerCurrencies {
 
 input PlayerCurrenciesFilterInput {
   currencyIds: [ID!]
+  playerProfileIds: [ID!]
 }
 
 type PlayerCurrency {
@@ -2281,6 +2282,11 @@ type PlayerItems {
   totalCount: Float
 }
 
+input PlayerItemsFilterInput {
+  itemIds: [ID!]
+  playerProfileIds: [ID!]
+}
+
 input PlayerItemsUpdateInput {
   items: [PlayerItemsUpdateItemInput!]!
 }
@@ -2320,6 +2326,13 @@ type PlayerShopProductPurshasesDto {
   nodes: [PlayerShopProductPurshase!]!
   pageInfo: ResponsePageInfo!
   totalCount: Float
+}
+
+input PlayerShopProductPurshasesFilterInput {
+  ids: [ID!]
+  playerProfileIds: [ID!]
+  shopIds: [ID!]
+  shopProductIds: [ID!]
 }
 
 type PlayerSkillRating {
@@ -2547,10 +2560,10 @@ type Query {
   platformTemplatesPublic: [PlatformTemplate!]!
   platforms: [Platform!]!
   player(customId: String, id: ID, ownerId: ID): Player!
-  playerCurrencies(filter: PlayerCurrenciesFilterInput, page: PageInfo, playerId: ID): PlayerCurrencies!
-  playerItems(page: PageInfo, playerId: ID): PlayerItems!
+  playerCurrencies(filter: PlayerCurrenciesFilterInput, page: PageInfo): PlayerCurrencies!
+  playerItems(filter: PlayerItemsFilterInput, page: PageInfo): PlayerItems!
   playerMatchesHistory(page: PageInfo!, playerId: ID!): TournamentStepGroupRoundGameMatches!
-  playerShopProductPurshases(page: PageInfo, playerId: ID, shopId: ID!): PlayerShopProductPurshasesDto!
+  playerShopProductPurshases(filter: PlayerShopProductPurshasesFilterInput, page: PageInfo): PlayerShopProductPurshasesDto!
   playerSkillRatings(
     playerId: ID!
 
@@ -2560,10 +2573,10 @@ type Query {
   players(identityProviderProperties: [String!], identityProviders: [ID!], ids: [ID!], page: PageInfo!, query: QueryPlayersInput): Players!
   presenceAnalytics: PresenceAnalytics!
   searchPlayer(username: String!): [Player!]!
-  shopCategories(page: PageInfo): ShopCategories!
+  shopCategories(filter: ShopCategoriesFilterInput, page: PageInfo): ShopCategories!
   shopProductItems(page: PageInfo, shopProductId: ID!): ShopProductItems!
   shopProducts(filter: ShopProductsFilterInput, page: PageInfo, shopId: ID!): ShopProducts!
-  shops(page: PageInfo): Shops!
+  shops(filter: ShopsFilterInput, page: PageInfo): Shops!
   subscriptionItems: [SubscriptionItem!]!
   tournament(id: ID!): Tournament!
   tournamentAdmins(tournamentId: ID!): [TournamentAdmin!]!
@@ -2674,6 +2687,7 @@ input SetOrganizationMembershipInput {
 type Shop {
   createdAt: DateTime!
   description: String!
+  externalId: String
   id: ID!
   metadata: [PropertyValue!]!
   name: String!
@@ -2688,9 +2702,16 @@ type ShopCategories {
   totalCount: Float
 }
 
+input ShopCategoriesFilterInput {
+  externalIds: [String!]
+  ids: [ID!]
+  shopIds: [ID!]
+}
+
 type ShopCategory {
   createdAt: DateTime!
   description: String!
+  externalId: String
   id: ID!
   metadata: [PropertyValue!]!
   name: String!
@@ -2700,6 +2721,7 @@ type ShopCategory {
 
 input ShopCategoryCreateInput {
   description: String!
+  externalId: String
   metadata: [PropertyValueInput!]!
   name: String!
   shopId: ID!
@@ -2712,12 +2734,14 @@ type ShopCategoryEdge {
 
 input ShopCategoryUpdateInput {
   description: String
+  externalId: String
   metadata: [PropertyValueInput!]
   name: String
 }
 
 input ShopCreateInput {
   description: String!
+  externalId: String
   metadata: [PropertyValueInput!]!
   name: String!
 }
@@ -2851,6 +2875,7 @@ input ShopProductsFilterInput {
 
 input ShopUpdateInput {
   description: String
+  externalId: String
   metadata: [PropertyValueInput!]
   name: String
 }
@@ -2860,6 +2885,11 @@ type Shops {
   nodes: [Shop!]!
   pageInfo: ResponsePageInfo!
   totalCount: Float
+}
+
+input ShopsFilterInput {
+  externalIds: [String!]
+  ids: [ID!]
 }
 
 type SkillRatingConfiguration {
