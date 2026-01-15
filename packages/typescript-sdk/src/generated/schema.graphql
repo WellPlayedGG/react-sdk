@@ -1172,7 +1172,6 @@ type EmailTemplateConfiguration {
 
 enum EmailTriggerEvents {
   EVENT_REGISTRATION_COMPLETED
-  EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NONE
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_REQUIRES_ADMIN_APPROVAL
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_PENDING
@@ -2829,7 +2828,7 @@ type Mutation {
   shopCategoryCreate(input: ShopCategoryCreateInput!): ShopCategory!
   shopCategoryUpdate(id: ID!, input: ShopCategoryUpdateInput!): ShopCategory!
   shopCategoryDelete(id: ID!): ShopCategory!
-  playerShopProductPurshase(shopId: ID!, paymentConfig: PaymentInput, input: PlayerShopProductPurshaseInput!): PaymentUrlAndClientSecret!
+  playerShopProductPurshase(shopId: ID!, paymentConfig: PaymentInput, input: PlayerShopProductPurshaseInput!): PaymentUrlAndClientSecret
   shopProductCreate(shopId: ID!, input: ShopProductCreateInput!): ShopProduct!
   shopProductUpdate(productId: ID!, input: ShopProductUpdateInput!): ShopProduct!
   shopProductDelete(productId: ID!): ShopProduct!

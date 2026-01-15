@@ -456,7 +456,6 @@ type EmailTemplates {
 }
 
 enum EmailTriggerEvents {
-  EVENT_REGISTRATION_ADMIN_PAYMENT_SESSION_STARTED
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_CONFIRMED
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_DENIED
   EVENT_REGISTRATION_ADMIN_UPDATE_STATUS_NONE
@@ -1619,7 +1618,7 @@ type Mutation {
   platformUpdate(id: ID!, input: UpdatePlatformInput!): Platform!
   playerCurrencyUpdate(input: [PlayerCurrencyUpdateInput!]!, playerId: ID!): PlayerCurrency!
   playerItemsUpdate(input: PlayerItemsUpdateInput!, playerId: ID!): [PlayerItem!]!
-  playerShopProductPurshase(input: PlayerShopProductPurshaseInput!, paymentConfig: PaymentInput, shopId: ID!): PaymentUrlAndClientSecret!
+  playerShopProductPurshase(input: PlayerShopProductPurshaseInput!, paymentConfig: PaymentInput, shopId: ID!): PaymentUrlAndClientSecret
   regenerateWebhookSecret(id: ID!): Webhook!
   registerCustomTournamentTeams(input: RegisterCustomTeamsInput!, tournamentId: ID!): [TournamentTeam!]!
   registerTournamentTeam(input: RegisterTournamentTeamInput!, tournamentId: ID!): TournamentTeam!
