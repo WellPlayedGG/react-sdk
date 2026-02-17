@@ -1,0 +1,13 @@
+{
+  "name": "@wellplayed/create-module",
+  "version": "0.1.0",
+  "description": "Scaffold a new WellPlayed platform module",
+  "type": "module",
+  "bin": {
+    "create-wellplayed-module": "./bin/create.mjs"
+  },
+  "files": ["bin", "templates"],
+  "scripts": {
+    "build": "echo 'no build needed'"
+  }
+}

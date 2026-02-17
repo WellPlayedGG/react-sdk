@@ -180,23 +180,26 @@ input AppCreateReleaseInput {
 
 """Input for defining a marketplace app manifest"""
 input AppManifestInput {
-  """UI extensions registered by this app"""
-  extensions: [ExtensionPointInput!]! = []
+  """UI extension points registered by this app"""
+  extensionPoints: [ExtensionPointInput!]! = []
 
   """Frontend micro-frontend modules registered by this app"""
   frontendModules: [FrontendModuleInput!]! = []
 
+  """Serverless function hooks registered by this app"""
+  functions: [FunctionDefinitionInput!]! = []
+
   """Metafield namespaces this app is allowed to use"""
   metafieldNamespaces: [String!]! = []
 
-  """Permissions requested by this app (OrganizationPermission IDs)"""
-  permissions: [String!]!
+  """Permission scopes requested by this app"""
+  scopes: [String!]!
 
   """Manifest schema version"""
   version: String! = "1.0"
 
   """Webhook event types this app subscribes to"""
-  webhookEvents: [WebhookEventType!]! = []
+  webhookEvents: [String!]! = []
 
   """URL to receive webhook events when app is installed"""
   webhookUrl: String
@@ -206,29 +209,26 @@ input AppManifestInput {
 The manifest describing a marketplace app capabilities and configuration
 """
 type AppManifestModel {
-  """S3 CDN path for the extension bundle (injected on publish)"""
-  extensionCdnPath: String
-
-  """UI extensions registered by this app"""
-  extensions: [ExtensionPointModel!]!
+  """UI extension points registered by this app"""
+  extensionPoints: [ExtensionPointModel!]!
 
   """Frontend micro-frontend modules registered by this app"""
   frontendModules: [FrontendModuleModel!]!
 
+  """Serverless function hooks registered by this app"""
+  functions: [FunctionDefinitionModel!]!
+
   """Metafield namespaces this app is allowed to use"""
   metafieldNamespaces: [String!]!
 
-  """S3 CDN path for the module bundle (injected on publish)"""
-  moduleCdnPath: String
-
-  """Permissions requested by this app (OrganizationPermission IDs)"""
-  permissions: [String!]!
+  """Permission scopes requested by this app"""
+  scopes: [String!]!
 
   """Manifest schema version"""
   version: String!
 
   """Webhook event types this app subscribes to"""
-  webhookEvents: [WebhookEventType!]!
+  webhookEvents: [String!]!
 
   """URL to receive webhook events when app is installed"""
   webhookUrl: String
@@ -554,52 +554,6 @@ input CreateCrossStepRuleInput {
 
   """CrossStepUsage configuration"""
   usage: CrossStepUsageInput!
-}
-
-"""Input for creating a new custom field definition"""
-input CreateCustomFieldDefinitionInput {
-  """Default value applied when no value is provided"""
-  defaultValue: String
-
-  """Optional description explaining the purpose of this field"""
-  description: String
-
-  """
-  Editability rule controlling when and by whom this field can be modified
-  """
-  editability: ProperyEditability!
-
-  """
-  Unique key identifier (alphanumeric, hyphens, underscores, 1-100 chars)
-  """
-  key: String!
-
-  """Human-readable display name of the field"""
-  name: String!
-
-  """Type of object this field applies to (e.g. Tournament, Account)"""
-  objectType: ObjectType!
-
-  """Options for SELECT or MULTI_SELECT fields"""
-  options: [CustomFieldOptionInput!]
-
-  """Display order position of this field"""
-  order: Int
-
-  """Whether this field must be filled in"""
-  required: Boolean
-
-  """Data type of the field value"""
-  type: CustomFieldType!
-
-  """Whether the value must be unique across all objects of this type"""
-  unique: Boolean
-
-  """Optional regex pattern the value must match"""
-  validationRegex: String
-
-  """Visibility level controlling who can view this field value"""
-  visibility: PropertyVisibility!
 }
 
 """Input for creating a game template within a round"""
@@ -1236,122 +1190,6 @@ enum CustomDomainValidationStatus {
 }
 
 """
-Definition of a custom field attached to an organization and object type
-"""
-type CustomFieldDefinitionModel {
-  """Timestamp when the definition was created"""
-  createdAt: DateTime!
-
-  """Default value applied when no value is provided"""
-  defaultValue: String
-
-  """Optional description explaining the purpose of this field"""
-  description: String
-
-  """
-  Editability rule controlling when and by whom this field can be modified
-  """
-  editability: ProperyEditability!
-
-  """Unique identifier of the custom field definition"""
-  id: ID!
-
-  """Unique key identifier for this field within the object type"""
-  key: String!
-
-  """Human-readable display name of the field"""
-  name: String!
-
-  """Type of object this field is attached to (e.g. Tournament, Account)"""
-  objectType: ObjectType!
-
-  """Available options for SELECT or MULTI_SELECT fields"""
-  options: [CustomFieldOptionModel!]
-
-  """Display order position of this field"""
-  order: Int!
-
-  """Whether this field must be filled in"""
-  required: Boolean!
-
-  """Data type of the field value"""
-  type: CustomFieldType!
-
-  """Whether the value must be unique across all objects of this type"""
-  unique: Boolean!
-
-  """Timestamp when the definition was last updated"""
-  updatedAt: DateTime!
-
-  """Optional regex pattern the value must match"""
-  validationRegex: String
-
-  """Visibility level controlling who can view this field value"""
-  visibility: PropertyVisibility!
-}
-
-"""A label/value option for SELECT or MULTI_SELECT custom fields"""
-input CustomFieldOptionInput {
-  """Human-readable label for this option"""
-  label: String!
-
-  """Stored value for this option"""
-  value: String!
-}
-
-"""A label/value pair option for SELECT or MULTI_SELECT custom fields"""
-type CustomFieldOptionModel {
-  """Human-readable label for this option"""
-  label: String!
-
-  """Stored value for this option"""
-  value: String!
-}
-
-enum CustomFieldType {
-  BOOLEAN
-  COUNTRY
-  DATE
-  EMAIL
-  IMAGE
-  MULTI_SELECT
-  NUMBER
-  PHONE
-  SELECT
-  STRING
-  URL
-}
-
-"""A single key-value pair for setting a custom field"""
-input CustomFieldValueInput {
-  """Key of the custom field definition"""
-  key: String!
-
-  """Value to set for this field"""
-  value: String!
-}
-
-"""Custom field values grouped by object ID for batch queries"""
-type CustomFieldValuesBatchResultModel {
-  """Custom field values for this object"""
-  fields: [CustomFieldWithValueModel!]!
-
-  """ID of the object"""
-  objectId: ID!
-}
-
-"""
-A custom field definition paired with its current value for a specific object
-"""
-type CustomFieldWithValueModel {
-  """The field definition"""
-  definition: CustomFieldDefinitionModel!
-
-  """Current value of this field for the object"""
-  value: String
-}
-
-"""
 A member to add to a custom team, either by existing player ID or by creating a new player profile
 """
 input CustomTeamMemberInput {
@@ -1403,7 +1241,7 @@ scalar DateTime
 """Input for deleting a metafield from an entity"""
 input DeleteEntityMetafieldInput {
   """ID of the entity the metafield is attached to"""
-  entityId: ID!
+  entityId: String!
 
   """Type of entity the metafield is attached to"""
   entityType: String!
@@ -1706,19 +1544,19 @@ type EndRoundActionModel {
 """A key-value metafield attached to an entity by a marketplace app"""
 type EntityMetafield {
   """ID of the app that created this metafield"""
-  appId: ID!
+  appId: String!
 
   """Timestamp when the metafield was created"""
   createdAt: DateTime!
 
   """ID of the entity this metafield is attached to"""
-  entityId: ID!
+  entityId: String!
 
   """Type of entity this metafield is attached to"""
   entityType: String!
 
   """Unique identifier of the metafield"""
-  id: ID!
+  id: String!
 
   """Key name for this metafield within the namespace"""
   key: String!
@@ -1727,7 +1565,7 @@ type EntityMetafield {
   namespace: String!
 
   """ID of the organization that owns this metafield"""
-  organizationId: ID!
+  organizationId: String!
 
   """Timestamp when the metafield was last updated"""
   updatedAt: DateTime!
@@ -1739,7 +1577,7 @@ type EntityMetafield {
 """Filter options for querying entity metafields"""
 input EntityMetafieldsFilterInput {
   """Filter by the app ID that owns the metafields"""
-  appId: ID
+  appId: String
 
   """Filter by metafield namespace"""
   namespace: String
@@ -2961,16 +2799,14 @@ enum EventsQueryStatus {
 
 """Input for defining a UI extension point in an app manifest"""
 input ExtensionPointInput {
-  """
-  URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview")
-  """
-  activePages: [String!]!
-
   """Display label for the extension point tab or widget"""
   label: String!
 
   """Optional size constraints for the extension point iframe"""
   size: ExtensionPointSizeInput
+
+  """Source URL of the iframe content for this extension point"""
+  src: String!
 
   """Location type where this extension point is rendered"""
   type: ExtensionPointType!
@@ -2978,16 +2814,14 @@ input ExtensionPointInput {
 
 """A UI extension point where an app renders content within the platform"""
 type ExtensionPointModel {
-  """
-  URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview")
-  """
-  activePages: [String!]!
-
   """Display label for the extension point tab or widget"""
   label: String!
 
   """Optional size constraints for the extension point iframe"""
   size: ExtensionPointSizeModel
+
+  """Source URL of the iframe content for this extension point"""
+  src: String!
 
   """Location type where this extension point is rendered"""
   type: ExtensionPointType!
@@ -3014,13 +2848,9 @@ type ExtensionPointSizeModel {
 enum ExtensionPointType {
   ADMIN_NAVIGATION
   DASHBOARD_WIDGET
-  TAB
-}
-
-type ExtensionTokenDto {
-  appId: ID!
-  marketplaceAppId: ID!
-  token: String!
+  EVENT_DETAIL_TAB
+  PLAYER_DETAIL_TAB
+  TOURNAMENT_DETAIL_TAB
 }
 
 """Input for defining a frontend module event"""
@@ -3043,6 +2873,9 @@ type FrontendModuleEventModel {
 
 """Input for defining a frontend micro-frontend module in an app manifest"""
 input FrontendModuleInput {
+  """URL to the module JavaScript bundle"""
+  bundleUrl: String!
+
   """Description of what this module provides"""
   description: String
 
@@ -3069,6 +2902,9 @@ input FrontendModuleInput {
 
 """A frontend micro-frontend module registered by a marketplace app"""
 type FrontendModuleModel {
+  """URL to the module JavaScript bundle"""
+  bundleUrl: String!
+
   """Description of what this module provides"""
   description: String
 
@@ -3171,6 +3007,46 @@ enum FrontendModulePropType {
   ROUTE_PARAM
   SELECT
   STRING
+}
+
+"""Input for defining a serverless function hook in an app manifest"""
+input FunctionDefinitionInput {
+  """Platform hook point where this function is invoked"""
+  hookPoint: FunctionHookPoint!
+
+  """
+  Unique name identifier for this function (alphanumeric, hyphens, underscores)
+  """
+  name: String!
+
+  """Maximum execution time in milliseconds (1000-5000)"""
+  timeoutMs: Int! = 3000
+
+  """URL endpoint that the platform calls when the hook fires"""
+  url: String!
+}
+
+"""A serverless function hook registered by a marketplace app"""
+type FunctionDefinitionModel {
+  """Platform hook point where this function is invoked"""
+  hookPoint: FunctionHookPoint!
+
+  """Unique name identifier for this function"""
+  name: String!
+
+  """Maximum execution time in milliseconds before the function times out"""
+  timeoutMs: Int!
+
+  """URL endpoint that the platform calls when the hook fires"""
+  url: String!
+}
+
+enum FunctionHookPoint {
+  EVENT_RESERVATION_VALIDATE
+  SHOP_PURCHASE_VALIDATE
+  TOURNAMENT_MATCH_SCORE_TRANSFORM
+  TOURNAMENT_REGISTRATION_VALIDATE
+  TOURNAMENT_SEEDING_OVERRIDE
 }
 
 """Configuration for how a game is played and scored"""
@@ -3482,8 +3358,8 @@ type InjectScoreUsageModel {
 
 """Input for installing a marketplace app into an organization"""
 input InstallMarketplaceAppInput {
-  """Permissions the org grants to this app (OrganizationPermission IDs)"""
-  grantedPermissions: [String!]!
+  """Scopes the org grants to this app"""
+  grantedScopes: [String!]!
 
   """Marketplace app ID to install"""
   marketplaceAppId: ID!
@@ -3831,9 +3707,6 @@ type LeaderboardSeasonBucketScore {
   """Timestamp when this score entry was created"""
   createdAt: DateTime!
 
-  """Unique identifier for this score entry"""
-  id: ID!
-
   """The player rank from the previous ranking period"""
   lastRank: Int
 
@@ -4173,10 +4046,8 @@ type MarketplaceAppInstallation {
   """Timestamp when the app was installed"""
   createdAt: DateTime!
 
-  """
-  Permissions granted to this app by the organization (OrganizationPermission IDs)
-  """
-  grantedPermissions: [String!]!
+  """Permission scopes granted to this app by the organization"""
+  grantedScopes: [String!]!
 
   """Unique identifier of the installation"""
   id: ID!
@@ -4553,35 +4424,6 @@ input MatchVariableInput {
   formulaName: String!
 }
 
-"""A single metadata key-value entry with type and visibility"""
-input MetadataEntryInput {
-  """
-  Key name for this metadata entry (alphanumeric, hyphens, underscores, 1-100 chars)
-  """
-  key: String!
-
-  """Type of the metadata value (STRING, BOOLEAN, IMAGE_URL, URL)"""
-  type: MetadataType!
-
-  """Value of the metadata entry (max 4096 chars)"""
-  value: String!
-
-  """Visibility of the metadata entry (PUBLIC or PRIVATE)"""
-  visibility: MetadataVisibility!
-}
-
-enum MetadataType {
-  BOOLEAN
-  IMAGE_URL
-  STRING
-  URL
-}
-
-enum MetadataVisibility {
-  PRIVATE
-  PUBLIC
-}
-
 """A single configuration property for a platform module"""
 type ModuleConfigProp {
   """Configuration property key"""
@@ -4602,13 +4444,11 @@ input ModuleConfigPropInput {
 
 type ModuleTokenDto {
   appId: ID!
-
-  """S3 CDN path for the module bundle"""
-  cdnPath: String!
+  bundleUrl: String!
   displayName: String!
   events: [FrontendModuleEventModel!]!
   exportName: String!
-  grantedPermissions: [String!]!
+  grantedScopes: [String!]!
   marketplaceAppId: ID!
   moduleName: String!
   propsSchema: [FrontendModulePropSchemaModel!]!
@@ -4667,9 +4507,6 @@ type Mutation {
 
   """Create a new release for an app (snapshots current manifest)"""
   createAppRelease(appId: ID!, input: CreateAppReleaseInput!): AppRelease!
-
-  """Create a new custom field definition"""
-  createCustomFieldDefinition(input: CreateCustomFieldDefinitionInput!): CustomFieldDefinitionModel!
 
   """
   Create a new identity provider for the organization with OAuth2 or OpenID Connect configuration
@@ -4737,9 +4574,6 @@ type Mutation {
 
   """Deletes a configuration preset by ID"""
   deleteConfiguration(id: ID!): Boolean!
-
-  """Delete a custom field definition and all its values"""
-  deleteCustomFieldDefinition(id: ID!): Boolean!
 
   """Delete an identity provider from the organization"""
   deleteIdentityProvider(id: ID!): Boolean!
@@ -5054,12 +4888,6 @@ type Mutation {
   """
   registerTournamentTeam(input: RegisterTournamentTeamInput!, tournamentId: ID!): TournamentTeam!
 
-  """Remove metadata entries from an object by key"""
-  removeObjectMetadata(input: RemoveObjectMetadataInput!): Boolean!
-
-  """Reorder custom field definitions for an object type"""
-  reorderCustomFieldDefinitions(objectType: ObjectType!, orderedIds: [ID!]!): [CustomFieldDefinitionModel!]!
-
   """Regenerate the OAuth2 client secret for an organization app"""
   resetOrganizationAppSecret(id: String!): String!
 
@@ -5082,14 +4910,8 @@ type Mutation {
   """
   seedTournamentStep(input: SeedingInput!, stepId: ID!): Boolean!
 
-  """Set custom field values on an object"""
-  setCustomFieldValues(input: SetCustomFieldValuesInput!): [CustomFieldWithValueModel!]!
-
   """Set or update pricing for a marketplace app"""
   setMarketplaceAppPricing(input: SetMarketplaceAppPricingInput!): MarketplaceAppPricing!
-
-  """Set (create or update) metadata entries on an object"""
-  setObjectMetadata(input: SetObjectMetadataInput!): [ObjectMetadata!]!
 
   """
   Attach an application to the organization or update its permissions and group assignment
@@ -5156,9 +4978,6 @@ type Mutation {
 
   """Updates an existing configuration preset"""
   updateConfiguration(id: ID!, input: CreateConfigurationInput!): Configuration!
-
-  """Update an existing custom field definition"""
-  updateCustomFieldDefinition(id: ID!, input: UpdateCustomFieldDefinitionInput!): CustomFieldDefinitionModel!
 
   """Update an existing identity provider configuration"""
   updateIdentityProvider(input: UpdateOrganizationIdentityProvider!, providerId: ID!): OrganizationIdentityProvider!
@@ -5276,11 +5095,6 @@ type OAuthClientConfiguration {
   """Issuer identifier for the identity provider"""
   issuer: String
 
-  """
-  URL where users are redirected after the identity linking process completes. Required for the IDP-based identity linking flow via generateIdentityLinkUrl.
-  """
-  linkRedirectUrl: String
-
   """Type of identity provider (OPENID or OAUTH2)"""
   providerType: IdentityProviderType!
 
@@ -5316,11 +5130,6 @@ input OAuthClientConfigurationInput {
   """Issuer identifier for the identity provider"""
   issuer: String
 
-  """
-  URL where users are redirected after the identity linking process completes. Required for the IDP-based identity linking flow via generateIdentityLinkUrl.
-  """
-  linkRedirectUrl: String
-
   """Type of identity provider (OPENID or OAUTH2)"""
   providerType: IdentityProviderType!
 
@@ -5342,300 +5151,6 @@ enum OauthEndpointAuthMethod {
   PRIVATE_KEY_JWT
   SELF_SIGNED_TLS_CLIENT_AUTH
   TLS_CLIENT_AUTH
-}
-
-"""A typed metadata entry attached to an organization object"""
-type ObjectMetadata {
-  """Timestamp when the metadata entry was created"""
-  createdAt: DateTime!
-
-  """Key name for this metadata entry"""
-  key: String!
-
-  """Short ID of the object this metadata is attached to"""
-  objectId: ID!
-
-  """Prisma model name of the object this metadata is attached to"""
-  objectType: ObjectType!
-
-  """Type of the metadata value (STRING, BOOLEAN, IMAGE_URL, URL)"""
-  type: MetadataType!
-
-  """Timestamp when the metadata entry was last updated"""
-  updatedAt: DateTime!
-
-  """Value of the metadata entry"""
-  value: String!
-
-  """Visibility of the metadata entry (PUBLIC or PRIVATE)"""
-  visibility: MetadataVisibility!
-}
-
-"""Metadata entries grouped by object ID for batch queries"""
-type ObjectMetadataBatchResult {
-  """Metadata entries for this object"""
-  entries: [ObjectMetadata!]!
-
-  """ID of the object"""
-  objectId: ID!
-}
-
-"""Prisma model types that support metadata and custom fields"""
-enum ObjectType {
-  """Account entity"""
-  Account
-
-  """Advancement Rule entity"""
-  AdvancementRule
-
-  """App Release entity"""
-  AppRelease
-
-  """App Webhook entity"""
-  AppWebhook
-
-  """Clan entity"""
-  Clan
-
-  """Clan Group entity"""
-  ClanGroup
-
-  """Clan Member entity"""
-  ClanMember
-
-  """Configuration entity"""
-  Configuration
-
-  """Cross Step Rule entity"""
-  CrossStepRule
-
-  """Currency entity"""
-  Currency
-
-  """Email Configuration entity"""
-  EmailConfiguration
-
-  """Email Template entity"""
-  EmailTemplate
-
-  """Event entity"""
-  Event
-
-  """Event Reservation entity"""
-  EventReservation
-
-  """Event Reservation Ticket entity"""
-  EventReservationTicket
-
-  """Event Seat Status entity"""
-  EventSeatStatus
-
-  """Event Ticket Configuration entity"""
-  EventTicketConfiguration
-
-  """Event Venue entity"""
-  EventVenue
-
-  """Event Venue Seat entity"""
-  EventVenueSeat
-
-  """Event Venue Seat Type entity"""
-  EventVenueSeatType
-
-  """Game Template entity"""
-  GameTemplate
-
-  """Group Template entity"""
-  GroupTemplate
-
-  """Identity Provider entity"""
-  IdentityProvider
-
-  """Item entity"""
-  Item
-
-  """Item Category entity"""
-  ItemCategory
-
-  """Leaderboard entity"""
-  Leaderboard
-
-  """Leaderboard Season entity"""
-  LeaderboardSeason
-
-  """Leaderboard Season Bucket entity"""
-  LeaderboardSeasonBucket
-
-  """Leaderboard Season Bucket Score entity"""
-  LeaderboardSeasonBucketScore
-
-  """Log entity"""
-  Log
-
-  """Marketplace App entity"""
-  MarketplaceApp
-
-  """Marketplace App Installation entity"""
-  MarketplaceAppInstallation
-
-  """Marketplace App Pricing entity"""
-  MarketplaceAppPricing
-
-  """Marketplace App Release entity"""
-  MarketplaceAppRelease
-
-  """Marketplace App Review entity"""
-  MarketplaceAppReview
-
-  """Organization entity"""
-  Organization
-
-  """Organization App entity"""
-  OrganizationApp
-
-  """Organization Group entity"""
-  OrganizationGroup
-
-  """Organization Identity Provider entity"""
-  OrganizationIdentityProvider
-
-  """Organization Member entity"""
-  OrganizationMember
-
-  """Payments entity"""
-  Payments
-
-  """Platform entity"""
-  Platform
-
-  """Platform Cdn File entity"""
-  PlatformCdnFile
-
-  """Platform Module Config entity"""
-  PlatformModuleConfig
-
-  """Platform Template entity"""
-  PlatformTemplate
-
-  """Player Currency entity"""
-  PlayerCurrency
-
-  """Player Item entity"""
-  PlayerItem
-
-  """Player Profile entity"""
-  PlayerProfile
-
-  """Player Shop Product Purshase entity"""
-  PlayerShopProductPurshase
-
-  """Player Skill Rating entity"""
-  PlayerSkillRating
-
-  """Round Template entity"""
-  RoundTemplate
-
-  """Rule Execution Log entity"""
-  RuleExecutionLog
-
-  """Rule Set Version entity"""
-  RuleSetVersion
-
-  """Scoring Rule Set entity"""
-  ScoringRuleSet
-
-  """Shop entity"""
-  Shop
-
-  """Shop Category entity"""
-  ShopCategory
-
-  """Shop Product entity"""
-  ShopProduct
-
-  """Shop Product Item entity"""
-  ShopProductItem
-
-  """Skill Rating entity"""
-  SkillRating
-
-  """Step Rule Set entity"""
-  StepRuleSet
-
-  """Structure Template entity"""
-  StructureTemplate
-
-  """Subscription Item entity"""
-  SubscriptionItem
-
-  """Team entity"""
-  Team
-
-  """Team Member entity"""
-  TeamMember
-
-  """Tiebreaker Rule entity"""
-  TiebreakerRule
-
-  """Tournament entity"""
-  Tournament
-
-  """Tournament Admin entity"""
-  TournamentAdmin
-
-  """Tournament Feature entity"""
-  TournamentFeature
-
-  """Tournament Step entity"""
-  TournamentStep
-
-  """Tournament Step Group entity"""
-  TournamentStepGroup
-
-  """Tournament Step Group Round entity"""
-  TournamentStepGroupRound
-
-  """Tournament Step Group Round Game entity"""
-  TournamentStepGroupRoundGame
-
-  """Tournament Step Group Round Game Match entity"""
-  TournamentStepGroupRoundGameMatch
-
-  """Tournament Step Group Round Game Match Scores entity"""
-  TournamentStepGroupRoundGameMatchScores
-
-  """Tournament Step Group Round Game Team Score entity"""
-  TournamentStepGroupRoundGameTeamScore
-
-  """Tournament Step Group Round Team Score entity"""
-  TournamentStepGroupRoundTeamScore
-
-  """Tournament Step Group Team Score entity"""
-  TournamentStepGroupTeamScore
-
-  """Tournament Step Team Score entity"""
-  TournamentStepTeamScore
-
-  """Tournament Team entity"""
-  TournamentTeam
-
-  """Tournament Team Member entity"""
-  TournamentTeamMember
-
-  """Tournament Team Score entity"""
-  TournamentTeamScore
-
-  """User Group entity"""
-  UserGroup
-
-  """User Group Configuration entity"""
-  UserGroupConfiguration
-
-  """User Group Member entity"""
-  UserGroupMember
-
-  """Webhook entity"""
-  Webhook
 }
 
 type OmitObjectType {
@@ -5902,10 +5417,10 @@ type OrganizationAttachedApp {
   createdAt: DateTime!
 
   """The permission group assigned to this attached app"""
-  group: OrganizationGroup
+  group: OrganizationGroup!
 
   """The ID of the permission group assigned to this attached app"""
-  groupId: ID
+  groupId: ID!
 
   """The ID of the organization this app is attached to"""
   organizationId: ID!
@@ -6140,9 +5655,6 @@ type OrganizationMember {
 
   """The permission group assigned to this member"""
   groupId: ID!
-
-  """Unique identifier for this membership"""
-  id: ID!
 
   """The account ID of the member"""
   memberId: ID!
@@ -7074,9 +6586,6 @@ type PlayerSkillRating {
   """The date and time this skill rating was created"""
   createdAt: DateTime!
 
-  """Unique identifier for this skill rating entry"""
-  id: ID!
-
   """The player profile associated with this skill rating"""
   player: Player!
 
@@ -7447,9 +6956,6 @@ type QualifyUsageModel {
 }
 
 type Query {
-  """Returns all object types that support metadata and custom fields"""
-  allowedObjectTypes: [ObjectType!]!
-
   """Get a single app release"""
   appRelease(id: ID!): AppRelease
 
@@ -7476,17 +6982,6 @@ type Query {
   """Retrieves the currently active season for a leaderboard"""
   currentLeaderboardSeason(leaderboardId: ID!): LeaderboardSeason!
 
-  """List all custom field definitions for a given object type"""
-  customFieldDefinitions(objectType: ObjectType!): [CustomFieldDefinitionModel!]!
-
-  """Get custom field values for an object"""
-  customFieldValues(objectId: ID!, objectType: ObjectType!): [CustomFieldWithValueModel!]!
-
-  """
-  Get custom field values for multiple objects of the same type in a single query
-  """
-  customFieldValuesBatch(objectIds: [ID!]!, objectType: ObjectType!): [CustomFieldValuesBatchResultModel!]!
-
   """Retrieves the SMTP email configuration for the organization"""
   emailConfiguration: EmailConfiguration
 
@@ -7502,7 +6997,7 @@ type Query {
   emailTemplates(page: PageInfo!): EmailTemplates!
 
   """Retrieve metafields for a specific entity"""
-  entityMetafields(entityId: ID!, entityType: String!, filter: EntityMetafieldsFilterInput): [EntityMetafield!]!
+  entityMetafields(entityId: String!, entityType: String!, filter: EntityMetafieldsFilterInput): [EntityMetafield!]!
 
   """
   Retrieve a single event by ID, including the current user's reservation if any
@@ -7551,7 +7046,6 @@ type Query {
   Retrieve a paginated list of events with optional filtering and ordering
   """
   events(eventIds: [ID!], page: PageInfo!, query: EventsQuery): Events!
-  extensionToken(installationId: ID!): ExtensionTokenDto!
 
   """Retrieve all available root identity providers"""
   getAvailableRootIdentityProviders: [PublicIdentityProvider!]!
@@ -7621,14 +7115,6 @@ type Query {
 
   """List marketplace apps installed in the current organization"""
   myMarketplaceInstallations(page: PageInfo): MarketplaceAppInstallations!
-
-  """Get metadata entries for an object"""
-  objectMetadata(objectId: ID!, objectType: ObjectType!): [ObjectMetadata!]!
-
-  """
-  Get metadata entries for multiple objects of the same type in a single query
-  """
-  objectMetadataBatch(objectIds: [ID!]!, objectType: ObjectType!): [ObjectMetadataBatchResult!]!
 
   """Get an organization by its ID"""
   organization(id: ID!): Organization!
@@ -7929,18 +7415,6 @@ input RegistrationConditionsInput {
 
   """Conditions applied at the team level during registration"""
   teamConditions: [TeamConditionInput!]!
-}
-
-"""Input for removing metadata entries from an object"""
-input RemoveObjectMetadataInput {
-  """List of metadata keys to remove"""
-  keys: [String!]!
-
-  """ID of the object to remove metadata from"""
-  objectId: ID!
-
-  """Prisma model name of the object to remove metadata from"""
-  objectType: ObjectType!
 }
 
 """Relay-style pagination metadata for cursor-based navigation"""
@@ -8330,22 +7804,10 @@ enum SeedingMechanism {
   REVERSE_HALF_SHIFT
 }
 
-"""Input for setting custom field values on an object"""
-input SetCustomFieldValuesInput {
-  """List of field key-value pairs to set"""
-  fields: [CustomFieldValueInput!]!
-
-  """ID of the object to set field values on"""
-  objectId: ID!
-
-  """Type of object to set field values on"""
-  objectType: ObjectType!
-}
-
 """Input for creating or updating a metafield on an entity"""
 input SetEntityMetafieldInput {
   """ID of the entity this metafield is attached to"""
-  entityId: ID!
+  entityId: String!
 
   """Type of entity this metafield is attached to (e.g. tournament, player)"""
   entityType: String!
@@ -8378,18 +7840,6 @@ input SetMarketplaceAppPricingInput {
 
   """Pricing type"""
   type: MarketplacePricingType!
-}
-
-"""Input for setting metadata entries on an object"""
-input SetObjectMetadataInput {
-  """List of metadata entries to set (max 50)"""
-  entries: [MetadataEntryInput!]!
-
-  """ID of the object to attach metadata to"""
-  objectId: ID!
-
-  """Prisma model name of the object to attach metadata to"""
-  objectType: ObjectType!
 }
 
 """Input for attaching or updating an application within an organization"""
@@ -9349,9 +8799,6 @@ type TournamentAdmin {
   """Date and time when this admin assignment was created"""
   createdAt: DateTime!
 
-  """Unique identifier for this admin assignment"""
-  id: ID!
-
   """List of permissions granted to this tournament admin"""
   permissions: [TournamentAdminPermissions!]!
 
@@ -9366,9 +8813,6 @@ type TournamentAdmin {
 input TournamentAdminDeleteInput {
   """ID of the account that has admin access"""
   accountId: ID!
-
-  """Unique identifier for this admin assignment"""
-  id: ID!
 
   """ID of the tournament this admin is assigned to"""
   tournamentId: ID!
@@ -9385,9 +8829,6 @@ enum TournamentAdminPermissions {
 input TournamentAdminUpsertInput {
   """ID of the account that has admin access"""
   accountId: ID!
-
-  """Unique identifier for this admin assignment"""
-  id: ID!
 
   """List of permissions granted to this tournament admin"""
   permissions: [TournamentAdminPermissions!]!
@@ -9639,9 +9080,6 @@ type TournamentStepGroupRoundGameMatchScore {
   """Timestamp when the score was created"""
   createdAt: DateTime!
 
-  """Unique identifier for this match score"""
-  id: ID!
-
   """ID of the match this score belongs to"""
   matchId: ID!
 
@@ -9751,9 +9189,6 @@ type TournamentTeamEdge {
 type TournamentTeamMemberDto {
   """Date and time when this membership was created"""
   createdAt: DateTime!
-
-  """Unique identifier for this team membership"""
-  id: ID!
 
   """ID of the player profile for this member"""
   playerProfileId: ID!
@@ -9923,39 +9358,6 @@ scalar URL
 input UpdateAdvancementRulesInput {
   """Complete list of advancement rules to replace existing ones"""
   advancementRules: [CreateAdvancementRuleInput!]!
-}
-
-"""Input for updating an existing custom field definition"""
-input UpdateCustomFieldDefinitionInput {
-  """Updated default value"""
-  defaultValue: String
-
-  """Updated description"""
-  description: String
-
-  """Updated editability rule"""
-  editability: ProperyEditability
-
-  """Updated human-readable display name"""
-  name: String
-
-  """Updated options for SELECT or MULTI_SELECT fields"""
-  options: [CustomFieldOptionInput!]
-
-  """Updated display order position"""
-  order: Int
-
-  """Whether this field must be filled in"""
-  required: Boolean
-
-  """Whether the value must be unique across all objects of this type"""
-  unique: Boolean
-
-  """Updated regex validation pattern"""
-  validationRegex: String
-
-  """Updated visibility level"""
-  visibility: PropertyVisibility
 }
 
 """Input for updating an existing leaderboard with partial fields"""
