@@ -1,5 +1,5 @@
 {
-  "name": "@wellplayed/module-sdk",
+  "name": "@well-played.gg/module-sdk",
   "version": "0.1.0",
   "description": "SDK for building WellPlayed platform modules",
   "type": "module",
@@ -13,18 +13,20 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch"
   },
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "@apollo/client": ">=3.0.0"
+    "@apollo/client": ">=3.0.0",
+    "react": ">=18.0.0"
   },
   "devDependencies": {
-    "react": "^18.0.0",
     "@apollo/client": "^3.0.0",
+    "react": "^18.0.0",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^3.0.0"

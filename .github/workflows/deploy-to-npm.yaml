@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  release-if-schema-changed:
+  check-and-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -17,7 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Important to fetch tags
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -27,106 +28,137 @@ jobs:
       - name: Update npm
         run: npm install -g npm@latest
 
-      - name: Build SDKs
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Configure Git
         run: |
-          yarn install --immutable
-          yarn graphql:generate
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      # ------------------------------------------------------------------
+      # 1. Detect GraphQL schema changes
+      # ------------------------------------------------------------------
+      - name: Save current schema
+        run: cp schema.graphql schema.graphql.before
+
+      - name: Fetch latest schema from API
+        run: yarn graphql:generate
+
+      - name: Detect schema changes
+        id: schema
+        run: |
+          if diff -q schema.graphql.before schema.graphql > /dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "bump=none" >> "$GITHUB_OUTPUT"
+            echo "No schema changes detected."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+
+            # Use graphql-inspector to classify the change
+            DIFF_OUTPUT=$(yarn graphql-inspector diff schema.graphql.before schema.graphql 2>&1 || true)
+            echo "$DIFF_OUTPUT"
+
+            if echo "$DIFF_OUTPUT" | grep -qi "BREAKING"; then
+              echo "bump=minor" >> "$GITHUB_OUTPUT"
+              echo "Breaking/dangerous changes detected → minor bump"
+            else
+              echo "bump=patch" >> "$GITHUB_OUTPUT"
+              echo "Safe/additive changes detected → patch bump"
+            fi
+          fi
+
+          rm -f schema.graphql.before
+
+      # ------------------------------------------------------------------
+      # 2. Bump typescript-sdk + dependents if schema changed
+      # ------------------------------------------------------------------
+      - name: Bump typescript-sdk version
+        if: steps.schema.outputs.changed == 'true'
+        id: bump_ts
+        working-directory: packages/typescript-sdk
+        run: |
+          OLD_VERSION=$(node -p "require('./package.json').version")
+          npm version ${{ steps.schema.outputs.bump }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "old=$OLD_VERSION" >> "$GITHUB_OUTPUT"
+          echo "new=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "typescript-sdk: $OLD_VERSION → $NEW_VERSION"
+
+      - name: Bump react-sdk version (depends on typescript-sdk)
+        if: steps.schema.outputs.changed == 'true'
+        working-directory: packages/react-sdk
+        run: |
+          npm version ${{ steps.schema.outputs.bump }} --no-git-tag-version
+          echo "react-sdk bumped (depends on typescript-sdk)"
+
+      # ------------------------------------------------------------------
+      # 3. Commit and push version bumps (skip CI to avoid infinite loop)
+      # ------------------------------------------------------------------
+      - name: Commit version bumps
+        if: steps.schema.outputs.changed == 'true'
+        run: |
+          git add schema.graphql
+          git add packages/typescript-sdk/package.json
+          git add packages/react-sdk/package.json
+          git add packages/typescript-sdk/src/
+
+          # Only commit if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(release): bump typescript-sdk to ${{ steps.bump_ts.outputs.new }} and dependents [skip ci]"
+            git push
+          fi
+
+      # ------------------------------------------------------------------
+      # 4. Build all packages
+      # ------------------------------------------------------------------
+      - name: Build all packages
+        run: |
           yarn workspace @well-played.gg/typescript-sdk build
           yarn workspace @well-played.gg/react-sdk build
+          yarn workspace @well-played.gg/module-sdk build
+          yarn workspace @well-played.gg/create-module build
+          yarn workspace @well-played.gg/component-sdk build
+          yarn workspace @well-played.gg/create-component build
+          yarn workspace @well-played.gg/module-ui build
+          yarn workspace @well-played.gg/cli build
 
-#      - name: Generate current GraphQL schema
-#        run: |
-#          mkdir -p old-schema
-#          mv schema.graphql old-schema/schema.graphql || true
-
-#      - name: Compare schema
-#        id: diff
-#        run: |
-#          yarn graphql-inspector diff old-schema/schema.graphql schema.graphql > schema.diff || true
-#          cat schema.diff
-#          echo "HAS_BREAKING=$(grep -q BREAKING schema.diff && echo true || echo false)" >> $GITHUB_ENV
-#          echo "HAS_DANGEROUS=$(grep -q DANGEROUS schema.diff && echo true || echo false)" >> $GITHUB_ENV
-#          echo "HAS_SAFE=$(grep -q SAFE schema.diff && echo true || echo false)" >> $GITHUB_ENV
-#          rm -rf old-schema
-#          rm -f schema.diff
-
-#      - name: Skip if no changes and not manual/push
-#        if: env.HAS_BREAKING == 'false' && env.HAS_DANGEROUS == 'false' && env.HAS_SAFE == 'false' && github.event_name != 'workflow_dispatch' && github.event_name != 'push'
-#        run: |
-#          echo "No schema changes detected and not manually triggered. Skipping release."
-#          exit 0
-
-#      - name: Configure Git
-#        run: |
-#          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-#          git config --global user.name "github-actions[bot]"
-
-#      - name: Commit schema changes
-#        run: |
-#          if [[ -n "$(git status --porcelain schema.graphql)" ]]; then
-#            git add schema.graphql
-#            git add packages/typescript-sdk/src/graphql-env.d.ts
-#            git commit -m "chore: update GraphQL schema"
-#          fi
-
-#      - name: Bump version based on schema diff or manual trigger
-#        run: |
-#          # Function to bump version in a workspace
-#          bump_version() {
-#            local pkg=$1
-#            cd packages/$pkg
-#            if [[ "$HAS_BREAKING" == "true" ]]; then
-#              npm version major -m "chore(release): v%s (breaking changes)"
-#            elif [[ "$HAS_DANGEROUS" == "true" ]]; then
-#              npm version minor -m "chore(release): v%s (dangerous changes)"
-#            elif [[ "$HAS_SAFE" == "true" ]]; then
-#              npm version patch -m "chore(release): v%s (safe changes)"
-#            else
-#              npm version minor -m "chore(release): v%s (package updates)"
-#            fi
-#            cd ../..
-#          }
-
-#          # Bump versions for both packages
-#          bump_version "typescript-sdk"
-#          bump_version "react-sdk"
-
-#      - name: Push changes and tags
-#        run: |
-#          git push
-#          git push --tags
-
-#      - name: Generate changelog
-#        run: |
-#          yarn conventional-changelog -p angular -i CHANGELOG.md -s
-
-#      - name: Commit changelog
-#        run: |
-#          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
-#            git add CHANGELOG.md
-#            git commit -m "docs(changelog): update for release"
-#            git push
-#          else
-#            echo "No changes to CHANGELOG.md, skipping commit"
-#          fi
-
-#      - name: Extract version
-#        id: version
-#        run: |
-#          VERSION=$(node -p "require('./package.json').version")
-#          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-#      - name: Create GitHub Release with Conventional Changelog
-#        uses: softprops/action-gh-release@v1
-#        with:
-#          tag_name: v${{ env.VERSION }}
-#          generate_release_notes: true
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to npm
+      # ------------------------------------------------------------------
+      # 5. Publish only packages whose version is not yet on npm
+      # ------------------------------------------------------------------
+      - name: Publish packages that need publishing
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          cd packages/typescript-sdk
-          npm publish --access public --provenance
-          cd ../react-sdk
-          npm publish --access public --provenance
+          publish_if_needed() {
+            local pkg_dir=$1
+            local pkg_name
+            local local_version
+            local published_version
+
+            pkg_name=$(node -p "require('./packages/$pkg_dir/package.json').name")
+            local_version=$(node -p "require('./packages/$pkg_dir/package.json').version")
+            published_version=$(npm view "$pkg_name" version 2>/dev/null || echo "0.0.0")
+
+            if [ "$local_version" = "$published_version" ]; then
+              echo "⏭️  $pkg_name@$local_version already published, skipping."
+            else
+              echo "📦 Publishing $pkg_name@$local_version (npm has $published_version)..."
+              cd "packages/$pkg_dir"
+              npm publish --access public --provenance
+              cd ../..
+              echo "✅ $pkg_name@$local_version published."
+            fi
+          }
+
+          # Publish in dependency order: typescript-sdk first, then dependents
+          publish_if_needed "typescript-sdk"
+          publish_if_needed "react-sdk"
+          publish_if_needed "module-sdk"
+          publish_if_needed "create-module"
+          publish_if_needed "component-sdk"
+          publish_if_needed "create-component"
+          publish_if_needed "module-ui"
+          publish_if_needed "cli"

@@ -4,7 +4,7 @@ import { join, resolve } from 'path';
 
 const moduleName = process.argv[2];
 if (!moduleName) {
-  console.error('Usage: npx @wellplayed/create-module <module-name>');
+  console.error('Usage: npx @well-played.gg/create-module <module-name>');
   process.exit(1);
 }
 
@@ -53,7 +53,7 @@ writeFileSync(join(targetDir, 'package.json'), JSON.stringify({
     preview: 'vite preview',
   },
   dependencies: {
-    '@wellplayed/module-sdk': '^0.1.0',
+    '@well-played.gg/module-sdk': '^0.1.0',
   },
   peerDependencies: {
     react: '>=18.0.0',
@@ -111,7 +111,7 @@ const componentName = moduleName
   .map(s => s.charAt(0).toUpperCase() + s.slice(1))
   .join('');
 
-writeFileSync(join(targetDir, 'src/index.tsx'), `import { defineModule } from '@wellplayed/module-sdk';
+writeFileSync(join(targetDir, 'src/index.tsx'), `import { defineModule } from '@well-played.gg/module-sdk';
 import { ${componentName} } from './${componentName}';
 
 const module = defineModule({
@@ -124,7 +124,7 @@ export default module.component;
 `);
 
 // src/Component.tsx
-writeFileSync(join(targetDir, `src/${componentName}.tsx`), `import { useModuleContext, useModuleQuery } from '@wellplayed/module-sdk';
+writeFileSync(join(targetDir, `src/${componentName}.tsx`), `import { useModuleContext, useModuleQuery } from '@well-played.gg/module-sdk';
 
 interface ${componentName}Props {
   title?: string;
