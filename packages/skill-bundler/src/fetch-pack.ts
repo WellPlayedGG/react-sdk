@@ -9,8 +9,10 @@ const manifestSchema = z.object({
   schemaHash: z.string(),
 });
 
+type Manifest = z.infer<typeof manifestSchema>;
+
 export type FetchedPack = {
-  readonly manifest: z.infer<typeof manifestSchema>;
+  readonly manifest: Manifest;
   readonly llmsFull: string;
   readonly guides: ReadonlyArray<{ readonly filename: string; readonly contents: string }>;
 };
@@ -26,19 +28,42 @@ const KNOWN_GUIDES = [
   'errors-for-consumers',
 ] as const;
 
-export async function fetchPack(baseUrl: string): Promise<FetchedPack> {
-  const manifestResp = await fetch(`${baseUrl}/pack.json`, { headers: { accept: 'application/json' } });
-  if (!manifestResp.ok) throw new Error(`manifest fetch failed: ${manifestResp.status}`);
-  const manifest = manifestSchema.parse(await manifestResp.json());
+// The MCP service does not currently expose `/pack.json`. When absent,
+// derive a stable version marker from the `/llms-full.txt` ETag (which
+// is content-hash-derived) so the bundled `.kp-version` still changes
+// whenever the pack content changes.
+function synthesizeManifest(llmsFullEtag: string | null): Manifest {
+  const cleanEtag = (llmsFullEtag ?? '').replace(/^W\//, '').replaceAll('"', '');
+  const version = cleanEtag || Date.now().toString();
+  return {
+    version,
+    gitSha: version.slice(0, 12) || 'unknown',
+    builtAt: new Date().toISOString(),
+    apiWarriorVersion: 'unknown',
+    schemaHash: cleanEtag || 'unknown',
+  };
+}
 
+export async function fetchPack(baseUrl: string): Promise<FetchedPack> {
   const llmsFullResp = await fetch(`${baseUrl}/llms-full.txt`);
+  if (!llmsFullResp.ok) throw new Error(`llms-full.txt fetch failed: ${llmsFullResp.status}`);
   const llmsFull = await llmsFullResp.text();
+
+  const manifestResp = await fetch(`${baseUrl}/pack.json`, { headers: { accept: 'application/json' } });
+  let manifest: Manifest;
+  if (manifestResp.ok) {
+    manifest = manifestSchema.parse(await manifestResp.json());
+  } else if (manifestResp.status === 404) {
+    manifest = synthesizeManifest(llmsFullResp.headers.get('etag'));
+  } else {
+    throw new Error(`manifest fetch failed: ${manifestResp.status}`);
+  }
 
   type Guide = { readonly filename: string; readonly contents: string };
 
   const guideResults: ReadonlyArray<Guide | null> = await Promise.all(
     KNOWN_GUIDES.map(async (slug): Promise<Guide | null> => {
-      const r = await fetch(`${baseUrl}/sdk-guides/${slug}.md`);
+      const r = await fetch(`${baseUrl}/guides/${slug}.md`);
       if (!r.ok) return null;
       return { filename: `${slug}.md`, contents: await r.text() };
     })
