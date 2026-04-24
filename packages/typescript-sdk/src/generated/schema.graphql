@@ -289,7 +289,7 @@ type MatchConfiguration {
 """Configuration for how a game is played and scored"""
 type GameConfiguration {
   """Number of match wins required to win the game (best-of format)"""
-  wonMatchCountToWinGame: Float!
+  wonMatchCountToWinGame: Float @deprecated(reason: "Use MATCH_SERIES_RESOLUTION advancement rule instead. Kept for legacy tournaments without rule sets.")
 
   """Whether individual match scores are aggregated as the game score"""
   useMatchScoresAsGameScore: Boolean!
@@ -340,7 +340,7 @@ type StepConfiguration {
   type: ConfigurationType!
 
   """List of group configurations within this step"""
-  groups: [GroupConfiguration!]!
+  groups: [GroupConfiguration!] @deprecated(reason: "Legacy groups system. Will be removed in a future version.")
 }
 
 enum ConfigurationType {
@@ -904,6 +904,7 @@ enum TournamentTeamStatus {
   AWAITING_FOR_PRESENCE_CONFIRMATION
   CONFIRMED
   DENIED
+  WITHDRAWN
 }
 
 """Definition of a single platform usage limit"""
@@ -2319,6 +2320,21 @@ type PlayerSkillRating {
   player: Player!
 }
 
+"""A manual seeding pin. At least one of groupId or gameId must be set."""
+type SeedingPin {
+  """Team being pinned"""
+  teamId: ID!
+
+  """Pin the team to this group"""
+  groupId: ID
+
+  """Pin the team to this game slots"""
+  gameId: ID
+
+  """0-indexed slot within the game"""
+  slotIndex: Int
+}
+
 """
 A single match within a game, representing one play session between teams
 """
@@ -2465,6 +2481,11 @@ type TournamentTeam {
   """Current registration and validation status of the team"""
   status: TournamentTeamStatus!
 
+  """
+  Date and time when the team withdrew from the tournament, or null if the team has not withdrawn
+  """
+  withdrawnAt: DateTime
+
   """Date and time when the team was registered"""
   createdAt: DateTime!
 
@@ -2553,6 +2574,11 @@ type TournamentStep {
   """
   configuration: StepConfiguration!
 
+  """
+  Ordered list of tournament team IDs representing the seeding order for this step (computed by SEEDING rules, consumed by structure generation).
+  """
+  seedingOrder: [ID!]!
+
   """Date and time when the step was created"""
   createdAt: DateTime!
 
@@ -2564,6 +2590,11 @@ type TournamentStep {
 
   """The tournament this step belongs to"""
   tournament: Tournament!
+
+  """
+  Manual seeding pin overrides persisted on the step. Empty when no pins are set. Produced by `persistSeedingPins` / `seedStep`; consumed by the seeding pipeline.
+  """
+  manualPins: [SeedingPin!]!
 }
 
 enum StepType {
@@ -2625,12 +2656,6 @@ type TournamentStepGroupRoundGame {
   """ID of the parent round"""
   tournamentStepGroupRoundId: ID!
 
-  """ID of the game the winner advances to"""
-  winningGameId: ID
-
-  """ID of the game the loser drops to (e.g. losers bracket)"""
-  losingGameId: ID
-
   """Timestamp when the game was created"""
   createdAt: DateTime!
 
@@ -2639,6 +2664,21 @@ type TournamentStepGroupRoundGame {
 
   """Matches within this game (best-of series)"""
   matches: [TournamentStepGroupRoundGameMatch!]!
+
+  """
+  Outgoing bracket routing edges. Each entry describes where the `WIN` or `LOSS` outcome of this game routes the affected team. An empty list means this game is a terminal node (e.g. the grand final).
+  """
+  gameLinks: [GameLink!]!
+
+  """
+  Deprecated. The ID of the game the winning team of this game advances to. Derived from `gameLinks` where `outcome = WIN`.
+  """
+  winningGameId: ID @deprecated(reason: "Use `gameLinks` — will be removed once all clients migrate.")
+
+  """
+  Deprecated. The ID of the game the losing team of this game drops to (loser bracket in double-elimination, or third-place game in single-elimination). Derived from `gameLinks` where `outcome = LOSS`.
+  """
+  losingGameId: ID @deprecated(reason: "Use `gameLinks` — will be removed once all clients migrate.")
 }
 
 enum TournamentGameStatus {
@@ -2697,8 +2737,42 @@ type TournamentStepGroup {
   """Timestamp when the group was last updated"""
   updatedAt: DateTime!
 
+  """Display order of the group within its tournament step"""
+  order: Float!
+
   """Rounds within this group"""
   rounds: [TournamentStepGroupRound!]!
+}
+
+"""
+Directed routing edge between two games in a tournament bracket. Emitted both at generation time (for statically known brackets such as single/double-elimination) and dynamically by the rule engine (for formats whose routing is produced by Lua `GENERATION` / action scripts).
+"""
+type GameLink {
+  """Unique identifier for this game-routing link."""
+  id: ID!
+
+  """
+  ID of the game whose outcome triggers the routing. This is the upstream / predecessor game.
+  """
+  sourceGameId: ID!
+
+  """
+  ID of the game the routing points to. This is the downstream / successor game the advancing team will play in.
+  """
+  targetGameId: ID!
+
+  """
+  Which outcome of the source game activates this link. `WIN` = winner-bracket advancement; `LOSS` = loser-bracket drop or third-place routing.
+  """
+  outcome: GameLinkOutcome!
+}
+
+"""
+Outcome that produces this bracket routing link. `WIN` routes the winning team of the source game to the target game (the winner bracket path). `LOSS` routes the losing team of the source game to the target game (the loser bracket path in double-elimination formats, or the third-place game in single-elimination).
+"""
+enum GameLinkOutcome {
+  WIN
+  LOSS
 }
 
 """A team score entry for a specific match"""
@@ -2730,6 +2804,7 @@ enum MatchScoreStatus {
   WINNER
   LOSER
   FORFEIT
+  DRAW
 }
 
 """Paginated list of match scores"""
@@ -2787,460 +2862,69 @@ enum TournamentAdminPermissions {
   MANAGE_PERMISSIONS
 }
 
-"""A condition that must be met for a rule to execute"""
-type RuleConditionModel {
-  """Formula string for the field to check (left side)"""
-  field: String!
-
-  """Comparison operator (EQ, NEQ, GT, GTE, LT, LTE, etc.)"""
-  operator: RuleConditionOperatorType!
-
-  """Formula string for the value to compare against (right side)"""
-  value: String!
-
-  """Scope at which this condition is evaluated (e.g. PER_TEAM, ALL_TEAMS)"""
-  scope: ConditionScopeType
-}
-
-enum RuleConditionOperatorType {
-  eq
-  neq
-  gt
-  gte
-  lt
-  lte
-  in
-  between
-}
-
-enum ConditionScopeType {
-  MATCH
-  GAME
-  ROUND
-  GROUP
-  STEP
-}
-
-"""
-Reference to a game by absolute ID or relative indices within the bracket structure
-"""
-type GameRefModel {
-  """Reference type (ABSOLUTE by ID or RELATIVE by indices)"""
-  type: RefType!
-
-  """Absolute game ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Zero-based group index (used when type is RELATIVE)"""
-  groupIndex: Int
-
-  """Zero-based round index within the group (used when type is RELATIVE)"""
-  roundIndex: Int
-
-  """Zero-based game index within the round (used when type is RELATIVE)"""
-  gameIndex: Int
-
-  """Zero-based team slot index within the game"""
-  slot: Int
-}
-
-enum RefType {
-  ID
-  RELATIVE
-}
-
-"""Reference to a group by absolute ID or relative index"""
-type GroupRefModel {
-  """Reference type (ABSOLUTE by ID or RELATIVE by index)"""
-  type: RefType!
-
-  """Absolute group ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Zero-based group index (used when type is RELATIVE)"""
-  groupIndex: Int
-}
-
-"""Reference to a round by absolute ID or relative indices"""
-type RoundRefModel {
-  """Reference type (ABSOLUTE by ID or RELATIVE by indices)"""
-  type: RefType!
-
-  """Absolute round ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Zero-based group index (used when type is RELATIVE)"""
-  groupIndex: Int
-
-  """Zero-based round index within the group (used when type is RELATIVE)"""
-  roundIndex: Int
-}
-
-"""Reference to a tournament step by absolute ID or relative position"""
-type StepRefModel {
-  """Reference type (ABSOLUTE by ID or RELATIVE by position)"""
-  type: RefType!
-
-  """Absolute step ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Relative position (PREVIOUS, NEXT, CURRENT) when type is RELATIVE"""
-  relative: StepRelativePosition
-}
-
-enum StepRelativePosition {
-  PREVIOUS
-  NEXT
-  CURRENT
-}
-
-"""Variable definition used in match score formula computation"""
-type MatchConfigVariableModel {
-  """Variable name used in the scoring formula"""
-  formulaName: String!
-
-  """Human-readable label for the variable"""
-  displayName: String!
-
-  """Default numeric value if not explicitly provided"""
-  defaultValue: Float!
-}
-
-"""
-Match configuration reference specifying where to source match settings from
-"""
-type MatchConfigRefModel {
-  """Source of the match configuration (INLINE, INHERIT, etc.)"""
-  source: MatchConfigSource!
-
-  """Inline scoring variables (used when source is INLINE)"""
-  variables: [MatchConfigVariableModel!]
-
-  """Inline score formula expression (used when source is INLINE)"""
-  scoreFormula: String
-}
-
-enum MatchConfigSource {
-  STEP_CONFIG
-  INLINE
-}
-
-"""Configuration for auto-generating bracket structure from a team count"""
-type AutoGenerateConfigModel {
-  """Auto-generation algorithm type (SINGLE_ELIM, ROUND_ROBIN, etc.)"""
-  type: AutoGenerateType!
-
-  """Minimum team count to trigger auto-generation"""
-  fromTeamCount: Int
-}
-
-enum AutoGenerateType {
-  ROUND_ROBIN_PAIRS
-  BRACKET
-  SWISS_PAIRS
-  LOWER_BRACKET
-  STEP_LADDER
-  DOUBLE_ROUND_ROBIN_PAIRS
-  PAGE_PLAYOFF
-  GSL_DUAL_TOURNAMENT
-}
-
-"""
-Scope that restricts when a rule triggers by limiting to specific game, round, or group
-"""
-type TriggerScopeModel {
-  """Restrict trigger to events within this specific game"""
-  gameId: ID
-
-  """Restrict trigger to events within this specific round"""
-  roundId: ID
-
-  """Restrict trigger to events within this specific group"""
-  groupId: ID
-}
-
-"""Event data that triggered a rule execution"""
-type RuleEventDataModel {
-  """IDs of teams involved in the triggering event"""
-  teamIds: [String!]!
-
-  """Serialized scores map"""
-  scores: String
-
-  """Serialized match result map"""
-  matchResult: String
-
-  """ID of the game that triggered the event"""
-  gameId: String
-
-  """ID of the round that triggered the event"""
-  roundId: String
-
-  """ID of the group that triggered the event"""
-  groupId: String
-}
-
-"""Result of evaluating a single condition during rule execution"""
-type ConditionEvaluationModel {
-  """Left-side field expression that was evaluated"""
-  field: String!
-
-  """Comparison operator used"""
-  operator: String!
-
-  """Right-side value expression that was evaluated"""
-  value: String!
-
-  """Scope at which the condition was evaluated"""
-  scope: String
-
-  """Whether the condition evaluated to true"""
-  result: Boolean!
-}
-
-"""Result of executing a single action during rule execution"""
-type ActionResultModel {
-  """The action that was executed"""
-  action: RuleAction!
-
-  """Whether the action executed successfully"""
-  success: Boolean!
-
-  """ID of the team the action was applied to"""
-  teamId: String!
-
-  """Human-readable details of the action result"""
-  details: String!
-}
-
-union RuleAction = AdvanceToGameActionModel | AdvanceToGroupActionModel | AdvanceToStepActionModel | EliminateActionModel | GenerateNextRoundActionModel | EndGameActionModel | EndRoundActionModel | EndGroupActionModel | SetTeamPropertyActionModel
-
-"""Action that advances a team to a specific game in the bracket"""
-type AdvanceToGameActionModel {
-  """Action type discriminator"""
+"""A single action performed when a rule fires"""
+type RuleActionModel {
+  """Kind of action performed"""
   type: RuleActionType!
 
-  """Reference to the target game"""
-  target: GameRefModel!
+  """Lua expression or script for this action"""
+  script: String
 }
 
+"""Built-in action kind performed when an advancement rule fires"""
 enum RuleActionType {
-  ADVANCE_TO_GAME
-  ADVANCE_TO_GROUP
-  ADVANCE_TO_STEP
+  ADVANCE
   ELIMINATE
-  GENERATE_NEXT_ROUND
-  END_GAME
-  END_ROUND
-  END_GROUP
-  SET_TEAM_PROPERTY
+  END
+  EXECUTE_LUA
 }
 
-"""Action that advances a team to a specific group"""
-type AdvanceToGroupActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Reference to the target group"""
-  target: GroupRefModel!
-
-  """Strategy for mapping team rankings into the target group"""
-  rankMapping: RankMappingType!
-}
-
-enum RankMappingType {
-  BY_RANK
-  SEED_OPTIMIZED
-  RANDOM
-}
-
-"""Action that advances a team to a different tournament step"""
-type AdvanceToStepActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Reference to the target step"""
-  target: StepRefModel!
-
-  """Strategy for mapping team rankings into the target step"""
-  rankMapping: RankMappingType!
-}
-
-"""Action that eliminates a team from the tournament"""
-type EliminateActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-}
-
-"""
-Action that generates a new round with paired games based on a pairing strategy
-"""
-type GenerateNextRoundActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Algorithm used to pair teams into games"""
-  pairingStrategy: PairingStrategyType!
-
-  """Number of games to create in the generated round"""
-  gamesPerRound: Int
-
-  """Number of team slots per generated game"""
-  teamSlotsPerGame: Int
-
-  """Best-of series count for generated matches"""
-  bestOf: Int
-
-  """Match configuration for generated games"""
-  matchConfiguration: MatchConfigRefModel
-}
-
-enum PairingStrategyType {
-  SWISS_DUTCH
-  SWISS_MONRAD
-  RANDOM
-  BY_RANK
-}
-
-"""Action that forcefully ends a game"""
-type EndGameActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Optional scope limiting which game to end"""
-  scope: GameRefModel
-}
-
-"""Action that forcefully ends a round"""
-type EndRoundActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Optional scope limiting which round to end"""
-  scope: RoundRefModel
-}
-
-"""Action that forcefully ends a group"""
-type EndGroupActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Optional scope limiting which group to end"""
-  scope: GroupRefModel
-}
-
-"""Action that sets a custom property on a team"""
-type SetTeamPropertyActionModel {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Property key to set on the team"""
-  key: String!
-
-  """Formula string for the computed value"""
-  formula: String!
-}
-
-"""Tiebreaker rule used to resolve tied scores in a scoring rule set"""
-type TiebreakerRuleModel {
-  """Unique identifier for the tiebreaker rule"""
-  id: ID!
-
-  """Priority order of this tiebreaker (lower runs first)"""
-  order: Float!
-
-  """Type of tiebreaker algorithm (e.g. HEAD_TO_HEAD, BUCHHOLZ)"""
-  type: String!
-
-  """Human-readable formula string"""
-  formula: String
-
-  """Sort direction for this tiebreaker (ASC or DESC)"""
-  sortOrder: RuleSortOrder!
-}
-
-enum RuleSortOrder {
-  ASC
-  DESC
-}
-
-"""
-Scoring configuration defining how team scores are calculated and aggregated
-"""
-type ScoringRuleSetModel {
-  """Unique identifier for the scoring rule set"""
-  id: ID!
-
-  """Method used to aggregate scores across matches (SUM, AVERAGE, etc.)"""
-  aggregation: ScoreAggregationType!
-
-  """Human-readable formula string"""
-  formula: String
-
-  """Points awarded for a win"""
-  winPoints: Float!
-
-  """Points awarded for a loss"""
-  lossPoints: Float!
-
-  """Points awarded for a draw"""
-  drawPoints: Float!
-
-  """Points awarded for a forfeit"""
-  forfeitPoints: Float!
-
-  """Ordered list of tiebreaker rules for resolving equal scores"""
-  tiebreakers: [TiebreakerRuleModel!]!
-}
-
-enum ScoreAggregationType {
-  SUM
-  AVERAGE
-  POINTS
-  FORMULA
-}
-
-"""
-Rule that defines how teams advance, are eliminated, or how rounds are generated
-"""
+"""A single advancement rule within a rule set"""
 type AdvancementRuleModel {
-  """Unique identifier for the advancement rule"""
+  """Unique rule ID"""
   id: ID!
 
-  """Display name of the rule"""
+  """Human-readable rule name"""
   name: String!
 
-  """Human-readable description of what this rule does"""
+  """Optional description"""
   description: String
 
-  """Execution priority order (lower runs first)"""
-  order: Float!
+  """Evaluation order within the rule set"""
+  order: Int!
 
-  """Event type that triggers this rule"""
+  """Tournament lifecycle event that triggers this rule"""
   triggerType: RuleTriggerType!
 
-  """Scope restricting when the rule triggers"""
-  triggerScope: TriggerScopeModel
+  """Optional Lua expression filtering the trigger scope"""
+  triggerScope: String
 
-  """Logical operator combining conditions (AND or OR)"""
-  conditionOperator: ConditionOperator!
+  """Lua expression returning a boolean"""
+  condition: String!
 
-  """Array of RuleCondition objects"""
-  conditions: [RuleConditionModel!]!
+  """Actions executed when the condition passes"""
+  actions: [RuleActionModel!]!
 
-  """Array of RuleAction objects"""
-  actions: [RuleAction!]!
-
-  """Whether actions execute automatically when conditions are met"""
+  """Whether the rule fires automatically on trigger events"""
   autoExecute: Boolean!
 
-  """Whether an admin can manually trigger or override this rule"""
+  """Whether an operator can manually override this rule"""
   allowManualOverride: Boolean!
 
-  """Whether this rule is currently active"""
+  """Whether the rule is enabled"""
   enabled: Boolean!
+
+  """Well-known purpose marker for internal behavior"""
+  purpose: AdvancementRulePurpose
+
+  """Creation timestamp"""
+  createdAt: DateTime!
+
+  """Last update timestamp"""
+  updatedAt: DateTime!
 }
 
+"""Tournament lifecycle event that triggers a rule evaluation"""
 enum RuleTriggerType {
   MATCH_ENDED
   GAME_ENDED
@@ -3248,288 +2932,1049 @@ enum RuleTriggerType {
   GROUP_ENDED
   STEP_ENDED
   MANUAL
+  STEP_SEEDING
+  ROUND_SEEDING
+  TEAM_WITHDREW
 }
 
-enum ConditionOperator {
-  AND
-  OR
+"""Well-known purposes that mark a rule for internal use"""
+enum AdvancementRulePurpose {
+  ADVANCEMENT
+  MATCH_SERIES_RESOLUTION
+  ELIMINATION
+  WINNER_PROMOTION
+  SEEDING
+  WITHDRAWAL_RESPONSE
 }
 
-"""
-Rule that transfers data (rankings, scores, teams) between tournament steps
-"""
-type CrossStepRuleModel {
-  """Unique identifier for the cross-step rule"""
+"""A single tiebreaker within a scoring rule set"""
+type TiebreakerRuleModel {
+  """Unique tiebreaker ID"""
   id: ID!
 
-  """Explicit source step ID"""
-  sourceStepId: ID
+  """Evaluation order"""
+  order: Int!
 
-  """Relative reference (PREVIOUS, NEXT, CURRENT)"""
-  sourceRelative: String
+  """Tiebreaker strategy"""
+  type: TiebreakerType!
 
-  """Data source: RANKINGS, SCORES, TEAMS"""
-  dataSource: String!
+  """Lua expression — present for CUSTOM_FORMULA"""
+  formula: String
 
-  """CrossStepUsage discriminated union"""
-  usage: CrossStepUsage!
+  """Sort order for this tiebreaker"""
+  sortOrder: SortOrder!
 }
 
-union CrossStepUsage = SeedOrderUsageModel | QualifyUsageModel | InjectScoreUsageModel
+"""Supported tiebreaker strategies for ranking ties"""
+enum TiebreakerType {
+  HEAD_TO_HEAD
+  SCORE_DIFFERENCE
+  TOTAL_SCORE
+  WINS
+  BUCHHOLZ
+  SONNBORN_BERGER
+  MEDIAN_BUCHHOLZ
+  CUMULATIVE
+  CUSTOM_FORMULA
+}
 
-"""Cross-step usage that seeds teams based on rankings from another step"""
-type SeedOrderUsageModel {
-  """Usage type discriminator"""
+"""Sort direction"""
+enum SortOrder {
+  ASC
+  DESC
+}
+
+"""Scoring configuration attached to a rule set"""
+type ScoringRuleSetModel {
+  """Unique scoring rule set ID"""
+  id: ID!
+
+  """Aggregation strategy"""
+  aggregation: ScoreAggregationType!
+
+  """Lua expression for FORMULA aggregation"""
+  formula: String
+
+  """Points for a win"""
+  winPoints: Int
+
+  """Points for a loss"""
+  lossPoints: Int
+
+  """Points for a draw"""
+  drawPoints: Int
+
+  """Points for a forfeit"""
+  forfeitPoints: Int
+
+  """Ordered tiebreakers"""
+  tiebreakers: [TiebreakerRuleModel!]!
+}
+
+"""Aggregation strategy used to compute a team score in a step"""
+enum ScoreAggregationType {
+  SUM
+  AVERAGE
+  POINTS
+  FORMULA
+  CUSTOM_LUA
+}
+
+"""Template for a single game within a round"""
+type GameTemplateModel {
+  """Unique game template ID"""
+  id: ID!
+
+  """Game order within the round"""
+  order: Int!
+
+  """Number of team slots in the game"""
+  teamSlots: Int!
+
+  """Best-of count for the series"""
+  bestOf: Int!
+
+  """Lua expression resolving to the target slot for the winner"""
+  onWinTarget: String
+
+  """Which slot on this source game wins"""
+  onWinSourceSlot: Int
+
+  """Target slot index for the winner"""
+  onWinTargetSlot: Int
+
+  """Lua expression resolving to the target slot for the loser"""
+  onLossTarget: String
+
+  """Which slot on this source game loses"""
+  onLossSourceSlot: Int
+
+  """Target slot index for the loser"""
+  onLossTargetSlot: Int
+}
+
+"""Template for a single round within a group"""
+type RoundTemplateModel {
+  """Unique round template ID"""
+  id: ID!
+
+  """Human-readable round name"""
+  name: String!
+
+  """Round order within the group"""
+  order: Int!
+
+  """Game templates for this round"""
+  gameTemplates: [GameTemplateModel!]!
+}
+
+"""Template for a single group within the structure"""
+type GroupTemplateModel {
+  """Unique group template ID"""
+  id: ID!
+
+  """Human-readable group name"""
+  name: String!
+
+  """Optional description"""
+  description: String
+
+  """Group order within the structure"""
+  order: Int!
+
+  """Numeric literal or Lua expression for total team slots"""
+  teamSlotsExpr: String!
+
+  """Lua script that dynamically creates rounds and games (Mode 1)"""
+  generationScript: String
+
+  """Numeric literal or Lua expression for best-of count per game"""
+  bestOfExpr: String!
+
+  """Numeric literal or Lua expression for team slots per game"""
+  teamSlotsPerGameExpr: String!
+
+  """Numeric literal or Lua expression for total round count"""
+  roundCountExpr: String
+
+  """Static round templates (Mode 2)"""
+  roundTemplates: [RoundTemplateModel!]!
+}
+
+"""Complete structure template for a tournament step"""
+type StructureTemplateModel {
+  """Unique structure template ID"""
+  id: ID!
+
+  """Group templates composing the structure"""
+  groupTemplates: [GroupTemplateModel!]!
+}
+
+"""How a cross-step rule consumes source-step data"""
+type CrossStepUsageModel {
+  """Usage strategy"""
   type: CrossStepUsageType!
+
+  """Lua boolean expression — present for QUALIFY usage"""
+  condition: String
+
+  """Lua numeric expression — present for INJECT_SCORE usage"""
+  formula: String
 }
 
+"""How data from a source step is consumed by the target step"""
 enum CrossStepUsageType {
   SEED_ORDER
   QUALIFY
   INJECT_SCORE
 }
 
-"""
-Cross-step usage that qualifies teams based on a condition evaluated against source step data
-"""
-type QualifyUsageModel {
-  """Usage type discriminator"""
-  type: CrossStepUsageType!
-
-  """Formula string for the qualification condition"""
-  condition: String!
-}
-
-"""
-Cross-step usage that injects scores from another step into the current step
-"""
-type InjectScoreUsageModel {
-  """Usage type discriminator"""
-  type: CrossStepUsageType!
-
-  """Formula string for the score injection"""
-  formula: String!
-}
-
-"""Template defining a game slot in the bracket structure"""
-type GameTemplateModel {
-  """Unique identifier for the game template"""
+"""A single cross-step rule within a rule set"""
+type CrossStepRuleModel {
+  """Unique cross-step rule ID"""
   id: ID!
 
-  """Sort order of this game within its round"""
-  order: Float!
+  """Explicit source step ID, if set"""
+  sourceStepId: ID
 
-  """Number of team slots in this game"""
-  teamSlots: Float!
+  """Relative source step selector, if set"""
+  sourceRelative: StepRelativePosition
 
-  """Number of matches in the best-of series"""
-  bestOf: Float!
+  """Kind of data pulled"""
+  dataSource: CrossStepDataSource!
 
-  """Match configuration for this game template"""
-  matchConfiguration: MatchConfigRefModel
-
-  """Target reference on win"""
-  onWinTarget: GameRefModel
-
-  """Target reference on loss"""
-  onLossTarget: GameRefModel
+  """How the data is consumed"""
+  usage: CrossStepUsageModel!
 }
 
-"""Template defining a round and its game slots within a group"""
-type RoundTemplateModel {
-  """Unique identifier for the round template"""
-  id: ID!
-
-  """Display name of the round"""
-  name: String!
-
-  """Sort order of this round within its group"""
-  order: Float!
-
-  """Game templates within this round"""
-  gameTemplates: [GameTemplateModel!]!
+"""Relative position of a tournament step used by cross-step rules"""
+enum StepRelativePosition {
+  PREVIOUS
+  NEXT
+  CURRENT
 }
 
-"""Variable definition used in match score formula computation"""
-type MatchConfigurationVariableModel {
-  """Variable name used in the scoring formula"""
-  formulaName: String!
-
-  """Human-readable label for the variable"""
-  displayName: String!
-
-  """Default numeric value if not explicitly provided"""
-  defaultValue: Float!
+"""Type of data pulled from the source step"""
+enum CrossStepDataSource {
+  TEAMS
+  WINNERS
+  QUALIFIED
+  ELIMINATED
+  WITHDRAWN
+  RANKINGS
+  SCORES
 }
 
-"""Match configuration defining scoring variables and formula"""
-type MatchConfigurationModel {
-  """Variables available for score computation"""
-  variables: [MatchConfigurationVariableModel!]!
-
-  """Formula expression used to compute the final score from variables"""
-  scoreFormula: String
-}
-
-"""
-Template defining a group in the bracket structure with its rounds and generation settings
-"""
-type GroupTemplateModel {
-  """Unique identifier for the group template"""
-  id: ID!
-
-  """Display name of the group"""
-  name: String!
-
-  """Sort order of this group within the structure"""
-  order: Float!
-
-  """Number of team slots available in this group"""
-  teamSlots: Float!
-
-  """AutoGenerateConfig for this group (legacy JSON)"""
-  autoGenerate: AutoGenerateConfigModel
-
-  """Auto-generate algorithm type"""
-  autoGenerateType: AutoGenerateType
-
-  """Number of team slots per game"""
-  teamSlotsPerGame: Int!
-
-  """Best-of series count"""
-  bestOf: Int!
-
-  """Override round count"""
-  roundCount: Int
-
-  """Match configuration for generated games"""
-  matchConfiguration: MatchConfigurationModel
-
-  """Round templates within this group"""
-  roundTemplates: [RoundTemplateModel!]!
-}
-
-"""Top-level structure template defining the bracket layout for a step"""
-type StructureTemplateModel {
-  """Unique identifier for the structure template"""
-  id: ID!
-
-  """Group templates that make up the bracket structure"""
-  groupTemplates: [GroupTemplateModel!]!
-}
-
-"""
-Top-level rule set aggregate for a tournament step, containing scoring, advancement, cross-step rules, and structure
-"""
+"""Complete rule set attached to a tournament step"""
 type StepRuleSetModel {
-  """Unique identifier for the rule set"""
+  """Unique rule set ID"""
   id: ID!
 
-  """Current version number, incremented on each update"""
-  version: Float!
+  """Version number of the rule set"""
+  version: Int!
 
-  """Name of the preset used to generate this rule set, if any"""
+  """Name of the preset this rule set was derived from, if any"""
   presetName: String
 
-  """Team count this rule set was configured for"""
+  """Resolved team count at the time of rule-set generation"""
   teamCount: Int
 
-  """Whether this rule set has been validated via simulation"""
+  """Whether the rule set has been validated"""
   validated: Boolean!
 
-  """Timestamp of the most recent successful validation"""
+  """Timestamp of the last successful validation"""
   validatedAt: DateTime
 
-  """Scoring configuration for this step"""
-  scoringRuleSet: ScoringRuleSetModel!
+  """Scoring configuration"""
+  scoringRuleSet: ScoringRuleSetModel
 
-  """Ordered list of advancement rules"""
+  """Advancement rules in evaluation order"""
   advancementRules: [AdvancementRuleModel!]!
 
-  """Cross-step data transfer rules"""
+  """Cross-step rules attached to this rule set"""
   crossStepRules: [CrossStepRuleModel!]!
 
-  """Bracket structure template for this step"""
+  """Optional static structure template"""
   structureTemplate: StructureTemplateModel
 
-  """Timestamp when the rule set was created"""
+  """Creation timestamp"""
   createdAt: DateTime!
 
-  """Timestamp when the rule set was last updated"""
+  """Last update timestamp"""
+  updatedAt: DateTime!
+}
+
+"""Declared parameter of a preset script"""
+type PresetParameterModel {
+  """Parameter name (unique within the preset)"""
+  name: String!
+
+  """Primitive parameter type"""
+  type: PresetParameterType!
+
+  """Whether the parameter must be provided when applying"""
+  required: Boolean!
+
+  """Default value for optional parameters, serialized as a string"""
+  defaultValue: String
+
+  """Optional description"""
+  description: String
+}
+
+"""Primitive type of a preset script parameter"""
+enum PresetParameterType {
+  INT
+  FLOAT
+  STRING
+  BOOLEAN
+}
+
+"""User-defined preset script scoped to an organization"""
+type PresetScriptModel {
+  """Unique preset script ID"""
+  id: ID!
+
+  """Preset name (unique within the organization)"""
+  name: String!
+
+  """Optional description"""
+  description: String
+
+  """Lua source building a complete rule set"""
+  script: String!
+
+  """Declared parameters consumed by the preset"""
+  parameters: [PresetParameterModel!]!
+
+  """Creation timestamp"""
+  createdAt: DateTime!
+
+  """Last update timestamp"""
   updatedAt: DateTime!
 }
 
 """
-Audit log entry for a single rule execution, recording event, conditions, and actions
+A built-in tournament-format template provided by the platform. Built-ins are read-only and shared across all organizations.
 """
-type RuleExecutionLogModel {
-  """Unique identifier for the log entry"""
-  id: ID!
+type BuiltinPresetModel {
+  """
+  Stable slug identifier (e.g. "single-elim"). Use this as the `builtinPresetId` argument on apply/duplicate mutations.
+  """
+  id: String!
 
-  """ID of the advancement rule that was executed"""
-  advancementRuleId: ID!
+  """Human-readable display name shown in the UI"""
+  displayName: String!
 
-  """Version of the rule set at the time of execution"""
-  ruleSetVersion: Float!
+  """One- to two-line description of the format"""
+  description: String!
 
-  """Trigger event payload"""
-  triggerEventData: RuleEventDataModel!
+  """Coarse family used to group templates in the picker"""
+  category: BuiltinPresetCategory!
 
-  """Evaluated condition results"""
-  conditionsEvaluated: [ConditionEvaluationModel!]!
+  """Declared parameters consumed by the template"""
+  parameters: [PresetParameterModel!]!
 
-  """Whether all conditions were satisfied"""
-  conditionsMet: Boolean!
+  """
+  Canonical Lua source. Returned so callers can preview before duplicating.
+  """
+  source: String!
 
-  """Executed action results"""
-  actionsExecuted: [ActionResultModel!]!
+  """
+  Whether this preset supports any form of team pinning (group pinning or slot pinning). When false, the UI MUST NOT expose the pin-team affordance for this preset.
+  """
+  supportsPinning: Boolean!
 
-  """Whether this execution was a manual override by an admin"""
-  manualOverride: Boolean!
+  """
+  Whether this preset supports pinning a team to a specific group. When omitted, derive from topology (#groups > 1 && supportsPinning).
+  """
+  supportsGroupPinning: Boolean
 
-  """Account ID of the admin who performed the manual override"""
-  overrideBy: ID
-
-  """Timestamp when the rule was executed"""
-  createdAt: DateTime!
+  """
+  Whether this preset supports pinning a team to a specific game slot. When omitted, derive from supportsPinning directly.
+  """
+  supportsSlotPinning: Boolean
 }
 
-"""A single validation error or warning for a rule set"""
-type RuleValidationErrorModel {
-  """
-  Dot-separated path to the invalid field (e.g. rules[0].conditions[1].field)
-  """
-  path: String!
+"""
+High-level family of a built-in tournament-format preset. Used by the console to group templates in the picker.
+"""
+enum BuiltinPresetCategory {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  SWISS
+  ROUND_ROBIN
+  GROUP_STAGE
+  OTHER
+}
 
-  """Human-readable description of the validation issue"""
+"""A single error reported by the Lua validator"""
+type ScriptErrorModel {
+  """Line number where the error was detected (1-based)"""
+  line: Int!
+
+  """Column where the error was detected (1-based)"""
+  column: Int!
+
+  """Human-readable error message"""
   message: String!
 
-  """Line number in the expression where the error occurred"""
-  line: Float
-
-  """Column number in the expression where the error occurred"""
-  column: Float
+  """Machine-readable error code"""
+  code: ScriptErrorCode!
 }
 
-"""Result of validating a rule set configuration"""
-type RuleValidationResultModel {
-  """Whether the rule set passed validation without errors"""
+"""Machine-readable error categories returned by the Lua validator"""
+enum ScriptErrorCode {
+  SYNTAX
+  UNDEFINED_VARIABLE
+  INVALID_FUNCTION
+  TYPE_MISMATCH
+  RUNTIME
+  BLOCKED_FUNCTION
+  TIMEOUT
+  INSTRUCTION_LIMIT
+}
+
+"""A single warning reported by the Lua validator"""
+type ScriptWarningModel {
+  """Line number where the warning was raised (1-based)"""
+  line: Int!
+
+  """Column where the warning was raised (1-based)"""
+  column: Int!
+
+  """Human-readable warning message"""
+  message: String!
+
+  """Machine-readable warning code"""
+  code: ScriptWarningCode!
+}
+
+"""Machine-readable warning categories returned by the Lua validator"""
+enum ScriptWarningCode {
+  UNUSED_VARIABLE
+  UNREACHABLE_CODE
+  DEPRECATED_FUNCTION
+}
+
+"""Result of a Lua script validation pass"""
+type ScriptValidationResultModel {
+  """Whether the script passed validation (no errors)"""
   valid: Boolean!
 
-  """Validation errors that must be fixed"""
-  errors: [RuleValidationErrorModel!]!
+  """Errors detected during validation"""
+  errors: [ScriptErrorModel!]!
 
-  """Validation warnings that should be reviewed"""
-  warnings: [RuleValidationErrorModel!]!
+  """Warnings detected during validation"""
+  warnings: [ScriptWarningModel!]!
 }
 
-"""Paginated list of rule execution audit logs"""
-type PaginatedRuleExecutionLogs {
+"""Summary of a single side-effect produced by a simulated run"""
+type SimulatedEffectModel {
+  """Type of effect"""
+  type: SimulatedEffectType!
+
+  """Human-readable summary of the effect"""
+  description: String!
+}
+
+"""Type of side-effect produced by a simulated Lua script run"""
+enum SimulatedEffectType {
+  ADVANCE
+  ELIMINATE
+  END_GAME
+  END_ROUND
+  END_GROUP
+  SET_METADATA
+  SET_CUSTOM_FIELD
+  SET_STATUS
+  SET_MATCH_RESULT
+  REGISTER_TEAM
+  CREATE_GROUP
+  CREATE_ROUND
+  CREATE_GAME
+  LINK
+  SET_SCORING
+  ADD_TIEBREAKER
+  ADD_RULE
+  ADD_CROSS_STEP_RULE
+  RESEED_STEP
+}
+
+"""Result of simulating a Lua script"""
+type ScriptSimulationResultModel {
+  """Whether the script ran to completion without errors"""
+  success: Boolean!
+
+  """Errors captured during simulation"""
+  errors: [ScriptErrorModel!]!
+
+  """Warnings captured during simulation"""
+  warnings: [ScriptWarningModel!]!
+
+  """Summary of side-effects produced by the simulated run"""
+  effectsSummary: [SimulatedEffectModel!]!
+
+  """Wall-clock execution time in milliseconds"""
+  executionTimeMs: Int!
+
+  """Number of Lua instructions executed"""
+  instructionsUsed: Int!
+}
+
+"""Structured detail about a Lua runtime error"""
+type LuaErrorDetailModel {
+  """Script execution context in which the error occurred"""
+  scriptContextType: ScriptContextType!
+
+  """The Lua source script that threw the error"""
+  script: String!
+
+  """Line number of the error (1-based)"""
+  line: Int!
+
+  """Column of the error (1-based)"""
+  column: Int!
+
+  """Human-readable error message"""
+  message: String!
+
+  """Stack trace lines"""
+  stack: [String!]!
+}
+
+"""
+Execution context of a Lua script — determines which variables and functions are available
+"""
+enum ScriptContextType {
+  CONDITION
+  ACTION
+  GENERATION
+  PRESET
+  CROSS_STEP
+  FORMULA
+}
+
+"""A single error produced during a validation run"""
+type ValidationErrorModel {
+  """Unique validation error ID"""
+  id: ID!
+
+  """Machine-readable error code"""
+  code: ValidationErrorCode!
+
+  """
+  Human-readable error message. Includes the offender context (which rule / team / game / group triggered the violation) and, for Lua throws, the raw Lua message and line number.
+  """
+  message: String!
+
+  """
+  Preset-author-facing remediation hint — describes the class of problem and suggests the next step a preset author should take. Keyed on the invariant / error code.
+  """
+  hint: String
+
+  """Invariant code, if the error was caused by a violated invariant"""
+  invariantCode: InvariantCode
+
+  """Lua error detail, if the error originated from a Lua script"""
+  luaError: LuaErrorDetailModel
+
+  """Offending entity, if available"""
+  offender: InvariantOffenderUnion
+}
+
+"""Machine-readable error codes emitted by the validator"""
+enum ValidationErrorCode {
+  SETUP_FAILED
+  UPSTREAM_NOT_VALIDATED
+  SEEDING_FAILED
+  GENERATION_FAILED
+  LUA_THROW
+  RULE_NEVER_FIRED
+  CROSS_STEP_NEVER_EVALUATED
+  INVARIANT_VIOLATED
+  DEADLOCK
+  MUTATION_CEILING_EXCEEDED
+  EXECUTION_TIMEOUT
+  ORPHAN_SCORE_ROW
+  DUPLICATE_ADVANCEMENT
+  ADVANCE_TARGET_MISSING
+  ADVANCE_BACKWARD
+  ADVANCE_OVER_CAPACITY
+  INVALID_RULE_SET_INPUT
+  RULE_ACTION_INVALID_ID
+  INTERNAL_ERROR
+}
+
+"""Machine-readable invariant codes checked during validation"""
+enum InvariantCode {
+  STEP_NOT_ENDED
+  GAME_NOT_ENDED
+  GROUP_OR_ROUND_INCOMPLETE
+  NO_WINNER_DECLARED
+  TEAM_IN_LIMBO
+  RANK_NOT_MATERIALISED
+  RULE_NEVER_FIRED
+  INFINITE_LOOP_CEILING_EXCEEDED
+  LUA_EXECUTION_THROWN
+  PROGRESS_DEADLOCK
+  INVALID_SCORE_VALUE
+  ILLEGAL_STATUS_TRANSITION
+  CROSS_STEP_RULE_NOT_EVALUATED
+  GROUP_TERMINAL_CASCADE_INCOMPLETE
+  ORPHAN_SCORE_ROW
+  DUPLICATE_ADVANCEMENT
+  ADVANCE_TARGET_MISSING
+  ADVANCE_BACKWARD
+  ADVANCE_OVER_CAPACITY
+  SEEDING_RULE_MISSING
+  ROUND_NEVER_POPULATED
+  SEEDING_OVERFILL
+  SEEDING_UNDERFILL
+  PIN_VIOLATED
+  PIN_UNSUPPORTED_BUT_PRESENT
+  WITHDRAWAL_RULE_MISSING
+  WITHDRAWAL_LEFT_ORPHANS
+  WITHDRAWAL_BROKE_STEP
+}
+
+"""
+One of the seven offender entity types produced by a violated invariant
+"""
+union InvariantOffenderUnion = RuleOffenderModel | CrossStepRuleOffenderModel | GameOffenderModel | RoundOffenderModel | GroupOffenderModel | TeamOffenderModel | ScoreRowOffenderModel
+
+"""Advancement rule that triggered a violation"""
+type RuleOffenderModel {
+  """Discriminant — always RULE"""
+  kind: OffenderKind!
+
+  """ID of the offending advancement rule"""
+  ruleId: ID!
+
+  """Human-readable rule name"""
+  ruleName: String!
+
+  """Trigger type of the rule"""
+  trigger: RuleTriggerType!
+}
+
+"""
+Discriminant identifying which concrete offender type the union resolves to
+"""
+enum OffenderKind {
+  RULE
+  CROSS_STEP_RULE
+  GAME
+  ROUND
+  GROUP
+  TEAM
+  SCORE_ROW
+}
+
+"""Cross-step rule that was never evaluated"""
+type CrossStepRuleOffenderModel {
+  """Discriminant — always CROSS_STEP_RULE"""
+  kind: OffenderKind!
+
+  """ID of the offending cross-step rule"""
+  crossStepRuleId: ID!
+
+  """Data source type"""
+  dataSource: CrossStepDataSource!
+
+  """Usage type"""
+  usage: CrossStepUsageType!
+}
+
+"""Game entity that triggered a violation"""
+type GameOffenderModel {
+  """Discriminant — always GAME"""
+  kind: OffenderKind!
+
+  """ID of the offending game"""
+  gameId: ID!
+
+  """Zero-based group index"""
+  groupIndex: Int!
+
+  """Zero-based round index within the group"""
+  roundIndex: Int!
+
+  """Zero-based game index within the round"""
+  gameIndex: Int!
+
+  """Game status at the time of the violation"""
+  status: GameStatus!
+}
+
+"""Lifecycle status of a tournament game"""
+enum GameStatus {
+  WAITING
+  STARTED
+  ENDED
+}
+
+"""Round entity that triggered a violation"""
+type RoundOffenderModel {
+  """Discriminant — always ROUND"""
+  kind: OffenderKind!
+
+  """ID of the offending round"""
+  roundId: ID!
+
+  """Zero-based group index"""
+  groupIndex: Int!
+
+  """Zero-based round index within the group"""
+  roundIndex: Int!
+}
+
+"""Group entity that triggered a violation"""
+type GroupOffenderModel {
+  """Discriminant — always GROUP"""
+  kind: OffenderKind!
+
+  """ID of the offending group"""
+  groupId: ID!
+
+  """Zero-based group index"""
+  groupIndex: Int!
+
+  """Human-readable group name"""
+  groupName: String!
+}
+
+"""Team entity that triggered a violation"""
+type TeamOffenderModel {
+  """Discriminant — always TEAM"""
+  kind: OffenderKind!
+
+  """ID of the offending team"""
+  teamId: ID!
+
+  """Human-readable team name"""
+  teamName: String!
+
+  """Team status at the time of violation"""
+  currentStatus: TeamScopeStatus
+}
+
+"""
+Status of a team within a particular scope (game, round, group, step, tournament)
+"""
+enum TeamScopeStatus {
+  ACTIVE
+  WINNER
+  QUALIFIED
+  ELIMINATED
+  WITHDRAWN
+}
+
+"""Score row entity that triggered a violation"""
+type ScoreRowOffenderModel {
+  """Discriminant — always SCORE_ROW"""
+  kind: OffenderKind!
+
+  """Scope level of the score row"""
+  scope: ScoreRowScope!
+
+  """ID of the offending score row"""
+  scoreRowId: ID!
+
+  """ID of the team associated with the score row"""
+  teamId: ID!
+
+  """Score value, if set"""
+  score: Float
+
+  """Rank, if materialised"""
+  rank: Int
+
+  """Team scope status associated with the score row, if set"""
+  status: TeamScopeStatus
+}
+
+"""Scope level of a score row referenced in a validation offender"""
+enum ScoreRowScope {
+  TOURNAMENT
+  STEP
+  GROUP
+  ROUND
+  GAME
+}
+
+"""Result of checking a single invariant"""
+type InvariantResultModel {
+  """Invariant code"""
+  code: InvariantCode!
+
+  """Severity of the invariant"""
+  severity: InvariantSeverity!
+
+  """Whether the invariant passed"""
+  passed: Boolean!
+
+  """Human-readable message"""
+  message: String
+
+  """Offending entities, if the invariant was violated"""
+  offenders: [InvariantOffenderUnion!]!
+}
+
+"""Severity level of a violated invariant"""
+enum InvariantSeverity {
+  ERROR
+  WARNING
+}
+
+"""Summary of how many times a rule fired during validation"""
+type RuleFireSummaryModel {
+  """ID of the advancement rule"""
+  ruleId: ID!
+
+  """Human-readable rule name"""
+  ruleName: String!
+
+  """Trigger type of the rule"""
+  trigger: RuleTriggerType!
+
+  """Number of times the rule fired"""
+  fireCount: Int!
+}
+
+"""Final result of a completed validation job"""
+type ValidationResultModel {
+  """Whether the validation succeeded (no violations)"""
+  success: Boolean!
+
+  """Total wall-clock duration in milliseconds"""
+  durationMs: Int!
+
+  """Total number of state mutations applied during the run"""
+  totalMutations: Int!
+
+  """Results for all checked invariants"""
+  invariantResults: [InvariantResultModel!]!
+
+  """Errors that were collected during the run"""
+  errors: [ValidationErrorModel!]!
+
+  """Summary of rule fire counts"""
+  ruleFiredSummary: [RuleFireSummaryModel!]!
+}
+
+"""Real-time progress of a running validation job"""
+type ValidationProgressModel {
+  """Current execution stage"""
+  stage: ValidationStage!
+
+  """Percentage completion within the current stage (0–100)"""
+  percent: Float!
+
+  """Optional detail message from the current phase"""
+  currentPhaseDetail: String
+
+  """Number of rules fired so far"""
+  rulesFired: Int!
+
+  """Total number of enabled rules declared in the rule set"""
+  totalRulesDeclared: Int!
+
+  """Total state mutations applied so far"""
+  totalMutations: Int!
+
+  """Elapsed wall-clock time in milliseconds"""
+  elapsedMs: Int!
+}
+
+"""Current execution stage of a running validation job"""
+enum ValidationStage {
+  QUEUED
+  SEEDING
+  GENERATING
+  UPSTREAM_RUNNING
+  PLAYING
+  ASSERTING
+  FINALISING
+}
+
+"""A rule-set validation job"""
+type ValidationJobModel {
+  """Unique job ID"""
+  id: ID!
+
+  """ID of the validated step rule set"""
+  stepRuleSetId: ID!
+
+  """Current job status"""
+  status: ValidationJobStatus!
+
+  """Current execution stage"""
+  stage: ValidationStage!
+
+  """Current progress snapshot"""
+  progress: ValidationProgressModel!
+
+  """
+  Final result of the validation run. Populated only when status is SUCCEEDED or FAILED.
+  """
+  result: ValidationResultModel
+
+  """Short error summary if the job failed"""
+  errorSummary: String
+
+  """Timestamp when the job was created / queued"""
+  startedAt: DateTime!
+
+  """Timestamp when the job completed (success, failure, or cancel)"""
+  completedAt: DateTime
+}
+
+"""Lifecycle status of a rule-set validation job"""
+enum ValidationJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+"""A single streaming event emitted during a validation run"""
+type ValidationEventModel {
+  """Unique event ID"""
+  id: ID!
+
+  """ID of the parent validation job"""
+  jobId: ID!
+
+  """Monotonically increasing sequence number within the job"""
+  sequence: Int!
+
+  """Timestamp when the event was emitted"""
+  timestamp: DateTime!
+
+  """Event category"""
+  kind: ValidationEventKind!
+
+  """Human-readable event summary"""
+  summary: String!
+
+  """Associated rule ID, if applicable"""
+  ruleId: ID
+
+  """Associated cross-step rule ID, if applicable"""
+  crossStepRuleId: ID
+
+  """Associated match ID, if applicable"""
+  matchId: ID
+
+  """Associated game ID, if applicable"""
+  gameId: ID
+
+  """Associated round ID, if applicable"""
+  roundId: ID
+
+  """Associated group ID, if applicable"""
+  groupId: ID
+
+  """Associated step ID, if applicable"""
+  stepId: ID
+
+  """Associated team ID, if applicable"""
+  teamId: ID
+
+  """
+  Effect kind, if the event describes a state mutation. Union of SimulatedEffectType, game_status, and team_scope_status values — interpretation depends on the event kind.
+  """
+  effectType: ValidationEffectType
+
+  """
+  Status before the state transition, if applicable. Union of game_status, team_scope_status, and step_status.
+  """
+  statusBefore: ValidationStatus
+
+  """
+  Status after the state transition, if applicable. Union of game_status, team_scope_status, and step_status.
+  """
+  statusAfter: ValidationStatus
+}
+
+"""Category of a streaming validation event"""
+enum ValidationEventKind {
+  SEED
+  GENERATE
+  MATCH_UPDATED
+  RULE_FIRED
+  EFFECT_APPLIED
+  SCOPE_ENDED
+  CROSS_STEP_EVALUATED
+  ASSERTION
+  ADMIN_OVERRIDE
+  ERROR
+  WARNING
+  PROGRESS
+}
+
+"""
+Effect kind described by a validation event. Union of SimulatedEffectType, game_status, and team_scope_status — interpretation depends on the event kind.
+"""
+enum ValidationEffectType {
+  ADVANCE
+  ELIMINATE
+  END_GAME
+  END_ROUND
+  END_GROUP
+  SET_METADATA
+  SET_CUSTOM_FIELD
+  SET_STATUS
+  SET_MATCH_RESULT
+  REGISTER_TEAM
+  CREATE_GROUP
+  CREATE_ROUND
+  CREATE_GAME
+  LINK
+  SET_SCORING
+  ADD_TIEBREAKER
+  ADD_RULE
+  ADD_CROSS_STEP_RULE
+  GAME_WAITING
+  GAME_STARTED
+  GAME_ENDED
+  TEAM_ACTIVE
+  TEAM_WINNER
+  TEAM_QUALIFIED
+  TEAM_ELIMINATED
+  TEAM_WITHDRAWN
+}
+
+"""
+Before/after status of a state transition recorded in a validation event. Union of game_status, team_scope_status, and step_status with namespaced values.
+"""
+enum ValidationStatus {
+  GAME_WAITING
+  GAME_STARTED
+  GAME_ENDED
+  TEAM_ACTIVE
+  TEAM_WINNER
+  TEAM_QUALIFIED
+  TEAM_ELIMINATED
+  TEAM_WITHDRAWN
+  STEP_CONFIGURED
+  STEP_GENERATING
+  STEP_GENERATED
+  STEP_SEEDING
+  STEP_SEEDED
+  STEP_STARTED
+  STEP_ENDED
+}
+
+"""Paginated list of validation jobs"""
+type ValidationJobs {
   """List of edges containing cursor and node pairs"""
-  edges: [RuleExecutionLogModelEdge!]!
+  edges: [ValidationJobModelEdge!]!
 
   """Flat list of items in the current page"""
-  nodes: [RuleExecutionLogModel!]!
+  nodes: [ValidationJobModel!]!
 
   """Pagination metadata for navigating between pages"""
   pageInfo: ResponsePageInfo!
@@ -3539,69 +3984,36 @@ type PaginatedRuleExecutionLogs {
 }
 
 """An edge in a paginated connection containing a cursor and node"""
-type RuleExecutionLogModelEdge {
+type ValidationJobModelEdge {
   """Opaque cursor string for this edge, used for pagination"""
   cursor: String!
 
   """The item at this edge"""
-  node: [RuleExecutionLogModel!]!
+  node: [ValidationJobModel!]!
 }
 
-"""Snapshot of a game state during simulation"""
-type SimulatedGameSnapshotModel {
-  """Identifier of the simulated game"""
-  gameId: String!
+"""Paginated list of validation events"""
+type ValidationEvents {
+  """List of edges containing cursor and node pairs"""
+  edges: [ValidationEventModelEdge!]!
 
-  """Zero-based index of the group this game belongs to"""
-  groupIndex: Float!
+  """Flat list of items in the current page"""
+  nodes: [ValidationEventModel!]!
 
-  """Zero-based index of the round within the group"""
-  roundIndex: Float!
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
 
-  """Zero-based index of the game within the round"""
-  gameIndex: Float!
-
-  """IDs of teams assigned to this game"""
-  assignedTeamIds: [String!]!
-
-  """Whether this game has been completed in the simulation"""
-  completed: Boolean!
+  """Total number of items across all pages"""
+  totalCount: Float
 }
 
-"""A single step in the simulation execution trace"""
-type SimulationStepModel {
-  """Iteration number within the simulation"""
-  iteration: Float!
+"""An edge in a paginated connection containing a cursor and node"""
+type ValidationEventModelEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
 
-  """Event type that triggered this step"""
-  event: String!
-
-  """Human-readable description of what happened in this step"""
-  description: String!
-
-  """IDs of teams that advanced during this step"""
-  teamsAdvanced: [String!]!
-
-  """IDs of teams that were eliminated during this step"""
-  teamsEliminated: [String!]!
-}
-
-"""Result of a dry-run rule set simulation"""
-type SimulationResultModel {
-  """Whether the simulation completed successfully without errors"""
-  success: Boolean!
-
-  """Ordered execution trace of the simulation"""
-  steps: [SimulationStepModel!]!
-
-  """Non-fatal warnings produced during the simulation"""
-  warnings: [String!]!
-
-  """Fatal errors that caused the simulation to fail"""
-  errors: [String!]!
-
-  """Final state of all games in the simulated bracket structure"""
-  structureSnapshot: [SimulatedGameSnapshotModel!]!
+  """The item at this edge"""
+  node: [ValidationEventModel!]!
 }
 
 """A virtual currency defined within an organization"""
@@ -5286,6 +5698,9 @@ enum ObjectType {
   """Tournament Step Group Round Game entity"""
   TournamentStepGroupRoundGame
 
+  """Game Link entity"""
+  GameLink
+
   """Tournament Step Group Round Team Score entity"""
   TournamentStepGroupRoundTeamScore
 
@@ -5415,6 +5830,24 @@ enum ObjectType {
   """Rule Set Version entity"""
   RuleSetVersion
 
+  """Step Rule Set Validation Job entity"""
+  StepRuleSetValidationJob
+
+  """Step Rule Set Validation Invariant entity"""
+  StepRuleSetValidationInvariant
+
+  """Step Rule Set Validation Error entity"""
+  StepRuleSetValidationError
+
+  """Step Rule Set Validation Warning entity"""
+  StepRuleSetValidationWarning
+
+  """Step Rule Set Validation Rule Fire entity"""
+  StepRuleSetValidationRuleFire
+
+  """Step Rule Set Validation Event entity"""
+  StepRuleSetValidationEvent
+
   """Scoring Rule Set entity"""
   ScoringRuleSet
 
@@ -5441,6 +5874,9 @@ enum ObjectType {
 
   """Game Template entity"""
   GameTemplate
+
+  """Preset Script entity"""
+  PresetScript
 
   """App Webhook entity"""
   AppWebhook
@@ -6131,7 +6567,6 @@ enum OrganizationLimitsType {
   TOURNAMENT_TEAMS_REGISTERED
   TOURNAMENT_TEAM_SIZE
   TOURNAMENT_REGISTRATION_RULES
-  TOURNAMENT_STEP_RULE_SETS
   WEBHOOKS
   ANONYMOUS_PLAYER_PROFILES
   WHITE_LABEL
@@ -6330,7 +6765,7 @@ input MatchConfigurationInput {
 """Input for game-level configuration within a round"""
 input GameConfigurationInput {
   """Number of match wins required to win the game (best-of format)"""
-  wonMatchCountToWinGame: Float!
+  wonMatchCountToWinGame: Float
 
   """Whether individual match scores are aggregated as the game score"""
   useMatchScoresAsGameScore: Boolean!
@@ -6381,7 +6816,7 @@ input StepConfigurationInput {
   type: ConfigurationType! = STEP
 
   """List of group configurations within this step"""
-  groups: [GroupConfigurationInput!]!
+  groups: [GroupConfigurationInput!]
 }
 
 """Input for a numeric comparison condition"""
@@ -6891,25 +7326,52 @@ type Query {
   """List all administrators for a specific tournament"""
   tournamentAdmins(tournamentId: ID!): [TournamentAdmin!]!
 
-  """Get rule set for a tournament step"""
-  stepRuleSet(stepId: ID!): StepRuleSetModel
+  """
+  Fetch the rule set attached to a tournament step, including scoring, advancement rules, cross-step rules, and the structure template. Returns null when the step has no rule set.
+  """
+  stepRuleSet(tournamentStepId: ID!): StepRuleSetModel
 
-  """Get rule execution audit trail for a step"""
-  stepRuleExecutionLogs(
-    stepId: ID!
+  """
+  List user-created preset scripts for the current organization, sorted by most recently created first
+  """
+  presetScripts: [PresetScriptModel!]!
 
-    """Cursor-based pagination parameters"""
-    pageInfo: PageInfo!
-  ): PaginatedRuleExecutionLogs!
+  """Fetch a single preset script by ID, scoped to the current organization"""
+  presetScript(id: ID!): PresetScriptModel!
 
-  """Dry validation of a rule set without saving"""
-  stepRuleSetValidate(input: CreateStepRuleSetInput!): RuleValidationResultModel!
+  """
+  List built-in tournament-format templates provided by the platform. Optionally filter by category.
+  """
+  builtinPresets(category: BuiltinPresetCategory): [BuiltinPresetModel!]!
 
-  """Dry-run simulation of a rule set"""
-  stepRuleSetSimulate(stepId: ID!, teamCount: Int!): SimulationResultModel!
+  """Fetch a single built-in template by slug."""
+  builtinPreset(
+    """Stable slug identifier (e.g. "single-elim")"""
+    id: String!
+  ): BuiltinPresetModel!
 
-  """List available rule preset names"""
-  rulePresets: [RulePresetName!]!
+  """
+  Validate a Lua script without executing it: runs syntax parsing then static analysis. Returns the full list of errors and warnings.
+  """
+  validateScript(input: ValidateScriptInput!): ScriptValidationResultModel!
+
+  """
+  Simulate a Lua script against a mock (or real) context inside the production sandbox with tighter interactive caps. Returns a summary of side-effects the script would have produced — NO database writes occur.
+  """
+  simulateScript(input: SimulateScriptInput!): ScriptSimulationResultModel!
+
+  """
+  Fetch a single validation job by ID, scoped to the caller's organization.
+  """
+  stepRuleSetValidationJob(jobId: ID!): ValidationJobModel
+
+  """
+  List validation jobs for a step rule set, ordered by most recently started first.
+  """
+  stepRuleSetValidationJobs(stepRuleSetId: ID!, page: PageInfo!): ValidationJobs!
+
+  """List streaming events emitted by a validation job."""
+  stepRuleSetValidationEvents(jobId: ID!, page: PageInfo!, kindFilter: [ValidationEventKind!]): ValidationEvents!
 
   """
   List all CDN files for a platform or template, optionally filtered by file type
@@ -7225,402 +7687,28 @@ input OrderByProperty {
   order: OrderDirection
 }
 
-"""
-Input for creating a complete step rule set with scoring, advancement, cross-step rules, and structure
-"""
-input CreateStepRuleSetInput {
-  """Scoring configuration for this step"""
-  scoring: CreateScoringInput!
+"""Input for validating a Lua script (no execution)"""
+input ValidateScriptInput {
+  """Lua source to validate"""
+  script: String!
 
-  """Ordered list of advancement rules"""
-  advancementRules: [CreateAdvancementRuleInput!]!
-
-  """Cross-step data transfer rules"""
-  crossStepRules: [CreateCrossStepRuleInput!]
-
-  """Bracket structure template for this step"""
-  structureTemplate: CreateStructureTemplateInput
+  """Execution context the script is intended for"""
+  context: ScriptContextType!
 }
 
-"""Input for creating a scoring configuration"""
-input CreateScoringInput {
-  """Method used to aggregate scores across matches"""
-  aggregation: ScoreAggregationType!
-
-  """Human-readable formula string"""
-  formula: String
-
-  """Points awarded for a win"""
-  winPoints: Float!
-
-  """Points awarded for a loss"""
-  lossPoints: Float!
-
-  """Points awarded for a draw"""
-  drawPoints: Float!
-
-  """Points awarded for a forfeit"""
-  forfeitPoints: Float!
-
-  """Ordered list of tiebreaker rules"""
-  tiebreakers: [CreateTiebreakerInput!]!
-}
-
-"""Input for creating a tiebreaker rule within a scoring rule set"""
-input CreateTiebreakerInput {
-  """Priority order of this tiebreaker (lower runs first)"""
-  order: Float!
-
-  """Type of tiebreaker algorithm (e.g. HEAD_TO_HEAD, BUCHHOLZ)"""
-  type: String!
-
-  """Human-readable formula string"""
-  formula: String
-
-  """Sort direction for this tiebreaker (ASC or DESC)"""
-  sortOrder: RuleSortOrder!
-}
-
-"""Input for creating an advancement rule"""
-input CreateAdvancementRuleInput {
-  """Display name of the rule"""
-  name: String!
-
-  """Human-readable description of what this rule does"""
-  description: String
-
-  """Execution priority order (lower runs first)"""
-  order: Float!
-
-  """Event type that triggers this rule"""
-  triggerType: RuleTriggerType!
-
-  """Scope restricting when the rule triggers"""
-  triggerScope: TriggerScopeInput
-
-  """Logical operator combining conditions (AND or OR)"""
-  conditionOperator: ConditionOperator!
-
-  """Array of RuleCondition objects"""
-  conditions: [RuleConditionInput!]!
-
-  """Array of RuleAction objects"""
-  actions: [RuleActionInput!]!
-
-  """Whether actions execute automatically when conditions are met"""
-  autoExecute: Boolean! = true
-
-  """Whether an admin can manually trigger or override this rule"""
-  allowManualOverride: Boolean! = true
-}
-
-"""
-Input for restricting when a rule triggers by limiting to specific game, round, or group
-"""
-input TriggerScopeInput {
-  """Restrict trigger to events within this specific game"""
-  gameId: ID
-
-  """Restrict trigger to events within this specific round"""
-  roundId: ID
-
-  """Restrict trigger to events within this specific group"""
-  groupId: ID
-}
-
-"""Input for defining a rule condition"""
-input RuleConditionInput {
-  """Formula string for the field to check (left side)"""
-  field: String!
-
-  """Comparison operator (EQ, NEQ, GT, GTE, LT, LTE, etc.)"""
-  operator: RuleConditionOperatorType!
-
-  """Formula string for the value to compare against (right side)"""
-  value: String!
-
-  """Scope at which this condition is evaluated (e.g. PER_TEAM, ALL_TEAMS)"""
-  scope: ConditionScopeType
-}
-
-"""
-Flat discriminated input for rule actions (GraphQL does not support union inputs)
-"""
-input RuleActionInput {
-  """Action type discriminator"""
-  type: RuleActionType!
-
-  """Target game reference for ADVANCE_TO_GAME action"""
-  gameTarget: GameRefInput
-
-  """Target group reference for ADVANCE_TO_GROUP action"""
-  groupTarget: GroupRefInput
-
-  """Target step reference for ADVANCE_TO_STEP action"""
-  stepTarget: StepRefInput
-
-  """Strategy for mapping team rankings into the target"""
-  rankMapping: RankMappingType
-
-  """Pairing algorithm for GENERATE_NEXT_ROUND action"""
-  pairingStrategy: PairingStrategyType
-
-  """Number of games to create in the generated round"""
-  gamesPerRound: Int
-
-  """Number of team slots per generated game"""
-  teamSlotsPerGame: Int
-
-  """Best-of series count for generated matches"""
-  bestOf: Int
-
-  """Match configuration for generated games"""
-  matchConfiguration: MatchConfigRefInput
-
-  """Scope limiting which game to end for END_GAME action"""
-  gameScope: GameRefInput
-
-  """Scope limiting which round to end for END_ROUND action"""
-  roundScope: RoundRefInput
-
-  """Scope limiting which group to end for END_GROUP action"""
-  groupScope: GroupRefInput
-
-  """Property key for SET_TEAM_PROPERTY action"""
-  key: String
-
-  """Formula string for the computed value"""
-  formula: String
-}
-
-"""Input for referencing a game by absolute ID or relative indices"""
-input GameRefInput {
-  """Reference type (ABSOLUTE by ID or RELATIVE by indices)"""
-  type: RefType!
-
-  """Absolute game ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Zero-based group index (used when type is RELATIVE)"""
-  groupIndex: Int
-
-  """Zero-based round index within the group (used when type is RELATIVE)"""
-  roundIndex: Int
-
-  """Zero-based game index within the round (used when type is RELATIVE)"""
-  gameIndex: Int
-
-  """Zero-based team slot index within the game"""
-  slot: Int
-}
-
-"""Input for referencing a group by absolute ID or relative index"""
-input GroupRefInput {
-  """Reference type (ABSOLUTE by ID or RELATIVE by index)"""
-  type: RefType!
-
-  """Absolute group ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Zero-based group index (used when type is RELATIVE)"""
-  groupIndex: Int
-}
-
-"""
-Input for referencing a tournament step by absolute ID or relative position
-"""
-input StepRefInput {
-  """Reference type (ABSOLUTE by ID or RELATIVE by position)"""
-  type: RefType!
-
-  """Absolute step ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Relative position (PREVIOUS, NEXT, CURRENT) when type is RELATIVE"""
-  relative: StepRelativePosition
-}
-
-"""Input for specifying match configuration source and inline settings"""
-input MatchConfigRefInput {
-  """Source of the match configuration (INLINE, INHERIT, etc.)"""
-  source: MatchConfigSource!
-
-  """Inline scoring variables (used when source is INLINE)"""
-  variables: [MatchConfigVariableInput!]
-
-  """Inline score formula expression (used when source is INLINE)"""
-  scoreFormula: String
-}
-
-"""Input for defining a match score formula variable"""
-input MatchConfigVariableInput {
-  """Variable name used in the scoring formula"""
-  formulaName: String!
-
-  """Human-readable label for the variable"""
-  displayName: String!
-
-  """Default numeric value if not explicitly provided"""
-  defaultValue: Float!
-}
-
-"""Input for referencing a round by absolute ID or relative indices"""
-input RoundRefInput {
-  """Reference type (ABSOLUTE by ID or RELATIVE by indices)"""
-  type: RefType!
-
-  """Absolute round ID (used when type is ABSOLUTE)"""
-  id: ID
-
-  """Zero-based group index (used when type is RELATIVE)"""
-  groupIndex: Int
-
-  """Zero-based round index within the group (used when type is RELATIVE)"""
-  roundIndex: Int
-}
-
-"""Input for creating a cross-step data transfer rule"""
-input CreateCrossStepRuleInput {
-  """Explicit source step ID"""
-  sourceStepId: ID
-
-  """Relative reference (PREVIOUS, NEXT, CURRENT)"""
-  sourceRelative: String
-
-  """Data source: RANKINGS, SCORES, TEAMS"""
-  dataSource: String!
-
-  """CrossStepUsage configuration"""
-  usage: CrossStepUsageInput!
-}
-
-"""Flat discriminated input for cross-step usage configuration"""
-input CrossStepUsageInput {
-  """Usage type discriminator (SEED_ORDER, QUALIFY, INJECT_SCORE)"""
-  type: CrossStepUsageType!
-
-  """Formula string for QUALIFY condition"""
-  condition: String
-
-  """Formula string for INJECT_SCORE formula"""
-  formula: String
-}
-
-"""Input for creating a bracket structure template"""
-input CreateStructureTemplateInput {
-  """Group templates that make up the bracket structure"""
-  groupTemplates: [CreateGroupTemplateInput!]!
-}
-
-"""
-Input for creating a group template with its rounds and generation settings
-"""
-input CreateGroupTemplateInput {
-  """Display name of the group"""
-  name: String!
-
-  """Sort order of this group within the structure"""
-  order: Float!
-
-  """Number of team slots available in this group"""
-  teamSlots: Float!
-
-  """AutoGenerateConfig for this group (legacy JSON)"""
-  autoGenerate: AutoGenerateConfigInput
-
-  """Auto-generate algorithm type"""
-  autoGenerateType: AutoGenerateType
-
-  """Number of team slots per game (default: 2)"""
-  teamSlotsPerGame: Int
-
-  """Best-of series count (default: 1)"""
-  bestOf: Int
-
-  """Override round count"""
-  roundCount: Int
-
-  """Match configuration for generated games"""
-  matchConfiguration: GroupMatchConfigInput
-
-  """Round templates within this group"""
-  roundTemplates: [CreateRoundTemplateInput!]!
-}
-
-"""Input for configuring auto-generation of bracket structure"""
-input AutoGenerateConfigInput {
-  """Auto-generation algorithm type (SINGLE_ELIM, ROUND_ROBIN, etc.)"""
-  type: AutoGenerateType!
-
-  """Minimum team count to trigger auto-generation"""
-  fromTeamCount: Int
-}
-
-"""Input for match configuration with scoring variables and formula"""
-input GroupMatchConfigInput {
-  """Variables available for score computation"""
-  variables: [MatchConfigVariableInput!]
-
-  """Formula expression used to compute the final score from variables"""
-  scoreFormula: String
-}
-
-"""Input for creating a round template within a group"""
-input CreateRoundTemplateInput {
-  """Display name of the round"""
-  name: String!
-
-  """Sort order of this round within its group"""
-  order: Float!
-
-  """Game templates within this round"""
-  gameTemplates: [CreateGameTemplateInput!]!
-}
-
-"""Input for creating a game template within a round"""
-input CreateGameTemplateInput {
-  """Sort order of this game within the round"""
-  order: Float!
-
-  """Number of team slots in this game"""
-  teamSlots: Float! = 2
-
-  """Number of matches in the best-of series"""
-  bestOf: Float! = 1
-
-  """Match configuration for this game template"""
-  matchConfiguration: MatchConfigRefInput
-
-  """Target reference on win"""
-  onWinTarget: GameRefInput
-
-  """Target reference on loss"""
-  onLossTarget: GameRefInput
-}
-
-enum RulePresetName {
-  SINGLE_ELIM
-  DOUBLE_ELIM
-  ROUND_ROBIN
-  SWISS
-  BUCHHOLZ_GROUPS
-  ROUND_ROBIN_BO3
-  LEAGUE_HOME_AWAY
-  SWISS_ACCELERATED
-  SINGLE_ELIM_CONSOLATION
-  RANDOM_DRAW_KNOCKOUT
-  STEP_LADDER
-  PAGE_PLAYOFF
-  GAUNTLET
-  DOUBLE_ELIM_TRUE_FINALS
-  GSL_FORMAT
-  SWISS_MCMAHON
-  TRIPLE_ELIM
-  POINTS_RACE
-  BATTLE_ROYALE
-  ROUND_ROBIN_PLAYOFFS
-  CONQUEST
-  KING_OF_THE_HILL_BO5
+"""Input for simulating a Lua script against mock or real context"""
+input SimulateScriptInput {
+  """Lua source to simulate"""
+  script: String!
+
+  """Execution context the script is intended for"""
+  context: ScriptContextType!
+
+  """JSON-encoded mock parameters for simulation"""
+  parameters: String
+
+  """Optional: simulate against a real tournament step"""
+  stepId: ID
 }
 
 """Query parameters for filtering and ordering events"""
@@ -8028,12 +8116,12 @@ type Mutation {
   startTournamentStep(stepId: ID!): Boolean!
 
   """Create a new tournament step with its bracket configuration"""
-  createTournamentStep(tournamentId: ID!, configuration: StepConfigurationInput!, step: CreateTournamentStepInput!): TournamentStep!
+  createTournamentStep(tournamentId: ID!, configuration: StepConfigurationInput, step: CreateTournamentStepInput!): TournamentStep!
 
   """
   Update a tournament step configuration, resetting it to CONFIGURED status
   """
-  updateTournamentStep(stepId: ID!, configuration: StepConfigurationInput!, step: CreateTournamentStepInput!): TournamentStep!
+  updateTournamentStep(stepId: ID!, configuration: StepConfigurationInput, step: CreateTournamentStepInput!): TournamentStep!
 
   """
   Delete a tournament step and all its associated groups, rounds, and games
@@ -8046,12 +8134,37 @@ type Mutation {
   generateTournamentStep(stepId: ID!, teamsCount: Int): Boolean!
 
   """
-  Seed teams into a generated tournament step using automatic or manual seeding
+  Seed teams into a generated tournament step. Accepts the caller-curated seeding order and optional manual pins; the preset rule set (SEEDING / ROUND_SEEDING rules) drives actual team-to-game assignment. Prior placements are discarded (idempotent re-seed).
   """
-  seedTournamentStep(stepId: ID!, input: SeedingInput!): Boolean!
+  seedTournamentStep(input: SeedStepInput!): TournamentStep!
 
   """
-  Reset seeding: SEEDED → GENERATED. Clears team assignments and scores but keeps bracket structure.
+  Persist a new seeding order on the step without re-seeding. Order must be a permutation of the tournament's teams.
+  """
+  updateSeedingOrder(stepId: ID!, orderedTeamIds: [ID!]!): TournamentStep!
+
+  """
+  Persist a new manual-pin list on the step without re-seeding. Pins anchor teams to a group, a game, or a specific slot within a game.
+  """
+  updateSeedingPins(stepId: ID!, pins: [SeedingPinInput!]!): TournamentStep!
+
+  """
+  Withdraw a team from a step. Flips the team status to WITHDRAWN, fires the TEAM_WITHDREW rule-engine event, and cascades bye resolution. Idempotent.
+  """
+  withdrawTeamFromStep(stepId: ID!, teamId: ID!): TournamentStep!
+
+  """
+  Re-run the seeding pipeline from the step's currently persisted seedingOrder + manualPins. The step must be in SEEDED status. Resets to GENERATED and then re-seeds — any unsaved match results would be lost.
+  """
+  reseedStep(stepId: ID!): TournamentStep!
+
+  """
+  Restart a started step: STARTED → SEEDED. Wipes all scores and match results but preserves bracket structure and team seedings.
+  """
+  restartTournamentStep(stepId: ID!): Boolean!
+
+  """
+  Reset seeding: SEEDED|STARTED → GENERATED. Clears team assignments and scores but keeps bracket structure.
   """
   resetTournamentStepSeeding(stepId: ID!): Boolean!
 
@@ -8110,35 +8223,77 @@ type Mutation {
   """Remove a tournament administrator"""
   tournamentAdminDelete(input: TournamentAdminDeleteInput!): Boolean!
 
-  """Create rule set for a tournament step"""
-  stepRuleSetCreate(stepId: ID!, input: CreateStepRuleSetInput!): StepRuleSetModel!
+  """
+  Create a new rule set for a tournament step. Fails with CONFLICT if the step already has a rule set.
+  """
+  createStepRuleSet(tournamentStepId: ID!, input: CreateStepRuleSetInput!): StepRuleSetModel!
 
-  """Update scoring rules (versioned)"""
-  scoringRulesUpdate(stepId: ID!, input: UpdateScoringRulesInput!): StepRuleSetModel!
+  """
+  Apply a user-created preset script to a tournament step, creating or overwriting the step's rule set. The preset's Lua script runs in the sandbox and its effects are persisted atomically.
+  """
+  applyPresetScript(
+    presetScriptId: ID!
+    tournamentStepId: ID!
 
-  """Update advancement rules (versioned)"""
-  advancementRulesUpdate(stepId: ID!, input: UpdateAdvancementRulesInput!): StepRuleSetModel!
+    """
+    JSON-encoded object of primitive parameter values (string | number | boolean)
+    """
+    parameters: String
+  ): StepRuleSetModel!
 
-  """Update structure template (only when CONFIGURED)"""
-  structureTemplateUpdate(stepId: ID!, input: CreateStructureTemplateInput!): StepRuleSetModel!
+  """
+  Apply a built-in template to a tournament step, creating or overwriting the step's rule set. The template runs in the Lua sandbox and its effects are persisted atomically.
+  """
+  applyBuiltinPreset(
+    builtinPresetId: String!
+    tournamentStepId: ID!
 
-  """Add a cross-step rule"""
-  crossStepRuleCreate(stepId: ID!, input: CreateCrossStepRuleInput!): StepRuleSetModel!
+    """
+    JSON-encoded object of primitive parameter values (string | number | boolean)
+    """
+    parameters: String
+  ): StepRuleSetModel!
 
-  """Remove a cross-step rule"""
-  crossStepRuleDelete(ruleId: ID!): StepRuleSetModel!
+  """
+  Duplicate a built-in template into a new editable preset script owned by the current organization. If `name` is omitted, defaults to the template's display name (with `(copy)` appended on collision).
+  """
+  duplicateBuiltinPreset(builtinPresetId: String!, name: String): PresetScriptModel!
 
-  """Manual team advancement"""
-  manualAdvancementExecute(stepId: ID!, input: ManualAdvancementInput!): StepRuleSetModel!
+  """Create a new user-defined preset script in the current organization"""
+  createPresetScript(input: CreatePresetScriptInput!): PresetScriptModel!
 
-  """Trigger a MANUAL rule"""
-  manualRuleTrigger(stepId: ID!, ruleId: ID!): StepRuleSetModel!
+  """
+  Update a preset script owned by the current organization. Only the supplied fields are modified.
+  """
+  updatePresetScript(id: ID!, input: UpdatePresetScriptInput!): PresetScriptModel!
 
-  """Approve a pending action from an autoExecute=false rule"""
-  pendingActionApprove(logId: ID!): StepRuleSetModel!
+  """
+  Delete a preset script owned by the current organization. Returns true on success.
+  """
+  deletePresetScript(id: ID!): Boolean!
 
-  """Apply a preset rule configuration to a step"""
-  rulePresetApply(stepId: ID!, presetName: RulePresetName!, teamCount: Int!, bestOf: Int, teamSlotsPerGame: Int, roundCount: Int): StepRuleSetModel!
+  """
+  Set the explicit list of winning teams for a step (admin override). Existing WINNER rows on the step are reverted to ACTIVE, and the supplied teams are upserted as WINNER. Writes a private audit-log entry.
+  """
+  setStepWinners(stepId: ID!, teamIds: [ID!]!): TournamentStep!
+
+  """
+  Set the explicit list of winning teams for a tournament (admin override). Existing WINNER rows on the tournament are reverted to ACTIVE, and the supplied teams are upserted as WINNER. Writes a private audit-log entry.
+  """
+  setTournamentWinners(tournamentId: ID!, teamIds: [ID!]!): Tournament!
+
+  """
+  Set a single team's status on a step (admin override). Upserts the team's TournamentStepTeamScore row to the supplied status and writes a private audit-log entry. Returns true on success.
+  """
+  setStepTeamStatus(stepId: ID!, teamId: ID!, status: TeamScopeStatus!): Boolean!
+
+  """
+  Start a validation job for the given step rule set. If an active job already exists, returns the existing job instead of creating a new one.
+  """
+  validateStepRuleSet(stepRuleSetId: ID!): ValidationJobModel!
+
+  """Cancel an in-progress or queued validation job."""
+  cancelStepRuleSetValidation(jobId: ID!): ValidationJobModel!
 
   """
   Create a Stripe customer portal session URL for managing the organization subscription
@@ -9239,53 +9394,23 @@ input CreateTournamentStepInput {
   properties: [PropertyValueInput!]
 }
 
-"""automaticSeeding or manualSeeding must be set"""
-input SeedingInput {
-  """Use automatic seeding with a chosen algorithm"""
-  automaticSeeding: AutomaticSeedingInput
+"""Input for seeding a tournament step."""
+input SeedStepInput {
+  stepId: ID!
 
-  """Use manual seeding with explicit team-to-group assignments"""
-  manualSeeding: ManualSeedingInput
+  """Ordered team IDs. Must be a permutation of the step teams."""
+  orderedTeamIds: [ID!]!
+
+  """Optional pin overrides."""
+  pins: [SeedingPinInput!]
 }
 
-"""Input for automatic seeding of teams into a tournament step"""
-input AutomaticSeedingInput {
-  """Algorithm to use for ordering teams during seeding"""
-  seedingMechanism: SeedingMechanism!
-
-  """Algorithm to use for distributing teams across groups"""
-  groupRepartitionMechanism: GroupRepartitionMechanism!
-
-  """Specific team IDs to seed; if omitted, all confirmed teams are used"""
-  teams: [ID!]!
-}
-
-enum SeedingMechanism {
-  NONE
-  REVERSE
-  HALF_SHIFT
-  REVERSE_HALF_SHIFT
-  PAIR_FLIP
-}
-
-enum GroupRepartitionMechanism {
-  BALANCED
-  SEED_OPTIMIZED
-}
-
-"""Input for manually assigning teams to specific groups"""
-input ManualSeedingInput {
-  """List of group-to-teams assignments"""
-  groups: [ManualSeedingGroupInput!]!
-}
-
-"""Manual seeding assignment for a single group"""
-input ManualSeedingGroupInput {
-  """ID of the group to seed teams into"""
-  group: ID!
-
-  """Ordered list of team IDs to seed into this group"""
-  teams: [ID!]!
+"""Input for a single seeding pin."""
+input SeedingPinInput {
+  teamId: ID!
+  groupId: ID
+  gameId: ID
+  slotIndex: Int
 }
 
 """Input for updating a team score within a match"""
@@ -9408,49 +9533,267 @@ input TournamentAdminDeleteInput {
   accountId: ID!
 }
 
-"""Input for partially updating scoring rules"""
-input UpdateScoringRulesInput {
-  """Method used to aggregate scores across matches"""
-  aggregation: ScoreAggregationType
+"""Top-level input for creating a complete rule set for a tournament step"""
+input CreateStepRuleSetInput {
+  """Scoring configuration"""
+  scoring: CreateScoringInput!
 
-  """Human-readable formula string"""
+  """Advancement rules evaluated on trigger events"""
+  advancementRules: [CreateAdvancementRuleInput!]! = []
+
+  """Cross-step rules pulling data from sibling steps"""
+  crossStepRules: [CreateCrossStepRuleInput!]! = []
+
+  """Optional static structure template"""
+  structureTemplate: CreateStructureTemplateInput
+}
+
+"""Scoring configuration for a tournament step"""
+input CreateScoringInput {
+  """Aggregation strategy used to compute a team score"""
+  aggregation: ScoreAggregationType!
+
+  """Lua expression — required for the FORMULA aggregation"""
   formula: String
 
-  """Points awarded for a win"""
-  winPoints: Float
+  """Points awarded for a win (POINTS aggregation)"""
+  winPoints: Int! = 3
 
-  """Points awarded for a loss"""
-  lossPoints: Float
+  """Points awarded for a loss (POINTS aggregation)"""
+  lossPoints: Int! = 0
 
-  """Points awarded for a draw"""
-  drawPoints: Float
+  """Points awarded for a draw (POINTS aggregation)"""
+  drawPoints: Int! = 1
 
-  """Points awarded for a forfeit"""
-  forfeitPoints: Float
+  """Points awarded for a forfeit (POINTS aggregation)"""
+  forfeitPoints: Int! = 0
 
-  """Ordered list of tiebreaker rules"""
-  tiebreakers: [CreateTiebreakerInput!]
+  """Ordered list of tiebreakers applied when teams are tied"""
+  tiebreakers: [CreateTiebreakerInput!]! = []
 }
 
-"""Input for replacing all advancement rules in a rule set"""
-input UpdateAdvancementRulesInput {
-  """Complete list of advancement rules to replace existing ones"""
-  advancementRules: [CreateAdvancementRuleInput!]!
+"""Tiebreaker rule applied to ranked teams"""
+input CreateTiebreakerInput {
+  """Evaluation order (lower runs first)"""
+  order: Int!
+
+  """Type of tiebreaker to apply"""
+  type: TiebreakerType!
+
+  """Lua expression returning a number — required for CUSTOM_FORMULA"""
+  formula: String
+
+  """Sort order for this tiebreaker"""
+  sortOrder: SortOrder! = DESC
 }
 
-"""Input for manually advancing a team within a tournament step"""
-input ManualAdvancementInput {
-  """ID of the team to advance"""
-  teamId: ID!
+"""
+Input for creating an advancement rule that evaluates on a trigger event
+"""
+input CreateAdvancementRuleInput {
+  """Human-readable rule name, unique within a rule set"""
+  name: String!
 
-  """Target game by ID"""
-  targetGameId: ID
+  """Optional human-readable description"""
+  description: String
 
-  """Target game by relative reference"""
-  targetGameRef: GameRefInput
+  """Evaluation order within the rule set (lower runs first)"""
+  order: Int!
 
-  """Target slot index in the game (0-based)"""
-  targetSlot: Float
+  """Tournament lifecycle event that triggers this rule"""
+  triggerType: RuleTriggerType!
+
+  """
+  Optional Lua expression to filter the trigger scope (e.g. only certain groups)
+  """
+  triggerScope: String
+
+  """Lua expression returning a boolean"""
+  condition: String!
+
+  """Ordered list of actions performed when the condition passes"""
+  actions: [RuleActionInput!]!
+
+  """Whether the rule fires automatically on trigger events"""
+  autoExecute: Boolean! = true
+
+  """Whether an operator can manually override this rule"""
+  allowManualOverride: Boolean! = true
+
+  """
+  Well-known purpose marker for internal behavior (e.g. series resolution)
+  """
+  purpose: AdvancementRulePurpose
+}
+
+"""A single action performed when a rule fires"""
+input RuleActionInput {
+  """Kind of action to perform"""
+  type: RuleActionType!
+
+  """
+  Lua expression or script. Required for ADVANCE, END, and EXECUTE_LUA actions.
+  """
+  script: String
+}
+
+"""Input for creating a cross-step rule"""
+input CreateCrossStepRuleInput {
+  """Explicit source step ID. Mutually exclusive with sourceRelative."""
+  sourceStepId: ID
+
+  """
+  Source step selected relatively to the current step. Mutually exclusive with sourceStepId.
+  """
+  sourceRelative: StepRelativePosition
+
+  """Kind of data to pull from the source step"""
+  dataSource: CrossStepDataSource!
+
+  """How the pulled data is consumed"""
+  usage: CrossStepUsageInput!
+}
+
+"""How a cross-step rule consumes source-step data"""
+input CrossStepUsageInput {
+  """How the data is used (seed, qualify, inject score)"""
+  type: CrossStepUsageType!
+
+  """Lua boolean expression — required for QUALIFY usage"""
+  condition: String
+
+  """Lua numeric expression — required for INJECT_SCORE usage"""
+  formula: String
+}
+
+"""Complete structure template for a tournament step"""
+input CreateStructureTemplateInput {
+  """Group templates composing the structure"""
+  groupTemplates: [CreateGroupTemplateInput!]!
+}
+
+"""Template for a single group within the structure"""
+input CreateGroupTemplateInput {
+  """Human-readable group name"""
+  name: String!
+
+  """Optional human-readable description"""
+  description: String
+
+  """Group order within the structure"""
+  order: Int!
+
+  """Numeric literal or Lua expression for total team slots"""
+  teamSlotsExpr: String!
+
+  """
+  Lua script that dynamically creates rounds and games (Mode 1). Mutually exclusive with roundTemplates.
+  """
+  generationScript: String
+
+  """
+  Static round definitions (Mode 2). Mutually exclusive with generationScript.
+  """
+  roundTemplates: [CreateRoundTemplateInput!]
+
+  """Numeric literal or Lua expression for best-of count per game"""
+  bestOfExpr: String! = "1"
+
+  """Numeric literal or Lua expression for team slots per game"""
+  teamSlotsPerGameExpr: String! = "2"
+
+  """Numeric literal or Lua expression for total round count"""
+  roundCountExpr: String
+}
+
+"""Template for a single round within a group"""
+input CreateRoundTemplateInput {
+  """Human-readable round name"""
+  name: String!
+
+  """Round order within the group"""
+  order: Int!
+
+  """Game templates for this round"""
+  gameTemplates: [CreateGameTemplateInput!]! = []
+}
+
+"""Template for a single game within a round"""
+input CreateGameTemplateInput {
+  """Game order within the round"""
+  order: Int!
+
+  """Number of team slots in the game"""
+  teamSlots: Int! = 2
+
+  """Best-of count for the series"""
+  bestOf: Int! = 1
+
+  """Lua expression resolving to the target slot for the winner"""
+  onWinTarget: String
+
+  """Which slot on this source game wins"""
+  onWinSourceSlot: Int
+
+  """Target slot index for the winner"""
+  onWinTargetSlot: Int
+
+  """Lua expression resolving to the target slot for the loser"""
+  onLossTarget: String
+
+  """Which slot on this source game loses"""
+  onLossSourceSlot: Int
+
+  """Target slot index for the loser"""
+  onLossTargetSlot: Int
+}
+
+"""Input for creating a preset script"""
+input CreatePresetScriptInput {
+  """Preset name (unique within the organization)"""
+  name: String!
+
+  """Optional human-readable description"""
+  description: String
+
+  """Lua script source that constructs a complete rule set"""
+  script: String!
+
+  """Declared parameters consumed by the preset script"""
+  parameters: [PresetParameterInput!]! = []
+}
+
+"""Declared parameter of a preset script"""
+input PresetParameterInput {
+  """Parameter name (unique within the preset)"""
+  name: String!
+
+  """Primitive parameter type"""
+  type: PresetParameterType!
+
+  """Whether the parameter must be provided when applying the preset"""
+  required: Boolean! = false
+
+  """Default value for optional parameters, serialized as a string"""
+  defaultValue: String
+
+  """Optional human-readable description"""
+  description: String
+}
+
+"""Input for updating a preset script (all fields optional)"""
+input UpdatePresetScriptInput {
+  """Preset name (unique within the organization)"""
+  name: String
+
+  """Optional human-readable description"""
+  description: String
+
+  """Lua script source that constructs a complete rule set"""
+  script: String
+
+  """Declared parameters consumed by the preset script"""
+  parameters: [PresetParameterInput!] = []
 }
 
 """Input for creating a new CDN file on a platform or template"""
@@ -10659,6 +11002,13 @@ input CustomFieldValueInput {
 }
 
 type Subscription {
+  """
+  Subscribe to progress updates for a validation job. Emits the updated ValidationJobModel whenever the job state changes.
+  """
+  validationProgress(jobId: ID!): ValidationJobModel!
+
+  """Subscribe to streaming events emitted during a validation run."""
+  validationEvents(jobId: ID!): ValidationEventModel!
   presenceUserConnected: UsersConnectedEvent!
   presenceUserDisconnected: UsersDisconnectedEvent!
 }

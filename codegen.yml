@@ -1,4 +1,4 @@
-schema: https://api.warrior.stg.well-played.gg/graphql
+schema: https://api.warrior.well-played.gg/graphql
 emitLegacyCommonJSImports: false
 generates:
   schema.graphql:

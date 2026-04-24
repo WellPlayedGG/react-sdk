@@ -249,8 +249,11 @@ export interface MatchConfiguration {
 
 /** Configuration for how a game is played and scored */
 export interface GameConfiguration {
-    /** Number of match wins required to win the game (best-of format) */
-    wonMatchCountToWinGame: Scalars['Float']
+    /**
+     * @deprecated Use MATCH_SERIES_RESOLUTION advancement rule instead. Kept for legacy tournaments without rule sets.
+     * Number of match wins required to win the game (best-of format)
+     */
+    wonMatchCountToWinGame: (Scalars['Float'] | null)
     /** Whether individual match scores are aggregated as the game score */
     useMatchScoresAsGameScore: Scalars['Boolean']
     /** Number of teams participating in each game */
@@ -299,8 +302,11 @@ export interface GroupConfiguration {
 export interface StepConfiguration {
     /** Discriminator type, always STEP for step configurations */
     type: ConfigurationType
-    /** List of group configurations within this step */
-    groups: GroupConfiguration[]
+    /**
+     * @deprecated Legacy groups system. Will be removed in a future version.
+     * List of group configurations within this step
+     */
+    groups: (GroupConfiguration[] | null)
     __typename: 'StepConfiguration'
 }
 
@@ -684,7 +690,7 @@ export interface Tournament {
     __typename: 'Tournament'
 }
 
-export type TournamentTeamStatus = 'NOT_ATTENDING' | 'NOT_VALID' | 'REGISTERED' | 'AWAITING_FOR_PAYMENT' | 'AWAITING_FOR_PRESENCE_CONFIRMATION' | 'CONFIRMED' | 'DENIED'
+export type TournamentTeamStatus = 'NOT_ATTENDING' | 'NOT_VALID' | 'REGISTERED' | 'AWAITING_FOR_PAYMENT' | 'AWAITING_FOR_PRESENCE_CONFIRMATION' | 'CONFIRMED' | 'DENIED' | 'WITHDRAWN'
 
 
 /** Definition of a single platform usage limit */
@@ -1825,6 +1831,20 @@ export interface PlayerSkillRating {
 }
 
 
+/** A manual seeding pin. At least one of groupId or gameId must be set. */
+export interface SeedingPin {
+    /** Team being pinned */
+    teamId: Scalars['ID']
+    /** Pin the team to this group */
+    groupId: (Scalars['ID'] | null)
+    /** Pin the team to this game slots */
+    gameId: (Scalars['ID'] | null)
+    /** 0-indexed slot within the game */
+    slotIndex: (Scalars['Int'] | null)
+    __typename: 'SeedingPin'
+}
+
+
 /** A single match within a game, representing one play session between teams */
 export interface TournamentStepGroupRoundGameMatch {
     /** Unique identifier for the match */
@@ -1943,6 +1963,8 @@ export interface TournamentTeam {
     tournamentId: Scalars['ID']
     /** Current registration and validation status of the team */
     status: TournamentTeamStatus
+    /** Date and time when the team withdrew from the tournament, or null if the team has not withdrawn */
+    withdrawnAt: (Scalars['DateTime'] | null)
     /** Date and time when the team was registered */
     createdAt: Scalars['DateTime']
     /** Date and time when the team was last updated */
@@ -2011,6 +2033,8 @@ export interface TournamentStep {
     status: StepStatus
     /** Detailed configuration for the step including groups, rounds, and game settings */
     configuration: StepConfiguration
+    /** Ordered list of tournament team IDs representing the seeding order for this step (computed by SEEDING rules, consumed by structure generation). */
+    seedingOrder: Scalars['ID'][]
     /** Date and time when the step was created */
     createdAt: Scalars['DateTime']
     /** Date and time when the step was last updated */
@@ -2019,6 +2043,8 @@ export interface TournamentStep {
     teamScores: TournamentTeamScore[]
     /** The tournament this step belongs to */
     tournament: Tournament
+    /** Manual seeding pin overrides persisted on the step. Empty when no pins are set. Produced by `persistSeedingPins` / `seedStep`; consumed by the seeding pipeline. */
+    manualPins: SeedingPin[]
     __typename: 'TournamentStep'
 }
 
@@ -2063,16 +2089,24 @@ export interface TournamentStepGroupRoundGame {
     order: Scalars['Float']
     /** ID of the parent round */
     tournamentStepGroupRoundId: Scalars['ID']
-    /** ID of the game the winner advances to */
-    winningGameId: (Scalars['ID'] | null)
-    /** ID of the game the loser drops to (e.g. losers bracket) */
-    losingGameId: (Scalars['ID'] | null)
     /** Timestamp when the game was created */
     createdAt: Scalars['DateTime']
     /** Timestamp when the game was last updated */
     updatedAt: Scalars['DateTime']
     /** Matches within this game (best-of series) */
     matches: TournamentStepGroupRoundGameMatch[]
+    /** Outgoing bracket routing edges. Each entry describes where the `WIN` or `LOSS` outcome of this game routes the affected team. An empty list means this game is a terminal node (e.g. the grand final). */
+    gameLinks: GameLink[]
+    /**
+     * @deprecated Use `gameLinks` — will be removed once all clients migrate.
+     * Deprecated. The ID of the game the winning team of this game advances to. Derived from `gameLinks` where `outcome = WIN`.
+     */
+    winningGameId: (Scalars['ID'] | null)
+    /**
+     * @deprecated Use `gameLinks` — will be removed once all clients migrate.
+     * Deprecated. The ID of the game the losing team of this game drops to (loser bracket in double-elimination, or third-place game in single-elimination). Derived from `gameLinks` where `outcome = LOSS`.
+     */
+    losingGameId: (Scalars['ID'] | null)
     __typename: 'TournamentStepGroupRoundGame'
 }
 
@@ -2117,10 +2151,30 @@ export interface TournamentStepGroup {
     createdAt: Scalars['DateTime']
     /** Timestamp when the group was last updated */
     updatedAt: Scalars['DateTime']
+    /** Display order of the group within its tournament step */
+    order: Scalars['Float']
     /** Rounds within this group */
     rounds: TournamentStepGroupRound[]
     __typename: 'TournamentStepGroup'
 }
+
+
+/** Directed routing edge between two games in a tournament bracket. Emitted both at generation time (for statically known brackets such as single/double-elimination) and dynamically by the rule engine (for formats whose routing is produced by Lua `GENERATION` / action scripts). */
+export interface GameLink {
+    /** Unique identifier for this game-routing link. */
+    id: Scalars['ID']
+    /** ID of the game whose outcome triggers the routing. This is the upstream / predecessor game. */
+    sourceGameId: Scalars['ID']
+    /** ID of the game the routing points to. This is the downstream / successor game the advancing team will play in. */
+    targetGameId: Scalars['ID']
+    /** Which outcome of the source game activates this link. `WIN` = winner-bracket advancement; `LOSS` = loser-bracket drop or third-place routing. */
+    outcome: GameLinkOutcome
+    __typename: 'GameLink'
+}
+
+
+/** Outcome that produces this bracket routing link. `WIN` routes the winning team of the source game to the target game (the winner bracket path). `LOSS` routes the losing team of the source game to the target game (the loser bracket path in double-elimination formats, or the third-place game in single-elimination). */
+export type GameLinkOutcome = 'WIN' | 'LOSS'
 
 
 /** A team score entry for a specific match */
@@ -2142,7 +2196,7 @@ export interface TournamentStepGroupRoundGameMatchScore {
     __typename: 'TournamentStepGroupRoundGameMatchScore'
 }
 
-export type MatchScoreStatus = 'WAITING' | 'WINNER' | 'LOSER' | 'FORFEIT'
+export type MatchScoreStatus = 'WAITING' | 'WINNER' | 'LOSER' | 'FORFEIT' | 'DRAW'
 
 
 /** Paginated list of match scores */
@@ -2191,663 +2245,785 @@ export interface TournamentAdmin {
 export type TournamentAdminPermissions = 'MANAGE_TOURNAMENT' | 'MANAGE_TEAMS' | 'MANAGE_SCORES' | 'MANAGE_PERMISSIONS'
 
 
-/** A condition that must be met for a rule to execute */
-export interface RuleConditionModel {
-    /** Formula string for the field to check (left side) */
-    field: Scalars['String']
-    /** Comparison operator (EQ, NEQ, GT, GTE, LT, LTE, etc.) */
-    operator: RuleConditionOperatorType
-    /** Formula string for the value to compare against (right side) */
-    value: Scalars['String']
-    /** Scope at which this condition is evaluated (e.g. PER_TEAM, ALL_TEAMS) */
-    scope: (ConditionScopeType | null)
-    __typename: 'RuleConditionModel'
-}
-
-export type RuleConditionOperatorType = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'between'
-
-export type ConditionScopeType = 'MATCH' | 'GAME' | 'ROUND' | 'GROUP' | 'STEP'
-
-
-/** Reference to a game by absolute ID or relative indices within the bracket structure */
-export interface GameRefModel {
-    /** Reference type (ABSOLUTE by ID or RELATIVE by indices) */
-    type: RefType
-    /** Absolute game ID (used when type is ABSOLUTE) */
-    id: (Scalars['ID'] | null)
-    /** Zero-based group index (used when type is RELATIVE) */
-    groupIndex: (Scalars['Int'] | null)
-    /** Zero-based round index within the group (used when type is RELATIVE) */
-    roundIndex: (Scalars['Int'] | null)
-    /** Zero-based game index within the round (used when type is RELATIVE) */
-    gameIndex: (Scalars['Int'] | null)
-    /** Zero-based team slot index within the game */
-    slot: (Scalars['Int'] | null)
-    __typename: 'GameRefModel'
-}
-
-export type RefType = 'ID' | 'RELATIVE'
-
-
-/** Reference to a group by absolute ID or relative index */
-export interface GroupRefModel {
-    /** Reference type (ABSOLUTE by ID or RELATIVE by index) */
-    type: RefType
-    /** Absolute group ID (used when type is ABSOLUTE) */
-    id: (Scalars['ID'] | null)
-    /** Zero-based group index (used when type is RELATIVE) */
-    groupIndex: (Scalars['Int'] | null)
-    __typename: 'GroupRefModel'
-}
-
-
-/** Reference to a round by absolute ID or relative indices */
-export interface RoundRefModel {
-    /** Reference type (ABSOLUTE by ID or RELATIVE by indices) */
-    type: RefType
-    /** Absolute round ID (used when type is ABSOLUTE) */
-    id: (Scalars['ID'] | null)
-    /** Zero-based group index (used when type is RELATIVE) */
-    groupIndex: (Scalars['Int'] | null)
-    /** Zero-based round index within the group (used when type is RELATIVE) */
-    roundIndex: (Scalars['Int'] | null)
-    __typename: 'RoundRefModel'
-}
-
-
-/** Reference to a tournament step by absolute ID or relative position */
-export interface StepRefModel {
-    /** Reference type (ABSOLUTE by ID or RELATIVE by position) */
-    type: RefType
-    /** Absolute step ID (used when type is ABSOLUTE) */
-    id: (Scalars['ID'] | null)
-    /** Relative position (PREVIOUS, NEXT, CURRENT) when type is RELATIVE */
-    relative: (StepRelativePosition | null)
-    __typename: 'StepRefModel'
-}
-
-export type StepRelativePosition = 'PREVIOUS' | 'NEXT' | 'CURRENT'
-
-
-/** Variable definition used in match score formula computation */
-export interface MatchConfigVariableModel {
-    /** Variable name used in the scoring formula */
-    formulaName: Scalars['String']
-    /** Human-readable label for the variable */
-    displayName: Scalars['String']
-    /** Default numeric value if not explicitly provided */
-    defaultValue: Scalars['Float']
-    __typename: 'MatchConfigVariableModel'
-}
-
-
-/** Match configuration reference specifying where to source match settings from */
-export interface MatchConfigRefModel {
-    /** Source of the match configuration (INLINE, INHERIT, etc.) */
-    source: MatchConfigSource
-    /** Inline scoring variables (used when source is INLINE) */
-    variables: (MatchConfigVariableModel[] | null)
-    /** Inline score formula expression (used when source is INLINE) */
-    scoreFormula: (Scalars['String'] | null)
-    __typename: 'MatchConfigRefModel'
-}
-
-export type MatchConfigSource = 'STEP_CONFIG' | 'INLINE'
-
-
-/** Configuration for auto-generating bracket structure from a team count */
-export interface AutoGenerateConfigModel {
-    /** Auto-generation algorithm type (SINGLE_ELIM, ROUND_ROBIN, etc.) */
-    type: AutoGenerateType
-    /** Minimum team count to trigger auto-generation */
-    fromTeamCount: (Scalars['Int'] | null)
-    __typename: 'AutoGenerateConfigModel'
-}
-
-export type AutoGenerateType = 'ROUND_ROBIN_PAIRS' | 'BRACKET' | 'SWISS_PAIRS' | 'LOWER_BRACKET' | 'STEP_LADDER' | 'DOUBLE_ROUND_ROBIN_PAIRS' | 'PAGE_PLAYOFF' | 'GSL_DUAL_TOURNAMENT'
-
-
-/** Scope that restricts when a rule triggers by limiting to specific game, round, or group */
-export interface TriggerScopeModel {
-    /** Restrict trigger to events within this specific game */
-    gameId: (Scalars['ID'] | null)
-    /** Restrict trigger to events within this specific round */
-    roundId: (Scalars['ID'] | null)
-    /** Restrict trigger to events within this specific group */
-    groupId: (Scalars['ID'] | null)
-    __typename: 'TriggerScopeModel'
-}
-
-
-/** Event data that triggered a rule execution */
-export interface RuleEventDataModel {
-    /** IDs of teams involved in the triggering event */
-    teamIds: Scalars['String'][]
-    /** Serialized scores map */
-    scores: (Scalars['String'] | null)
-    /** Serialized match result map */
-    matchResult: (Scalars['String'] | null)
-    /** ID of the game that triggered the event */
-    gameId: (Scalars['String'] | null)
-    /** ID of the round that triggered the event */
-    roundId: (Scalars['String'] | null)
-    /** ID of the group that triggered the event */
-    groupId: (Scalars['String'] | null)
-    __typename: 'RuleEventDataModel'
-}
-
-
-/** Result of evaluating a single condition during rule execution */
-export interface ConditionEvaluationModel {
-    /** Left-side field expression that was evaluated */
-    field: Scalars['String']
-    /** Comparison operator used */
-    operator: Scalars['String']
-    /** Right-side value expression that was evaluated */
-    value: Scalars['String']
-    /** Scope at which the condition was evaluated */
-    scope: (Scalars['String'] | null)
-    /** Whether the condition evaluated to true */
-    result: Scalars['Boolean']
-    __typename: 'ConditionEvaluationModel'
-}
-
-
-/** Result of executing a single action during rule execution */
-export interface ActionResultModel {
-    /** The action that was executed */
-    action: RuleAction
-    /** Whether the action executed successfully */
-    success: Scalars['Boolean']
-    /** ID of the team the action was applied to */
-    teamId: Scalars['String']
-    /** Human-readable details of the action result */
-    details: Scalars['String']
-    __typename: 'ActionResultModel'
-}
-
-export type RuleAction = (AdvanceToGameActionModel | AdvanceToGroupActionModel | AdvanceToStepActionModel | EliminateActionModel | GenerateNextRoundActionModel | EndGameActionModel | EndRoundActionModel | EndGroupActionModel | SetTeamPropertyActionModel) & { __isUnion?: true }
-
-
-/** Action that advances a team to a specific game in the bracket */
-export interface AdvanceToGameActionModel {
-    /** Action type discriminator */
+/** A single action performed when a rule fires */
+export interface RuleActionModel {
+    /** Kind of action performed */
     type: RuleActionType
-    /** Reference to the target game */
-    target: GameRefModel
-    __typename: 'AdvanceToGameActionModel'
-}
-
-export type RuleActionType = 'ADVANCE_TO_GAME' | 'ADVANCE_TO_GROUP' | 'ADVANCE_TO_STEP' | 'ELIMINATE' | 'GENERATE_NEXT_ROUND' | 'END_GAME' | 'END_ROUND' | 'END_GROUP' | 'SET_TEAM_PROPERTY'
-
-
-/** Action that advances a team to a specific group */
-export interface AdvanceToGroupActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    /** Reference to the target group */
-    target: GroupRefModel
-    /** Strategy for mapping team rankings into the target group */
-    rankMapping: RankMappingType
-    __typename: 'AdvanceToGroupActionModel'
-}
-
-export type RankMappingType = 'BY_RANK' | 'SEED_OPTIMIZED' | 'RANDOM'
-
-
-/** Action that advances a team to a different tournament step */
-export interface AdvanceToStepActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    /** Reference to the target step */
-    target: StepRefModel
-    /** Strategy for mapping team rankings into the target step */
-    rankMapping: RankMappingType
-    __typename: 'AdvanceToStepActionModel'
+    /** Lua expression or script for this action */
+    script: (Scalars['String'] | null)
+    __typename: 'RuleActionModel'
 }
 
 
-/** Action that eliminates a team from the tournament */
-export interface EliminateActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    __typename: 'EliminateActionModel'
-}
+/** Built-in action kind performed when an advancement rule fires */
+export type RuleActionType = 'ADVANCE' | 'ELIMINATE' | 'END' | 'EXECUTE_LUA'
 
 
-/** Action that generates a new round with paired games based on a pairing strategy */
-export interface GenerateNextRoundActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    /** Algorithm used to pair teams into games */
-    pairingStrategy: PairingStrategyType
-    /** Number of games to create in the generated round */
-    gamesPerRound: (Scalars['Int'] | null)
-    /** Number of team slots per generated game */
-    teamSlotsPerGame: (Scalars['Int'] | null)
-    /** Best-of series count for generated matches */
-    bestOf: (Scalars['Int'] | null)
-    /** Match configuration for generated games */
-    matchConfiguration: (MatchConfigRefModel | null)
-    __typename: 'GenerateNextRoundActionModel'
-}
-
-export type PairingStrategyType = 'SWISS_DUTCH' | 'SWISS_MONRAD' | 'RANDOM' | 'BY_RANK'
-
-
-/** Action that forcefully ends a game */
-export interface EndGameActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    /** Optional scope limiting which game to end */
-    scope: (GameRefModel | null)
-    __typename: 'EndGameActionModel'
-}
-
-
-/** Action that forcefully ends a round */
-export interface EndRoundActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    /** Optional scope limiting which round to end */
-    scope: (RoundRefModel | null)
-    __typename: 'EndRoundActionModel'
-}
-
-
-/** Action that forcefully ends a group */
-export interface EndGroupActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    /** Optional scope limiting which group to end */
-    scope: (GroupRefModel | null)
-    __typename: 'EndGroupActionModel'
-}
-
-
-/** Action that sets a custom property on a team */
-export interface SetTeamPropertyActionModel {
-    /** Action type discriminator */
-    type: RuleActionType
-    /** Property key to set on the team */
-    key: Scalars['String']
-    /** Formula string for the computed value */
-    formula: Scalars['String']
-    __typename: 'SetTeamPropertyActionModel'
-}
-
-
-/** Tiebreaker rule used to resolve tied scores in a scoring rule set */
-export interface TiebreakerRuleModel {
-    /** Unique identifier for the tiebreaker rule */
+/** A single advancement rule within a rule set */
+export interface AdvancementRuleModel {
+    /** Unique rule ID */
     id: Scalars['ID']
-    /** Priority order of this tiebreaker (lower runs first) */
-    order: Scalars['Float']
-    /** Type of tiebreaker algorithm (e.g. HEAD_TO_HEAD, BUCHHOLZ) */
-    type: Scalars['String']
-    /** Human-readable formula string */
+    /** Human-readable rule name */
+    name: Scalars['String']
+    /** Optional description */
+    description: (Scalars['String'] | null)
+    /** Evaluation order within the rule set */
+    order: Scalars['Int']
+    /** Tournament lifecycle event that triggers this rule */
+    triggerType: RuleTriggerType
+    /** Optional Lua expression filtering the trigger scope */
+    triggerScope: (Scalars['String'] | null)
+    /** Lua expression returning a boolean */
+    condition: Scalars['String']
+    /** Actions executed when the condition passes */
+    actions: RuleActionModel[]
+    /** Whether the rule fires automatically on trigger events */
+    autoExecute: Scalars['Boolean']
+    /** Whether an operator can manually override this rule */
+    allowManualOverride: Scalars['Boolean']
+    /** Whether the rule is enabled */
+    enabled: Scalars['Boolean']
+    /** Well-known purpose marker for internal behavior */
+    purpose: (AdvancementRulePurpose | null)
+    /** Creation timestamp */
+    createdAt: Scalars['DateTime']
+    /** Last update timestamp */
+    updatedAt: Scalars['DateTime']
+    __typename: 'AdvancementRuleModel'
+}
+
+
+/** Tournament lifecycle event that triggers a rule evaluation */
+export type RuleTriggerType = 'MATCH_ENDED' | 'GAME_ENDED' | 'ROUND_ENDED' | 'GROUP_ENDED' | 'STEP_ENDED' | 'MANUAL' | 'STEP_SEEDING' | 'ROUND_SEEDING' | 'TEAM_WITHDREW'
+
+
+/** Well-known purposes that mark a rule for internal use */
+export type AdvancementRulePurpose = 'ADVANCEMENT' | 'MATCH_SERIES_RESOLUTION' | 'ELIMINATION' | 'WINNER_PROMOTION' | 'SEEDING' | 'WITHDRAWAL_RESPONSE'
+
+
+/** A single tiebreaker within a scoring rule set */
+export interface TiebreakerRuleModel {
+    /** Unique tiebreaker ID */
+    id: Scalars['ID']
+    /** Evaluation order */
+    order: Scalars['Int']
+    /** Tiebreaker strategy */
+    type: TiebreakerType
+    /** Lua expression — present for CUSTOM_FORMULA */
     formula: (Scalars['String'] | null)
-    /** Sort direction for this tiebreaker (ASC or DESC) */
-    sortOrder: RuleSortOrder
+    /** Sort order for this tiebreaker */
+    sortOrder: SortOrder
     __typename: 'TiebreakerRuleModel'
 }
 
-export type RuleSortOrder = 'ASC' | 'DESC'
+
+/** Supported tiebreaker strategies for ranking ties */
+export type TiebreakerType = 'HEAD_TO_HEAD' | 'SCORE_DIFFERENCE' | 'TOTAL_SCORE' | 'WINS' | 'BUCHHOLZ' | 'SONNBORN_BERGER' | 'MEDIAN_BUCHHOLZ' | 'CUMULATIVE' | 'CUSTOM_FORMULA'
 
 
-/** Scoring configuration defining how team scores are calculated and aggregated */
+/** Sort direction */
+export type SortOrder = 'ASC' | 'DESC'
+
+
+/** Scoring configuration attached to a rule set */
 export interface ScoringRuleSetModel {
-    /** Unique identifier for the scoring rule set */
+    /** Unique scoring rule set ID */
     id: Scalars['ID']
-    /** Method used to aggregate scores across matches (SUM, AVERAGE, etc.) */
+    /** Aggregation strategy */
     aggregation: ScoreAggregationType
-    /** Human-readable formula string */
+    /** Lua expression for FORMULA aggregation */
     formula: (Scalars['String'] | null)
-    /** Points awarded for a win */
-    winPoints: Scalars['Float']
-    /** Points awarded for a loss */
-    lossPoints: Scalars['Float']
-    /** Points awarded for a draw */
-    drawPoints: Scalars['Float']
-    /** Points awarded for a forfeit */
-    forfeitPoints: Scalars['Float']
-    /** Ordered list of tiebreaker rules for resolving equal scores */
+    /** Points for a win */
+    winPoints: (Scalars['Int'] | null)
+    /** Points for a loss */
+    lossPoints: (Scalars['Int'] | null)
+    /** Points for a draw */
+    drawPoints: (Scalars['Int'] | null)
+    /** Points for a forfeit */
+    forfeitPoints: (Scalars['Int'] | null)
+    /** Ordered tiebreakers */
     tiebreakers: TiebreakerRuleModel[]
     __typename: 'ScoringRuleSetModel'
 }
 
-export type ScoreAggregationType = 'SUM' | 'AVERAGE' | 'POINTS' | 'FORMULA'
+
+/** Aggregation strategy used to compute a team score in a step */
+export type ScoreAggregationType = 'SUM' | 'AVERAGE' | 'POINTS' | 'FORMULA' | 'CUSTOM_LUA'
 
 
-/** Rule that defines how teams advance, are eliminated, or how rounds are generated */
-export interface AdvancementRuleModel {
-    /** Unique identifier for the advancement rule */
-    id: Scalars['ID']
-    /** Display name of the rule */
-    name: Scalars['String']
-    /** Human-readable description of what this rule does */
-    description: (Scalars['String'] | null)
-    /** Execution priority order (lower runs first) */
-    order: Scalars['Float']
-    /** Event type that triggers this rule */
-    triggerType: RuleTriggerType
-    /** Scope restricting when the rule triggers */
-    triggerScope: (TriggerScopeModel | null)
-    /** Logical operator combining conditions (AND or OR) */
-    conditionOperator: ConditionOperator
-    /** Array of RuleCondition objects */
-    conditions: RuleConditionModel[]
-    /** Array of RuleAction objects */
-    actions: RuleAction[]
-    /** Whether actions execute automatically when conditions are met */
-    autoExecute: Scalars['Boolean']
-    /** Whether an admin can manually trigger or override this rule */
-    allowManualOverride: Scalars['Boolean']
-    /** Whether this rule is currently active */
-    enabled: Scalars['Boolean']
-    __typename: 'AdvancementRuleModel'
-}
-
-export type RuleTriggerType = 'MATCH_ENDED' | 'GAME_ENDED' | 'ROUND_ENDED' | 'GROUP_ENDED' | 'STEP_ENDED' | 'MANUAL'
-
-export type ConditionOperator = 'AND' | 'OR'
-
-
-/** Rule that transfers data (rankings, scores, teams) between tournament steps */
-export interface CrossStepRuleModel {
-    /** Unique identifier for the cross-step rule */
-    id: Scalars['ID']
-    /** Explicit source step ID */
-    sourceStepId: (Scalars['ID'] | null)
-    /** Relative reference (PREVIOUS, NEXT, CURRENT) */
-    sourceRelative: (Scalars['String'] | null)
-    /** Data source: RANKINGS, SCORES, TEAMS */
-    dataSource: Scalars['String']
-    /** CrossStepUsage discriminated union */
-    usage: CrossStepUsage
-    __typename: 'CrossStepRuleModel'
-}
-
-export type CrossStepUsage = (SeedOrderUsageModel | QualifyUsageModel | InjectScoreUsageModel) & { __isUnion?: true }
-
-
-/** Cross-step usage that seeds teams based on rankings from another step */
-export interface SeedOrderUsageModel {
-    /** Usage type discriminator */
-    type: CrossStepUsageType
-    __typename: 'SeedOrderUsageModel'
-}
-
-export type CrossStepUsageType = 'SEED_ORDER' | 'QUALIFY' | 'INJECT_SCORE'
-
-
-/** Cross-step usage that qualifies teams based on a condition evaluated against source step data */
-export interface QualifyUsageModel {
-    /** Usage type discriminator */
-    type: CrossStepUsageType
-    /** Formula string for the qualification condition */
-    condition: Scalars['String']
-    __typename: 'QualifyUsageModel'
-}
-
-
-/** Cross-step usage that injects scores from another step into the current step */
-export interface InjectScoreUsageModel {
-    /** Usage type discriminator */
-    type: CrossStepUsageType
-    /** Formula string for the score injection */
-    formula: Scalars['String']
-    __typename: 'InjectScoreUsageModel'
-}
-
-
-/** Template defining a game slot in the bracket structure */
+/** Template for a single game within a round */
 export interface GameTemplateModel {
-    /** Unique identifier for the game template */
+    /** Unique game template ID */
     id: Scalars['ID']
-    /** Sort order of this game within its round */
-    order: Scalars['Float']
-    /** Number of team slots in this game */
-    teamSlots: Scalars['Float']
-    /** Number of matches in the best-of series */
-    bestOf: Scalars['Float']
-    /** Match configuration for this game template */
-    matchConfiguration: (MatchConfigRefModel | null)
-    /** Target reference on win */
-    onWinTarget: (GameRefModel | null)
-    /** Target reference on loss */
-    onLossTarget: (GameRefModel | null)
+    /** Game order within the round */
+    order: Scalars['Int']
+    /** Number of team slots in the game */
+    teamSlots: Scalars['Int']
+    /** Best-of count for the series */
+    bestOf: Scalars['Int']
+    /** Lua expression resolving to the target slot for the winner */
+    onWinTarget: (Scalars['String'] | null)
+    /** Which slot on this source game wins */
+    onWinSourceSlot: (Scalars['Int'] | null)
+    /** Target slot index for the winner */
+    onWinTargetSlot: (Scalars['Int'] | null)
+    /** Lua expression resolving to the target slot for the loser */
+    onLossTarget: (Scalars['String'] | null)
+    /** Which slot on this source game loses */
+    onLossSourceSlot: (Scalars['Int'] | null)
+    /** Target slot index for the loser */
+    onLossTargetSlot: (Scalars['Int'] | null)
     __typename: 'GameTemplateModel'
 }
 
 
-/** Template defining a round and its game slots within a group */
+/** Template for a single round within a group */
 export interface RoundTemplateModel {
-    /** Unique identifier for the round template */
+    /** Unique round template ID */
     id: Scalars['ID']
-    /** Display name of the round */
+    /** Human-readable round name */
     name: Scalars['String']
-    /** Sort order of this round within its group */
-    order: Scalars['Float']
-    /** Game templates within this round */
+    /** Round order within the group */
+    order: Scalars['Int']
+    /** Game templates for this round */
     gameTemplates: GameTemplateModel[]
     __typename: 'RoundTemplateModel'
 }
 
 
-/** Variable definition used in match score formula computation */
-export interface MatchConfigurationVariableModel {
-    /** Variable name used in the scoring formula */
-    formulaName: Scalars['String']
-    /** Human-readable label for the variable */
-    displayName: Scalars['String']
-    /** Default numeric value if not explicitly provided */
-    defaultValue: Scalars['Float']
-    __typename: 'MatchConfigurationVariableModel'
-}
-
-
-/** Match configuration defining scoring variables and formula */
-export interface MatchConfigurationModel {
-    /** Variables available for score computation */
-    variables: MatchConfigurationVariableModel[]
-    /** Formula expression used to compute the final score from variables */
-    scoreFormula: (Scalars['String'] | null)
-    __typename: 'MatchConfigurationModel'
-}
-
-
-/** Template defining a group in the bracket structure with its rounds and generation settings */
+/** Template for a single group within the structure */
 export interface GroupTemplateModel {
-    /** Unique identifier for the group template */
+    /** Unique group template ID */
     id: Scalars['ID']
-    /** Display name of the group */
+    /** Human-readable group name */
     name: Scalars['String']
-    /** Sort order of this group within the structure */
-    order: Scalars['Float']
-    /** Number of team slots available in this group */
-    teamSlots: Scalars['Float']
-    /** AutoGenerateConfig for this group (legacy JSON) */
-    autoGenerate: (AutoGenerateConfigModel | null)
-    /** Auto-generate algorithm type */
-    autoGenerateType: (AutoGenerateType | null)
-    /** Number of team slots per game */
-    teamSlotsPerGame: Scalars['Int']
-    /** Best-of series count */
-    bestOf: Scalars['Int']
-    /** Override round count */
-    roundCount: (Scalars['Int'] | null)
-    /** Match configuration for generated games */
-    matchConfiguration: (MatchConfigurationModel | null)
-    /** Round templates within this group */
+    /** Optional description */
+    description: (Scalars['String'] | null)
+    /** Group order within the structure */
+    order: Scalars['Int']
+    /** Numeric literal or Lua expression for total team slots */
+    teamSlotsExpr: Scalars['String']
+    /** Lua script that dynamically creates rounds and games (Mode 1) */
+    generationScript: (Scalars['String'] | null)
+    /** Numeric literal or Lua expression for best-of count per game */
+    bestOfExpr: Scalars['String']
+    /** Numeric literal or Lua expression for team slots per game */
+    teamSlotsPerGameExpr: Scalars['String']
+    /** Numeric literal or Lua expression for total round count */
+    roundCountExpr: (Scalars['String'] | null)
+    /** Static round templates (Mode 2) */
     roundTemplates: RoundTemplateModel[]
     __typename: 'GroupTemplateModel'
 }
 
 
-/** Top-level structure template defining the bracket layout for a step */
+/** Complete structure template for a tournament step */
 export interface StructureTemplateModel {
-    /** Unique identifier for the structure template */
+    /** Unique structure template ID */
     id: Scalars['ID']
-    /** Group templates that make up the bracket structure */
+    /** Group templates composing the structure */
     groupTemplates: GroupTemplateModel[]
     __typename: 'StructureTemplateModel'
 }
 
 
-/** Top-level rule set aggregate for a tournament step, containing scoring, advancement, cross-step rules, and structure */
-export interface StepRuleSetModel {
-    /** Unique identifier for the rule set */
+/** How a cross-step rule consumes source-step data */
+export interface CrossStepUsageModel {
+    /** Usage strategy */
+    type: CrossStepUsageType
+    /** Lua boolean expression — present for QUALIFY usage */
+    condition: (Scalars['String'] | null)
+    /** Lua numeric expression — present for INJECT_SCORE usage */
+    formula: (Scalars['String'] | null)
+    __typename: 'CrossStepUsageModel'
+}
+
+
+/** How data from a source step is consumed by the target step */
+export type CrossStepUsageType = 'SEED_ORDER' | 'QUALIFY' | 'INJECT_SCORE'
+
+
+/** A single cross-step rule within a rule set */
+export interface CrossStepRuleModel {
+    /** Unique cross-step rule ID */
     id: Scalars['ID']
-    /** Current version number, incremented on each update */
-    version: Scalars['Float']
-    /** Name of the preset used to generate this rule set, if any */
+    /** Explicit source step ID, if set */
+    sourceStepId: (Scalars['ID'] | null)
+    /** Relative source step selector, if set */
+    sourceRelative: (StepRelativePosition | null)
+    /** Kind of data pulled */
+    dataSource: CrossStepDataSource
+    /** How the data is consumed */
+    usage: CrossStepUsageModel
+    __typename: 'CrossStepRuleModel'
+}
+
+
+/** Relative position of a tournament step used by cross-step rules */
+export type StepRelativePosition = 'PREVIOUS' | 'NEXT' | 'CURRENT'
+
+
+/** Type of data pulled from the source step */
+export type CrossStepDataSource = 'TEAMS' | 'WINNERS' | 'QUALIFIED' | 'ELIMINATED' | 'WITHDRAWN' | 'RANKINGS' | 'SCORES'
+
+
+/** Complete rule set attached to a tournament step */
+export interface StepRuleSetModel {
+    /** Unique rule set ID */
+    id: Scalars['ID']
+    /** Version number of the rule set */
+    version: Scalars['Int']
+    /** Name of the preset this rule set was derived from, if any */
     presetName: (Scalars['String'] | null)
-    /** Team count this rule set was configured for */
+    /** Resolved team count at the time of rule-set generation */
     teamCount: (Scalars['Int'] | null)
-    /** Whether this rule set has been validated via simulation */
+    /** Whether the rule set has been validated */
     validated: Scalars['Boolean']
-    /** Timestamp of the most recent successful validation */
+    /** Timestamp of the last successful validation */
     validatedAt: (Scalars['DateTime'] | null)
-    /** Scoring configuration for this step */
-    scoringRuleSet: ScoringRuleSetModel
-    /** Ordered list of advancement rules */
+    /** Scoring configuration */
+    scoringRuleSet: (ScoringRuleSetModel | null)
+    /** Advancement rules in evaluation order */
     advancementRules: AdvancementRuleModel[]
-    /** Cross-step data transfer rules */
+    /** Cross-step rules attached to this rule set */
     crossStepRules: CrossStepRuleModel[]
-    /** Bracket structure template for this step */
+    /** Optional static structure template */
     structureTemplate: (StructureTemplateModel | null)
-    /** Timestamp when the rule set was created */
+    /** Creation timestamp */
     createdAt: Scalars['DateTime']
-    /** Timestamp when the rule set was last updated */
+    /** Last update timestamp */
     updatedAt: Scalars['DateTime']
     __typename: 'StepRuleSetModel'
 }
 
 
-/** Audit log entry for a single rule execution, recording event, conditions, and actions */
-export interface RuleExecutionLogModel {
-    /** Unique identifier for the log entry */
+/** Declared parameter of a preset script */
+export interface PresetParameterModel {
+    /** Parameter name (unique within the preset) */
+    name: Scalars['String']
+    /** Primitive parameter type */
+    type: PresetParameterType
+    /** Whether the parameter must be provided when applying */
+    required: Scalars['Boolean']
+    /** Default value for optional parameters, serialized as a string */
+    defaultValue: (Scalars['String'] | null)
+    /** Optional description */
+    description: (Scalars['String'] | null)
+    __typename: 'PresetParameterModel'
+}
+
+
+/** Primitive type of a preset script parameter */
+export type PresetParameterType = 'INT' | 'FLOAT' | 'STRING' | 'BOOLEAN'
+
+
+/** User-defined preset script scoped to an organization */
+export interface PresetScriptModel {
+    /** Unique preset script ID */
     id: Scalars['ID']
-    /** ID of the advancement rule that was executed */
-    advancementRuleId: Scalars['ID']
-    /** Version of the rule set at the time of execution */
-    ruleSetVersion: Scalars['Float']
-    /** Trigger event payload */
-    triggerEventData: RuleEventDataModel
-    /** Evaluated condition results */
-    conditionsEvaluated: ConditionEvaluationModel[]
-    /** Whether all conditions were satisfied */
-    conditionsMet: Scalars['Boolean']
-    /** Executed action results */
-    actionsExecuted: ActionResultModel[]
-    /** Whether this execution was a manual override by an admin */
-    manualOverride: Scalars['Boolean']
-    /** Account ID of the admin who performed the manual override */
-    overrideBy: (Scalars['ID'] | null)
-    /** Timestamp when the rule was executed */
+    /** Preset name (unique within the organization) */
+    name: Scalars['String']
+    /** Optional description */
+    description: (Scalars['String'] | null)
+    /** Lua source building a complete rule set */
+    script: Scalars['String']
+    /** Declared parameters consumed by the preset */
+    parameters: PresetParameterModel[]
+    /** Creation timestamp */
     createdAt: Scalars['DateTime']
-    __typename: 'RuleExecutionLogModel'
+    /** Last update timestamp */
+    updatedAt: Scalars['DateTime']
+    __typename: 'PresetScriptModel'
 }
 
 
-/** A single validation error or warning for a rule set */
-export interface RuleValidationErrorModel {
-    /** Dot-separated path to the invalid field (e.g. rules[0].conditions[1].field) */
-    path: Scalars['String']
-    /** Human-readable description of the validation issue */
+/** A built-in tournament-format template provided by the platform. Built-ins are read-only and shared across all organizations. */
+export interface BuiltinPresetModel {
+    /** Stable slug identifier (e.g. "single-elim"). Use this as the `builtinPresetId` argument on apply/duplicate mutations. */
+    id: Scalars['String']
+    /** Human-readable display name shown in the UI */
+    displayName: Scalars['String']
+    /** One- to two-line description of the format */
+    description: Scalars['String']
+    /** Coarse family used to group templates in the picker */
+    category: BuiltinPresetCategory
+    /** Declared parameters consumed by the template */
+    parameters: PresetParameterModel[]
+    /** Canonical Lua source. Returned so callers can preview before duplicating. */
+    source: Scalars['String']
+    /** Whether this preset supports any form of team pinning (group pinning or slot pinning). When false, the UI MUST NOT expose the pin-team affordance for this preset. */
+    supportsPinning: Scalars['Boolean']
+    /** Whether this preset supports pinning a team to a specific group. When omitted, derive from topology (#groups > 1 && supportsPinning). */
+    supportsGroupPinning: (Scalars['Boolean'] | null)
+    /** Whether this preset supports pinning a team to a specific game slot. When omitted, derive from supportsPinning directly. */
+    supportsSlotPinning: (Scalars['Boolean'] | null)
+    __typename: 'BuiltinPresetModel'
+}
+
+
+/** High-level family of a built-in tournament-format preset. Used by the console to group templates in the picker. */
+export type BuiltinPresetCategory = 'SINGLE_ELIMINATION' | 'DOUBLE_ELIMINATION' | 'SWISS' | 'ROUND_ROBIN' | 'GROUP_STAGE' | 'OTHER'
+
+
+/** A single error reported by the Lua validator */
+export interface ScriptErrorModel {
+    /** Line number where the error was detected (1-based) */
+    line: Scalars['Int']
+    /** Column where the error was detected (1-based) */
+    column: Scalars['Int']
+    /** Human-readable error message */
     message: Scalars['String']
-    /** Line number in the expression where the error occurred */
-    line: (Scalars['Float'] | null)
-    /** Column number in the expression where the error occurred */
-    column: (Scalars['Float'] | null)
-    __typename: 'RuleValidationErrorModel'
+    /** Machine-readable error code */
+    code: ScriptErrorCode
+    __typename: 'ScriptErrorModel'
 }
 
 
-/** Result of validating a rule set configuration */
-export interface RuleValidationResultModel {
-    /** Whether the rule set passed validation without errors */
+/** Machine-readable error categories returned by the Lua validator */
+export type ScriptErrorCode = 'SYNTAX' | 'UNDEFINED_VARIABLE' | 'INVALID_FUNCTION' | 'TYPE_MISMATCH' | 'RUNTIME' | 'BLOCKED_FUNCTION' | 'TIMEOUT' | 'INSTRUCTION_LIMIT'
+
+
+/** A single warning reported by the Lua validator */
+export interface ScriptWarningModel {
+    /** Line number where the warning was raised (1-based) */
+    line: Scalars['Int']
+    /** Column where the warning was raised (1-based) */
+    column: Scalars['Int']
+    /** Human-readable warning message */
+    message: Scalars['String']
+    /** Machine-readable warning code */
+    code: ScriptWarningCode
+    __typename: 'ScriptWarningModel'
+}
+
+
+/** Machine-readable warning categories returned by the Lua validator */
+export type ScriptWarningCode = 'UNUSED_VARIABLE' | 'UNREACHABLE_CODE' | 'DEPRECATED_FUNCTION'
+
+
+/** Result of a Lua script validation pass */
+export interface ScriptValidationResultModel {
+    /** Whether the script passed validation (no errors) */
     valid: Scalars['Boolean']
-    /** Validation errors that must be fixed */
-    errors: RuleValidationErrorModel[]
-    /** Validation warnings that should be reviewed */
-    warnings: RuleValidationErrorModel[]
-    __typename: 'RuleValidationResultModel'
+    /** Errors detected during validation */
+    errors: ScriptErrorModel[]
+    /** Warnings detected during validation */
+    warnings: ScriptWarningModel[]
+    __typename: 'ScriptValidationResultModel'
 }
 
 
-/** Paginated list of rule execution audit logs */
-export interface PaginatedRuleExecutionLogs {
+/** Summary of a single side-effect produced by a simulated run */
+export interface SimulatedEffectModel {
+    /** Type of effect */
+    type: SimulatedEffectType
+    /** Human-readable summary of the effect */
+    description: Scalars['String']
+    __typename: 'SimulatedEffectModel'
+}
+
+
+/** Type of side-effect produced by a simulated Lua script run */
+export type SimulatedEffectType = 'ADVANCE' | 'ELIMINATE' | 'END_GAME' | 'END_ROUND' | 'END_GROUP' | 'SET_METADATA' | 'SET_CUSTOM_FIELD' | 'SET_STATUS' | 'SET_MATCH_RESULT' | 'REGISTER_TEAM' | 'CREATE_GROUP' | 'CREATE_ROUND' | 'CREATE_GAME' | 'LINK' | 'SET_SCORING' | 'ADD_TIEBREAKER' | 'ADD_RULE' | 'ADD_CROSS_STEP_RULE' | 'RESEED_STEP'
+
+
+/** Result of simulating a Lua script */
+export interface ScriptSimulationResultModel {
+    /** Whether the script ran to completion without errors */
+    success: Scalars['Boolean']
+    /** Errors captured during simulation */
+    errors: ScriptErrorModel[]
+    /** Warnings captured during simulation */
+    warnings: ScriptWarningModel[]
+    /** Summary of side-effects produced by the simulated run */
+    effectsSummary: SimulatedEffectModel[]
+    /** Wall-clock execution time in milliseconds */
+    executionTimeMs: Scalars['Int']
+    /** Number of Lua instructions executed */
+    instructionsUsed: Scalars['Int']
+    __typename: 'ScriptSimulationResultModel'
+}
+
+
+/** Structured detail about a Lua runtime error */
+export interface LuaErrorDetailModel {
+    /** Script execution context in which the error occurred */
+    scriptContextType: ScriptContextType
+    /** The Lua source script that threw the error */
+    script: Scalars['String']
+    /** Line number of the error (1-based) */
+    line: Scalars['Int']
+    /** Column of the error (1-based) */
+    column: Scalars['Int']
+    /** Human-readable error message */
+    message: Scalars['String']
+    /** Stack trace lines */
+    stack: Scalars['String'][]
+    __typename: 'LuaErrorDetailModel'
+}
+
+
+/** Execution context of a Lua script — determines which variables and functions are available */
+export type ScriptContextType = 'CONDITION' | 'ACTION' | 'GENERATION' | 'PRESET' | 'CROSS_STEP' | 'FORMULA'
+
+
+/** A single error produced during a validation run */
+export interface ValidationErrorModel {
+    /** Unique validation error ID */
+    id: Scalars['ID']
+    /** Machine-readable error code */
+    code: ValidationErrorCode
+    /** Human-readable error message. Includes the offender context (which rule / team / game / group triggered the violation) and, for Lua throws, the raw Lua message and line number. */
+    message: Scalars['String']
+    /** Preset-author-facing remediation hint — describes the class of problem and suggests the next step a preset author should take. Keyed on the invariant / error code. */
+    hint: (Scalars['String'] | null)
+    /** Invariant code, if the error was caused by a violated invariant */
+    invariantCode: (InvariantCode | null)
+    /** Lua error detail, if the error originated from a Lua script */
+    luaError: (LuaErrorDetailModel | null)
+    /** Offending entity, if available */
+    offender: (InvariantOffenderUnion | null)
+    __typename: 'ValidationErrorModel'
+}
+
+
+/** Machine-readable error codes emitted by the validator */
+export type ValidationErrorCode = 'SETUP_FAILED' | 'UPSTREAM_NOT_VALIDATED' | 'SEEDING_FAILED' | 'GENERATION_FAILED' | 'LUA_THROW' | 'RULE_NEVER_FIRED' | 'CROSS_STEP_NEVER_EVALUATED' | 'INVARIANT_VIOLATED' | 'DEADLOCK' | 'MUTATION_CEILING_EXCEEDED' | 'EXECUTION_TIMEOUT' | 'ORPHAN_SCORE_ROW' | 'DUPLICATE_ADVANCEMENT' | 'ADVANCE_TARGET_MISSING' | 'ADVANCE_BACKWARD' | 'ADVANCE_OVER_CAPACITY' | 'INVALID_RULE_SET_INPUT' | 'RULE_ACTION_INVALID_ID' | 'INTERNAL_ERROR'
+
+
+/** Machine-readable invariant codes checked during validation */
+export type InvariantCode = 'STEP_NOT_ENDED' | 'GAME_NOT_ENDED' | 'GROUP_OR_ROUND_INCOMPLETE' | 'NO_WINNER_DECLARED' | 'TEAM_IN_LIMBO' | 'RANK_NOT_MATERIALISED' | 'RULE_NEVER_FIRED' | 'INFINITE_LOOP_CEILING_EXCEEDED' | 'LUA_EXECUTION_THROWN' | 'PROGRESS_DEADLOCK' | 'INVALID_SCORE_VALUE' | 'ILLEGAL_STATUS_TRANSITION' | 'CROSS_STEP_RULE_NOT_EVALUATED' | 'GROUP_TERMINAL_CASCADE_INCOMPLETE' | 'ORPHAN_SCORE_ROW' | 'DUPLICATE_ADVANCEMENT' | 'ADVANCE_TARGET_MISSING' | 'ADVANCE_BACKWARD' | 'ADVANCE_OVER_CAPACITY' | 'SEEDING_RULE_MISSING' | 'ROUND_NEVER_POPULATED' | 'SEEDING_OVERFILL' | 'SEEDING_UNDERFILL' | 'PIN_VIOLATED' | 'PIN_UNSUPPORTED_BUT_PRESENT' | 'WITHDRAWAL_RULE_MISSING' | 'WITHDRAWAL_LEFT_ORPHANS' | 'WITHDRAWAL_BROKE_STEP'
+
+
+/** One of the seven offender entity types produced by a violated invariant */
+export type InvariantOffenderUnion = (RuleOffenderModel | CrossStepRuleOffenderModel | GameOffenderModel | RoundOffenderModel | GroupOffenderModel | TeamOffenderModel | ScoreRowOffenderModel) & { __isUnion?: true }
+
+
+/** Advancement rule that triggered a violation */
+export interface RuleOffenderModel {
+    /** Discriminant — always RULE */
+    kind: OffenderKind
+    /** ID of the offending advancement rule */
+    ruleId: Scalars['ID']
+    /** Human-readable rule name */
+    ruleName: Scalars['String']
+    /** Trigger type of the rule */
+    trigger: RuleTriggerType
+    __typename: 'RuleOffenderModel'
+}
+
+
+/** Discriminant identifying which concrete offender type the union resolves to */
+export type OffenderKind = 'RULE' | 'CROSS_STEP_RULE' | 'GAME' | 'ROUND' | 'GROUP' | 'TEAM' | 'SCORE_ROW'
+
+
+/** Cross-step rule that was never evaluated */
+export interface CrossStepRuleOffenderModel {
+    /** Discriminant — always CROSS_STEP_RULE */
+    kind: OffenderKind
+    /** ID of the offending cross-step rule */
+    crossStepRuleId: Scalars['ID']
+    /** Data source type */
+    dataSource: CrossStepDataSource
+    /** Usage type */
+    usage: CrossStepUsageType
+    __typename: 'CrossStepRuleOffenderModel'
+}
+
+
+/** Game entity that triggered a violation */
+export interface GameOffenderModel {
+    /** Discriminant — always GAME */
+    kind: OffenderKind
+    /** ID of the offending game */
+    gameId: Scalars['ID']
+    /** Zero-based group index */
+    groupIndex: Scalars['Int']
+    /** Zero-based round index within the group */
+    roundIndex: Scalars['Int']
+    /** Zero-based game index within the round */
+    gameIndex: Scalars['Int']
+    /** Game status at the time of the violation */
+    status: GameStatus
+    __typename: 'GameOffenderModel'
+}
+
+
+/** Lifecycle status of a tournament game */
+export type GameStatus = 'WAITING' | 'STARTED' | 'ENDED'
+
+
+/** Round entity that triggered a violation */
+export interface RoundOffenderModel {
+    /** Discriminant — always ROUND */
+    kind: OffenderKind
+    /** ID of the offending round */
+    roundId: Scalars['ID']
+    /** Zero-based group index */
+    groupIndex: Scalars['Int']
+    /** Zero-based round index within the group */
+    roundIndex: Scalars['Int']
+    __typename: 'RoundOffenderModel'
+}
+
+
+/** Group entity that triggered a violation */
+export interface GroupOffenderModel {
+    /** Discriminant — always GROUP */
+    kind: OffenderKind
+    /** ID of the offending group */
+    groupId: Scalars['ID']
+    /** Zero-based group index */
+    groupIndex: Scalars['Int']
+    /** Human-readable group name */
+    groupName: Scalars['String']
+    __typename: 'GroupOffenderModel'
+}
+
+
+/** Team entity that triggered a violation */
+export interface TeamOffenderModel {
+    /** Discriminant — always TEAM */
+    kind: OffenderKind
+    /** ID of the offending team */
+    teamId: Scalars['ID']
+    /** Human-readable team name */
+    teamName: Scalars['String']
+    /** Team status at the time of violation */
+    currentStatus: (TeamScopeStatus | null)
+    __typename: 'TeamOffenderModel'
+}
+
+
+/** Status of a team within a particular scope (game, round, group, step, tournament) */
+export type TeamScopeStatus = 'ACTIVE' | 'WINNER' | 'QUALIFIED' | 'ELIMINATED' | 'WITHDRAWN'
+
+
+/** Score row entity that triggered a violation */
+export interface ScoreRowOffenderModel {
+    /** Discriminant — always SCORE_ROW */
+    kind: OffenderKind
+    /** Scope level of the score row */
+    scope: ScoreRowScope
+    /** ID of the offending score row */
+    scoreRowId: Scalars['ID']
+    /** ID of the team associated with the score row */
+    teamId: Scalars['ID']
+    /** Score value, if set */
+    score: (Scalars['Float'] | null)
+    /** Rank, if materialised */
+    rank: (Scalars['Int'] | null)
+    /** Team scope status associated with the score row, if set */
+    status: (TeamScopeStatus | null)
+    __typename: 'ScoreRowOffenderModel'
+}
+
+
+/** Scope level of a score row referenced in a validation offender */
+export type ScoreRowScope = 'TOURNAMENT' | 'STEP' | 'GROUP' | 'ROUND' | 'GAME'
+
+
+/** Result of checking a single invariant */
+export interface InvariantResultModel {
+    /** Invariant code */
+    code: InvariantCode
+    /** Severity of the invariant */
+    severity: InvariantSeverity
+    /** Whether the invariant passed */
+    passed: Scalars['Boolean']
+    /** Human-readable message */
+    message: (Scalars['String'] | null)
+    /** Offending entities, if the invariant was violated */
+    offenders: InvariantOffenderUnion[]
+    __typename: 'InvariantResultModel'
+}
+
+
+/** Severity level of a violated invariant */
+export type InvariantSeverity = 'ERROR' | 'WARNING'
+
+
+/** Summary of how many times a rule fired during validation */
+export interface RuleFireSummaryModel {
+    /** ID of the advancement rule */
+    ruleId: Scalars['ID']
+    /** Human-readable rule name */
+    ruleName: Scalars['String']
+    /** Trigger type of the rule */
+    trigger: RuleTriggerType
+    /** Number of times the rule fired */
+    fireCount: Scalars['Int']
+    __typename: 'RuleFireSummaryModel'
+}
+
+
+/** Final result of a completed validation job */
+export interface ValidationResultModel {
+    /** Whether the validation succeeded (no violations) */
+    success: Scalars['Boolean']
+    /** Total wall-clock duration in milliseconds */
+    durationMs: Scalars['Int']
+    /** Total number of state mutations applied during the run */
+    totalMutations: Scalars['Int']
+    /** Results for all checked invariants */
+    invariantResults: InvariantResultModel[]
+    /** Errors that were collected during the run */
+    errors: ValidationErrorModel[]
+    /** Summary of rule fire counts */
+    ruleFiredSummary: RuleFireSummaryModel[]
+    __typename: 'ValidationResultModel'
+}
+
+
+/** Real-time progress of a running validation job */
+export interface ValidationProgressModel {
+    /** Current execution stage */
+    stage: ValidationStage
+    /** Percentage completion within the current stage (0–100) */
+    percent: Scalars['Float']
+    /** Optional detail message from the current phase */
+    currentPhaseDetail: (Scalars['String'] | null)
+    /** Number of rules fired so far */
+    rulesFired: Scalars['Int']
+    /** Total number of enabled rules declared in the rule set */
+    totalRulesDeclared: Scalars['Int']
+    /** Total state mutations applied so far */
+    totalMutations: Scalars['Int']
+    /** Elapsed wall-clock time in milliseconds */
+    elapsedMs: Scalars['Int']
+    __typename: 'ValidationProgressModel'
+}
+
+
+/** Current execution stage of a running validation job */
+export type ValidationStage = 'QUEUED' | 'SEEDING' | 'GENERATING' | 'UPSTREAM_RUNNING' | 'PLAYING' | 'ASSERTING' | 'FINALISING'
+
+
+/** A rule-set validation job */
+export interface ValidationJobModel {
+    /** Unique job ID */
+    id: Scalars['ID']
+    /** ID of the validated step rule set */
+    stepRuleSetId: Scalars['ID']
+    /** Current job status */
+    status: ValidationJobStatus
+    /** Current execution stage */
+    stage: ValidationStage
+    /** Current progress snapshot */
+    progress: ValidationProgressModel
+    /** Final result of the validation run. Populated only when status is SUCCEEDED or FAILED. */
+    result: (ValidationResultModel | null)
+    /** Short error summary if the job failed */
+    errorSummary: (Scalars['String'] | null)
+    /** Timestamp when the job was created / queued */
+    startedAt: Scalars['DateTime']
+    /** Timestamp when the job completed (success, failure, or cancel) */
+    completedAt: (Scalars['DateTime'] | null)
+    __typename: 'ValidationJobModel'
+}
+
+
+/** Lifecycle status of a rule-set validation job */
+export type ValidationJobStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED'
+
+
+/** A single streaming event emitted during a validation run */
+export interface ValidationEventModel {
+    /** Unique event ID */
+    id: Scalars['ID']
+    /** ID of the parent validation job */
+    jobId: Scalars['ID']
+    /** Monotonically increasing sequence number within the job */
+    sequence: Scalars['Int']
+    /** Timestamp when the event was emitted */
+    timestamp: Scalars['DateTime']
+    /** Event category */
+    kind: ValidationEventKind
+    /** Human-readable event summary */
+    summary: Scalars['String']
+    /** Associated rule ID, if applicable */
+    ruleId: (Scalars['ID'] | null)
+    /** Associated cross-step rule ID, if applicable */
+    crossStepRuleId: (Scalars['ID'] | null)
+    /** Associated match ID, if applicable */
+    matchId: (Scalars['ID'] | null)
+    /** Associated game ID, if applicable */
+    gameId: (Scalars['ID'] | null)
+    /** Associated round ID, if applicable */
+    roundId: (Scalars['ID'] | null)
+    /** Associated group ID, if applicable */
+    groupId: (Scalars['ID'] | null)
+    /** Associated step ID, if applicable */
+    stepId: (Scalars['ID'] | null)
+    /** Associated team ID, if applicable */
+    teamId: (Scalars['ID'] | null)
+    /** Effect kind, if the event describes a state mutation. Union of SimulatedEffectType, game_status, and team_scope_status values — interpretation depends on the event kind. */
+    effectType: (ValidationEffectType | null)
+    /** Status before the state transition, if applicable. Union of game_status, team_scope_status, and step_status. */
+    statusBefore: (ValidationStatus | null)
+    /** Status after the state transition, if applicable. Union of game_status, team_scope_status, and step_status. */
+    statusAfter: (ValidationStatus | null)
+    __typename: 'ValidationEventModel'
+}
+
+
+/** Category of a streaming validation event */
+export type ValidationEventKind = 'SEED' | 'GENERATE' | 'MATCH_UPDATED' | 'RULE_FIRED' | 'EFFECT_APPLIED' | 'SCOPE_ENDED' | 'CROSS_STEP_EVALUATED' | 'ASSERTION' | 'ADMIN_OVERRIDE' | 'ERROR' | 'WARNING' | 'PROGRESS'
+
+
+/** Effect kind described by a validation event. Union of SimulatedEffectType, game_status, and team_scope_status — interpretation depends on the event kind. */
+export type ValidationEffectType = 'ADVANCE' | 'ELIMINATE' | 'END_GAME' | 'END_ROUND' | 'END_GROUP' | 'SET_METADATA' | 'SET_CUSTOM_FIELD' | 'SET_STATUS' | 'SET_MATCH_RESULT' | 'REGISTER_TEAM' | 'CREATE_GROUP' | 'CREATE_ROUND' | 'CREATE_GAME' | 'LINK' | 'SET_SCORING' | 'ADD_TIEBREAKER' | 'ADD_RULE' | 'ADD_CROSS_STEP_RULE' | 'GAME_WAITING' | 'GAME_STARTED' | 'GAME_ENDED' | 'TEAM_ACTIVE' | 'TEAM_WINNER' | 'TEAM_QUALIFIED' | 'TEAM_ELIMINATED' | 'TEAM_WITHDRAWN'
+
+
+/** Before/after status of a state transition recorded in a validation event. Union of game_status, team_scope_status, and step_status with namespaced values. */
+export type ValidationStatus = 'GAME_WAITING' | 'GAME_STARTED' | 'GAME_ENDED' | 'TEAM_ACTIVE' | 'TEAM_WINNER' | 'TEAM_QUALIFIED' | 'TEAM_ELIMINATED' | 'TEAM_WITHDRAWN' | 'STEP_CONFIGURED' | 'STEP_GENERATING' | 'STEP_GENERATED' | 'STEP_SEEDING' | 'STEP_SEEDED' | 'STEP_STARTED' | 'STEP_ENDED'
+
+
+/** Paginated list of validation jobs */
+export interface ValidationJobs {
     /** List of edges containing cursor and node pairs */
-    edges: RuleExecutionLogModelEdge[]
+    edges: ValidationJobModelEdge[]
     /** Flat list of items in the current page */
-    nodes: RuleExecutionLogModel[]
+    nodes: ValidationJobModel[]
     /** Pagination metadata for navigating between pages */
     pageInfo: ResponsePageInfo
     /** Total number of items across all pages */
     totalCount: (Scalars['Float'] | null)
-    __typename: 'PaginatedRuleExecutionLogs'
+    __typename: 'ValidationJobs'
 }
 
 
 /** An edge in a paginated connection containing a cursor and node */
-export interface RuleExecutionLogModelEdge {
+export interface ValidationJobModelEdge {
     /** Opaque cursor string for this edge, used for pagination */
     cursor: Scalars['String']
     /** The item at this edge */
-    node: RuleExecutionLogModel[]
-    __typename: 'RuleExecutionLogModelEdge'
+    node: ValidationJobModel[]
+    __typename: 'ValidationJobModelEdge'
 }
 
 
-/** Snapshot of a game state during simulation */
-export interface SimulatedGameSnapshotModel {
-    /** Identifier of the simulated game */
-    gameId: Scalars['String']
-    /** Zero-based index of the group this game belongs to */
-    groupIndex: Scalars['Float']
-    /** Zero-based index of the round within the group */
-    roundIndex: Scalars['Float']
-    /** Zero-based index of the game within the round */
-    gameIndex: Scalars['Float']
-    /** IDs of teams assigned to this game */
-    assignedTeamIds: Scalars['String'][]
-    /** Whether this game has been completed in the simulation */
-    completed: Scalars['Boolean']
-    __typename: 'SimulatedGameSnapshotModel'
+/** Paginated list of validation events */
+export interface ValidationEvents {
+    /** List of edges containing cursor and node pairs */
+    edges: ValidationEventModelEdge[]
+    /** Flat list of items in the current page */
+    nodes: ValidationEventModel[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'ValidationEvents'
 }
 
 
-/** A single step in the simulation execution trace */
-export interface SimulationStepModel {
-    /** Iteration number within the simulation */
-    iteration: Scalars['Float']
-    /** Event type that triggered this step */
-    event: Scalars['String']
-    /** Human-readable description of what happened in this step */
-    description: Scalars['String']
-    /** IDs of teams that advanced during this step */
-    teamsAdvanced: Scalars['String'][]
-    /** IDs of teams that were eliminated during this step */
-    teamsEliminated: Scalars['String'][]
-    __typename: 'SimulationStepModel'
-}
-
-
-/** Result of a dry-run rule set simulation */
-export interface SimulationResultModel {
-    /** Whether the simulation completed successfully without errors */
-    success: Scalars['Boolean']
-    /** Ordered execution trace of the simulation */
-    steps: SimulationStepModel[]
-    /** Non-fatal warnings produced during the simulation */
-    warnings: Scalars['String'][]
-    /** Fatal errors that caused the simulation to fail */
-    errors: Scalars['String'][]
-    /** Final state of all games in the simulated bracket structure */
-    structureSnapshot: SimulatedGameSnapshotModel[]
-    __typename: 'SimulationResultModel'
+/** An edge in a paginated connection containing a cursor and node */
+export interface ValidationEventModelEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: ValidationEventModel[]
+    __typename: 'ValidationEventModelEdge'
 }
 
 
@@ -4127,7 +4303,7 @@ export type MetadataVisibility = 'PUBLIC' | 'PRIVATE'
 
 
 /** Prisma model types that support metadata and custom fields */
-export type ObjectType = 'Account' | 'ClanGroup' | 'ClanMember' | 'Clan' | 'Configuration' | 'LeaderboardSeasonBucketScore' | 'LeaderboardSeasonBucket' | 'LeaderboardSeason' | 'Leaderboard' | 'OrganizationGroup' | 'OrganizationMember' | 'OrganizationApp' | 'Organization' | 'EmailConfiguration' | 'EmailTemplate' | 'OrganizationIdentityProvider' | 'IdentityProvider' | 'PlayerProfile' | 'SkillRating' | 'PlayerSkillRating' | 'TeamMember' | 'Team' | 'TournamentStepGroupRoundGameMatchScores' | 'TournamentStepGroupRoundGameMatch' | 'TournamentStepGroupRoundGameTeamScore' | 'TournamentStepGroupRoundGame' | 'TournamentStepGroupRoundTeamScore' | 'TournamentStepGroupRound' | 'TournamentStepGroupTeamScore' | 'TournamentStepGroup' | 'TournamentStepTeamScore' | 'TournamentStep' | 'TournamentTeamMember' | 'TournamentTeam' | 'TournamentTeamScore' | 'Tournament' | 'TournamentAdmin' | 'TournamentFeature' | 'EventVenueSeat' | 'EventVenueSeatType' | 'EventVenue' | 'EventSeatStatus' | 'EventTicketConfiguration' | 'EventReservationTicket' | 'EventReservation' | 'Event' | 'UserGroupConfiguration' | 'UserGroup' | 'UserGroupMember' | 'SubscriptionItem' | 'Log' | 'PlatformTemplate' | 'Platform' | 'PlatformCdnFile' | 'PlatformModuleConfig' | 'Webhook' | 'Payments' | 'Currency' | 'PlayerCurrency' | 'ItemCategory' | 'Item' | 'PlayerItem' | 'Shop' | 'ShopCategory' | 'PlayerShopProductPurshase' | 'ShopProductItem' | 'ShopProduct' | 'StepRuleSet' | 'RuleSetVersion' | 'ScoringRuleSet' | 'TiebreakerRule' | 'AdvancementRule' | 'RuleExecutionLog' | 'CrossStepRule' | 'StructureTemplate' | 'GroupTemplate' | 'RoundTemplate' | 'GameTemplate' | 'AppWebhook' | 'AppRelease' | 'MarketplaceApp' | 'MarketplaceAppPricing' | 'MarketplaceAppRelease' | 'MarketplaceAppReview' | 'MarketplaceAppInstallation'
+export type ObjectType = 'Account' | 'ClanGroup' | 'ClanMember' | 'Clan' | 'Configuration' | 'LeaderboardSeasonBucketScore' | 'LeaderboardSeasonBucket' | 'LeaderboardSeason' | 'Leaderboard' | 'OrganizationGroup' | 'OrganizationMember' | 'OrganizationApp' | 'Organization' | 'EmailConfiguration' | 'EmailTemplate' | 'OrganizationIdentityProvider' | 'IdentityProvider' | 'PlayerProfile' | 'SkillRating' | 'PlayerSkillRating' | 'TeamMember' | 'Team' | 'TournamentStepGroupRoundGameMatchScores' | 'TournamentStepGroupRoundGameMatch' | 'TournamentStepGroupRoundGameTeamScore' | 'TournamentStepGroupRoundGame' | 'GameLink' | 'TournamentStepGroupRoundTeamScore' | 'TournamentStepGroupRound' | 'TournamentStepGroupTeamScore' | 'TournamentStepGroup' | 'TournamentStepTeamScore' | 'TournamentStep' | 'TournamentTeamMember' | 'TournamentTeam' | 'TournamentTeamScore' | 'Tournament' | 'TournamentAdmin' | 'TournamentFeature' | 'EventVenueSeat' | 'EventVenueSeatType' | 'EventVenue' | 'EventSeatStatus' | 'EventTicketConfiguration' | 'EventReservationTicket' | 'EventReservation' | 'Event' | 'UserGroupConfiguration' | 'UserGroup' | 'UserGroupMember' | 'SubscriptionItem' | 'Log' | 'PlatformTemplate' | 'Platform' | 'PlatformCdnFile' | 'PlatformModuleConfig' | 'Webhook' | 'Payments' | 'Currency' | 'PlayerCurrency' | 'ItemCategory' | 'Item' | 'PlayerItem' | 'Shop' | 'ShopCategory' | 'PlayerShopProductPurshase' | 'ShopProductItem' | 'ShopProduct' | 'StepRuleSet' | 'RuleSetVersion' | 'StepRuleSetValidationJob' | 'StepRuleSetValidationInvariant' | 'StepRuleSetValidationError' | 'StepRuleSetValidationWarning' | 'StepRuleSetValidationRuleFire' | 'StepRuleSetValidationEvent' | 'ScoringRuleSet' | 'TiebreakerRule' | 'AdvancementRule' | 'RuleExecutionLog' | 'CrossStepRule' | 'StructureTemplate' | 'GroupTemplate' | 'RoundTemplate' | 'GameTemplate' | 'PresetScript' | 'AppWebhook' | 'AppRelease' | 'MarketplaceApp' | 'MarketplaceAppPricing' | 'MarketplaceAppRelease' | 'MarketplaceAppReview' | 'MarketplaceAppInstallation'
 
 
 /** Metadata entries grouped by object ID for batch queries */
@@ -4699,7 +4875,7 @@ export interface LimitOverride {
     __typename: 'LimitOverride'
 }
 
-export type OrganizationLimitsType = 'REGISTERED_USERS' | 'ORGANIZATION_GROUPS' | 'ORGANIZATION_MEMBERS' | 'CUSTOM_FIELDS' | 'TOURNAMENT_STEPS' | 'TOURNAMENT_STEP_GROUPS' | 'TOURNAMENT_TEAMS_REGISTERED' | 'TOURNAMENT_TEAM_SIZE' | 'TOURNAMENT_REGISTRATION_RULES' | 'TOURNAMENT_STEP_RULE_SETS' | 'WEBHOOKS' | 'ANONYMOUS_PLAYER_PROFILES' | 'WHITE_LABEL' | 'LEADERBOARDS' | 'LEADERBOARD_ENTRIES' | 'LEADERBOARD_BUCKETS' | 'LEADERBOARD_SEASONS' | 'SKILL_RATINGS' | 'PLATFORMS' | 'PLATFORM_TEMPLATES' | 'ORGANIZATION_STORAGE_SIZE' | 'PLATFORM_CUSTOM_DOMAINS' | 'CUSTOM_IDENTITY_PROVIDERS' | 'APPS' | 'ATTACHED_APPS' | 'EVENTS_MAX_TICKETS_TYPES' | 'EVENTS_MAX_TICKETS' | 'EVENTS_MAX_GROUP_SIZE' | 'EVENTS_MAX_REGISTRATION_RULES' | 'EVENT_VENUES' | 'EVENT_VENUE_MAX_SEAT_TYPES' | 'EVENT_VENUE_MAX_SEATS' | 'EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS' | 'CURRENCIES' | 'ITEM_CATEGORIES' | 'ITEMS' | 'SHOPS' | 'SHOP_CATEGORIES' | 'SHOP_PRODUCTS' | 'MARKETPLACE_PUBLISHED_APPS' | 'MARKETPLACE_INSTALLATIONS'
+export type OrganizationLimitsType = 'REGISTERED_USERS' | 'ORGANIZATION_GROUPS' | 'ORGANIZATION_MEMBERS' | 'CUSTOM_FIELDS' | 'TOURNAMENT_STEPS' | 'TOURNAMENT_STEP_GROUPS' | 'TOURNAMENT_TEAMS_REGISTERED' | 'TOURNAMENT_TEAM_SIZE' | 'TOURNAMENT_REGISTRATION_RULES' | 'WEBHOOKS' | 'ANONYMOUS_PLAYER_PROFILES' | 'WHITE_LABEL' | 'LEADERBOARDS' | 'LEADERBOARD_ENTRIES' | 'LEADERBOARD_BUCKETS' | 'LEADERBOARD_SEASONS' | 'SKILL_RATINGS' | 'PLATFORMS' | 'PLATFORM_TEMPLATES' | 'ORGANIZATION_STORAGE_SIZE' | 'PLATFORM_CUSTOM_DOMAINS' | 'CUSTOM_IDENTITY_PROVIDERS' | 'APPS' | 'ATTACHED_APPS' | 'EVENTS_MAX_TICKETS_TYPES' | 'EVENTS_MAX_TICKETS' | 'EVENTS_MAX_GROUP_SIZE' | 'EVENTS_MAX_REGISTRATION_RULES' | 'EVENT_VENUES' | 'EVENT_VENUE_MAX_SEAT_TYPES' | 'EVENT_VENUE_MAX_SEATS' | 'EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS' | 'CURRENCIES' | 'ITEM_CATEGORIES' | 'ITEMS' | 'SHOPS' | 'SHOP_CATEGORIES' | 'SHOP_PRODUCTS' | 'MARKETPLACE_PUBLISHED_APPS' | 'MARKETPLACE_INSTALLATIONS'
 
 
 /** A purchasable subscription item that provides limit overrides to an organization */
@@ -4846,16 +5022,26 @@ export interface Query {
     tournamentStepGroupRoundGameMatchScoresGetForStep: TournamentStepGroupRoundGameMatchScores
     /** List all administrators for a specific tournament */
     tournamentAdmins: TournamentAdmin[]
-    /** Get rule set for a tournament step */
+    /** Fetch the rule set attached to a tournament step, including scoring, advancement rules, cross-step rules, and the structure template. Returns null when the step has no rule set. */
     stepRuleSet: (StepRuleSetModel | null)
-    /** Get rule execution audit trail for a step */
-    stepRuleExecutionLogs: PaginatedRuleExecutionLogs
-    /** Dry validation of a rule set without saving */
-    stepRuleSetValidate: RuleValidationResultModel
-    /** Dry-run simulation of a rule set */
-    stepRuleSetSimulate: SimulationResultModel
-    /** List available rule preset names */
-    rulePresets: RulePresetName[]
+    /** List user-created preset scripts for the current organization, sorted by most recently created first */
+    presetScripts: PresetScriptModel[]
+    /** Fetch a single preset script by ID, scoped to the current organization */
+    presetScript: PresetScriptModel
+    /** List built-in tournament-format templates provided by the platform. Optionally filter by category. */
+    builtinPresets: BuiltinPresetModel[]
+    /** Fetch a single built-in template by slug. */
+    builtinPreset: BuiltinPresetModel
+    /** Validate a Lua script without executing it: runs syntax parsing then static analysis. Returns the full list of errors and warnings. */
+    validateScript: ScriptValidationResultModel
+    /** Simulate a Lua script against a mock (or real) context inside the production sandbox with tighter interactive caps. Returns a summary of side-effects the script would have produced — NO database writes occur. */
+    simulateScript: ScriptSimulationResultModel
+    /** Fetch a single validation job by ID, scoped to the caller's organization. */
+    stepRuleSetValidationJob: (ValidationJobModel | null)
+    /** List validation jobs for a step rule set, ordered by most recently started first. */
+    stepRuleSetValidationJobs: ValidationJobs
+    /** List streaming events emitted by a validation job. */
+    stepRuleSetValidationEvents: ValidationEvents
     /** List all CDN files for a platform or template, optionally filtered by file type */
     platformFiles: PlatformCdnFile[]
     /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
@@ -4997,8 +5183,6 @@ export type OrderDirection = 'ASC' | 'DESC'
 
 export type TournamentsQueryStatus = 'ALL' | 'STARTED' | 'ENDED' | 'REGISTRATIONS_OPEN' | 'REGISTRATIONS_ENDED' | 'REGISTRATIONS_CLOSED'
 
-export type RulePresetName = 'SINGLE_ELIM' | 'DOUBLE_ELIM' | 'ROUND_ROBIN' | 'SWISS' | 'BUCHHOLZ_GROUPS' | 'ROUND_ROBIN_BO3' | 'LEAGUE_HOME_AWAY' | 'SWISS_ACCELERATED' | 'SINGLE_ELIM_CONSOLATION' | 'RANDOM_DRAW_KNOCKOUT' | 'STEP_LADDER' | 'PAGE_PLAYOFF' | 'GAUNTLET' | 'DOUBLE_ELIM_TRUE_FINALS' | 'GSL_FORMAT' | 'SWISS_MCMAHON' | 'TRIPLE_ELIM' | 'POINTS_RACE' | 'BATTLE_ROYALE' | 'ROUND_ROBIN_PLAYOFFS' | 'CONQUEST' | 'KING_OF_THE_HILL_BO5'
-
 export type EventsQueryOrderBy = 'START_AT' | 'REGISTRATIONS_START_AT' | 'END_AT' | 'REGISTRATIONS_END_AT'
 
 export type EventsQueryStatus = 'ALL' | 'STARTED' | 'ENDED' | 'REGISTRATIONS_OPEN' | 'REGISTRATIONS_ENDED' | 'REGISTRATIONS_CLOSED'
@@ -5116,9 +5300,19 @@ export interface Mutation {
     deleteTournamentStep: Scalars['Boolean']
     /** Generate the bracket structure for a tournament step based on its configuration or rule set */
     generateTournamentStep: Scalars['Boolean']
-    /** Seed teams into a generated tournament step using automatic or manual seeding */
-    seedTournamentStep: Scalars['Boolean']
-    /** Reset seeding: SEEDED → GENERATED. Clears team assignments and scores but keeps bracket structure. */
+    /** Seed teams into a generated tournament step. Accepts the caller-curated seeding order and optional manual pins; the preset rule set (SEEDING / ROUND_SEEDING rules) drives actual team-to-game assignment. Prior placements are discarded (idempotent re-seed). */
+    seedTournamentStep: TournamentStep
+    /** Persist a new seeding order on the step without re-seeding. Order must be a permutation of the tournament's teams. */
+    updateSeedingOrder: TournamentStep
+    /** Persist a new manual-pin list on the step without re-seeding. Pins anchor teams to a group, a game, or a specific slot within a game. */
+    updateSeedingPins: TournamentStep
+    /** Withdraw a team from a step. Flips the team status to WITHDRAWN, fires the TEAM_WITHDREW rule-engine event, and cascades bye resolution. Idempotent. */
+    withdrawTeamFromStep: TournamentStep
+    /** Re-run the seeding pipeline from the step's currently persisted seedingOrder + manualPins. The step must be in SEEDED status. Resets to GENERATED and then re-seeds — any unsaved match results would be lost. */
+    reseedStep: TournamentStep
+    /** Restart a started step: STARTED → SEEDED. Wipes all scores and match results but preserves bracket structure and team seedings. */
+    restartTournamentStep: Scalars['Boolean']
+    /** Reset seeding: SEEDED|STARTED → GENERATED. Clears team assignments and scores but keeps bracket structure. */
     resetTournamentStepSeeding: Scalars['Boolean']
     /** Full reset: → CONFIGURED. Deletes all generated brackets and scores. */
     resetTournamentStep: Scalars['Boolean']
@@ -5150,26 +5344,30 @@ export interface Mutation {
     tournamentAdminUpsert: TournamentAdmin
     /** Remove a tournament administrator */
     tournamentAdminDelete: Scalars['Boolean']
-    /** Create rule set for a tournament step */
-    stepRuleSetCreate: StepRuleSetModel
-    /** Update scoring rules (versioned) */
-    scoringRulesUpdate: StepRuleSetModel
-    /** Update advancement rules (versioned) */
-    advancementRulesUpdate: StepRuleSetModel
-    /** Update structure template (only when CONFIGURED) */
-    structureTemplateUpdate: StepRuleSetModel
-    /** Add a cross-step rule */
-    crossStepRuleCreate: StepRuleSetModel
-    /** Remove a cross-step rule */
-    crossStepRuleDelete: StepRuleSetModel
-    /** Manual team advancement */
-    manualAdvancementExecute: StepRuleSetModel
-    /** Trigger a MANUAL rule */
-    manualRuleTrigger: StepRuleSetModel
-    /** Approve a pending action from an autoExecute=false rule */
-    pendingActionApprove: StepRuleSetModel
-    /** Apply a preset rule configuration to a step */
-    rulePresetApply: StepRuleSetModel
+    /** Create a new rule set for a tournament step. Fails with CONFLICT if the step already has a rule set. */
+    createStepRuleSet: StepRuleSetModel
+    /** Apply a user-created preset script to a tournament step, creating or overwriting the step's rule set. The preset's Lua script runs in the sandbox and its effects are persisted atomically. */
+    applyPresetScript: StepRuleSetModel
+    /** Apply a built-in template to a tournament step, creating or overwriting the step's rule set. The template runs in the Lua sandbox and its effects are persisted atomically. */
+    applyBuiltinPreset: StepRuleSetModel
+    /** Duplicate a built-in template into a new editable preset script owned by the current organization. If `name` is omitted, defaults to the template's display name (with `(copy)` appended on collision). */
+    duplicateBuiltinPreset: PresetScriptModel
+    /** Create a new user-defined preset script in the current organization */
+    createPresetScript: PresetScriptModel
+    /** Update a preset script owned by the current organization. Only the supplied fields are modified. */
+    updatePresetScript: PresetScriptModel
+    /** Delete a preset script owned by the current organization. Returns true on success. */
+    deletePresetScript: Scalars['Boolean']
+    /** Set the explicit list of winning teams for a step (admin override). Existing WINNER rows on the step are reverted to ACTIVE, and the supplied teams are upserted as WINNER. Writes a private audit-log entry. */
+    setStepWinners: TournamentStep
+    /** Set the explicit list of winning teams for a tournament (admin override). Existing WINNER rows on the tournament are reverted to ACTIVE, and the supplied teams are upserted as WINNER. Writes a private audit-log entry. */
+    setTournamentWinners: Tournament
+    /** Set a single team's status on a step (admin override). Upserts the team's TournamentStepTeamScore row to the supplied status and writes a private audit-log entry. Returns true on success. */
+    setStepTeamStatus: Scalars['Boolean']
+    /** Start a validation job for the given step rule set. If an active job already exists, returns the existing job instead of creating a new one. */
+    validateStepRuleSet: ValidationJobModel
+    /** Cancel an in-progress or queued validation job. */
+    cancelStepRuleSetValidation: ValidationJobModel
     /** Create a Stripe customer portal session URL for managing the organization subscription */
     stripeCreatePortalSession: Scalars['String']
     /** Create a new CDN file record for a platform or template */
@@ -5355,13 +5553,13 @@ export interface Mutation {
     __typename: 'Mutation'
 }
 
-export type SeedingMechanism = 'NONE' | 'REVERSE' | 'HALF_SHIFT' | 'REVERSE_HALF_SHIFT' | 'PAIR_FLIP'
-
-export type GroupRepartitionMechanism = 'BALANCED' | 'SEED_OPTIMIZED'
-
 export type StripeUiMode = 'EMBEDDED' | 'HOSTED'
 
 export interface Subscription {
+    /** Subscribe to progress updates for a validation job. Emits the updated ValidationJobModel whenever the job state changes. */
+    validationProgress: ValidationJobModel
+    /** Subscribe to streaming events emitted during a validation run. */
+    validationEvents: ValidationEventModel
     presenceUserConnected: UsersConnectedEvent
     presenceUserDisconnected: UsersDisconnectedEvent
     __typename: 'Subscription'
@@ -5608,7 +5806,10 @@ export interface MatchConfigurationGenqlSelection{
 
 /** Configuration for how a game is played and scored */
 export interface GameConfigurationGenqlSelection{
-    /** Number of match wins required to win the game (best-of format) */
+    /**
+     * @deprecated Use MATCH_SERIES_RESOLUTION advancement rule instead. Kept for legacy tournaments without rule sets.
+     * Number of match wins required to win the game (best-of format)
+     */
     wonMatchCountToWinGame?: boolean | number
     /** Whether individual match scores are aggregated as the game score */
     useMatchScoresAsGameScore?: boolean | number
@@ -5662,7 +5863,10 @@ export interface GroupConfigurationGenqlSelection{
 export interface StepConfigurationGenqlSelection{
     /** Discriminator type, always STEP for step configurations */
     type?: boolean | number
-    /** List of group configurations within this step */
+    /**
+     * @deprecated Legacy groups system. Will be removed in a future version.
+     * List of group configurations within this step
+     */
     groups?: GroupConfigurationGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -7243,6 +7447,21 @@ export interface PlayerSkillRatingGenqlSelection{
 }
 
 
+/** A manual seeding pin. At least one of groupId or gameId must be set. */
+export interface SeedingPinGenqlSelection{
+    /** Team being pinned */
+    teamId?: boolean | number
+    /** Pin the team to this group */
+    groupId?: boolean | number
+    /** Pin the team to this game slots */
+    gameId?: boolean | number
+    /** 0-indexed slot within the game */
+    slotIndex?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** A single match within a game, representing one play session between teams */
 export interface TournamentStepGroupRoundGameMatchGenqlSelection{
     /** Unique identifier for the match */
@@ -7364,6 +7583,8 @@ export interface TournamentTeamGenqlSelection{
     tournamentId?: boolean | number
     /** Current registration and validation status of the team */
     status?: boolean | number
+    /** Date and time when the team withdrew from the tournament, or null if the team has not withdrawn */
+    withdrawnAt?: boolean | number
     /** Date and time when the team was registered */
     createdAt?: boolean | number
     /** Date and time when the team was last updated */
@@ -7436,6 +7657,8 @@ export interface TournamentStepGenqlSelection{
     status?: boolean | number
     /** Detailed configuration for the step including groups, rounds, and game settings */
     configuration?: StepConfigurationGenqlSelection
+    /** Ordered list of tournament team IDs representing the seeding order for this step (computed by SEEDING rules, consumed by structure generation). */
+    seedingOrder?: boolean | number
     /** Date and time when the step was created */
     createdAt?: boolean | number
     /** Date and time when the step was last updated */
@@ -7444,6 +7667,8 @@ export interface TournamentStepGenqlSelection{
     teamScores?: TournamentTeamScoreGenqlSelection
     /** The tournament this step belongs to */
     tournament?: TournamentGenqlSelection
+    /** Manual seeding pin overrides persisted on the step. Empty when no pins are set. Produced by `persistSeedingPins` / `seedStep`; consumed by the seeding pipeline. */
+    manualPins?: SeedingPinGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -7487,16 +7712,24 @@ export interface TournamentStepGroupRoundGameGenqlSelection{
     order?: boolean | number
     /** ID of the parent round */
     tournamentStepGroupRoundId?: boolean | number
-    /** ID of the game the winner advances to */
-    winningGameId?: boolean | number
-    /** ID of the game the loser drops to (e.g. losers bracket) */
-    losingGameId?: boolean | number
     /** Timestamp when the game was created */
     createdAt?: boolean | number
     /** Timestamp when the game was last updated */
     updatedAt?: boolean | number
     /** Matches within this game (best-of series) */
     matches?: TournamentStepGroupRoundGameMatchGenqlSelection
+    /** Outgoing bracket routing edges. Each entry describes where the `WIN` or `LOSS` outcome of this game routes the affected team. An empty list means this game is a terminal node (e.g. the grand final). */
+    gameLinks?: GameLinkGenqlSelection
+    /**
+     * @deprecated Use `gameLinks` — will be removed once all clients migrate.
+     * Deprecated. The ID of the game the winning team of this game advances to. Derived from `gameLinks` where `outcome = WIN`.
+     */
+    winningGameId?: boolean | number
+    /**
+     * @deprecated Use `gameLinks` — will be removed once all clients migrate.
+     * Deprecated. The ID of the game the losing team of this game drops to (loser bracket in double-elimination, or third-place game in single-elimination). Derived from `gameLinks` where `outcome = LOSS`.
+     */
+    losingGameId?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -7541,8 +7774,25 @@ export interface TournamentStepGroupGenqlSelection{
     createdAt?: boolean | number
     /** Timestamp when the group was last updated */
     updatedAt?: boolean | number
+    /** Display order of the group within its tournament step */
+    order?: boolean | number
     /** Rounds within this group */
     rounds?: TournamentStepGroupRoundGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Directed routing edge between two games in a tournament bracket. Emitted both at generation time (for statically known brackets such as single/double-elimination) and dynamically by the rule engine (for formats whose routing is produced by Lua `GENERATION` / action scripts). */
+export interface GameLinkGenqlSelection{
+    /** Unique identifier for this game-routing link. */
+    id?: boolean | number
+    /** ID of the game whose outcome triggers the routing. This is the upstream / predecessor game. */
+    sourceGameId?: boolean | number
+    /** ID of the game the routing points to. This is the downstream / successor game the advancing team will play in. */
+    targetGameId?: boolean | number
+    /** Which outcome of the source game activates this link. `WIN` = winner-bracket advancement; `LOSS` = loser-bracket drop or third-place routing. */
+    outcome?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -7616,624 +7866,681 @@ export interface TournamentAdminGenqlSelection{
 }
 
 
-/** A condition that must be met for a rule to execute */
-export interface RuleConditionModelGenqlSelection{
-    /** Formula string for the field to check (left side) */
-    field?: boolean | number
-    /** Comparison operator (EQ, NEQ, GT, GTE, LT, LTE, etc.) */
-    operator?: boolean | number
-    /** Formula string for the value to compare against (right side) */
-    value?: boolean | number
-    /** Scope at which this condition is evaluated (e.g. PER_TEAM, ALL_TEAMS) */
-    scope?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Reference to a game by absolute ID or relative indices within the bracket structure */
-export interface GameRefModelGenqlSelection{
-    /** Reference type (ABSOLUTE by ID or RELATIVE by indices) */
+/** A single action performed when a rule fires */
+export interface RuleActionModelGenqlSelection{
+    /** Kind of action performed */
     type?: boolean | number
-    /** Absolute game ID (used when type is ABSOLUTE) */
-    id?: boolean | number
-    /** Zero-based group index (used when type is RELATIVE) */
-    groupIndex?: boolean | number
-    /** Zero-based round index within the group (used when type is RELATIVE) */
-    roundIndex?: boolean | number
-    /** Zero-based game index within the round (used when type is RELATIVE) */
-    gameIndex?: boolean | number
-    /** Zero-based team slot index within the game */
-    slot?: boolean | number
+    /** Lua expression or script for this action */
+    script?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** Reference to a group by absolute ID or relative index */
-export interface GroupRefModelGenqlSelection{
-    /** Reference type (ABSOLUTE by ID or RELATIVE by index) */
-    type?: boolean | number
-    /** Absolute group ID (used when type is ABSOLUTE) */
-    id?: boolean | number
-    /** Zero-based group index (used when type is RELATIVE) */
-    groupIndex?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Reference to a round by absolute ID or relative indices */
-export interface RoundRefModelGenqlSelection{
-    /** Reference type (ABSOLUTE by ID or RELATIVE by indices) */
-    type?: boolean | number
-    /** Absolute round ID (used when type is ABSOLUTE) */
-    id?: boolean | number
-    /** Zero-based group index (used when type is RELATIVE) */
-    groupIndex?: boolean | number
-    /** Zero-based round index within the group (used when type is RELATIVE) */
-    roundIndex?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Reference to a tournament step by absolute ID or relative position */
-export interface StepRefModelGenqlSelection{
-    /** Reference type (ABSOLUTE by ID or RELATIVE by position) */
-    type?: boolean | number
-    /** Absolute step ID (used when type is ABSOLUTE) */
-    id?: boolean | number
-    /** Relative position (PREVIOUS, NEXT, CURRENT) when type is RELATIVE */
-    relative?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Variable definition used in match score formula computation */
-export interface MatchConfigVariableModelGenqlSelection{
-    /** Variable name used in the scoring formula */
-    formulaName?: boolean | number
-    /** Human-readable label for the variable */
-    displayName?: boolean | number
-    /** Default numeric value if not explicitly provided */
-    defaultValue?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Match configuration reference specifying where to source match settings from */
-export interface MatchConfigRefModelGenqlSelection{
-    /** Source of the match configuration (INLINE, INHERIT, etc.) */
-    source?: boolean | number
-    /** Inline scoring variables (used when source is INLINE) */
-    variables?: MatchConfigVariableModelGenqlSelection
-    /** Inline score formula expression (used when source is INLINE) */
-    scoreFormula?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Configuration for auto-generating bracket structure from a team count */
-export interface AutoGenerateConfigModelGenqlSelection{
-    /** Auto-generation algorithm type (SINGLE_ELIM, ROUND_ROBIN, etc.) */
-    type?: boolean | number
-    /** Minimum team count to trigger auto-generation */
-    fromTeamCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Scope that restricts when a rule triggers by limiting to specific game, round, or group */
-export interface TriggerScopeModelGenqlSelection{
-    /** Restrict trigger to events within this specific game */
-    gameId?: boolean | number
-    /** Restrict trigger to events within this specific round */
-    roundId?: boolean | number
-    /** Restrict trigger to events within this specific group */
-    groupId?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Event data that triggered a rule execution */
-export interface RuleEventDataModelGenqlSelection{
-    /** IDs of teams involved in the triggering event */
-    teamIds?: boolean | number
-    /** Serialized scores map */
-    scores?: boolean | number
-    /** Serialized match result map */
-    matchResult?: boolean | number
-    /** ID of the game that triggered the event */
-    gameId?: boolean | number
-    /** ID of the round that triggered the event */
-    roundId?: boolean | number
-    /** ID of the group that triggered the event */
-    groupId?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Result of evaluating a single condition during rule execution */
-export interface ConditionEvaluationModelGenqlSelection{
-    /** Left-side field expression that was evaluated */
-    field?: boolean | number
-    /** Comparison operator used */
-    operator?: boolean | number
-    /** Right-side value expression that was evaluated */
-    value?: boolean | number
-    /** Scope at which the condition was evaluated */
-    scope?: boolean | number
-    /** Whether the condition evaluated to true */
-    result?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Result of executing a single action during rule execution */
-export interface ActionResultModelGenqlSelection{
-    /** The action that was executed */
-    action?: RuleActionGenqlSelection
-    /** Whether the action executed successfully */
-    success?: boolean | number
-    /** ID of the team the action was applied to */
-    teamId?: boolean | number
-    /** Human-readable details of the action result */
-    details?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface RuleActionGenqlSelection{
-    on_AdvanceToGameActionModel?:AdvanceToGameActionModelGenqlSelection,
-    on_AdvanceToGroupActionModel?:AdvanceToGroupActionModelGenqlSelection,
-    on_AdvanceToStepActionModel?:AdvanceToStepActionModelGenqlSelection,
-    on_EliminateActionModel?:EliminateActionModelGenqlSelection,
-    on_GenerateNextRoundActionModel?:GenerateNextRoundActionModelGenqlSelection,
-    on_EndGameActionModel?:EndGameActionModelGenqlSelection,
-    on_EndRoundActionModel?:EndRoundActionModelGenqlSelection,
-    on_EndGroupActionModel?:EndGroupActionModelGenqlSelection,
-    on_SetTeamPropertyActionModel?:SetTeamPropertyActionModelGenqlSelection,
-    __typename?: boolean | number
-}
-
-
-/** Action that advances a team to a specific game in the bracket */
-export interface AdvanceToGameActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Reference to the target game */
-    target?: GameRefModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that advances a team to a specific group */
-export interface AdvanceToGroupActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Reference to the target group */
-    target?: GroupRefModelGenqlSelection
-    /** Strategy for mapping team rankings into the target group */
-    rankMapping?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that advances a team to a different tournament step */
-export interface AdvanceToStepActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Reference to the target step */
-    target?: StepRefModelGenqlSelection
-    /** Strategy for mapping team rankings into the target step */
-    rankMapping?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that eliminates a team from the tournament */
-export interface EliminateActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that generates a new round with paired games based on a pairing strategy */
-export interface GenerateNextRoundActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Algorithm used to pair teams into games */
-    pairingStrategy?: boolean | number
-    /** Number of games to create in the generated round */
-    gamesPerRound?: boolean | number
-    /** Number of team slots per generated game */
-    teamSlotsPerGame?: boolean | number
-    /** Best-of series count for generated matches */
-    bestOf?: boolean | number
-    /** Match configuration for generated games */
-    matchConfiguration?: MatchConfigRefModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that forcefully ends a game */
-export interface EndGameActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Optional scope limiting which game to end */
-    scope?: GameRefModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that forcefully ends a round */
-export interface EndRoundActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Optional scope limiting which round to end */
-    scope?: RoundRefModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that forcefully ends a group */
-export interface EndGroupActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Optional scope limiting which group to end */
-    scope?: GroupRefModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Action that sets a custom property on a team */
-export interface SetTeamPropertyActionModelGenqlSelection{
-    /** Action type discriminator */
-    type?: boolean | number
-    /** Property key to set on the team */
-    key?: boolean | number
-    /** Formula string for the computed value */
-    formula?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Tiebreaker rule used to resolve tied scores in a scoring rule set */
-export interface TiebreakerRuleModelGenqlSelection{
-    /** Unique identifier for the tiebreaker rule */
-    id?: boolean | number
-    /** Priority order of this tiebreaker (lower runs first) */
-    order?: boolean | number
-    /** Type of tiebreaker algorithm (e.g. HEAD_TO_HEAD, BUCHHOLZ) */
-    type?: boolean | number
-    /** Human-readable formula string */
-    formula?: boolean | number
-    /** Sort direction for this tiebreaker (ASC or DESC) */
-    sortOrder?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Scoring configuration defining how team scores are calculated and aggregated */
-export interface ScoringRuleSetModelGenqlSelection{
-    /** Unique identifier for the scoring rule set */
-    id?: boolean | number
-    /** Method used to aggregate scores across matches (SUM, AVERAGE, etc.) */
-    aggregation?: boolean | number
-    /** Human-readable formula string */
-    formula?: boolean | number
-    /** Points awarded for a win */
-    winPoints?: boolean | number
-    /** Points awarded for a loss */
-    lossPoints?: boolean | number
-    /** Points awarded for a draw */
-    drawPoints?: boolean | number
-    /** Points awarded for a forfeit */
-    forfeitPoints?: boolean | number
-    /** Ordered list of tiebreaker rules for resolving equal scores */
-    tiebreakers?: TiebreakerRuleModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Rule that defines how teams advance, are eliminated, or how rounds are generated */
+/** A single advancement rule within a rule set */
 export interface AdvancementRuleModelGenqlSelection{
-    /** Unique identifier for the advancement rule */
+    /** Unique rule ID */
     id?: boolean | number
-    /** Display name of the rule */
+    /** Human-readable rule name */
     name?: boolean | number
-    /** Human-readable description of what this rule does */
+    /** Optional description */
     description?: boolean | number
-    /** Execution priority order (lower runs first) */
+    /** Evaluation order within the rule set */
     order?: boolean | number
-    /** Event type that triggers this rule */
+    /** Tournament lifecycle event that triggers this rule */
     triggerType?: boolean | number
-    /** Scope restricting when the rule triggers */
-    triggerScope?: TriggerScopeModelGenqlSelection
-    /** Logical operator combining conditions (AND or OR) */
-    conditionOperator?: boolean | number
-    /** Array of RuleCondition objects */
-    conditions?: RuleConditionModelGenqlSelection
-    /** Array of RuleAction objects */
-    actions?: RuleActionGenqlSelection
-    /** Whether actions execute automatically when conditions are met */
-    autoExecute?: boolean | number
-    /** Whether an admin can manually trigger or override this rule */
-    allowManualOverride?: boolean | number
-    /** Whether this rule is currently active */
-    enabled?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Rule that transfers data (rankings, scores, teams) between tournament steps */
-export interface CrossStepRuleModelGenqlSelection{
-    /** Unique identifier for the cross-step rule */
-    id?: boolean | number
-    /** Explicit source step ID */
-    sourceStepId?: boolean | number
-    /** Relative reference (PREVIOUS, NEXT, CURRENT) */
-    sourceRelative?: boolean | number
-    /** Data source: RANKINGS, SCORES, TEAMS */
-    dataSource?: boolean | number
-    /** CrossStepUsage discriminated union */
-    usage?: CrossStepUsageGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface CrossStepUsageGenqlSelection{
-    on_SeedOrderUsageModel?:SeedOrderUsageModelGenqlSelection,
-    on_QualifyUsageModel?:QualifyUsageModelGenqlSelection,
-    on_InjectScoreUsageModel?:InjectScoreUsageModelGenqlSelection,
-    __typename?: boolean | number
-}
-
-
-/** Cross-step usage that seeds teams based on rankings from another step */
-export interface SeedOrderUsageModelGenqlSelection{
-    /** Usage type discriminator */
-    type?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Cross-step usage that qualifies teams based on a condition evaluated against source step data */
-export interface QualifyUsageModelGenqlSelection{
-    /** Usage type discriminator */
-    type?: boolean | number
-    /** Formula string for the qualification condition */
+    /** Optional Lua expression filtering the trigger scope */
+    triggerScope?: boolean | number
+    /** Lua expression returning a boolean */
     condition?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Cross-step usage that injects scores from another step into the current step */
-export interface InjectScoreUsageModelGenqlSelection{
-    /** Usage type discriminator */
-    type?: boolean | number
-    /** Formula string for the score injection */
-    formula?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Template defining a game slot in the bracket structure */
-export interface GameTemplateModelGenqlSelection{
-    /** Unique identifier for the game template */
-    id?: boolean | number
-    /** Sort order of this game within its round */
-    order?: boolean | number
-    /** Number of team slots in this game */
-    teamSlots?: boolean | number
-    /** Number of matches in the best-of series */
-    bestOf?: boolean | number
-    /** Match configuration for this game template */
-    matchConfiguration?: MatchConfigRefModelGenqlSelection
-    /** Target reference on win */
-    onWinTarget?: GameRefModelGenqlSelection
-    /** Target reference on loss */
-    onLossTarget?: GameRefModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Template defining a round and its game slots within a group */
-export interface RoundTemplateModelGenqlSelection{
-    /** Unique identifier for the round template */
-    id?: boolean | number
-    /** Display name of the round */
-    name?: boolean | number
-    /** Sort order of this round within its group */
-    order?: boolean | number
-    /** Game templates within this round */
-    gameTemplates?: GameTemplateModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Variable definition used in match score formula computation */
-export interface MatchConfigurationVariableModelGenqlSelection{
-    /** Variable name used in the scoring formula */
-    formulaName?: boolean | number
-    /** Human-readable label for the variable */
-    displayName?: boolean | number
-    /** Default numeric value if not explicitly provided */
-    defaultValue?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Match configuration defining scoring variables and formula */
-export interface MatchConfigurationModelGenqlSelection{
-    /** Variables available for score computation */
-    variables?: MatchConfigurationVariableModelGenqlSelection
-    /** Formula expression used to compute the final score from variables */
-    scoreFormula?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Template defining a group in the bracket structure with its rounds and generation settings */
-export interface GroupTemplateModelGenqlSelection{
-    /** Unique identifier for the group template */
-    id?: boolean | number
-    /** Display name of the group */
-    name?: boolean | number
-    /** Sort order of this group within the structure */
-    order?: boolean | number
-    /** Number of team slots available in this group */
-    teamSlots?: boolean | number
-    /** AutoGenerateConfig for this group (legacy JSON) */
-    autoGenerate?: AutoGenerateConfigModelGenqlSelection
-    /** Auto-generate algorithm type */
-    autoGenerateType?: boolean | number
-    /** Number of team slots per game */
-    teamSlotsPerGame?: boolean | number
-    /** Best-of series count */
-    bestOf?: boolean | number
-    /** Override round count */
-    roundCount?: boolean | number
-    /** Match configuration for generated games */
-    matchConfiguration?: MatchConfigurationModelGenqlSelection
-    /** Round templates within this group */
-    roundTemplates?: RoundTemplateModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Top-level structure template defining the bracket layout for a step */
-export interface StructureTemplateModelGenqlSelection{
-    /** Unique identifier for the structure template */
-    id?: boolean | number
-    /** Group templates that make up the bracket structure */
-    groupTemplates?: GroupTemplateModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Top-level rule set aggregate for a tournament step, containing scoring, advancement, cross-step rules, and structure */
-export interface StepRuleSetModelGenqlSelection{
-    /** Unique identifier for the rule set */
-    id?: boolean | number
-    /** Current version number, incremented on each update */
-    version?: boolean | number
-    /** Name of the preset used to generate this rule set, if any */
-    presetName?: boolean | number
-    /** Team count this rule set was configured for */
-    teamCount?: boolean | number
-    /** Whether this rule set has been validated via simulation */
-    validated?: boolean | number
-    /** Timestamp of the most recent successful validation */
-    validatedAt?: boolean | number
-    /** Scoring configuration for this step */
-    scoringRuleSet?: ScoringRuleSetModelGenqlSelection
-    /** Ordered list of advancement rules */
-    advancementRules?: AdvancementRuleModelGenqlSelection
-    /** Cross-step data transfer rules */
-    crossStepRules?: CrossStepRuleModelGenqlSelection
-    /** Bracket structure template for this step */
-    structureTemplate?: StructureTemplateModelGenqlSelection
-    /** Timestamp when the rule set was created */
+    /** Actions executed when the condition passes */
+    actions?: RuleActionModelGenqlSelection
+    /** Whether the rule fires automatically on trigger events */
+    autoExecute?: boolean | number
+    /** Whether an operator can manually override this rule */
+    allowManualOverride?: boolean | number
+    /** Whether the rule is enabled */
+    enabled?: boolean | number
+    /** Well-known purpose marker for internal behavior */
+    purpose?: boolean | number
+    /** Creation timestamp */
     createdAt?: boolean | number
-    /** Timestamp when the rule set was last updated */
+    /** Last update timestamp */
     updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** Audit log entry for a single rule execution, recording event, conditions, and actions */
-export interface RuleExecutionLogModelGenqlSelection{
-    /** Unique identifier for the log entry */
+/** A single tiebreaker within a scoring rule set */
+export interface TiebreakerRuleModelGenqlSelection{
+    /** Unique tiebreaker ID */
     id?: boolean | number
-    /** ID of the advancement rule that was executed */
-    advancementRuleId?: boolean | number
-    /** Version of the rule set at the time of execution */
-    ruleSetVersion?: boolean | number
-    /** Trigger event payload */
-    triggerEventData?: RuleEventDataModelGenqlSelection
-    /** Evaluated condition results */
-    conditionsEvaluated?: ConditionEvaluationModelGenqlSelection
-    /** Whether all conditions were satisfied */
-    conditionsMet?: boolean | number
-    /** Executed action results */
-    actionsExecuted?: ActionResultModelGenqlSelection
-    /** Whether this execution was a manual override by an admin */
-    manualOverride?: boolean | number
-    /** Account ID of the admin who performed the manual override */
-    overrideBy?: boolean | number
-    /** Timestamp when the rule was executed */
+    /** Evaluation order */
+    order?: boolean | number
+    /** Tiebreaker strategy */
+    type?: boolean | number
+    /** Lua expression — present for CUSTOM_FORMULA */
+    formula?: boolean | number
+    /** Sort order for this tiebreaker */
+    sortOrder?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Scoring configuration attached to a rule set */
+export interface ScoringRuleSetModelGenqlSelection{
+    /** Unique scoring rule set ID */
+    id?: boolean | number
+    /** Aggregation strategy */
+    aggregation?: boolean | number
+    /** Lua expression for FORMULA aggregation */
+    formula?: boolean | number
+    /** Points for a win */
+    winPoints?: boolean | number
+    /** Points for a loss */
+    lossPoints?: boolean | number
+    /** Points for a draw */
+    drawPoints?: boolean | number
+    /** Points for a forfeit */
+    forfeitPoints?: boolean | number
+    /** Ordered tiebreakers */
+    tiebreakers?: TiebreakerRuleModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Template for a single game within a round */
+export interface GameTemplateModelGenqlSelection{
+    /** Unique game template ID */
+    id?: boolean | number
+    /** Game order within the round */
+    order?: boolean | number
+    /** Number of team slots in the game */
+    teamSlots?: boolean | number
+    /** Best-of count for the series */
+    bestOf?: boolean | number
+    /** Lua expression resolving to the target slot for the winner */
+    onWinTarget?: boolean | number
+    /** Which slot on this source game wins */
+    onWinSourceSlot?: boolean | number
+    /** Target slot index for the winner */
+    onWinTargetSlot?: boolean | number
+    /** Lua expression resolving to the target slot for the loser */
+    onLossTarget?: boolean | number
+    /** Which slot on this source game loses */
+    onLossSourceSlot?: boolean | number
+    /** Target slot index for the loser */
+    onLossTargetSlot?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Template for a single round within a group */
+export interface RoundTemplateModelGenqlSelection{
+    /** Unique round template ID */
+    id?: boolean | number
+    /** Human-readable round name */
+    name?: boolean | number
+    /** Round order within the group */
+    order?: boolean | number
+    /** Game templates for this round */
+    gameTemplates?: GameTemplateModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Template for a single group within the structure */
+export interface GroupTemplateModelGenqlSelection{
+    /** Unique group template ID */
+    id?: boolean | number
+    /** Human-readable group name */
+    name?: boolean | number
+    /** Optional description */
+    description?: boolean | number
+    /** Group order within the structure */
+    order?: boolean | number
+    /** Numeric literal or Lua expression for total team slots */
+    teamSlotsExpr?: boolean | number
+    /** Lua script that dynamically creates rounds and games (Mode 1) */
+    generationScript?: boolean | number
+    /** Numeric literal or Lua expression for best-of count per game */
+    bestOfExpr?: boolean | number
+    /** Numeric literal or Lua expression for team slots per game */
+    teamSlotsPerGameExpr?: boolean | number
+    /** Numeric literal or Lua expression for total round count */
+    roundCountExpr?: boolean | number
+    /** Static round templates (Mode 2) */
+    roundTemplates?: RoundTemplateModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Complete structure template for a tournament step */
+export interface StructureTemplateModelGenqlSelection{
+    /** Unique structure template ID */
+    id?: boolean | number
+    /** Group templates composing the structure */
+    groupTemplates?: GroupTemplateModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** How a cross-step rule consumes source-step data */
+export interface CrossStepUsageModelGenqlSelection{
+    /** Usage strategy */
+    type?: boolean | number
+    /** Lua boolean expression — present for QUALIFY usage */
+    condition?: boolean | number
+    /** Lua numeric expression — present for INJECT_SCORE usage */
+    formula?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A single cross-step rule within a rule set */
+export interface CrossStepRuleModelGenqlSelection{
+    /** Unique cross-step rule ID */
+    id?: boolean | number
+    /** Explicit source step ID, if set */
+    sourceStepId?: boolean | number
+    /** Relative source step selector, if set */
+    sourceRelative?: boolean | number
+    /** Kind of data pulled */
+    dataSource?: boolean | number
+    /** How the data is consumed */
+    usage?: CrossStepUsageModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Complete rule set attached to a tournament step */
+export interface StepRuleSetModelGenqlSelection{
+    /** Unique rule set ID */
+    id?: boolean | number
+    /** Version number of the rule set */
+    version?: boolean | number
+    /** Name of the preset this rule set was derived from, if any */
+    presetName?: boolean | number
+    /** Resolved team count at the time of rule-set generation */
+    teamCount?: boolean | number
+    /** Whether the rule set has been validated */
+    validated?: boolean | number
+    /** Timestamp of the last successful validation */
+    validatedAt?: boolean | number
+    /** Scoring configuration */
+    scoringRuleSet?: ScoringRuleSetModelGenqlSelection
+    /** Advancement rules in evaluation order */
+    advancementRules?: AdvancementRuleModelGenqlSelection
+    /** Cross-step rules attached to this rule set */
+    crossStepRules?: CrossStepRuleModelGenqlSelection
+    /** Optional static structure template */
+    structureTemplate?: StructureTemplateModelGenqlSelection
+    /** Creation timestamp */
     createdAt?: boolean | number
+    /** Last update timestamp */
+    updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** A single validation error or warning for a rule set */
-export interface RuleValidationErrorModelGenqlSelection{
-    /** Dot-separated path to the invalid field (e.g. rules[0].conditions[1].field) */
-    path?: boolean | number
-    /** Human-readable description of the validation issue */
-    message?: boolean | number
-    /** Line number in the expression where the error occurred */
+/** Declared parameter of a preset script */
+export interface PresetParameterModelGenqlSelection{
+    /** Parameter name (unique within the preset) */
+    name?: boolean | number
+    /** Primitive parameter type */
+    type?: boolean | number
+    /** Whether the parameter must be provided when applying */
+    required?: boolean | number
+    /** Default value for optional parameters, serialized as a string */
+    defaultValue?: boolean | number
+    /** Optional description */
+    description?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** User-defined preset script scoped to an organization */
+export interface PresetScriptModelGenqlSelection{
+    /** Unique preset script ID */
+    id?: boolean | number
+    /** Preset name (unique within the organization) */
+    name?: boolean | number
+    /** Optional description */
+    description?: boolean | number
+    /** Lua source building a complete rule set */
+    script?: boolean | number
+    /** Declared parameters consumed by the preset */
+    parameters?: PresetParameterModelGenqlSelection
+    /** Creation timestamp */
+    createdAt?: boolean | number
+    /** Last update timestamp */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A built-in tournament-format template provided by the platform. Built-ins are read-only and shared across all organizations. */
+export interface BuiltinPresetModelGenqlSelection{
+    /** Stable slug identifier (e.g. "single-elim"). Use this as the `builtinPresetId` argument on apply/duplicate mutations. */
+    id?: boolean | number
+    /** Human-readable display name shown in the UI */
+    displayName?: boolean | number
+    /** One- to two-line description of the format */
+    description?: boolean | number
+    /** Coarse family used to group templates in the picker */
+    category?: boolean | number
+    /** Declared parameters consumed by the template */
+    parameters?: PresetParameterModelGenqlSelection
+    /** Canonical Lua source. Returned so callers can preview before duplicating. */
+    source?: boolean | number
+    /** Whether this preset supports any form of team pinning (group pinning or slot pinning). When false, the UI MUST NOT expose the pin-team affordance for this preset. */
+    supportsPinning?: boolean | number
+    /** Whether this preset supports pinning a team to a specific group. When omitted, derive from topology (#groups > 1 && supportsPinning). */
+    supportsGroupPinning?: boolean | number
+    /** Whether this preset supports pinning a team to a specific game slot. When omitted, derive from supportsPinning directly. */
+    supportsSlotPinning?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A single error reported by the Lua validator */
+export interface ScriptErrorModelGenqlSelection{
+    /** Line number where the error was detected (1-based) */
     line?: boolean | number
-    /** Column number in the expression where the error occurred */
+    /** Column where the error was detected (1-based) */
     column?: boolean | number
+    /** Human-readable error message */
+    message?: boolean | number
+    /** Machine-readable error code */
+    code?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** Result of validating a rule set configuration */
-export interface RuleValidationResultModelGenqlSelection{
-    /** Whether the rule set passed validation without errors */
+/** A single warning reported by the Lua validator */
+export interface ScriptWarningModelGenqlSelection{
+    /** Line number where the warning was raised (1-based) */
+    line?: boolean | number
+    /** Column where the warning was raised (1-based) */
+    column?: boolean | number
+    /** Human-readable warning message */
+    message?: boolean | number
+    /** Machine-readable warning code */
+    code?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Result of a Lua script validation pass */
+export interface ScriptValidationResultModelGenqlSelection{
+    /** Whether the script passed validation (no errors) */
     valid?: boolean | number
-    /** Validation errors that must be fixed */
-    errors?: RuleValidationErrorModelGenqlSelection
-    /** Validation warnings that should be reviewed */
-    warnings?: RuleValidationErrorModelGenqlSelection
+    /** Errors detected during validation */
+    errors?: ScriptErrorModelGenqlSelection
+    /** Warnings detected during validation */
+    warnings?: ScriptWarningModelGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** Paginated list of rule execution audit logs */
-export interface PaginatedRuleExecutionLogsGenqlSelection{
+/** Summary of a single side-effect produced by a simulated run */
+export interface SimulatedEffectModelGenqlSelection{
+    /** Type of effect */
+    type?: boolean | number
+    /** Human-readable summary of the effect */
+    description?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Result of simulating a Lua script */
+export interface ScriptSimulationResultModelGenqlSelection{
+    /** Whether the script ran to completion without errors */
+    success?: boolean | number
+    /** Errors captured during simulation */
+    errors?: ScriptErrorModelGenqlSelection
+    /** Warnings captured during simulation */
+    warnings?: ScriptWarningModelGenqlSelection
+    /** Summary of side-effects produced by the simulated run */
+    effectsSummary?: SimulatedEffectModelGenqlSelection
+    /** Wall-clock execution time in milliseconds */
+    executionTimeMs?: boolean | number
+    /** Number of Lua instructions executed */
+    instructionsUsed?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Structured detail about a Lua runtime error */
+export interface LuaErrorDetailModelGenqlSelection{
+    /** Script execution context in which the error occurred */
+    scriptContextType?: boolean | number
+    /** The Lua source script that threw the error */
+    script?: boolean | number
+    /** Line number of the error (1-based) */
+    line?: boolean | number
+    /** Column of the error (1-based) */
+    column?: boolean | number
+    /** Human-readable error message */
+    message?: boolean | number
+    /** Stack trace lines */
+    stack?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A single error produced during a validation run */
+export interface ValidationErrorModelGenqlSelection{
+    /** Unique validation error ID */
+    id?: boolean | number
+    /** Machine-readable error code */
+    code?: boolean | number
+    /** Human-readable error message. Includes the offender context (which rule / team / game / group triggered the violation) and, for Lua throws, the raw Lua message and line number. */
+    message?: boolean | number
+    /** Preset-author-facing remediation hint — describes the class of problem and suggests the next step a preset author should take. Keyed on the invariant / error code. */
+    hint?: boolean | number
+    /** Invariant code, if the error was caused by a violated invariant */
+    invariantCode?: boolean | number
+    /** Lua error detail, if the error originated from a Lua script */
+    luaError?: LuaErrorDetailModelGenqlSelection
+    /** Offending entity, if available */
+    offender?: InvariantOffenderUnionGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** One of the seven offender entity types produced by a violated invariant */
+export interface InvariantOffenderUnionGenqlSelection{
+    on_RuleOffenderModel?:RuleOffenderModelGenqlSelection,
+    on_CrossStepRuleOffenderModel?:CrossStepRuleOffenderModelGenqlSelection,
+    on_GameOffenderModel?:GameOffenderModelGenqlSelection,
+    on_RoundOffenderModel?:RoundOffenderModelGenqlSelection,
+    on_GroupOffenderModel?:GroupOffenderModelGenqlSelection,
+    on_TeamOffenderModel?:TeamOffenderModelGenqlSelection,
+    on_ScoreRowOffenderModel?:ScoreRowOffenderModelGenqlSelection,
+    __typename?: boolean | number
+}
+
+
+/** Advancement rule that triggered a violation */
+export interface RuleOffenderModelGenqlSelection{
+    /** Discriminant — always RULE */
+    kind?: boolean | number
+    /** ID of the offending advancement rule */
+    ruleId?: boolean | number
+    /** Human-readable rule name */
+    ruleName?: boolean | number
+    /** Trigger type of the rule */
+    trigger?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Cross-step rule that was never evaluated */
+export interface CrossStepRuleOffenderModelGenqlSelection{
+    /** Discriminant — always CROSS_STEP_RULE */
+    kind?: boolean | number
+    /** ID of the offending cross-step rule */
+    crossStepRuleId?: boolean | number
+    /** Data source type */
+    dataSource?: boolean | number
+    /** Usage type */
+    usage?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Game entity that triggered a violation */
+export interface GameOffenderModelGenqlSelection{
+    /** Discriminant — always GAME */
+    kind?: boolean | number
+    /** ID of the offending game */
+    gameId?: boolean | number
+    /** Zero-based group index */
+    groupIndex?: boolean | number
+    /** Zero-based round index within the group */
+    roundIndex?: boolean | number
+    /** Zero-based game index within the round */
+    gameIndex?: boolean | number
+    /** Game status at the time of the violation */
+    status?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Round entity that triggered a violation */
+export interface RoundOffenderModelGenqlSelection{
+    /** Discriminant — always ROUND */
+    kind?: boolean | number
+    /** ID of the offending round */
+    roundId?: boolean | number
+    /** Zero-based group index */
+    groupIndex?: boolean | number
+    /** Zero-based round index within the group */
+    roundIndex?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Group entity that triggered a violation */
+export interface GroupOffenderModelGenqlSelection{
+    /** Discriminant — always GROUP */
+    kind?: boolean | number
+    /** ID of the offending group */
+    groupId?: boolean | number
+    /** Zero-based group index */
+    groupIndex?: boolean | number
+    /** Human-readable group name */
+    groupName?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Team entity that triggered a violation */
+export interface TeamOffenderModelGenqlSelection{
+    /** Discriminant — always TEAM */
+    kind?: boolean | number
+    /** ID of the offending team */
+    teamId?: boolean | number
+    /** Human-readable team name */
+    teamName?: boolean | number
+    /** Team status at the time of violation */
+    currentStatus?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Score row entity that triggered a violation */
+export interface ScoreRowOffenderModelGenqlSelection{
+    /** Discriminant — always SCORE_ROW */
+    kind?: boolean | number
+    /** Scope level of the score row */
+    scope?: boolean | number
+    /** ID of the offending score row */
+    scoreRowId?: boolean | number
+    /** ID of the team associated with the score row */
+    teamId?: boolean | number
+    /** Score value, if set */
+    score?: boolean | number
+    /** Rank, if materialised */
+    rank?: boolean | number
+    /** Team scope status associated with the score row, if set */
+    status?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Result of checking a single invariant */
+export interface InvariantResultModelGenqlSelection{
+    /** Invariant code */
+    code?: boolean | number
+    /** Severity of the invariant */
+    severity?: boolean | number
+    /** Whether the invariant passed */
+    passed?: boolean | number
+    /** Human-readable message */
+    message?: boolean | number
+    /** Offending entities, if the invariant was violated */
+    offenders?: InvariantOffenderUnionGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Summary of how many times a rule fired during validation */
+export interface RuleFireSummaryModelGenqlSelection{
+    /** ID of the advancement rule */
+    ruleId?: boolean | number
+    /** Human-readable rule name */
+    ruleName?: boolean | number
+    /** Trigger type of the rule */
+    trigger?: boolean | number
+    /** Number of times the rule fired */
+    fireCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Final result of a completed validation job */
+export interface ValidationResultModelGenqlSelection{
+    /** Whether the validation succeeded (no violations) */
+    success?: boolean | number
+    /** Total wall-clock duration in milliseconds */
+    durationMs?: boolean | number
+    /** Total number of state mutations applied during the run */
+    totalMutations?: boolean | number
+    /** Results for all checked invariants */
+    invariantResults?: InvariantResultModelGenqlSelection
+    /** Errors that were collected during the run */
+    errors?: ValidationErrorModelGenqlSelection
+    /** Summary of rule fire counts */
+    ruleFiredSummary?: RuleFireSummaryModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Real-time progress of a running validation job */
+export interface ValidationProgressModelGenqlSelection{
+    /** Current execution stage */
+    stage?: boolean | number
+    /** Percentage completion within the current stage (0–100) */
+    percent?: boolean | number
+    /** Optional detail message from the current phase */
+    currentPhaseDetail?: boolean | number
+    /** Number of rules fired so far */
+    rulesFired?: boolean | number
+    /** Total number of enabled rules declared in the rule set */
+    totalRulesDeclared?: boolean | number
+    /** Total state mutations applied so far */
+    totalMutations?: boolean | number
+    /** Elapsed wall-clock time in milliseconds */
+    elapsedMs?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A rule-set validation job */
+export interface ValidationJobModelGenqlSelection{
+    /** Unique job ID */
+    id?: boolean | number
+    /** ID of the validated step rule set */
+    stepRuleSetId?: boolean | number
+    /** Current job status */
+    status?: boolean | number
+    /** Current execution stage */
+    stage?: boolean | number
+    /** Current progress snapshot */
+    progress?: ValidationProgressModelGenqlSelection
+    /** Final result of the validation run. Populated only when status is SUCCEEDED or FAILED. */
+    result?: ValidationResultModelGenqlSelection
+    /** Short error summary if the job failed */
+    errorSummary?: boolean | number
+    /** Timestamp when the job was created / queued */
+    startedAt?: boolean | number
+    /** Timestamp when the job completed (success, failure, or cancel) */
+    completedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A single streaming event emitted during a validation run */
+export interface ValidationEventModelGenqlSelection{
+    /** Unique event ID */
+    id?: boolean | number
+    /** ID of the parent validation job */
+    jobId?: boolean | number
+    /** Monotonically increasing sequence number within the job */
+    sequence?: boolean | number
+    /** Timestamp when the event was emitted */
+    timestamp?: boolean | number
+    /** Event category */
+    kind?: boolean | number
+    /** Human-readable event summary */
+    summary?: boolean | number
+    /** Associated rule ID, if applicable */
+    ruleId?: boolean | number
+    /** Associated cross-step rule ID, if applicable */
+    crossStepRuleId?: boolean | number
+    /** Associated match ID, if applicable */
+    matchId?: boolean | number
+    /** Associated game ID, if applicable */
+    gameId?: boolean | number
+    /** Associated round ID, if applicable */
+    roundId?: boolean | number
+    /** Associated group ID, if applicable */
+    groupId?: boolean | number
+    /** Associated step ID, if applicable */
+    stepId?: boolean | number
+    /** Associated team ID, if applicable */
+    teamId?: boolean | number
+    /** Effect kind, if the event describes a state mutation. Union of SimulatedEffectType, game_status, and team_scope_status values — interpretation depends on the event kind. */
+    effectType?: boolean | number
+    /** Status before the state transition, if applicable. Union of game_status, team_scope_status, and step_status. */
+    statusBefore?: boolean | number
+    /** Status after the state transition, if applicable. Union of game_status, team_scope_status, and step_status. */
+    statusAfter?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of validation jobs */
+export interface ValidationJobsGenqlSelection{
     /** List of edges containing cursor and node pairs */
-    edges?: RuleExecutionLogModelEdgeGenqlSelection
+    edges?: ValidationJobModelEdgeGenqlSelection
     /** Flat list of items in the current page */
-    nodes?: RuleExecutionLogModelGenqlSelection
+    nodes?: ValidationJobModelGenqlSelection
     /** Pagination metadata for navigating between pages */
     pageInfo?: ResponsePageInfoGenqlSelection
     /** Total number of items across all pages */
@@ -8244,64 +8551,37 @@ export interface PaginatedRuleExecutionLogsGenqlSelection{
 
 
 /** An edge in a paginated connection containing a cursor and node */
-export interface RuleExecutionLogModelEdgeGenqlSelection{
+export interface ValidationJobModelEdgeGenqlSelection{
     /** Opaque cursor string for this edge, used for pagination */
     cursor?: boolean | number
     /** The item at this edge */
-    node?: RuleExecutionLogModelGenqlSelection
+    node?: ValidationJobModelGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** Snapshot of a game state during simulation */
-export interface SimulatedGameSnapshotModelGenqlSelection{
-    /** Identifier of the simulated game */
-    gameId?: boolean | number
-    /** Zero-based index of the group this game belongs to */
-    groupIndex?: boolean | number
-    /** Zero-based index of the round within the group */
-    roundIndex?: boolean | number
-    /** Zero-based index of the game within the round */
-    gameIndex?: boolean | number
-    /** IDs of teams assigned to this game */
-    assignedTeamIds?: boolean | number
-    /** Whether this game has been completed in the simulation */
-    completed?: boolean | number
+/** Paginated list of validation events */
+export interface ValidationEventsGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: ValidationEventModelEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: ValidationEventModelGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** A single step in the simulation execution trace */
-export interface SimulationStepModelGenqlSelection{
-    /** Iteration number within the simulation */
-    iteration?: boolean | number
-    /** Event type that triggered this step */
-    event?: boolean | number
-    /** Human-readable description of what happened in this step */
-    description?: boolean | number
-    /** IDs of teams that advanced during this step */
-    teamsAdvanced?: boolean | number
-    /** IDs of teams that were eliminated during this step */
-    teamsEliminated?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Result of a dry-run rule set simulation */
-export interface SimulationResultModelGenqlSelection{
-    /** Whether the simulation completed successfully without errors */
-    success?: boolean | number
-    /** Ordered execution trace of the simulation */
-    steps?: SimulationStepModelGenqlSelection
-    /** Non-fatal warnings produced during the simulation */
-    warnings?: boolean | number
-    /** Fatal errors that caused the simulation to fail */
-    errors?: boolean | number
-    /** Final state of all games in the simulated bracket structure */
-    structureSnapshot?: SimulatedGameSnapshotModelGenqlSelection
+/** An edge in a paginated connection containing a cursor and node */
+export interface ValidationEventModelEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: ValidationEventModelGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10390,7 +10670,7 @@ scoreFormula?: (Scalars['String'] | null)}
 /** Input for game-level configuration within a round */
 export interface GameConfigurationInput {
 /** Number of match wins required to win the game (best-of format) */
-wonMatchCountToWinGame: Scalars['Float'],
+wonMatchCountToWinGame?: (Scalars['Float'] | null),
 /** Whether individual match scores are aggregated as the game score */
 useMatchScoresAsGameScore: Scalars['Boolean'],
 /** Number of teams participating in each game */
@@ -10432,7 +10712,7 @@ export interface StepConfigurationInput {
 /** Discriminator type, always STEP for step configurations */
 type?: ConfigurationType,
 /** List of group configurations within this step */
-groups: GroupConfigurationInput[]}
+groups?: (GroupConfigurationInput[] | null)}
 
 
 /** Input for a numeric comparison condition */
@@ -10783,18 +11063,28 @@ export interface QueryGenqlSelection{
     tournamentStepGroupRoundGameMatchScoresGetForStep?: (TournamentStepGroupRoundGameMatchScoresGenqlSelection & { __args: {stepId: Scalars['ID'], page: PageInfo} })
     /** List all administrators for a specific tournament */
     tournamentAdmins?: (TournamentAdminGenqlSelection & { __args: {tournamentId: Scalars['ID']} })
-    /** Get rule set for a tournament step */
-    stepRuleSet?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID']} })
-    /** Get rule execution audit trail for a step */
-    stepRuleExecutionLogs?: (PaginatedRuleExecutionLogsGenqlSelection & { __args: {stepId: Scalars['ID'], 
-    /** Cursor-based pagination parameters */
-    pageInfo: PageInfo} })
-    /** Dry validation of a rule set without saving */
-    stepRuleSetValidate?: (RuleValidationResultModelGenqlSelection & { __args: {input: CreateStepRuleSetInput} })
-    /** Dry-run simulation of a rule set */
-    stepRuleSetSimulate?: (SimulationResultModelGenqlSelection & { __args: {stepId: Scalars['ID'], teamCount: Scalars['Int']} })
-    /** List available rule preset names */
-    rulePresets?: boolean | number
+    /** Fetch the rule set attached to a tournament step, including scoring, advancement rules, cross-step rules, and the structure template. Returns null when the step has no rule set. */
+    stepRuleSet?: (StepRuleSetModelGenqlSelection & { __args: {tournamentStepId: Scalars['ID']} })
+    /** List user-created preset scripts for the current organization, sorted by most recently created first */
+    presetScripts?: PresetScriptModelGenqlSelection
+    /** Fetch a single preset script by ID, scoped to the current organization */
+    presetScript?: (PresetScriptModelGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** List built-in tournament-format templates provided by the platform. Optionally filter by category. */
+    builtinPresets?: (BuiltinPresetModelGenqlSelection & { __args?: {category?: (BuiltinPresetCategory | null)} })
+    /** Fetch a single built-in template by slug. */
+    builtinPreset?: (BuiltinPresetModelGenqlSelection & { __args: {
+    /** Stable slug identifier (e.g. "single-elim") */
+    id: Scalars['String']} })
+    /** Validate a Lua script without executing it: runs syntax parsing then static analysis. Returns the full list of errors and warnings. */
+    validateScript?: (ScriptValidationResultModelGenqlSelection & { __args: {input: ValidateScriptInput} })
+    /** Simulate a Lua script against a mock (or real) context inside the production sandbox with tighter interactive caps. Returns a summary of side-effects the script would have produced — NO database writes occur. */
+    simulateScript?: (ScriptSimulationResultModelGenqlSelection & { __args: {input: SimulateScriptInput} })
+    /** Fetch a single validation job by ID, scoped to the caller's organization. */
+    stepRuleSetValidationJob?: (ValidationJobModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
+    /** List validation jobs for a step rule set, ordered by most recently started first. */
+    stepRuleSetValidationJobs?: (ValidationJobsGenqlSelection & { __args: {stepRuleSetId: Scalars['ID'], page: PageInfo} })
+    /** List streaming events emitted by a validation job. */
+    stepRuleSetValidationEvents?: (ValidationEventsGenqlSelection & { __args: {jobId: Scalars['ID'], page: PageInfo, kindFilter?: (ValidationEventKind[] | null)} })
     /** List all CDN files for a platform or template, optionally filtered by file type */
     platformFiles?: (PlatformCdnFileGenqlSelection & { __args?: {type?: (PlatformCdnFileType | null), platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
     /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
@@ -10993,288 +11283,24 @@ property: Scalars['String'],
 order?: (OrderDirection | null)}
 
 
-/** Input for creating a complete step rule set with scoring, advancement, cross-step rules, and structure */
-export interface CreateStepRuleSetInput {
-/** Scoring configuration for this step */
-scoring: CreateScoringInput,
-/** Ordered list of advancement rules */
-advancementRules: CreateAdvancementRuleInput[],
-/** Cross-step data transfer rules */
-crossStepRules?: (CreateCrossStepRuleInput[] | null),
-/** Bracket structure template for this step */
-structureTemplate?: (CreateStructureTemplateInput | null)}
+/** Input for validating a Lua script (no execution) */
+export interface ValidateScriptInput {
+/** Lua source to validate */
+script: Scalars['String'],
+/** Execution context the script is intended for */
+context: ScriptContextType}
 
 
-/** Input for creating a scoring configuration */
-export interface CreateScoringInput {
-/** Method used to aggregate scores across matches */
-aggregation: ScoreAggregationType,
-/** Human-readable formula string */
-formula?: (Scalars['String'] | null),
-/** Points awarded for a win */
-winPoints: Scalars['Float'],
-/** Points awarded for a loss */
-lossPoints: Scalars['Float'],
-/** Points awarded for a draw */
-drawPoints: Scalars['Float'],
-/** Points awarded for a forfeit */
-forfeitPoints: Scalars['Float'],
-/** Ordered list of tiebreaker rules */
-tiebreakers: CreateTiebreakerInput[]}
-
-
-/** Input for creating a tiebreaker rule within a scoring rule set */
-export interface CreateTiebreakerInput {
-/** Priority order of this tiebreaker (lower runs first) */
-order: Scalars['Float'],
-/** Type of tiebreaker algorithm (e.g. HEAD_TO_HEAD, BUCHHOLZ) */
-type: Scalars['String'],
-/** Human-readable formula string */
-formula?: (Scalars['String'] | null),
-/** Sort direction for this tiebreaker (ASC or DESC) */
-sortOrder: RuleSortOrder}
-
-
-/** Input for creating an advancement rule */
-export interface CreateAdvancementRuleInput {
-/** Display name of the rule */
-name: Scalars['String'],
-/** Human-readable description of what this rule does */
-description?: (Scalars['String'] | null),
-/** Execution priority order (lower runs first) */
-order: Scalars['Float'],
-/** Event type that triggers this rule */
-triggerType: RuleTriggerType,
-/** Scope restricting when the rule triggers */
-triggerScope?: (TriggerScopeInput | null),
-/** Logical operator combining conditions (AND or OR) */
-conditionOperator: ConditionOperator,
-/** Array of RuleCondition objects */
-conditions: RuleConditionInput[],
-/** Array of RuleAction objects */
-actions: RuleActionInput[],
-/** Whether actions execute automatically when conditions are met */
-autoExecute?: Scalars['Boolean'],
-/** Whether an admin can manually trigger or override this rule */
-allowManualOverride?: Scalars['Boolean']}
-
-
-/** Input for restricting when a rule triggers by limiting to specific game, round, or group */
-export interface TriggerScopeInput {
-/** Restrict trigger to events within this specific game */
-gameId?: (Scalars['ID'] | null),
-/** Restrict trigger to events within this specific round */
-roundId?: (Scalars['ID'] | null),
-/** Restrict trigger to events within this specific group */
-groupId?: (Scalars['ID'] | null)}
-
-
-/** Input for defining a rule condition */
-export interface RuleConditionInput {
-/** Formula string for the field to check (left side) */
-field: Scalars['String'],
-/** Comparison operator (EQ, NEQ, GT, GTE, LT, LTE, etc.) */
-operator: RuleConditionOperatorType,
-/** Formula string for the value to compare against (right side) */
-value: Scalars['String'],
-/** Scope at which this condition is evaluated (e.g. PER_TEAM, ALL_TEAMS) */
-scope?: (ConditionScopeType | null)}
-
-
-/** Flat discriminated input for rule actions (GraphQL does not support union inputs) */
-export interface RuleActionInput {
-/** Action type discriminator */
-type: RuleActionType,
-/** Target game reference for ADVANCE_TO_GAME action */
-gameTarget?: (GameRefInput | null),
-/** Target group reference for ADVANCE_TO_GROUP action */
-groupTarget?: (GroupRefInput | null),
-/** Target step reference for ADVANCE_TO_STEP action */
-stepTarget?: (StepRefInput | null),
-/** Strategy for mapping team rankings into the target */
-rankMapping?: (RankMappingType | null),
-/** Pairing algorithm for GENERATE_NEXT_ROUND action */
-pairingStrategy?: (PairingStrategyType | null),
-/** Number of games to create in the generated round */
-gamesPerRound?: (Scalars['Int'] | null),
-/** Number of team slots per generated game */
-teamSlotsPerGame?: (Scalars['Int'] | null),
-/** Best-of series count for generated matches */
-bestOf?: (Scalars['Int'] | null),
-/** Match configuration for generated games */
-matchConfiguration?: (MatchConfigRefInput | null),
-/** Scope limiting which game to end for END_GAME action */
-gameScope?: (GameRefInput | null),
-/** Scope limiting which round to end for END_ROUND action */
-roundScope?: (RoundRefInput | null),
-/** Scope limiting which group to end for END_GROUP action */
-groupScope?: (GroupRefInput | null),
-/** Property key for SET_TEAM_PROPERTY action */
-key?: (Scalars['String'] | null),
-/** Formula string for the computed value */
-formula?: (Scalars['String'] | null)}
-
-
-/** Input for referencing a game by absolute ID or relative indices */
-export interface GameRefInput {
-/** Reference type (ABSOLUTE by ID or RELATIVE by indices) */
-type: RefType,
-/** Absolute game ID (used when type is ABSOLUTE) */
-id?: (Scalars['ID'] | null),
-/** Zero-based group index (used when type is RELATIVE) */
-groupIndex?: (Scalars['Int'] | null),
-/** Zero-based round index within the group (used when type is RELATIVE) */
-roundIndex?: (Scalars['Int'] | null),
-/** Zero-based game index within the round (used when type is RELATIVE) */
-gameIndex?: (Scalars['Int'] | null),
-/** Zero-based team slot index within the game */
-slot?: (Scalars['Int'] | null)}
-
-
-/** Input for referencing a group by absolute ID or relative index */
-export interface GroupRefInput {
-/** Reference type (ABSOLUTE by ID or RELATIVE by index) */
-type: RefType,
-/** Absolute group ID (used when type is ABSOLUTE) */
-id?: (Scalars['ID'] | null),
-/** Zero-based group index (used when type is RELATIVE) */
-groupIndex?: (Scalars['Int'] | null)}
-
-
-/** Input for referencing a tournament step by absolute ID or relative position */
-export interface StepRefInput {
-/** Reference type (ABSOLUTE by ID or RELATIVE by position) */
-type: RefType,
-/** Absolute step ID (used when type is ABSOLUTE) */
-id?: (Scalars['ID'] | null),
-/** Relative position (PREVIOUS, NEXT, CURRENT) when type is RELATIVE */
-relative?: (StepRelativePosition | null)}
-
-
-/** Input for specifying match configuration source and inline settings */
-export interface MatchConfigRefInput {
-/** Source of the match configuration (INLINE, INHERIT, etc.) */
-source: MatchConfigSource,
-/** Inline scoring variables (used when source is INLINE) */
-variables?: (MatchConfigVariableInput[] | null),
-/** Inline score formula expression (used when source is INLINE) */
-scoreFormula?: (Scalars['String'] | null)}
-
-
-/** Input for defining a match score formula variable */
-export interface MatchConfigVariableInput {
-/** Variable name used in the scoring formula */
-formulaName: Scalars['String'],
-/** Human-readable label for the variable */
-displayName: Scalars['String'],
-/** Default numeric value if not explicitly provided */
-defaultValue: Scalars['Float']}
-
-
-/** Input for referencing a round by absolute ID or relative indices */
-export interface RoundRefInput {
-/** Reference type (ABSOLUTE by ID or RELATIVE by indices) */
-type: RefType,
-/** Absolute round ID (used when type is ABSOLUTE) */
-id?: (Scalars['ID'] | null),
-/** Zero-based group index (used when type is RELATIVE) */
-groupIndex?: (Scalars['Int'] | null),
-/** Zero-based round index within the group (used when type is RELATIVE) */
-roundIndex?: (Scalars['Int'] | null)}
-
-
-/** Input for creating a cross-step data transfer rule */
-export interface CreateCrossStepRuleInput {
-/** Explicit source step ID */
-sourceStepId?: (Scalars['ID'] | null),
-/** Relative reference (PREVIOUS, NEXT, CURRENT) */
-sourceRelative?: (Scalars['String'] | null),
-/** Data source: RANKINGS, SCORES, TEAMS */
-dataSource: Scalars['String'],
-/** CrossStepUsage configuration */
-usage: CrossStepUsageInput}
-
-
-/** Flat discriminated input for cross-step usage configuration */
-export interface CrossStepUsageInput {
-/** Usage type discriminator (SEED_ORDER, QUALIFY, INJECT_SCORE) */
-type: CrossStepUsageType,
-/** Formula string for QUALIFY condition */
-condition?: (Scalars['String'] | null),
-/** Formula string for INJECT_SCORE formula */
-formula?: (Scalars['String'] | null)}
-
-
-/** Input for creating a bracket structure template */
-export interface CreateStructureTemplateInput {
-/** Group templates that make up the bracket structure */
-groupTemplates: CreateGroupTemplateInput[]}
-
-
-/** Input for creating a group template with its rounds and generation settings */
-export interface CreateGroupTemplateInput {
-/** Display name of the group */
-name: Scalars['String'],
-/** Sort order of this group within the structure */
-order: Scalars['Float'],
-/** Number of team slots available in this group */
-teamSlots: Scalars['Float'],
-/** AutoGenerateConfig for this group (legacy JSON) */
-autoGenerate?: (AutoGenerateConfigInput | null),
-/** Auto-generate algorithm type */
-autoGenerateType?: (AutoGenerateType | null),
-/** Number of team slots per game (default: 2) */
-teamSlotsPerGame?: (Scalars['Int'] | null),
-/** Best-of series count (default: 1) */
-bestOf?: (Scalars['Int'] | null),
-/** Override round count */
-roundCount?: (Scalars['Int'] | null),
-/** Match configuration for generated games */
-matchConfiguration?: (GroupMatchConfigInput | null),
-/** Round templates within this group */
-roundTemplates: CreateRoundTemplateInput[]}
-
-
-/** Input for configuring auto-generation of bracket structure */
-export interface AutoGenerateConfigInput {
-/** Auto-generation algorithm type (SINGLE_ELIM, ROUND_ROBIN, etc.) */
-type: AutoGenerateType,
-/** Minimum team count to trigger auto-generation */
-fromTeamCount?: (Scalars['Int'] | null)}
-
-
-/** Input for match configuration with scoring variables and formula */
-export interface GroupMatchConfigInput {
-/** Variables available for score computation */
-variables?: (MatchConfigVariableInput[] | null),
-/** Formula expression used to compute the final score from variables */
-scoreFormula?: (Scalars['String'] | null)}
-
-
-/** Input for creating a round template within a group */
-export interface CreateRoundTemplateInput {
-/** Display name of the round */
-name: Scalars['String'],
-/** Sort order of this round within its group */
-order: Scalars['Float'],
-/** Game templates within this round */
-gameTemplates: CreateGameTemplateInput[]}
-
-
-/** Input for creating a game template within a round */
-export interface CreateGameTemplateInput {
-/** Sort order of this game within the round */
-order: Scalars['Float'],
-/** Number of team slots in this game */
-teamSlots?: Scalars['Float'],
-/** Number of matches in the best-of series */
-bestOf?: Scalars['Float'],
-/** Match configuration for this game template */
-matchConfiguration?: (MatchConfigRefInput | null),
-/** Target reference on win */
-onWinTarget?: (GameRefInput | null),
-/** Target reference on loss */
-onLossTarget?: (GameRefInput | null)}
+/** Input for simulating a Lua script against mock or real context */
+export interface SimulateScriptInput {
+/** Lua source to simulate */
+script: Scalars['String'],
+/** Execution context the script is intended for */
+context: ScriptContextType,
+/** JSON-encoded mock parameters for simulation */
+parameters?: (Scalars['String'] | null),
+/** Optional: simulate against a real tournament step */
+stepId?: (Scalars['ID'] | null)}
 
 
 /** Query parameters for filtering and ordering events */
@@ -11548,16 +11574,26 @@ export interface MutationGenqlSelection{
     /** Start a tournament step that has been seeded, transitioning it to STARTED status */
     startTournamentStep?: { __args: {stepId: Scalars['ID']} }
     /** Create a new tournament step with its bracket configuration */
-    createTournamentStep?: (TournamentStepGenqlSelection & { __args: {tournamentId: Scalars['ID'], configuration: StepConfigurationInput, step: CreateTournamentStepInput} })
+    createTournamentStep?: (TournamentStepGenqlSelection & { __args: {tournamentId: Scalars['ID'], configuration?: (StepConfigurationInput | null), step: CreateTournamentStepInput} })
     /** Update a tournament step configuration, resetting it to CONFIGURED status */
-    updateTournamentStep?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], configuration: StepConfigurationInput, step: CreateTournamentStepInput} })
+    updateTournamentStep?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], configuration?: (StepConfigurationInput | null), step: CreateTournamentStepInput} })
     /** Delete a tournament step and all its associated groups, rounds, and games */
     deleteTournamentStep?: { __args: {stepId: Scalars['ID']} }
     /** Generate the bracket structure for a tournament step based on its configuration or rule set */
     generateTournamentStep?: { __args: {stepId: Scalars['ID'], teamsCount?: (Scalars['Int'] | null)} }
-    /** Seed teams into a generated tournament step using automatic or manual seeding */
-    seedTournamentStep?: { __args: {stepId: Scalars['ID'], input: SeedingInput} }
-    /** Reset seeding: SEEDED → GENERATED. Clears team assignments and scores but keeps bracket structure. */
+    /** Seed teams into a generated tournament step. Accepts the caller-curated seeding order and optional manual pins; the preset rule set (SEEDING / ROUND_SEEDING rules) drives actual team-to-game assignment. Prior placements are discarded (idempotent re-seed). */
+    seedTournamentStep?: (TournamentStepGenqlSelection & { __args: {input: SeedStepInput} })
+    /** Persist a new seeding order on the step without re-seeding. Order must be a permutation of the tournament's teams. */
+    updateSeedingOrder?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], orderedTeamIds: Scalars['ID'][]} })
+    /** Persist a new manual-pin list on the step without re-seeding. Pins anchor teams to a group, a game, or a specific slot within a game. */
+    updateSeedingPins?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], pins: SeedingPinInput[]} })
+    /** Withdraw a team from a step. Flips the team status to WITHDRAWN, fires the TEAM_WITHDREW rule-engine event, and cascades bye resolution. Idempotent. */
+    withdrawTeamFromStep?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], teamId: Scalars['ID']} })
+    /** Re-run the seeding pipeline from the step's currently persisted seedingOrder + manualPins. The step must be in SEEDED status. Resets to GENERATED and then re-seeds — any unsaved match results would be lost. */
+    reseedStep?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID']} })
+    /** Restart a started step: STARTED → SEEDED. Wipes all scores and match results but preserves bracket structure and team seedings. */
+    restartTournamentStep?: { __args: {stepId: Scalars['ID']} }
+    /** Reset seeding: SEEDED|STARTED → GENERATED. Clears team assignments and scores but keeps bracket structure. */
     resetTournamentStepSeeding?: { __args: {stepId: Scalars['ID']} }
     /** Full reset: → CONFIGURED. Deletes all generated brackets and scores. */
     resetTournamentStep?: { __args: {stepId: Scalars['ID']} }
@@ -11589,26 +11625,34 @@ export interface MutationGenqlSelection{
     tournamentAdminUpsert?: (TournamentAdminGenqlSelection & { __args: {input: TournamentAdminUpsertInput} })
     /** Remove a tournament administrator */
     tournamentAdminDelete?: { __args: {input: TournamentAdminDeleteInput} }
-    /** Create rule set for a tournament step */
-    stepRuleSetCreate?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], input: CreateStepRuleSetInput} })
-    /** Update scoring rules (versioned) */
-    scoringRulesUpdate?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], input: UpdateScoringRulesInput} })
-    /** Update advancement rules (versioned) */
-    advancementRulesUpdate?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], input: UpdateAdvancementRulesInput} })
-    /** Update structure template (only when CONFIGURED) */
-    structureTemplateUpdate?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], input: CreateStructureTemplateInput} })
-    /** Add a cross-step rule */
-    crossStepRuleCreate?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], input: CreateCrossStepRuleInput} })
-    /** Remove a cross-step rule */
-    crossStepRuleDelete?: (StepRuleSetModelGenqlSelection & { __args: {ruleId: Scalars['ID']} })
-    /** Manual team advancement */
-    manualAdvancementExecute?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], input: ManualAdvancementInput} })
-    /** Trigger a MANUAL rule */
-    manualRuleTrigger?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], ruleId: Scalars['ID']} })
-    /** Approve a pending action from an autoExecute=false rule */
-    pendingActionApprove?: (StepRuleSetModelGenqlSelection & { __args: {logId: Scalars['ID']} })
-    /** Apply a preset rule configuration to a step */
-    rulePresetApply?: (StepRuleSetModelGenqlSelection & { __args: {stepId: Scalars['ID'], presetName: RulePresetName, teamCount: Scalars['Int'], bestOf?: (Scalars['Int'] | null), teamSlotsPerGame?: (Scalars['Int'] | null), roundCount?: (Scalars['Int'] | null)} })
+    /** Create a new rule set for a tournament step. Fails with CONFLICT if the step already has a rule set. */
+    createStepRuleSet?: (StepRuleSetModelGenqlSelection & { __args: {tournamentStepId: Scalars['ID'], input: CreateStepRuleSetInput} })
+    /** Apply a user-created preset script to a tournament step, creating or overwriting the step's rule set. The preset's Lua script runs in the sandbox and its effects are persisted atomically. */
+    applyPresetScript?: (StepRuleSetModelGenqlSelection & { __args: {presetScriptId: Scalars['ID'], tournamentStepId: Scalars['ID'], 
+    /** JSON-encoded object of primitive parameter values (string | number | boolean) */
+    parameters?: (Scalars['String'] | null)} })
+    /** Apply a built-in template to a tournament step, creating or overwriting the step's rule set. The template runs in the Lua sandbox and its effects are persisted atomically. */
+    applyBuiltinPreset?: (StepRuleSetModelGenqlSelection & { __args: {builtinPresetId: Scalars['String'], tournamentStepId: Scalars['ID'], 
+    /** JSON-encoded object of primitive parameter values (string | number | boolean) */
+    parameters?: (Scalars['String'] | null)} })
+    /** Duplicate a built-in template into a new editable preset script owned by the current organization. If `name` is omitted, defaults to the template's display name (with `(copy)` appended on collision). */
+    duplicateBuiltinPreset?: (PresetScriptModelGenqlSelection & { __args: {builtinPresetId: Scalars['String'], name?: (Scalars['String'] | null)} })
+    /** Create a new user-defined preset script in the current organization */
+    createPresetScript?: (PresetScriptModelGenqlSelection & { __args: {input: CreatePresetScriptInput} })
+    /** Update a preset script owned by the current organization. Only the supplied fields are modified. */
+    updatePresetScript?: (PresetScriptModelGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePresetScriptInput} })
+    /** Delete a preset script owned by the current organization. Returns true on success. */
+    deletePresetScript?: { __args: {id: Scalars['ID']} }
+    /** Set the explicit list of winning teams for a step (admin override). Existing WINNER rows on the step are reverted to ACTIVE, and the supplied teams are upserted as WINNER. Writes a private audit-log entry. */
+    setStepWinners?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], teamIds: Scalars['ID'][]} })
+    /** Set the explicit list of winning teams for a tournament (admin override). Existing WINNER rows on the tournament are reverted to ACTIVE, and the supplied teams are upserted as WINNER. Writes a private audit-log entry. */
+    setTournamentWinners?: (TournamentGenqlSelection & { __args: {tournamentId: Scalars['ID'], teamIds: Scalars['ID'][]} })
+    /** Set a single team's status on a step (admin override). Upserts the team's TournamentStepTeamScore row to the supplied status and writes a private audit-log entry. Returns true on success. */
+    setStepTeamStatus?: { __args: {stepId: Scalars['ID'], teamId: Scalars['ID'], status: TeamScopeStatus} }
+    /** Start a validation job for the given step rule set. If an active job already exists, returns the existing job instead of creating a new one. */
+    validateStepRuleSet?: (ValidationJobModelGenqlSelection & { __args: {stepRuleSetId: Scalars['ID']} })
+    /** Cancel an in-progress or queued validation job. */
+    cancelStepRuleSetValidation?: (ValidationJobModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
     /** Create a Stripe customer portal session URL for managing the organization subscription */
     stripeCreatePortalSession?: boolean | number
     /** Create a new CDN file record for a platform or template */
@@ -12380,36 +12424,16 @@ type: StepType,
 properties?: (PropertyValueInput[] | null)}
 
 
-/** automaticSeeding or manualSeeding must be set */
-export interface SeedingInput {
-/** Use automatic seeding with a chosen algorithm */
-automaticSeeding?: (AutomaticSeedingInput | null),
-/** Use manual seeding with explicit team-to-group assignments */
-manualSeeding?: (ManualSeedingInput | null)}
+/** Input for seeding a tournament step. */
+export interface SeedStepInput {stepId: Scalars['ID'],
+/** Ordered team IDs. Must be a permutation of the step teams. */
+orderedTeamIds: Scalars['ID'][],
+/** Optional pin overrides. */
+pins?: (SeedingPinInput[] | null)}
 
 
-/** Input for automatic seeding of teams into a tournament step */
-export interface AutomaticSeedingInput {
-/** Algorithm to use for ordering teams during seeding */
-seedingMechanism: SeedingMechanism,
-/** Algorithm to use for distributing teams across groups */
-groupRepartitionMechanism: GroupRepartitionMechanism,
-/** Specific team IDs to seed; if omitted, all confirmed teams are used */
-teams: Scalars['ID'][]}
-
-
-/** Input for manually assigning teams to specific groups */
-export interface ManualSeedingInput {
-/** List of group-to-teams assignments */
-groups: ManualSeedingGroupInput[]}
-
-
-/** Manual seeding assignment for a single group */
-export interface ManualSeedingGroupInput {
-/** ID of the group to seed teams into */
-group: Scalars['ID'],
-/** Ordered list of team IDs to seed into this group */
-teams: Scalars['ID'][]}
+/** Input for a single seeding pin. */
+export interface SeedingPinInput {teamId: Scalars['ID'],groupId?: (Scalars['ID'] | null),gameId?: (Scalars['ID'] | null),slotIndex?: (Scalars['Int'] | null)}
 
 
 /** Input for updating a team score within a match */
@@ -12506,40 +12530,198 @@ tournamentId: Scalars['ID'],
 accountId: Scalars['ID']}
 
 
-/** Input for partially updating scoring rules */
-export interface UpdateScoringRulesInput {
-/** Method used to aggregate scores across matches */
-aggregation?: (ScoreAggregationType | null),
-/** Human-readable formula string */
+/** Top-level input for creating a complete rule set for a tournament step */
+export interface CreateStepRuleSetInput {
+/** Scoring configuration */
+scoring: CreateScoringInput,
+/** Advancement rules evaluated on trigger events */
+advancementRules?: CreateAdvancementRuleInput[],
+/** Cross-step rules pulling data from sibling steps */
+crossStepRules?: CreateCrossStepRuleInput[],
+/** Optional static structure template */
+structureTemplate?: (CreateStructureTemplateInput | null)}
+
+
+/** Scoring configuration for a tournament step */
+export interface CreateScoringInput {
+/** Aggregation strategy used to compute a team score */
+aggregation: ScoreAggregationType,
+/** Lua expression — required for the FORMULA aggregation */
 formula?: (Scalars['String'] | null),
-/** Points awarded for a win */
-winPoints?: (Scalars['Float'] | null),
-/** Points awarded for a loss */
-lossPoints?: (Scalars['Float'] | null),
-/** Points awarded for a draw */
-drawPoints?: (Scalars['Float'] | null),
-/** Points awarded for a forfeit */
-forfeitPoints?: (Scalars['Float'] | null),
-/** Ordered list of tiebreaker rules */
-tiebreakers?: (CreateTiebreakerInput[] | null)}
+/** Points awarded for a win (POINTS aggregation) */
+winPoints?: Scalars['Int'],
+/** Points awarded for a loss (POINTS aggregation) */
+lossPoints?: Scalars['Int'],
+/** Points awarded for a draw (POINTS aggregation) */
+drawPoints?: Scalars['Int'],
+/** Points awarded for a forfeit (POINTS aggregation) */
+forfeitPoints?: Scalars['Int'],
+/** Ordered list of tiebreakers applied when teams are tied */
+tiebreakers?: CreateTiebreakerInput[]}
 
 
-/** Input for replacing all advancement rules in a rule set */
-export interface UpdateAdvancementRulesInput {
-/** Complete list of advancement rules to replace existing ones */
-advancementRules: CreateAdvancementRuleInput[]}
+/** Tiebreaker rule applied to ranked teams */
+export interface CreateTiebreakerInput {
+/** Evaluation order (lower runs first) */
+order: Scalars['Int'],
+/** Type of tiebreaker to apply */
+type: TiebreakerType,
+/** Lua expression returning a number — required for CUSTOM_FORMULA */
+formula?: (Scalars['String'] | null),
+/** Sort order for this tiebreaker */
+sortOrder?: SortOrder}
 
 
-/** Input for manually advancing a team within a tournament step */
-export interface ManualAdvancementInput {
-/** ID of the team to advance */
-teamId: Scalars['ID'],
-/** Target game by ID */
-targetGameId?: (Scalars['ID'] | null),
-/** Target game by relative reference */
-targetGameRef?: (GameRefInput | null),
-/** Target slot index in the game (0-based) */
-targetSlot?: (Scalars['Float'] | null)}
+/** Input for creating an advancement rule that evaluates on a trigger event */
+export interface CreateAdvancementRuleInput {
+/** Human-readable rule name, unique within a rule set */
+name: Scalars['String'],
+/** Optional human-readable description */
+description?: (Scalars['String'] | null),
+/** Evaluation order within the rule set (lower runs first) */
+order: Scalars['Int'],
+/** Tournament lifecycle event that triggers this rule */
+triggerType: RuleTriggerType,
+/** Optional Lua expression to filter the trigger scope (e.g. only certain groups) */
+triggerScope?: (Scalars['String'] | null),
+/** Lua expression returning a boolean */
+condition: Scalars['String'],
+/** Ordered list of actions performed when the condition passes */
+actions: RuleActionInput[],
+/** Whether the rule fires automatically on trigger events */
+autoExecute?: Scalars['Boolean'],
+/** Whether an operator can manually override this rule */
+allowManualOverride?: Scalars['Boolean'],
+/** Well-known purpose marker for internal behavior (e.g. series resolution) */
+purpose?: (AdvancementRulePurpose | null)}
+
+
+/** A single action performed when a rule fires */
+export interface RuleActionInput {
+/** Kind of action to perform */
+type: RuleActionType,
+/** Lua expression or script. Required for ADVANCE, END, and EXECUTE_LUA actions. */
+script?: (Scalars['String'] | null)}
+
+
+/** Input for creating a cross-step rule */
+export interface CreateCrossStepRuleInput {
+/** Explicit source step ID. Mutually exclusive with sourceRelative. */
+sourceStepId?: (Scalars['ID'] | null),
+/** Source step selected relatively to the current step. Mutually exclusive with sourceStepId. */
+sourceRelative?: (StepRelativePosition | null),
+/** Kind of data to pull from the source step */
+dataSource: CrossStepDataSource,
+/** How the pulled data is consumed */
+usage: CrossStepUsageInput}
+
+
+/** How a cross-step rule consumes source-step data */
+export interface CrossStepUsageInput {
+/** How the data is used (seed, qualify, inject score) */
+type: CrossStepUsageType,
+/** Lua boolean expression — required for QUALIFY usage */
+condition?: (Scalars['String'] | null),
+/** Lua numeric expression — required for INJECT_SCORE usage */
+formula?: (Scalars['String'] | null)}
+
+
+/** Complete structure template for a tournament step */
+export interface CreateStructureTemplateInput {
+/** Group templates composing the structure */
+groupTemplates: CreateGroupTemplateInput[]}
+
+
+/** Template for a single group within the structure */
+export interface CreateGroupTemplateInput {
+/** Human-readable group name */
+name: Scalars['String'],
+/** Optional human-readable description */
+description?: (Scalars['String'] | null),
+/** Group order within the structure */
+order: Scalars['Int'],
+/** Numeric literal or Lua expression for total team slots */
+teamSlotsExpr: Scalars['String'],
+/** Lua script that dynamically creates rounds and games (Mode 1). Mutually exclusive with roundTemplates. */
+generationScript?: (Scalars['String'] | null),
+/** Static round definitions (Mode 2). Mutually exclusive with generationScript. */
+roundTemplates?: (CreateRoundTemplateInput[] | null),
+/** Numeric literal or Lua expression for best-of count per game */
+bestOfExpr?: Scalars['String'],
+/** Numeric literal or Lua expression for team slots per game */
+teamSlotsPerGameExpr?: Scalars['String'],
+/** Numeric literal or Lua expression for total round count */
+roundCountExpr?: (Scalars['String'] | null)}
+
+
+/** Template for a single round within a group */
+export interface CreateRoundTemplateInput {
+/** Human-readable round name */
+name: Scalars['String'],
+/** Round order within the group */
+order: Scalars['Int'],
+/** Game templates for this round */
+gameTemplates?: CreateGameTemplateInput[]}
+
+
+/** Template for a single game within a round */
+export interface CreateGameTemplateInput {
+/** Game order within the round */
+order: Scalars['Int'],
+/** Number of team slots in the game */
+teamSlots?: Scalars['Int'],
+/** Best-of count for the series */
+bestOf?: Scalars['Int'],
+/** Lua expression resolving to the target slot for the winner */
+onWinTarget?: (Scalars['String'] | null),
+/** Which slot on this source game wins */
+onWinSourceSlot?: (Scalars['Int'] | null),
+/** Target slot index for the winner */
+onWinTargetSlot?: (Scalars['Int'] | null),
+/** Lua expression resolving to the target slot for the loser */
+onLossTarget?: (Scalars['String'] | null),
+/** Which slot on this source game loses */
+onLossSourceSlot?: (Scalars['Int'] | null),
+/** Target slot index for the loser */
+onLossTargetSlot?: (Scalars['Int'] | null)}
+
+
+/** Input for creating a preset script */
+export interface CreatePresetScriptInput {
+/** Preset name (unique within the organization) */
+name: Scalars['String'],
+/** Optional human-readable description */
+description?: (Scalars['String'] | null),
+/** Lua script source that constructs a complete rule set */
+script: Scalars['String'],
+/** Declared parameters consumed by the preset script */
+parameters?: PresetParameterInput[]}
+
+
+/** Declared parameter of a preset script */
+export interface PresetParameterInput {
+/** Parameter name (unique within the preset) */
+name: Scalars['String'],
+/** Primitive parameter type */
+type: PresetParameterType,
+/** Whether the parameter must be provided when applying the preset */
+required?: Scalars['Boolean'],
+/** Default value for optional parameters, serialized as a string */
+defaultValue?: (Scalars['String'] | null),
+/** Optional human-readable description */
+description?: (Scalars['String'] | null)}
+
+
+/** Input for updating a preset script (all fields optional) */
+export interface UpdatePresetScriptInput {
+/** Preset name (unique within the organization) */
+name?: (Scalars['String'] | null),
+/** Optional human-readable description */
+description?: (Scalars['String'] | null),
+/** Lua script source that constructs a complete rule set */
+script?: (Scalars['String'] | null),
+/** Declared parameters consumed by the preset script */
+parameters?: (PresetParameterInput[] | null)}
 
 
 /** Input for creating a new CDN file on a platform or template */
@@ -13448,6 +13630,10 @@ key: Scalars['String'],
 value: Scalars['String']}
 
 export interface SubscriptionGenqlSelection{
+    /** Subscribe to progress updates for a validation job. Emits the updated ValidationJobModel whenever the job state changes. */
+    validationProgress?: (ValidationJobModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
+    /** Subscribe to streaming events emitted during a validation run. */
+    validationEvents?: (ValidationEventModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
     presenceUserConnected?: UsersConnectedEventGenqlSelection
     presenceUserDisconnected?: UsersDisconnectedEventGenqlSelection
     __typename?: boolean | number
@@ -14375,6 +14561,14 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const SeedingPin_possibleTypes: string[] = ['SeedingPin']
+    export const isSeedingPin = (obj?: { __typename?: any } | null): obj is SeedingPin => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isSeedingPin"')
+      return SeedingPin_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const TournamentStepGroupRoundGameMatch_possibleTypes: string[] = ['TournamentStepGroupRoundGameMatch']
     export const isTournamentStepGroupRoundGameMatch = (obj?: { __typename?: any } | null): obj is TournamentStepGroupRoundGameMatch => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentStepGroupRoundGameMatch"')
@@ -14511,6 +14705,14 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const GameLink_possibleTypes: string[] = ['GameLink']
+    export const isGameLink = (obj?: { __typename?: any } | null): obj is GameLink => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGameLink"')
+      return GameLink_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const TournamentStepGroupRoundGameMatchScore_possibleTypes: string[] = ['TournamentStepGroupRoundGameMatchScore']
     export const isTournamentStepGroupRoundGameMatchScore = (obj?: { __typename?: any } | null): obj is TournamentStepGroupRoundGameMatchScore => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentStepGroupRoundGameMatchScore"')
@@ -14543,178 +14745,18 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const RuleConditionModel_possibleTypes: string[] = ['RuleConditionModel']
-    export const isRuleConditionModel = (obj?: { __typename?: any } | null): obj is RuleConditionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleConditionModel"')
-      return RuleConditionModel_possibleTypes.includes(obj.__typename)
+    const RuleActionModel_possibleTypes: string[] = ['RuleActionModel']
+    export const isRuleActionModel = (obj?: { __typename?: any } | null): obj is RuleActionModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleActionModel"')
+      return RuleActionModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const GameRefModel_possibleTypes: string[] = ['GameRefModel']
-    export const isGameRefModel = (obj?: { __typename?: any } | null): obj is GameRefModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGameRefModel"')
-      return GameRefModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GroupRefModel_possibleTypes: string[] = ['GroupRefModel']
-    export const isGroupRefModel = (obj?: { __typename?: any } | null): obj is GroupRefModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGroupRefModel"')
-      return GroupRefModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RoundRefModel_possibleTypes: string[] = ['RoundRefModel']
-    export const isRoundRefModel = (obj?: { __typename?: any } | null): obj is RoundRefModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRoundRefModel"')
-      return RoundRefModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const StepRefModel_possibleTypes: string[] = ['StepRefModel']
-    export const isStepRefModel = (obj?: { __typename?: any } | null): obj is StepRefModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isStepRefModel"')
-      return StepRefModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MatchConfigVariableModel_possibleTypes: string[] = ['MatchConfigVariableModel']
-    export const isMatchConfigVariableModel = (obj?: { __typename?: any } | null): obj is MatchConfigVariableModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMatchConfigVariableModel"')
-      return MatchConfigVariableModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MatchConfigRefModel_possibleTypes: string[] = ['MatchConfigRefModel']
-    export const isMatchConfigRefModel = (obj?: { __typename?: any } | null): obj is MatchConfigRefModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMatchConfigRefModel"')
-      return MatchConfigRefModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AutoGenerateConfigModel_possibleTypes: string[] = ['AutoGenerateConfigModel']
-    export const isAutoGenerateConfigModel = (obj?: { __typename?: any } | null): obj is AutoGenerateConfigModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAutoGenerateConfigModel"')
-      return AutoGenerateConfigModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const TriggerScopeModel_possibleTypes: string[] = ['TriggerScopeModel']
-    export const isTriggerScopeModel = (obj?: { __typename?: any } | null): obj is TriggerScopeModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isTriggerScopeModel"')
-      return TriggerScopeModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEventDataModel_possibleTypes: string[] = ['RuleEventDataModel']
-    export const isRuleEventDataModel = (obj?: { __typename?: any } | null): obj is RuleEventDataModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEventDataModel"')
-      return RuleEventDataModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const ConditionEvaluationModel_possibleTypes: string[] = ['ConditionEvaluationModel']
-    export const isConditionEvaluationModel = (obj?: { __typename?: any } | null): obj is ConditionEvaluationModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isConditionEvaluationModel"')
-      return ConditionEvaluationModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const ActionResultModel_possibleTypes: string[] = ['ActionResultModel']
-    export const isActionResultModel = (obj?: { __typename?: any } | null): obj is ActionResultModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isActionResultModel"')
-      return ActionResultModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleAction_possibleTypes: string[] = ['AdvanceToGameActionModel','AdvanceToGroupActionModel','AdvanceToStepActionModel','EliminateActionModel','GenerateNextRoundActionModel','EndGameActionModel','EndRoundActionModel','EndGroupActionModel','SetTeamPropertyActionModel']
-    export const isRuleAction = (obj?: { __typename?: any } | null): obj is RuleAction => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleAction"')
-      return RuleAction_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AdvanceToGameActionModel_possibleTypes: string[] = ['AdvanceToGameActionModel']
-    export const isAdvanceToGameActionModel = (obj?: { __typename?: any } | null): obj is AdvanceToGameActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAdvanceToGameActionModel"')
-      return AdvanceToGameActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AdvanceToGroupActionModel_possibleTypes: string[] = ['AdvanceToGroupActionModel']
-    export const isAdvanceToGroupActionModel = (obj?: { __typename?: any } | null): obj is AdvanceToGroupActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAdvanceToGroupActionModel"')
-      return AdvanceToGroupActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AdvanceToStepActionModel_possibleTypes: string[] = ['AdvanceToStepActionModel']
-    export const isAdvanceToStepActionModel = (obj?: { __typename?: any } | null): obj is AdvanceToStepActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAdvanceToStepActionModel"')
-      return AdvanceToStepActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const EliminateActionModel_possibleTypes: string[] = ['EliminateActionModel']
-    export const isEliminateActionModel = (obj?: { __typename?: any } | null): obj is EliminateActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEliminateActionModel"')
-      return EliminateActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GenerateNextRoundActionModel_possibleTypes: string[] = ['GenerateNextRoundActionModel']
-    export const isGenerateNextRoundActionModel = (obj?: { __typename?: any } | null): obj is GenerateNextRoundActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGenerateNextRoundActionModel"')
-      return GenerateNextRoundActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const EndGameActionModel_possibleTypes: string[] = ['EndGameActionModel']
-    export const isEndGameActionModel = (obj?: { __typename?: any } | null): obj is EndGameActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEndGameActionModel"')
-      return EndGameActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const EndRoundActionModel_possibleTypes: string[] = ['EndRoundActionModel']
-    export const isEndRoundActionModel = (obj?: { __typename?: any } | null): obj is EndRoundActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEndRoundActionModel"')
-      return EndRoundActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const EndGroupActionModel_possibleTypes: string[] = ['EndGroupActionModel']
-    export const isEndGroupActionModel = (obj?: { __typename?: any } | null): obj is EndGroupActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEndGroupActionModel"')
-      return EndGroupActionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const SetTeamPropertyActionModel_possibleTypes: string[] = ['SetTeamPropertyActionModel']
-    export const isSetTeamPropertyActionModel = (obj?: { __typename?: any } | null): obj is SetTeamPropertyActionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isSetTeamPropertyActionModel"')
-      return SetTeamPropertyActionModel_possibleTypes.includes(obj.__typename)
+    const AdvancementRuleModel_possibleTypes: string[] = ['AdvancementRuleModel']
+    export const isAdvancementRuleModel = (obj?: { __typename?: any } | null): obj is AdvancementRuleModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAdvancementRuleModel"')
+      return AdvancementRuleModel_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -14735,54 +14777,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const AdvancementRuleModel_possibleTypes: string[] = ['AdvancementRuleModel']
-    export const isAdvancementRuleModel = (obj?: { __typename?: any } | null): obj is AdvancementRuleModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAdvancementRuleModel"')
-      return AdvancementRuleModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CrossStepRuleModel_possibleTypes: string[] = ['CrossStepRuleModel']
-    export const isCrossStepRuleModel = (obj?: { __typename?: any } | null): obj is CrossStepRuleModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCrossStepRuleModel"')
-      return CrossStepRuleModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CrossStepUsage_possibleTypes: string[] = ['SeedOrderUsageModel','QualifyUsageModel','InjectScoreUsageModel']
-    export const isCrossStepUsage = (obj?: { __typename?: any } | null): obj is CrossStepUsage => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCrossStepUsage"')
-      return CrossStepUsage_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const SeedOrderUsageModel_possibleTypes: string[] = ['SeedOrderUsageModel']
-    export const isSeedOrderUsageModel = (obj?: { __typename?: any } | null): obj is SeedOrderUsageModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isSeedOrderUsageModel"')
-      return SeedOrderUsageModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const QualifyUsageModel_possibleTypes: string[] = ['QualifyUsageModel']
-    export const isQualifyUsageModel = (obj?: { __typename?: any } | null): obj is QualifyUsageModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isQualifyUsageModel"')
-      return QualifyUsageModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const InjectScoreUsageModel_possibleTypes: string[] = ['InjectScoreUsageModel']
-    export const isInjectScoreUsageModel = (obj?: { __typename?: any } | null): obj is InjectScoreUsageModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isInjectScoreUsageModel"')
-      return InjectScoreUsageModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const GameTemplateModel_possibleTypes: string[] = ['GameTemplateModel']
     export const isGameTemplateModel = (obj?: { __typename?: any } | null): obj is GameTemplateModel => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isGameTemplateModel"')
@@ -14795,22 +14789,6 @@ export interface SubscriptionGenqlSelection{
     export const isRoundTemplateModel = (obj?: { __typename?: any } | null): obj is RoundTemplateModel => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isRoundTemplateModel"')
       return RoundTemplateModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MatchConfigurationVariableModel_possibleTypes: string[] = ['MatchConfigurationVariableModel']
-    export const isMatchConfigurationVariableModel = (obj?: { __typename?: any } | null): obj is MatchConfigurationVariableModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMatchConfigurationVariableModel"')
-      return MatchConfigurationVariableModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MatchConfigurationModel_possibleTypes: string[] = ['MatchConfigurationModel']
-    export const isMatchConfigurationModel = (obj?: { __typename?: any } | null): obj is MatchConfigurationModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMatchConfigurationModel"')
-      return MatchConfigurationModel_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -14831,6 +14809,22 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const CrossStepUsageModel_possibleTypes: string[] = ['CrossStepUsageModel']
+    export const isCrossStepUsageModel = (obj?: { __typename?: any } | null): obj is CrossStepUsageModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCrossStepUsageModel"')
+      return CrossStepUsageModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CrossStepRuleModel_possibleTypes: string[] = ['CrossStepRuleModel']
+    export const isCrossStepRuleModel = (obj?: { __typename?: any } | null): obj is CrossStepRuleModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCrossStepRuleModel"')
+      return CrossStepRuleModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const StepRuleSetModel_possibleTypes: string[] = ['StepRuleSetModel']
     export const isStepRuleSetModel = (obj?: { __typename?: any } | null): obj is StepRuleSetModel => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isStepRuleSetModel"')
@@ -14839,66 +14833,226 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const RuleExecutionLogModel_possibleTypes: string[] = ['RuleExecutionLogModel']
-    export const isRuleExecutionLogModel = (obj?: { __typename?: any } | null): obj is RuleExecutionLogModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleExecutionLogModel"')
-      return RuleExecutionLogModel_possibleTypes.includes(obj.__typename)
+    const PresetParameterModel_possibleTypes: string[] = ['PresetParameterModel']
+    export const isPresetParameterModel = (obj?: { __typename?: any } | null): obj is PresetParameterModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPresetParameterModel"')
+      return PresetParameterModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const RuleValidationErrorModel_possibleTypes: string[] = ['RuleValidationErrorModel']
-    export const isRuleValidationErrorModel = (obj?: { __typename?: any } | null): obj is RuleValidationErrorModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleValidationErrorModel"')
-      return RuleValidationErrorModel_possibleTypes.includes(obj.__typename)
+    const PresetScriptModel_possibleTypes: string[] = ['PresetScriptModel']
+    export const isPresetScriptModel = (obj?: { __typename?: any } | null): obj is PresetScriptModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPresetScriptModel"')
+      return PresetScriptModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const RuleValidationResultModel_possibleTypes: string[] = ['RuleValidationResultModel']
-    export const isRuleValidationResultModel = (obj?: { __typename?: any } | null): obj is RuleValidationResultModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleValidationResultModel"')
-      return RuleValidationResultModel_possibleTypes.includes(obj.__typename)
+    const BuiltinPresetModel_possibleTypes: string[] = ['BuiltinPresetModel']
+    export const isBuiltinPresetModel = (obj?: { __typename?: any } | null): obj is BuiltinPresetModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isBuiltinPresetModel"')
+      return BuiltinPresetModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const PaginatedRuleExecutionLogs_possibleTypes: string[] = ['PaginatedRuleExecutionLogs']
-    export const isPaginatedRuleExecutionLogs = (obj?: { __typename?: any } | null): obj is PaginatedRuleExecutionLogs => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPaginatedRuleExecutionLogs"')
-      return PaginatedRuleExecutionLogs_possibleTypes.includes(obj.__typename)
+    const ScriptErrorModel_possibleTypes: string[] = ['ScriptErrorModel']
+    export const isScriptErrorModel = (obj?: { __typename?: any } | null): obj is ScriptErrorModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isScriptErrorModel"')
+      return ScriptErrorModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const RuleExecutionLogModelEdge_possibleTypes: string[] = ['RuleExecutionLogModelEdge']
-    export const isRuleExecutionLogModelEdge = (obj?: { __typename?: any } | null): obj is RuleExecutionLogModelEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleExecutionLogModelEdge"')
-      return RuleExecutionLogModelEdge_possibleTypes.includes(obj.__typename)
+    const ScriptWarningModel_possibleTypes: string[] = ['ScriptWarningModel']
+    export const isScriptWarningModel = (obj?: { __typename?: any } | null): obj is ScriptWarningModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isScriptWarningModel"')
+      return ScriptWarningModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const SimulatedGameSnapshotModel_possibleTypes: string[] = ['SimulatedGameSnapshotModel']
-    export const isSimulatedGameSnapshotModel = (obj?: { __typename?: any } | null): obj is SimulatedGameSnapshotModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isSimulatedGameSnapshotModel"')
-      return SimulatedGameSnapshotModel_possibleTypes.includes(obj.__typename)
+    const ScriptValidationResultModel_possibleTypes: string[] = ['ScriptValidationResultModel']
+    export const isScriptValidationResultModel = (obj?: { __typename?: any } | null): obj is ScriptValidationResultModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isScriptValidationResultModel"')
+      return ScriptValidationResultModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const SimulationStepModel_possibleTypes: string[] = ['SimulationStepModel']
-    export const isSimulationStepModel = (obj?: { __typename?: any } | null): obj is SimulationStepModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isSimulationStepModel"')
-      return SimulationStepModel_possibleTypes.includes(obj.__typename)
+    const SimulatedEffectModel_possibleTypes: string[] = ['SimulatedEffectModel']
+    export const isSimulatedEffectModel = (obj?: { __typename?: any } | null): obj is SimulatedEffectModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isSimulatedEffectModel"')
+      return SimulatedEffectModel_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const SimulationResultModel_possibleTypes: string[] = ['SimulationResultModel']
-    export const isSimulationResultModel = (obj?: { __typename?: any } | null): obj is SimulationResultModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isSimulationResultModel"')
-      return SimulationResultModel_possibleTypes.includes(obj.__typename)
+    const ScriptSimulationResultModel_possibleTypes: string[] = ['ScriptSimulationResultModel']
+    export const isScriptSimulationResultModel = (obj?: { __typename?: any } | null): obj is ScriptSimulationResultModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isScriptSimulationResultModel"')
+      return ScriptSimulationResultModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const LuaErrorDetailModel_possibleTypes: string[] = ['LuaErrorDetailModel']
+    export const isLuaErrorDetailModel = (obj?: { __typename?: any } | null): obj is LuaErrorDetailModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isLuaErrorDetailModel"')
+      return LuaErrorDetailModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationErrorModel_possibleTypes: string[] = ['ValidationErrorModel']
+    export const isValidationErrorModel = (obj?: { __typename?: any } | null): obj is ValidationErrorModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationErrorModel"')
+      return ValidationErrorModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const InvariantOffenderUnion_possibleTypes: string[] = ['RuleOffenderModel','CrossStepRuleOffenderModel','GameOffenderModel','RoundOffenderModel','GroupOffenderModel','TeamOffenderModel','ScoreRowOffenderModel']
+    export const isInvariantOffenderUnion = (obj?: { __typename?: any } | null): obj is InvariantOffenderUnion => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isInvariantOffenderUnion"')
+      return InvariantOffenderUnion_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleOffenderModel_possibleTypes: string[] = ['RuleOffenderModel']
+    export const isRuleOffenderModel = (obj?: { __typename?: any } | null): obj is RuleOffenderModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleOffenderModel"')
+      return RuleOffenderModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CrossStepRuleOffenderModel_possibleTypes: string[] = ['CrossStepRuleOffenderModel']
+    export const isCrossStepRuleOffenderModel = (obj?: { __typename?: any } | null): obj is CrossStepRuleOffenderModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCrossStepRuleOffenderModel"')
+      return CrossStepRuleOffenderModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GameOffenderModel_possibleTypes: string[] = ['GameOffenderModel']
+    export const isGameOffenderModel = (obj?: { __typename?: any } | null): obj is GameOffenderModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGameOffenderModel"')
+      return GameOffenderModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RoundOffenderModel_possibleTypes: string[] = ['RoundOffenderModel']
+    export const isRoundOffenderModel = (obj?: { __typename?: any } | null): obj is RoundOffenderModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRoundOffenderModel"')
+      return RoundOffenderModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GroupOffenderModel_possibleTypes: string[] = ['GroupOffenderModel']
+    export const isGroupOffenderModel = (obj?: { __typename?: any } | null): obj is GroupOffenderModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGroupOffenderModel"')
+      return GroupOffenderModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TeamOffenderModel_possibleTypes: string[] = ['TeamOffenderModel']
+    export const isTeamOffenderModel = (obj?: { __typename?: any } | null): obj is TeamOffenderModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTeamOffenderModel"')
+      return TeamOffenderModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ScoreRowOffenderModel_possibleTypes: string[] = ['ScoreRowOffenderModel']
+    export const isScoreRowOffenderModel = (obj?: { __typename?: any } | null): obj is ScoreRowOffenderModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isScoreRowOffenderModel"')
+      return ScoreRowOffenderModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const InvariantResultModel_possibleTypes: string[] = ['InvariantResultModel']
+    export const isInvariantResultModel = (obj?: { __typename?: any } | null): obj is InvariantResultModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isInvariantResultModel"')
+      return InvariantResultModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleFireSummaryModel_possibleTypes: string[] = ['RuleFireSummaryModel']
+    export const isRuleFireSummaryModel = (obj?: { __typename?: any } | null): obj is RuleFireSummaryModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleFireSummaryModel"')
+      return RuleFireSummaryModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationResultModel_possibleTypes: string[] = ['ValidationResultModel']
+    export const isValidationResultModel = (obj?: { __typename?: any } | null): obj is ValidationResultModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationResultModel"')
+      return ValidationResultModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationProgressModel_possibleTypes: string[] = ['ValidationProgressModel']
+    export const isValidationProgressModel = (obj?: { __typename?: any } | null): obj is ValidationProgressModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationProgressModel"')
+      return ValidationProgressModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationJobModel_possibleTypes: string[] = ['ValidationJobModel']
+    export const isValidationJobModel = (obj?: { __typename?: any } | null): obj is ValidationJobModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationJobModel"')
+      return ValidationJobModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationEventModel_possibleTypes: string[] = ['ValidationEventModel']
+    export const isValidationEventModel = (obj?: { __typename?: any } | null): obj is ValidationEventModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationEventModel"')
+      return ValidationEventModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationJobs_possibleTypes: string[] = ['ValidationJobs']
+    export const isValidationJobs = (obj?: { __typename?: any } | null): obj is ValidationJobs => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationJobs"')
+      return ValidationJobs_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationJobModelEdge_possibleTypes: string[] = ['ValidationJobModelEdge']
+    export const isValidationJobModelEdge = (obj?: { __typename?: any } | null): obj is ValidationJobModelEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationJobModelEdge"')
+      return ValidationJobModelEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationEvents_possibleTypes: string[] = ['ValidationEvents']
+    export const isValidationEvents = (obj?: { __typename?: any } | null): obj is ValidationEvents => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationEvents"')
+      return ValidationEvents_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidationEventModelEdge_possibleTypes: string[] = ['ValidationEventModelEdge']
+    export const isValidationEventModelEdge = (obj?: { __typename?: any } | null): obj is ValidationEventModelEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidationEventModelEdge"')
+      return ValidationEventModelEdge_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -16042,7 +16196,8 @@ export const enumTournamentTeamStatus = {
    AWAITING_FOR_PAYMENT: 'AWAITING_FOR_PAYMENT' as const,
    AWAITING_FOR_PRESENCE_CONFIRMATION: 'AWAITING_FOR_PRESENCE_CONFIRMATION' as const,
    CONFIRMED: 'CONFIRMED' as const,
-   DENIED: 'DENIED' as const
+   DENIED: 'DENIED' as const,
+   WITHDRAWN: 'WITHDRAWN' as const
 }
 
 export const enumOrganizationLimitType = {
@@ -16203,11 +16358,17 @@ export const enumTournamentGameStatus = {
    ENDED: 'ENDED' as const
 }
 
+export const enumGameLinkOutcome = {
+   WIN: 'WIN' as const,
+   LOSS: 'LOSS' as const
+}
+
 export const enumMatchScoreStatus = {
    WAITING: 'WAITING' as const,
    WINNER: 'WINNER' as const,
    LOSER: 'LOSER' as const,
-   FORFEIT: 'FORFEIT' as const
+   FORFEIT: 'FORFEIT' as const,
+   DRAW: 'DRAW' as const
 }
 
 export const enumTournamentAdminPermissions = {
@@ -16217,87 +16378,11 @@ export const enumTournamentAdminPermissions = {
    MANAGE_PERMISSIONS: 'MANAGE_PERMISSIONS' as const
 }
 
-export const enumRuleConditionOperatorType = {
-   eq: 'eq' as const,
-   neq: 'neq' as const,
-   gt: 'gt' as const,
-   gte: 'gte' as const,
-   lt: 'lt' as const,
-   lte: 'lte' as const,
-   in: 'in' as const,
-   between: 'between' as const
-}
-
-export const enumConditionScopeType = {
-   MATCH: 'MATCH' as const,
-   GAME: 'GAME' as const,
-   ROUND: 'ROUND' as const,
-   GROUP: 'GROUP' as const,
-   STEP: 'STEP' as const
-}
-
-export const enumRefType = {
-   ID: 'ID' as const,
-   RELATIVE: 'RELATIVE' as const
-}
-
-export const enumStepRelativePosition = {
-   PREVIOUS: 'PREVIOUS' as const,
-   NEXT: 'NEXT' as const,
-   CURRENT: 'CURRENT' as const
-}
-
-export const enumMatchConfigSource = {
-   STEP_CONFIG: 'STEP_CONFIG' as const,
-   INLINE: 'INLINE' as const
-}
-
-export const enumAutoGenerateType = {
-   ROUND_ROBIN_PAIRS: 'ROUND_ROBIN_PAIRS' as const,
-   BRACKET: 'BRACKET' as const,
-   SWISS_PAIRS: 'SWISS_PAIRS' as const,
-   LOWER_BRACKET: 'LOWER_BRACKET' as const,
-   STEP_LADDER: 'STEP_LADDER' as const,
-   DOUBLE_ROUND_ROBIN_PAIRS: 'DOUBLE_ROUND_ROBIN_PAIRS' as const,
-   PAGE_PLAYOFF: 'PAGE_PLAYOFF' as const,
-   GSL_DUAL_TOURNAMENT: 'GSL_DUAL_TOURNAMENT' as const
-}
-
 export const enumRuleActionType = {
-   ADVANCE_TO_GAME: 'ADVANCE_TO_GAME' as const,
-   ADVANCE_TO_GROUP: 'ADVANCE_TO_GROUP' as const,
-   ADVANCE_TO_STEP: 'ADVANCE_TO_STEP' as const,
+   ADVANCE: 'ADVANCE' as const,
    ELIMINATE: 'ELIMINATE' as const,
-   GENERATE_NEXT_ROUND: 'GENERATE_NEXT_ROUND' as const,
-   END_GAME: 'END_GAME' as const,
-   END_ROUND: 'END_ROUND' as const,
-   END_GROUP: 'END_GROUP' as const,
-   SET_TEAM_PROPERTY: 'SET_TEAM_PROPERTY' as const
-}
-
-export const enumRankMappingType = {
-   BY_RANK: 'BY_RANK' as const,
-   SEED_OPTIMIZED: 'SEED_OPTIMIZED' as const,
-   RANDOM: 'RANDOM' as const
-}
-
-export const enumPairingStrategyType = {
-   SWISS_DUTCH: 'SWISS_DUTCH' as const,
-   SWISS_MONRAD: 'SWISS_MONRAD' as const,
-   RANDOM: 'RANDOM' as const,
-   BY_RANK: 'BY_RANK' as const
-}
-
-export const enumRuleSortOrder = {
-   ASC: 'ASC' as const,
-   DESC: 'DESC' as const
-}
-
-export const enumScoreAggregationType = {
-   SUM: 'SUM' as const,
-   AVERAGE: 'AVERAGE' as const,
-   POINTS: 'POINTS' as const,
-   FORMULA: 'FORMULA' as const
+   END: 'END' as const,
+   EXECUTE_LUA: 'EXECUTE_LUA' as const
 }
 
 export const enumRuleTriggerType = {
@@ -16306,18 +16391,300 @@ export const enumRuleTriggerType = {
    ROUND_ENDED: 'ROUND_ENDED' as const,
    GROUP_ENDED: 'GROUP_ENDED' as const,
    STEP_ENDED: 'STEP_ENDED' as const,
-   MANUAL: 'MANUAL' as const
+   MANUAL: 'MANUAL' as const,
+   STEP_SEEDING: 'STEP_SEEDING' as const,
+   ROUND_SEEDING: 'ROUND_SEEDING' as const,
+   TEAM_WITHDREW: 'TEAM_WITHDREW' as const
 }
 
-export const enumConditionOperator = {
-   AND: 'AND' as const,
-   OR: 'OR' as const
+export const enumAdvancementRulePurpose = {
+   ADVANCEMENT: 'ADVANCEMENT' as const,
+   MATCH_SERIES_RESOLUTION: 'MATCH_SERIES_RESOLUTION' as const,
+   ELIMINATION: 'ELIMINATION' as const,
+   WINNER_PROMOTION: 'WINNER_PROMOTION' as const,
+   SEEDING: 'SEEDING' as const,
+   WITHDRAWAL_RESPONSE: 'WITHDRAWAL_RESPONSE' as const
+}
+
+export const enumTiebreakerType = {
+   HEAD_TO_HEAD: 'HEAD_TO_HEAD' as const,
+   SCORE_DIFFERENCE: 'SCORE_DIFFERENCE' as const,
+   TOTAL_SCORE: 'TOTAL_SCORE' as const,
+   WINS: 'WINS' as const,
+   BUCHHOLZ: 'BUCHHOLZ' as const,
+   SONNBORN_BERGER: 'SONNBORN_BERGER' as const,
+   MEDIAN_BUCHHOLZ: 'MEDIAN_BUCHHOLZ' as const,
+   CUMULATIVE: 'CUMULATIVE' as const,
+   CUSTOM_FORMULA: 'CUSTOM_FORMULA' as const
+}
+
+export const enumSortOrder = {
+   ASC: 'ASC' as const,
+   DESC: 'DESC' as const
+}
+
+export const enumScoreAggregationType = {
+   SUM: 'SUM' as const,
+   AVERAGE: 'AVERAGE' as const,
+   POINTS: 'POINTS' as const,
+   FORMULA: 'FORMULA' as const,
+   CUSTOM_LUA: 'CUSTOM_LUA' as const
 }
 
 export const enumCrossStepUsageType = {
    SEED_ORDER: 'SEED_ORDER' as const,
    QUALIFY: 'QUALIFY' as const,
    INJECT_SCORE: 'INJECT_SCORE' as const
+}
+
+export const enumStepRelativePosition = {
+   PREVIOUS: 'PREVIOUS' as const,
+   NEXT: 'NEXT' as const,
+   CURRENT: 'CURRENT' as const
+}
+
+export const enumCrossStepDataSource = {
+   TEAMS: 'TEAMS' as const,
+   WINNERS: 'WINNERS' as const,
+   QUALIFIED: 'QUALIFIED' as const,
+   ELIMINATED: 'ELIMINATED' as const,
+   WITHDRAWN: 'WITHDRAWN' as const,
+   RANKINGS: 'RANKINGS' as const,
+   SCORES: 'SCORES' as const
+}
+
+export const enumPresetParameterType = {
+   INT: 'INT' as const,
+   FLOAT: 'FLOAT' as const,
+   STRING: 'STRING' as const,
+   BOOLEAN: 'BOOLEAN' as const
+}
+
+export const enumBuiltinPresetCategory = {
+   SINGLE_ELIMINATION: 'SINGLE_ELIMINATION' as const,
+   DOUBLE_ELIMINATION: 'DOUBLE_ELIMINATION' as const,
+   SWISS: 'SWISS' as const,
+   ROUND_ROBIN: 'ROUND_ROBIN' as const,
+   GROUP_STAGE: 'GROUP_STAGE' as const,
+   OTHER: 'OTHER' as const
+}
+
+export const enumScriptErrorCode = {
+   SYNTAX: 'SYNTAX' as const,
+   UNDEFINED_VARIABLE: 'UNDEFINED_VARIABLE' as const,
+   INVALID_FUNCTION: 'INVALID_FUNCTION' as const,
+   TYPE_MISMATCH: 'TYPE_MISMATCH' as const,
+   RUNTIME: 'RUNTIME' as const,
+   BLOCKED_FUNCTION: 'BLOCKED_FUNCTION' as const,
+   TIMEOUT: 'TIMEOUT' as const,
+   INSTRUCTION_LIMIT: 'INSTRUCTION_LIMIT' as const
+}
+
+export const enumScriptWarningCode = {
+   UNUSED_VARIABLE: 'UNUSED_VARIABLE' as const,
+   UNREACHABLE_CODE: 'UNREACHABLE_CODE' as const,
+   DEPRECATED_FUNCTION: 'DEPRECATED_FUNCTION' as const
+}
+
+export const enumSimulatedEffectType = {
+   ADVANCE: 'ADVANCE' as const,
+   ELIMINATE: 'ELIMINATE' as const,
+   END_GAME: 'END_GAME' as const,
+   END_ROUND: 'END_ROUND' as const,
+   END_GROUP: 'END_GROUP' as const,
+   SET_METADATA: 'SET_METADATA' as const,
+   SET_CUSTOM_FIELD: 'SET_CUSTOM_FIELD' as const,
+   SET_STATUS: 'SET_STATUS' as const,
+   SET_MATCH_RESULT: 'SET_MATCH_RESULT' as const,
+   REGISTER_TEAM: 'REGISTER_TEAM' as const,
+   CREATE_GROUP: 'CREATE_GROUP' as const,
+   CREATE_ROUND: 'CREATE_ROUND' as const,
+   CREATE_GAME: 'CREATE_GAME' as const,
+   LINK: 'LINK' as const,
+   SET_SCORING: 'SET_SCORING' as const,
+   ADD_TIEBREAKER: 'ADD_TIEBREAKER' as const,
+   ADD_RULE: 'ADD_RULE' as const,
+   ADD_CROSS_STEP_RULE: 'ADD_CROSS_STEP_RULE' as const,
+   RESEED_STEP: 'RESEED_STEP' as const
+}
+
+export const enumScriptContextType = {
+   CONDITION: 'CONDITION' as const,
+   ACTION: 'ACTION' as const,
+   GENERATION: 'GENERATION' as const,
+   PRESET: 'PRESET' as const,
+   CROSS_STEP: 'CROSS_STEP' as const,
+   FORMULA: 'FORMULA' as const
+}
+
+export const enumValidationErrorCode = {
+   SETUP_FAILED: 'SETUP_FAILED' as const,
+   UPSTREAM_NOT_VALIDATED: 'UPSTREAM_NOT_VALIDATED' as const,
+   SEEDING_FAILED: 'SEEDING_FAILED' as const,
+   GENERATION_FAILED: 'GENERATION_FAILED' as const,
+   LUA_THROW: 'LUA_THROW' as const,
+   RULE_NEVER_FIRED: 'RULE_NEVER_FIRED' as const,
+   CROSS_STEP_NEVER_EVALUATED: 'CROSS_STEP_NEVER_EVALUATED' as const,
+   INVARIANT_VIOLATED: 'INVARIANT_VIOLATED' as const,
+   DEADLOCK: 'DEADLOCK' as const,
+   MUTATION_CEILING_EXCEEDED: 'MUTATION_CEILING_EXCEEDED' as const,
+   EXECUTION_TIMEOUT: 'EXECUTION_TIMEOUT' as const,
+   ORPHAN_SCORE_ROW: 'ORPHAN_SCORE_ROW' as const,
+   DUPLICATE_ADVANCEMENT: 'DUPLICATE_ADVANCEMENT' as const,
+   ADVANCE_TARGET_MISSING: 'ADVANCE_TARGET_MISSING' as const,
+   ADVANCE_BACKWARD: 'ADVANCE_BACKWARD' as const,
+   ADVANCE_OVER_CAPACITY: 'ADVANCE_OVER_CAPACITY' as const,
+   INVALID_RULE_SET_INPUT: 'INVALID_RULE_SET_INPUT' as const,
+   RULE_ACTION_INVALID_ID: 'RULE_ACTION_INVALID_ID' as const,
+   INTERNAL_ERROR: 'INTERNAL_ERROR' as const
+}
+
+export const enumInvariantCode = {
+   STEP_NOT_ENDED: 'STEP_NOT_ENDED' as const,
+   GAME_NOT_ENDED: 'GAME_NOT_ENDED' as const,
+   GROUP_OR_ROUND_INCOMPLETE: 'GROUP_OR_ROUND_INCOMPLETE' as const,
+   NO_WINNER_DECLARED: 'NO_WINNER_DECLARED' as const,
+   TEAM_IN_LIMBO: 'TEAM_IN_LIMBO' as const,
+   RANK_NOT_MATERIALISED: 'RANK_NOT_MATERIALISED' as const,
+   RULE_NEVER_FIRED: 'RULE_NEVER_FIRED' as const,
+   INFINITE_LOOP_CEILING_EXCEEDED: 'INFINITE_LOOP_CEILING_EXCEEDED' as const,
+   LUA_EXECUTION_THROWN: 'LUA_EXECUTION_THROWN' as const,
+   PROGRESS_DEADLOCK: 'PROGRESS_DEADLOCK' as const,
+   INVALID_SCORE_VALUE: 'INVALID_SCORE_VALUE' as const,
+   ILLEGAL_STATUS_TRANSITION: 'ILLEGAL_STATUS_TRANSITION' as const,
+   CROSS_STEP_RULE_NOT_EVALUATED: 'CROSS_STEP_RULE_NOT_EVALUATED' as const,
+   GROUP_TERMINAL_CASCADE_INCOMPLETE: 'GROUP_TERMINAL_CASCADE_INCOMPLETE' as const,
+   ORPHAN_SCORE_ROW: 'ORPHAN_SCORE_ROW' as const,
+   DUPLICATE_ADVANCEMENT: 'DUPLICATE_ADVANCEMENT' as const,
+   ADVANCE_TARGET_MISSING: 'ADVANCE_TARGET_MISSING' as const,
+   ADVANCE_BACKWARD: 'ADVANCE_BACKWARD' as const,
+   ADVANCE_OVER_CAPACITY: 'ADVANCE_OVER_CAPACITY' as const,
+   SEEDING_RULE_MISSING: 'SEEDING_RULE_MISSING' as const,
+   ROUND_NEVER_POPULATED: 'ROUND_NEVER_POPULATED' as const,
+   SEEDING_OVERFILL: 'SEEDING_OVERFILL' as const,
+   SEEDING_UNDERFILL: 'SEEDING_UNDERFILL' as const,
+   PIN_VIOLATED: 'PIN_VIOLATED' as const,
+   PIN_UNSUPPORTED_BUT_PRESENT: 'PIN_UNSUPPORTED_BUT_PRESENT' as const,
+   WITHDRAWAL_RULE_MISSING: 'WITHDRAWAL_RULE_MISSING' as const,
+   WITHDRAWAL_LEFT_ORPHANS: 'WITHDRAWAL_LEFT_ORPHANS' as const,
+   WITHDRAWAL_BROKE_STEP: 'WITHDRAWAL_BROKE_STEP' as const
+}
+
+export const enumOffenderKind = {
+   RULE: 'RULE' as const,
+   CROSS_STEP_RULE: 'CROSS_STEP_RULE' as const,
+   GAME: 'GAME' as const,
+   ROUND: 'ROUND' as const,
+   GROUP: 'GROUP' as const,
+   TEAM: 'TEAM' as const,
+   SCORE_ROW: 'SCORE_ROW' as const
+}
+
+export const enumGameStatus = {
+   WAITING: 'WAITING' as const,
+   STARTED: 'STARTED' as const,
+   ENDED: 'ENDED' as const
+}
+
+export const enumTeamScopeStatus = {
+   ACTIVE: 'ACTIVE' as const,
+   WINNER: 'WINNER' as const,
+   QUALIFIED: 'QUALIFIED' as const,
+   ELIMINATED: 'ELIMINATED' as const,
+   WITHDRAWN: 'WITHDRAWN' as const
+}
+
+export const enumScoreRowScope = {
+   TOURNAMENT: 'TOURNAMENT' as const,
+   STEP: 'STEP' as const,
+   GROUP: 'GROUP' as const,
+   ROUND: 'ROUND' as const,
+   GAME: 'GAME' as const
+}
+
+export const enumInvariantSeverity = {
+   ERROR: 'ERROR' as const,
+   WARNING: 'WARNING' as const
+}
+
+export const enumValidationStage = {
+   QUEUED: 'QUEUED' as const,
+   SEEDING: 'SEEDING' as const,
+   GENERATING: 'GENERATING' as const,
+   UPSTREAM_RUNNING: 'UPSTREAM_RUNNING' as const,
+   PLAYING: 'PLAYING' as const,
+   ASSERTING: 'ASSERTING' as const,
+   FINALISING: 'FINALISING' as const
+}
+
+export const enumValidationJobStatus = {
+   QUEUED: 'QUEUED' as const,
+   RUNNING: 'RUNNING' as const,
+   SUCCEEDED: 'SUCCEEDED' as const,
+   FAILED: 'FAILED' as const,
+   CANCELLED: 'CANCELLED' as const
+}
+
+export const enumValidationEventKind = {
+   SEED: 'SEED' as const,
+   GENERATE: 'GENERATE' as const,
+   MATCH_UPDATED: 'MATCH_UPDATED' as const,
+   RULE_FIRED: 'RULE_FIRED' as const,
+   EFFECT_APPLIED: 'EFFECT_APPLIED' as const,
+   SCOPE_ENDED: 'SCOPE_ENDED' as const,
+   CROSS_STEP_EVALUATED: 'CROSS_STEP_EVALUATED' as const,
+   ASSERTION: 'ASSERTION' as const,
+   ADMIN_OVERRIDE: 'ADMIN_OVERRIDE' as const,
+   ERROR: 'ERROR' as const,
+   WARNING: 'WARNING' as const,
+   PROGRESS: 'PROGRESS' as const
+}
+
+export const enumValidationEffectType = {
+   ADVANCE: 'ADVANCE' as const,
+   ELIMINATE: 'ELIMINATE' as const,
+   END_GAME: 'END_GAME' as const,
+   END_ROUND: 'END_ROUND' as const,
+   END_GROUP: 'END_GROUP' as const,
+   SET_METADATA: 'SET_METADATA' as const,
+   SET_CUSTOM_FIELD: 'SET_CUSTOM_FIELD' as const,
+   SET_STATUS: 'SET_STATUS' as const,
+   SET_MATCH_RESULT: 'SET_MATCH_RESULT' as const,
+   REGISTER_TEAM: 'REGISTER_TEAM' as const,
+   CREATE_GROUP: 'CREATE_GROUP' as const,
+   CREATE_ROUND: 'CREATE_ROUND' as const,
+   CREATE_GAME: 'CREATE_GAME' as const,
+   LINK: 'LINK' as const,
+   SET_SCORING: 'SET_SCORING' as const,
+   ADD_TIEBREAKER: 'ADD_TIEBREAKER' as const,
+   ADD_RULE: 'ADD_RULE' as const,
+   ADD_CROSS_STEP_RULE: 'ADD_CROSS_STEP_RULE' as const,
+   GAME_WAITING: 'GAME_WAITING' as const,
+   GAME_STARTED: 'GAME_STARTED' as const,
+   GAME_ENDED: 'GAME_ENDED' as const,
+   TEAM_ACTIVE: 'TEAM_ACTIVE' as const,
+   TEAM_WINNER: 'TEAM_WINNER' as const,
+   TEAM_QUALIFIED: 'TEAM_QUALIFIED' as const,
+   TEAM_ELIMINATED: 'TEAM_ELIMINATED' as const,
+   TEAM_WITHDRAWN: 'TEAM_WITHDRAWN' as const
+}
+
+export const enumValidationStatus = {
+   GAME_WAITING: 'GAME_WAITING' as const,
+   GAME_STARTED: 'GAME_STARTED' as const,
+   GAME_ENDED: 'GAME_ENDED' as const,
+   TEAM_ACTIVE: 'TEAM_ACTIVE' as const,
+   TEAM_WINNER: 'TEAM_WINNER' as const,
+   TEAM_QUALIFIED: 'TEAM_QUALIFIED' as const,
+   TEAM_ELIMINATED: 'TEAM_ELIMINATED' as const,
+   TEAM_WITHDRAWN: 'TEAM_WITHDRAWN' as const,
+   STEP_CONFIGURED: 'STEP_CONFIGURED' as const,
+   STEP_GENERATING: 'STEP_GENERATING' as const,
+   STEP_GENERATED: 'STEP_GENERATED' as const,
+   STEP_SEEDING: 'STEP_SEEDING' as const,
+   STEP_SEEDED: 'STEP_SEEDED' as const,
+   STEP_STARTED: 'STEP_STARTED' as const,
+   STEP_ENDED: 'STEP_ENDED' as const
 }
 
 export const enumUserGroupMemberStatus = {
@@ -16440,6 +16807,7 @@ export const enumObjectType = {
    TournamentStepGroupRoundGameMatch: 'TournamentStepGroupRoundGameMatch' as const,
    TournamentStepGroupRoundGameTeamScore: 'TournamentStepGroupRoundGameTeamScore' as const,
    TournamentStepGroupRoundGame: 'TournamentStepGroupRoundGame' as const,
+   GameLink: 'GameLink' as const,
    TournamentStepGroupRoundTeamScore: 'TournamentStepGroupRoundTeamScore' as const,
    TournamentStepGroupRound: 'TournamentStepGroupRound' as const,
    TournamentStepGroupTeamScore: 'TournamentStepGroupTeamScore' as const,
@@ -16483,6 +16851,12 @@ export const enumObjectType = {
    ShopProduct: 'ShopProduct' as const,
    StepRuleSet: 'StepRuleSet' as const,
    RuleSetVersion: 'RuleSetVersion' as const,
+   StepRuleSetValidationJob: 'StepRuleSetValidationJob' as const,
+   StepRuleSetValidationInvariant: 'StepRuleSetValidationInvariant' as const,
+   StepRuleSetValidationError: 'StepRuleSetValidationError' as const,
+   StepRuleSetValidationWarning: 'StepRuleSetValidationWarning' as const,
+   StepRuleSetValidationRuleFire: 'StepRuleSetValidationRuleFire' as const,
+   StepRuleSetValidationEvent: 'StepRuleSetValidationEvent' as const,
    ScoringRuleSet: 'ScoringRuleSet' as const,
    TiebreakerRule: 'TiebreakerRule' as const,
    AdvancementRule: 'AdvancementRule' as const,
@@ -16492,6 +16866,7 @@ export const enumObjectType = {
    GroupTemplate: 'GroupTemplate' as const,
    RoundTemplate: 'RoundTemplate' as const,
    GameTemplate: 'GameTemplate' as const,
+   PresetScript: 'PresetScript' as const,
    AppWebhook: 'AppWebhook' as const,
    AppRelease: 'AppRelease' as const,
    MarketplaceApp: 'MarketplaceApp' as const,
@@ -16538,7 +16913,6 @@ export const enumOrganizationLimitsType = {
    TOURNAMENT_TEAMS_REGISTERED: 'TOURNAMENT_TEAMS_REGISTERED' as const,
    TOURNAMENT_TEAM_SIZE: 'TOURNAMENT_TEAM_SIZE' as const,
    TOURNAMENT_REGISTRATION_RULES: 'TOURNAMENT_REGISTRATION_RULES' as const,
-   TOURNAMENT_STEP_RULE_SETS: 'TOURNAMENT_STEP_RULE_SETS' as const,
    WEBHOOKS: 'WEBHOOKS' as const,
    ANONYMOUS_PLAYER_PROFILES: 'ANONYMOUS_PLAYER_PROFILES' as const,
    WHITE_LABEL: 'WHITE_LABEL' as const,
@@ -16593,31 +16967,6 @@ export const enumTournamentsQueryStatus = {
    REGISTRATIONS_CLOSED: 'REGISTRATIONS_CLOSED' as const
 }
 
-export const enumRulePresetName = {
-   SINGLE_ELIM: 'SINGLE_ELIM' as const,
-   DOUBLE_ELIM: 'DOUBLE_ELIM' as const,
-   ROUND_ROBIN: 'ROUND_ROBIN' as const,
-   SWISS: 'SWISS' as const,
-   BUCHHOLZ_GROUPS: 'BUCHHOLZ_GROUPS' as const,
-   ROUND_ROBIN_BO3: 'ROUND_ROBIN_BO3' as const,
-   LEAGUE_HOME_AWAY: 'LEAGUE_HOME_AWAY' as const,
-   SWISS_ACCELERATED: 'SWISS_ACCELERATED' as const,
-   SINGLE_ELIM_CONSOLATION: 'SINGLE_ELIM_CONSOLATION' as const,
-   RANDOM_DRAW_KNOCKOUT: 'RANDOM_DRAW_KNOCKOUT' as const,
-   STEP_LADDER: 'STEP_LADDER' as const,
-   PAGE_PLAYOFF: 'PAGE_PLAYOFF' as const,
-   GAUNTLET: 'GAUNTLET' as const,
-   DOUBLE_ELIM_TRUE_FINALS: 'DOUBLE_ELIM_TRUE_FINALS' as const,
-   GSL_FORMAT: 'GSL_FORMAT' as const,
-   SWISS_MCMAHON: 'SWISS_MCMAHON' as const,
-   TRIPLE_ELIM: 'TRIPLE_ELIM' as const,
-   POINTS_RACE: 'POINTS_RACE' as const,
-   BATTLE_ROYALE: 'BATTLE_ROYALE' as const,
-   ROUND_ROBIN_PLAYOFFS: 'ROUND_ROBIN_PLAYOFFS' as const,
-   CONQUEST: 'CONQUEST' as const,
-   KING_OF_THE_HILL_BO5: 'KING_OF_THE_HILL_BO5' as const
-}
-
 export const enumEventsQueryOrderBy = {
    START_AT: 'START_AT' as const,
    REGISTRATIONS_START_AT: 'REGISTRATIONS_START_AT' as const,
@@ -16632,19 +16981,6 @@ export const enumEventsQueryStatus = {
    REGISTRATIONS_OPEN: 'REGISTRATIONS_OPEN' as const,
    REGISTRATIONS_ENDED: 'REGISTRATIONS_ENDED' as const,
    REGISTRATIONS_CLOSED: 'REGISTRATIONS_CLOSED' as const
-}
-
-export const enumSeedingMechanism = {
-   NONE: 'NONE' as const,
-   REVERSE: 'REVERSE' as const,
-   HALF_SHIFT: 'HALF_SHIFT' as const,
-   REVERSE_HALF_SHIFT: 'REVERSE_HALF_SHIFT' as const,
-   PAIR_FLIP: 'PAIR_FLIP' as const
-}
-
-export const enumGroupRepartitionMechanism = {
-   BALANCED: 'BALANCED' as const,
-   SEED_OPTIMIZED: 'SEED_OPTIMIZED' as const
 }
 
 export const enumStripeUiMode = {
