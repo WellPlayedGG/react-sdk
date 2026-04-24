@@ -1,6 +1,6 @@
 {
   "name": "@well-played.gg/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "WellPlayed Developer CLI - Create, develop, and deploy marketplace apps",
   "bin": {
     "wellplayed": "./dist/index.js"
