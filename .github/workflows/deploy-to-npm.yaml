@@ -91,6 +91,26 @@ jobs:
             return 1
           }
 
+          # Bumps the version field in-place, preserving existing
+          # indentation. We cannot use `npm version` here because the
+          # workspace uses yarn `workspace:*` protocol specifiers which
+          # npm rejects as EUNSUPPORTEDPROTOCOL.
+          bump_version() {
+            local file="packages/$1/package.json"
+            local bump="$2"
+            local current ma mi pa new
+            current=$(node -p "require('./$file').version")
+            IFS=. read -r ma mi pa <<< "$current"
+            case "$bump" in
+              patch) pa=$((pa + 1));;
+              minor) mi=$((mi + 1)); pa=0;;
+              major) ma=$((ma + 1)); mi=0; pa=0;;
+            esac
+            new="$ma.$mi.$pa"
+            sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")[0-9]+\.[0-9]+\.[0-9]+(\")/\1$new\2/" "$file"
+            echo "$new"
+          }
+
           # Prints one of: skip-bump | unchanged | changed
           #   skip-bump: not published yet, or local version already ahead of npm
           #   unchanged: nothing in the package dir changed since last publish
@@ -136,8 +156,7 @@ jobs:
               bump="$SCHEMA_BUMP"
             fi
 
-            (cd "packages/$pkg" && npm version "$bump" --no-git-tag-version >/dev/null)
-            new_version=$(node -p "require('./packages/$pkg/package.json').version")
+            new_version=$(bump_version "$pkg" "$bump")
             echo "⬆️  $pkg bumped to $new_version ($bump)"
             BUMPED+=("$pkg@$new_version")
           done
