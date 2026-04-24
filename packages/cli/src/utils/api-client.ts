@@ -23,9 +23,18 @@ export async function apiPost<T>(path: string, body: Record<string, unknown>): P
   return JSON.parse(text) as T;
 }
 
+export interface GraphqlRequestOptions {
+  /**
+   * Organization short-id. Set when the operation requires an organization
+   * context (e.g. any mutation/query not decorated with `@WithoutOrganization`).
+   */
+  organizationId?: string;
+}
+
 export async function graphqlRequest<T>(
   query: string,
   variables?: Record<string, unknown>,
+  options?: GraphqlRequestOptions,
 ): Promise<T> {
   const token = getToken();
   if (!token) {
@@ -33,12 +42,17 @@ export async function graphqlRequest<T>(
   }
 
   const url = `${getApiUrl()}graphql`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+  if (options?.organizationId) {
+    headers['organization-id'] = options.organizationId;
+  }
+
   const { body: responseBody, statusCode } = await request(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify({ query, variables }),
   });
 
@@ -52,5 +66,8 @@ export async function graphqlRequest<T>(
     throw new Error(result.errors.map((e) => e.message).join('; '));
   }
 
+  if (result.data === undefined || result.data === null) {
+    throw new Error('GraphQL response missing data');
+  }
   return result.data as T;
 }
