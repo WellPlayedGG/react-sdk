@@ -1,0 +1,23 @@
+{
+  "name": "@well-played.gg/skill-bundler",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/index.js",
+  "bin": {
+    "wp-bundle-skills": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "undici": "^6.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}

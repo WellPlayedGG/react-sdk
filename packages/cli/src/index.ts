@@ -5,6 +5,7 @@ import { initCommand } from './commands/init.js';
 import { loginCommand } from './commands/login.js';
 import { devCommand } from './commands/dev.js';
 import { deployCommand } from './commands/deploy.js';
+import { installSkillsCommand } from './commands/install-skills.js';
 
 const program = new Command();
 
@@ -17,5 +18,6 @@ program.addCommand(initCommand);
 program.addCommand(loginCommand);
 program.addCommand(devCommand);
 program.addCommand(deployCommand);
+program.addCommand(installSkillsCommand);
 
 program.parse();

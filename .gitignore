@@ -19,3 +19,5 @@ stats.html
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+packages/*/skills/

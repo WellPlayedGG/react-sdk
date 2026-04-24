@@ -1,0 +1,33 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: yarn install --immutable
+      - run: yarn --cwd packages/skill-bundler build
+      - run: yarn --cwd packages/react-sdk build
+      - run: yarn --cwd packages/typescript-sdk build
+      - run: npx wp-bundle-skills --base https://mcp.well-played.gg --target react --dest packages/react-sdk
+      - run: npx wp-bundle-skills --base https://mcp.well-played.gg --target typescript --dest packages/typescript-sdk
+      - run: cd packages/react-sdk && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: cd packages/typescript-sdk && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

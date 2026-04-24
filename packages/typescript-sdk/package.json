@@ -14,7 +14,8 @@
 	},
 	"homepage": "https://github.com/WellPlayedGG/react-sdk#readme",
 	"files": [
-		"dist"
+		"dist",
+		"skills"
 	],
 	"exports": {
 		".": {
@@ -27,6 +28,7 @@
 		"@apollo/client": "^3.11.10",
 		"@genql/cli": "^6.3.3",
 		"@types/lodash": "^4.17.13",
+		"@well-played.gg/skill-bundler": "*",
 		"conventional-changelog-cli": "^5.0.0",
 		"gql.tada": "^1.8.10",
 		"typescript": "^5.6.3",
@@ -36,7 +38,7 @@
 	"scripts": {
 		"build": "vite build",
 		"dev": "vite",
-		"prepublishOnly": "yarn build",
+		"prepublishOnly": "yarn build && wp-bundle-skills --base https://mcp.well-played.gg --target typescript --dest .",
 		"test": "echo \"No tests specified\" && exit 0",
 		"lint": "biome check .",
 		"format": "biome format --write .",
