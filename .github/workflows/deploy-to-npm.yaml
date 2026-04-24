@@ -1,4 +1,4 @@
-name: Auto Release on Schema Change
+name: Auto Release on Change
 
 on:
   push:
@@ -37,7 +37,8 @@ jobs:
           git config user.name "github-actions[bot]"
 
       # ------------------------------------------------------------------
-      # 1. Detect GraphQL schema changes
+      # 1. Detect GraphQL schema changes (drives bump severity for
+      #    schema-dependent packages: typescript-sdk and react-sdk).
       # ------------------------------------------------------------------
       - name: Save current schema
         run: cp schema.graphql schema.graphql.before
@@ -45,20 +46,17 @@ jobs:
       - name: Fetch latest schema from API
         run: yarn graphql:generate
 
-      - name: Detect schema changes
+      - name: Classify schema change
         id: schema
         run: |
           if diff -q schema.graphql.before schema.graphql > /dev/null 2>&1; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "bump=none" >> "$GITHUB_OUTPUT"
+            echo "bump=patch" >> "$GITHUB_OUTPUT"
             echo "No schema changes detected."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-
-            # Use graphql-inspector to classify the change
             DIFF_OUTPUT=$(yarn graphql-inspector diff schema.graphql.before schema.graphql 2>&1 || true)
             echo "$DIFF_OUTPUT"
-
             if echo "$DIFF_OUTPUT" | grep -qi "BREAKING"; then
               echo "bump=minor" >> "$GITHUB_OUTPUT"
               echo "Breaking/dangerous changes detected → minor bump"
@@ -67,52 +65,115 @@ jobs:
               echo "Safe/additive changes detected → patch bump"
             fi
           fi
-
           rm -f schema.graphql.before
 
       # ------------------------------------------------------------------
-      # 2. Bump typescript-sdk + dependents if schema changed
+      # 2. For every package, bump the version when its own source has
+      #    changed since its last publish. Schema-dependent packages
+      #    inherit the schema bump level when the schema changed.
       # ------------------------------------------------------------------
-      - name: Bump typescript-sdk version
-        if: steps.schema.outputs.changed == 'true'
-        id: bump_ts
-        working-directory: packages/typescript-sdk
+      - name: Bump versions for changed packages
+        id: bumps
+        env:
+          SCHEMA_CHANGED: ${{ steps.schema.outputs.changed }}
+          SCHEMA_BUMP: ${{ steps.schema.outputs.bump }}
         run: |
-          OLD_VERSION=$(node -p "require('./package.json').version")
-          npm version ${{ steps.schema.outputs.bump }} --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "old=$OLD_VERSION" >> "$GITHUB_OUTPUT"
-          echo "new=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "typescript-sdk: $OLD_VERSION → $NEW_VERSION"
+          set -e
 
-      - name: Bump react-sdk version (depends on typescript-sdk)
-        if: steps.schema.outputs.changed == 'true'
-        working-directory: packages/react-sdk
-        run: |
-          npm version ${{ steps.schema.outputs.bump }} --no-git-tag-version
-          echo "react-sdk bumped (depends on typescript-sdk)"
+          # Packages whose shipped code embeds the GraphQL schema.
+          SCHEMA_DEPENDENT="typescript-sdk react-sdk"
+          ALL_PACKAGES=(typescript-sdk react-sdk module-sdk create-module component-sdk create-component module-ui cli)
+
+          is_schema_dependent() {
+            for sdep in $SCHEMA_DEPENDENT; do
+              [ "$1" = "$sdep" ] && return 0
+            done
+            return 1
+          }
+
+          # Prints one of: skip-bump | unchanged | changed
+          #   skip-bump: not published yet, or local version already ahead of npm
+          #   unchanged: nothing in the package dir changed since last publish
+          #   changed:   source changed since last publish → bump needed
+          needs_bump() {
+            local pkg=$1 pkg_name local_version published_version git_head
+            pkg_name=$(node -p "require('./packages/$pkg/package.json').name")
+            local_version=$(node -p "require('./packages/$pkg/package.json').version")
+            published_version=$(npm view "$pkg_name" version 2>/dev/null || echo "")
+
+            if [ -z "$published_version" ] || [ "$local_version" != "$published_version" ]; then
+              echo "skip-bump"
+              return
+            fi
+
+            git_head=$(npm view "$pkg_name" gitHead 2>/dev/null || echo "")
+            if [ -z "$git_head" ] || ! git cat-file -e "$git_head" 2>/dev/null; then
+              git_head=$(git log -n 1 --pretty=format:%H -S "\"version\": \"$local_version\"" -- "packages/$pkg/package.json" 2>/dev/null || echo "")
+            fi
+
+            if [ -z "$git_head" ]; then
+              echo "changed"
+              return
+            fi
+
+            if git diff --quiet "$git_head" HEAD -- "packages/$pkg/"; then
+              echo "unchanged"
+            else
+              echo "changed"
+            fi
+          }
+
+          BUMPED=()
+
+          for pkg in "${ALL_PACKAGES[@]}"; do
+            state=$(needs_bump "$pkg")
+            echo "🔍 $pkg: $state"
+
+            [ "$state" != "changed" ] && continue
+
+            bump="patch"
+            if is_schema_dependent "$pkg" && [ "$SCHEMA_CHANGED" = "true" ]; then
+              bump="$SCHEMA_BUMP"
+            fi
+
+            (cd "packages/$pkg" && npm version "$bump" --no-git-tag-version >/dev/null)
+            new_version=$(node -p "require('./packages/$pkg/package.json').version")
+            echo "⬆️  $pkg bumped to $new_version ($bump)"
+            BUMPED+=("$pkg@$new_version")
+          done
+
+          if [ ${#BUMPED[@]} -eq 0 ]; then
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+            echo "No packages needed bumping."
+          else
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+            summary=""
+            for b in "${BUMPED[@]}"; do
+              [ -z "$summary" ] && summary="$b" || summary="$summary, $b"
+            done
+            echo "summary=$summary" >> "$GITHUB_OUTPUT"
+            echo "Bumped: $summary"
+          fi
 
       # ------------------------------------------------------------------
-      # 3. Commit and push version bumps (skip CI to avoid infinite loop)
+      # 3. Commit and push bumps (with [skip ci] to avoid infinite loop).
       # ------------------------------------------------------------------
       - name: Commit version bumps
-        if: steps.schema.outputs.changed == 'true'
+        if: steps.bumps.outputs.bumped == 'true'
         run: |
           git add schema.graphql
-          git add packages/typescript-sdk/package.json
-          git add packages/react-sdk/package.json
+          git add packages/*/package.json
           git add packages/typescript-sdk/src/
 
-          # Only commit if there are staged changes
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore(release): bump typescript-sdk to ${{ steps.bump_ts.outputs.new }} and dependents [skip ci]"
+            git commit -m "chore(release): bump ${{ steps.bumps.outputs.summary }} [skip ci]"
             git push
           fi
 
       # ------------------------------------------------------------------
-      # 4. Build all packages
+      # 4. Build all packages.
       # ------------------------------------------------------------------
       - name: Build all packages
         run: |
@@ -126,7 +187,7 @@ jobs:
           yarn workspace @well-played.gg/cli build
 
       # ------------------------------------------------------------------
-      # 5. Publish only packages whose version is not yet on npm
+      # 5. Publish every package whose local version is ahead of npm.
       # ------------------------------------------------------------------
       - name: Publish packages that need publishing
         env:
