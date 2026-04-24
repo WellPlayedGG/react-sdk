@@ -35,7 +35,7 @@
 	"scripts": {
 		"build": "vite build",
 		"dev": "vite",
-		"prepublishOnly": "yarn build && wp-bundle-skills --base https://mcp.well-played.gg --target react --dest .",
+		"prepublishOnly": "yarn build && yarn wp-bundle-skills --base https://mcp.well-played.gg --target react --dest .",
 		"test": "echo \"No tests specified\" && exit 0",
 		"lint": "biome check .",
 		"format": "biome format --write ."
