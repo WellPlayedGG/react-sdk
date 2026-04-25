@@ -1,6 +1,9 @@
 {
   "name": "@well-played.gg/component-sdk",
-  "repository": { "type": "git", "url": "git+https://github.com/WellPlayedGG/react-sdk.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WellPlayedGG/react-sdk.git"
+  },
   "version": "1.0.1",
   "type": "module",
   "main": "dist/index.js",

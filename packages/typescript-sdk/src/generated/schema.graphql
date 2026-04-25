@@ -3308,10 +3308,55 @@ enum BuiltinPresetCategory {
   OTHER
 }
 
+"""A single line of source code in an error snippet"""
+type SourceSnippetLineModel {
+  """1-based line number in user-script coordinates"""
+  lineNumber: Int!
+
+  """Source content of the line (no trailing newline)"""
+  source: String!
+
+  """True for the line where the error was raised"""
+  isErrorLine: Boolean!
+}
+
+"""
+A single frame of a Lua execution stack trace, translated to user/helper coordinates
+"""
+type ScriptStackFrameModel {
+  """Phase classification for this frame"""
+  phase: ScriptErrorPhase!
+
+  """
+  Line number in user-script coordinates when phase=USER_SCRIPT, prelude-relative when phase=PRELUDE, null otherwise
+  """
+  line: Int
+
+  """Name of the prelude helper containing this frame, when phase=PRELUDE"""
+  helperName: String
+
+  """
+  Raw frame description (e.g. "in function `foo`", "in main chunk", "in ?")
+  """
+  description: String!
+}
+
+"""
+Phase of script execution where an error was raised. PRELUDE = inside a host-injected helper. BOOTSTRAP = inside the sandbox setup. USER_SCRIPT = inside the user-authored script. UNKNOWN = phase could not be determined.
+"""
+enum ScriptErrorPhase {
+  PRELUDE
+  BOOTSTRAP
+  USER_SCRIPT
+  UNKNOWN
+}
+
 """A single error reported by the Lua validator"""
 type ScriptErrorModel {
-  """Line number where the error was detected (1-based)"""
-  line: Int!
+  """
+  Line number where the error was detected (1-based, in user-script coordinates). Null when the line could not be recovered from the underlying engine error.
+  """
+  line: Int
 
   """Column where the error was detected (1-based)"""
   column: Int!
@@ -3321,6 +3366,31 @@ type ScriptErrorModel {
 
   """Machine-readable error code"""
   code: ScriptErrorCode!
+
+  """
+  Execution phase the error occurred in (PRELUDE, BOOTSTRAP, USER_SCRIPT, UNKNOWN). Set whenever an error is reported; null only when phase classification was not possible.
+  """
+  phase: ScriptErrorPhase
+
+  """
+  Name of the prelude helper containing the error, populated only when phase=PRELUDE.
+  """
+  originHelper: String
+
+  """
+  Author-facing remediation hint generated from the error and the script context. Null when no rule matched.
+  """
+  hint: String
+
+  """
+  5-line source snippet around the error line. Populated only when phase=USER_SCRIPT.
+  """
+  snippet: [SourceSnippetLineModel!]
+
+  """
+  Multi-frame Lua stack trace, with prelude lines mapped to helper names and user lines mapped to user coordinates.
+  """
+  stackFrames: [ScriptStackFrameModel!]
 }
 
 """Machine-readable error categories returned by the Lua validator"""
@@ -3412,8 +3482,15 @@ type ScriptSimulationResultModel {
   """Warnings captured during simulation"""
   warnings: [ScriptWarningModel!]!
 
-  """Summary of side-effects produced by the simulated run"""
+  """
+  Effects produced by the simulated run. Empty when success=false — see `partialEffectsSummary` for partial state.
+  """
   effectsSummary: [SimulatedEffectModel!]!
+
+  """
+  Effects collected before the script threw. Useful for diagnosing rules that fail mid-loop. Null on success; non-null only when success=false and at least one effect was already produced. NOT applied — for diagnostic display only.
+  """
+  partialEffectsSummary: [SimulatedEffectModel!]
 
   """Wall-clock execution time in milliseconds"""
   executionTimeMs: Int!

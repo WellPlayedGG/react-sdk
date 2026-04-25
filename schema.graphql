@@ -8256,16 +8256,55 @@ type ScriptErrorModel {
   """Column where the error was detected (1-based)"""
   column: Int!
 
-  """Line number where the error was detected (1-based)"""
-  line: Int!
+  """
+  Author-facing remediation hint generated from the error and the script context. Null when no rule matched.
+  """
+  hint: String
+
+  """
+  Line number where the error was detected (1-based, in user-script coordinates). Null when the line could not be recovered from the underlying engine error.
+  """
+  line: Int
 
   """Human-readable error message"""
   message: String!
+
+  """
+  Name of the prelude helper containing the error, populated only when phase=PRELUDE.
+  """
+  originHelper: String
+
+  """
+  Execution phase the error occurred in (PRELUDE, BOOTSTRAP, USER_SCRIPT, UNKNOWN). Set whenever an error is reported; null only when phase classification was not possible.
+  """
+  phase: ScriptErrorPhase
+
+  """
+  5-line source snippet around the error line. Populated only when phase=USER_SCRIPT.
+  """
+  snippet: [SourceSnippetLineModel!]
+
+  """
+  Multi-frame Lua stack trace, with prelude lines mapped to helper names and user lines mapped to user coordinates.
+  """
+  stackFrames: [ScriptStackFrameModel!]
+}
+
+"""
+Phase of script execution where an error was raised. PRELUDE = inside a host-injected helper. BOOTSTRAP = inside the sandbox setup. USER_SCRIPT = inside the user-authored script. UNKNOWN = phase could not be determined.
+"""
+enum ScriptErrorPhase {
+  BOOTSTRAP
+  PRELUDE
+  UNKNOWN
+  USER_SCRIPT
 }
 
 """Result of simulating a Lua script"""
 type ScriptSimulationResultModel {
-  """Summary of side-effects produced by the simulated run"""
+  """
+  Effects produced by the simulated run. Empty when success=false — see `partialEffectsSummary` for partial state.
+  """
   effectsSummary: [SimulatedEffectModel!]!
 
   """Errors captured during simulation"""
@@ -8277,11 +8316,37 @@ type ScriptSimulationResultModel {
   """Number of Lua instructions executed"""
   instructionsUsed: Int!
 
+  """
+  Effects collected before the script threw. Useful for diagnosing rules that fail mid-loop. Null on success; non-null only when success=false and at least one effect was already produced. NOT applied — for diagnostic display only.
+  """
+  partialEffectsSummary: [SimulatedEffectModel!]
+
   """Whether the script ran to completion without errors"""
   success: Boolean!
 
   """Warnings captured during simulation"""
   warnings: [ScriptWarningModel!]!
+}
+
+"""
+A single frame of a Lua execution stack trace, translated to user/helper coordinates
+"""
+type ScriptStackFrameModel {
+  """
+  Raw frame description (e.g. "in function `foo`", "in main chunk", "in ?")
+  """
+  description: String!
+
+  """Name of the prelude helper containing this frame, when phase=PRELUDE"""
+  helperName: String
+
+  """
+  Line number in user-script coordinates when phase=USER_SCRIPT, prelude-relative when phase=PRELUDE, null otherwise
+  """
+  line: Int
+
+  """Phase classification for this frame"""
+  phase: ScriptErrorPhase!
 }
 
 """Result of a Lua script validation pass"""
@@ -8976,6 +9041,18 @@ enum SkillRatingType {
 enum SortOrder {
   ASC
   DESC
+}
+
+"""A single line of source code in an error snippet"""
+type SourceSnippetLineModel {
+  """True for the line where the error was raised"""
+  isErrorLine: Boolean!
+
+  """1-based line number in user-script coordinates"""
+  lineNumber: Int!
+
+  """Source content of the line (no trailing newline)"""
+  source: String!
 }
 
 """Configuration for a tournament step containing groups of rounds"""

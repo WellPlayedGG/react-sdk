@@ -2565,16 +2565,56 @@ export interface BuiltinPresetModel {
 export type BuiltinPresetCategory = 'SINGLE_ELIMINATION' | 'DOUBLE_ELIMINATION' | 'SWISS' | 'ROUND_ROBIN' | 'GROUP_STAGE' | 'OTHER'
 
 
+/** A single line of source code in an error snippet */
+export interface SourceSnippetLineModel {
+    /** 1-based line number in user-script coordinates */
+    lineNumber: Scalars['Int']
+    /** Source content of the line (no trailing newline) */
+    source: Scalars['String']
+    /** True for the line where the error was raised */
+    isErrorLine: Scalars['Boolean']
+    __typename: 'SourceSnippetLineModel'
+}
+
+
+/** A single frame of a Lua execution stack trace, translated to user/helper coordinates */
+export interface ScriptStackFrameModel {
+    /** Phase classification for this frame */
+    phase: ScriptErrorPhase
+    /** Line number in user-script coordinates when phase=USER_SCRIPT, prelude-relative when phase=PRELUDE, null otherwise */
+    line: (Scalars['Int'] | null)
+    /** Name of the prelude helper containing this frame, when phase=PRELUDE */
+    helperName: (Scalars['String'] | null)
+    /** Raw frame description (e.g. "in function `foo`", "in main chunk", "in ?") */
+    description: Scalars['String']
+    __typename: 'ScriptStackFrameModel'
+}
+
+
+/** Phase of script execution where an error was raised. PRELUDE = inside a host-injected helper. BOOTSTRAP = inside the sandbox setup. USER_SCRIPT = inside the user-authored script. UNKNOWN = phase could not be determined. */
+export type ScriptErrorPhase = 'PRELUDE' | 'BOOTSTRAP' | 'USER_SCRIPT' | 'UNKNOWN'
+
+
 /** A single error reported by the Lua validator */
 export interface ScriptErrorModel {
-    /** Line number where the error was detected (1-based) */
-    line: Scalars['Int']
+    /** Line number where the error was detected (1-based, in user-script coordinates). Null when the line could not be recovered from the underlying engine error. */
+    line: (Scalars['Int'] | null)
     /** Column where the error was detected (1-based) */
     column: Scalars['Int']
     /** Human-readable error message */
     message: Scalars['String']
     /** Machine-readable error code */
     code: ScriptErrorCode
+    /** Execution phase the error occurred in (PRELUDE, BOOTSTRAP, USER_SCRIPT, UNKNOWN). Set whenever an error is reported; null only when phase classification was not possible. */
+    phase: (ScriptErrorPhase | null)
+    /** Name of the prelude helper containing the error, populated only when phase=PRELUDE. */
+    originHelper: (Scalars['String'] | null)
+    /** Author-facing remediation hint generated from the error and the script context. Null when no rule matched. */
+    hint: (Scalars['String'] | null)
+    /** 5-line source snippet around the error line. Populated only when phase=USER_SCRIPT. */
+    snippet: (SourceSnippetLineModel[] | null)
+    /** Multi-frame Lua stack trace, with prelude lines mapped to helper names and user lines mapped to user coordinates. */
+    stackFrames: (ScriptStackFrameModel[] | null)
     __typename: 'ScriptErrorModel'
 }
 
@@ -2635,8 +2675,10 @@ export interface ScriptSimulationResultModel {
     errors: ScriptErrorModel[]
     /** Warnings captured during simulation */
     warnings: ScriptWarningModel[]
-    /** Summary of side-effects produced by the simulated run */
+    /** Effects produced by the simulated run. Empty when success=false — see `partialEffectsSummary` for partial state. */
     effectsSummary: SimulatedEffectModel[]
+    /** Effects collected before the script threw. Useful for diagnosing rules that fail mid-loop. Null on success; non-null only when success=false and at least one effect was already produced. NOT applied — for diagnostic display only. */
+    partialEffectsSummary: (SimulatedEffectModel[] | null)
     /** Wall-clock execution time in milliseconds */
     executionTimeMs: Scalars['Int']
     /** Number of Lua instructions executed */
@@ -8156,9 +8198,37 @@ export interface BuiltinPresetModelGenqlSelection{
 }
 
 
+/** A single line of source code in an error snippet */
+export interface SourceSnippetLineModelGenqlSelection{
+    /** 1-based line number in user-script coordinates */
+    lineNumber?: boolean | number
+    /** Source content of the line (no trailing newline) */
+    source?: boolean | number
+    /** True for the line where the error was raised */
+    isErrorLine?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A single frame of a Lua execution stack trace, translated to user/helper coordinates */
+export interface ScriptStackFrameModelGenqlSelection{
+    /** Phase classification for this frame */
+    phase?: boolean | number
+    /** Line number in user-script coordinates when phase=USER_SCRIPT, prelude-relative when phase=PRELUDE, null otherwise */
+    line?: boolean | number
+    /** Name of the prelude helper containing this frame, when phase=PRELUDE */
+    helperName?: boolean | number
+    /** Raw frame description (e.g. "in function `foo`", "in main chunk", "in ?") */
+    description?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** A single error reported by the Lua validator */
 export interface ScriptErrorModelGenqlSelection{
-    /** Line number where the error was detected (1-based) */
+    /** Line number where the error was detected (1-based, in user-script coordinates). Null when the line could not be recovered from the underlying engine error. */
     line?: boolean | number
     /** Column where the error was detected (1-based) */
     column?: boolean | number
@@ -8166,6 +8236,16 @@ export interface ScriptErrorModelGenqlSelection{
     message?: boolean | number
     /** Machine-readable error code */
     code?: boolean | number
+    /** Execution phase the error occurred in (PRELUDE, BOOTSTRAP, USER_SCRIPT, UNKNOWN). Set whenever an error is reported; null only when phase classification was not possible. */
+    phase?: boolean | number
+    /** Name of the prelude helper containing the error, populated only when phase=PRELUDE. */
+    originHelper?: boolean | number
+    /** Author-facing remediation hint generated from the error and the script context. Null when no rule matched. */
+    hint?: boolean | number
+    /** 5-line source snippet around the error line. Populated only when phase=USER_SCRIPT. */
+    snippet?: SourceSnippetLineModelGenqlSelection
+    /** Multi-frame Lua stack trace, with prelude lines mapped to helper names and user lines mapped to user coordinates. */
+    stackFrames?: ScriptStackFrameModelGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -8218,8 +8298,10 @@ export interface ScriptSimulationResultModelGenqlSelection{
     errors?: ScriptErrorModelGenqlSelection
     /** Warnings captured during simulation */
     warnings?: ScriptWarningModelGenqlSelection
-    /** Summary of side-effects produced by the simulated run */
+    /** Effects produced by the simulated run. Empty when success=false — see `partialEffectsSummary` for partial state. */
     effectsSummary?: SimulatedEffectModelGenqlSelection
+    /** Effects collected before the script threw. Useful for diagnosing rules that fail mid-loop. Null on success; non-null only when success=false and at least one effect was already produced. NOT applied — for diagnostic display only. */
+    partialEffectsSummary?: SimulatedEffectModelGenqlSelection
     /** Wall-clock execution time in milliseconds */
     executionTimeMs?: boolean | number
     /** Number of Lua instructions executed */
@@ -14857,6 +14939,22 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const SourceSnippetLineModel_possibleTypes: string[] = ['SourceSnippetLineModel']
+    export const isSourceSnippetLineModel = (obj?: { __typename?: any } | null): obj is SourceSnippetLineModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isSourceSnippetLineModel"')
+      return SourceSnippetLineModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ScriptStackFrameModel_possibleTypes: string[] = ['ScriptStackFrameModel']
+    export const isScriptStackFrameModel = (obj?: { __typename?: any } | null): obj is ScriptStackFrameModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isScriptStackFrameModel"')
+      return ScriptStackFrameModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const ScriptErrorModel_possibleTypes: string[] = ['ScriptErrorModel']
     export const isScriptErrorModel = (obj?: { __typename?: any } | null): obj is ScriptErrorModel => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isScriptErrorModel"')
@@ -16467,6 +16565,13 @@ export const enumBuiltinPresetCategory = {
    ROUND_ROBIN: 'ROUND_ROBIN' as const,
    GROUP_STAGE: 'GROUP_STAGE' as const,
    OTHER: 'OTHER' as const
+}
+
+export const enumScriptErrorPhase = {
+   PRELUDE: 'PRELUDE' as const,
+   BOOTSTRAP: 'BOOTSTRAP' as const,
+   USER_SCRIPT: 'USER_SCRIPT' as const,
+   UNKNOWN: 'UNKNOWN' as const
 }
 
 export const enumScriptErrorCode = {

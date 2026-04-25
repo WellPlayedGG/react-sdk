@@ -1,6 +1,9 @@
 {
   "name": "@well-played.gg/cli",
-  "repository": { "type": "git", "url": "git+https://github.com/WellPlayedGG/react-sdk.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WellPlayedGG/react-sdk.git"
+  },
   "version": "0.4.0",
   "description": "WellPlayed Developer CLI - Create, develop, and deploy marketplace apps",
   "bin": {
