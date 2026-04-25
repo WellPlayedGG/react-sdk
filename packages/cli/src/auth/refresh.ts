@@ -5,7 +5,7 @@ import {
   REFRESH_GRANT_TYPE,
   TOKEN_PATH,
 } from './hydra-config.js';
-import type { HydraTokenResponse } from './device-flow.js';
+import type { HydraTokenResponse } from './auth-code.js';
 
 /* ------------------------------------------------------------------ */
 /* Type guards                                                         */

@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('wellplayed')
   .description('WellPlayed Developer CLI - Create, develop, and deploy marketplace apps')
-  .version('0.3.0');
+  .version('0.4.0');
 
 program.addCommand(initCommand);
 program.addCommand(loginCommand);
