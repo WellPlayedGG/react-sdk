@@ -19,11 +19,19 @@ export interface GraphqlRequestOptions {
    * context (e.g. any mutation/query not decorated with `@WithoutOrganization`).
    */
   organizationId?: string;
+  /**
+   * Extra HTTP headers merged onto the GraphQL request. `Content-Type` and
+   * `Authorization` cannot be overridden — those are owned by this client.
+   * `organization-id` set here is overridden by `organizationId` if both
+   * are provided.
+   */
+  headers?: Record<string, string>;
 }
 
-interface GraphqlEnvelope<T> {
+export interface GraphqlEnvelope<T> {
   data?: T;
-  errors?: Array<{ message: string }>;
+  errors?: Array<{ message: string; path?: ReadonlyArray<string | number>; extensions?: unknown }>;
+  extensions?: unknown;
 }
 
 interface GraphqlAttempt<T> {
@@ -32,25 +40,29 @@ interface GraphqlAttempt<T> {
   parsed: GraphqlEnvelope<T> | null;
 }
 
-async function attemptGraphqlRequest<T>(
-  url: string,
-  query: string,
-  variables: Record<string, unknown> | undefined,
-  accessToken: string,
-  organizationId: string | undefined,
-): Promise<GraphqlAttempt<T>> {
+interface AttemptParams {
+  url: string;
+  query: string;
+  variables: Record<string, unknown> | undefined;
+  accessToken: string;
+  organizationId: string | undefined;
+  extraHeaders: Record<string, string> | undefined;
+}
+
+async function attemptGraphqlRequest<T>(params: AttemptParams): Promise<GraphqlAttempt<T>> {
   const headers: Record<string, string> = {
+    ...(params.extraHeaders ?? {}),
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${params.accessToken}`,
   };
-  if (organizationId) {
-    headers['organization-id'] = organizationId;
+  if (params.organizationId) {
+    headers['organization-id'] = params.organizationId;
   }
 
-  const { body: responseBody, statusCode } = await request(url, {
+  const { body: responseBody, statusCode } = await request(params.url, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query: params.query, variables: params.variables }),
   });
 
   const text = await responseBody.text();
@@ -79,21 +91,59 @@ export async function graphqlRequest<T>(
   variables?: Record<string, unknown>,
   options?: GraphqlRequestOptions,
 ): Promise<T> {
+  const attempt = await graphqlRequestWithRefresh<T>(query, variables, options);
+  return finalizeResponse<T>(attempt);
+}
+
+/**
+ * Like `graphqlRequest`, but returns the full `{ data, errors, extensions }`
+ * envelope without throwing on non-empty `errors[]`. Still throws on transport
+ * failures (non-2xx that isn't a recoverable 401, malformed JSON) and on auth
+ * problems that survive a refresh attempt.
+ *
+ * Use this when callers need to surface partial-data + errors together (e.g.
+ * the `wellplayed graphql` CLI subcommand).
+ */
+export async function graphqlRequestRaw<T>(
+  query: string,
+  variables?: Record<string, unknown>,
+  options?: GraphqlRequestOptions,
+): Promise<GraphqlEnvelope<T>> {
+  const attempt = await graphqlRequestWithRefresh<T>(query, variables, options);
+  if (attempt.statusCode >= 400) {
+    throw new Error(`GraphQL error ${attempt.statusCode}: ${attempt.text}`);
+  }
+  if (attempt.parsed === null) {
+    throw new Error('GraphQL response was not valid JSON');
+  }
+  return attempt.parsed;
+}
+
+async function graphqlRequestWithRefresh<T>(
+  query: string,
+  variables: Record<string, unknown> | undefined,
+  options: GraphqlRequestOptions | undefined,
+): Promise<GraphqlAttempt<T>> {
   const creds = getCredentials();
   if (!creds) {
     throw new Error('Not authenticated. Run `wellplayed login` first.');
   }
 
-  const url = `${getApiUrl()}graphql`;
-  const orgId = options?.organizationId;
+  const send = (accessToken: string): Promise<GraphqlAttempt<T>> =>
+    attemptGraphqlRequest<T>({
+      url: `${getApiUrl()}graphql`,
+      query,
+      variables,
+      accessToken,
+      organizationId: options?.organizationId,
+      extraHeaders: options?.headers,
+    });
 
-  const first = await attemptGraphqlRequest<T>(url, query, variables, creds.accessToken, orgId);
-
+  const first = await send(creds.accessToken);
   if (first.statusCode !== 401) {
-    return finalizeResponse<T>(first);
+    return first;
   }
 
-  // 401 — try to refresh once.
   let refreshed: StoredCredentials;
   try {
     const tokens = await refreshAccessToken(creds.refreshToken);
@@ -106,18 +156,16 @@ export async function graphqlRequest<T>(
   } catch (err) {
     if (err instanceof RefreshTokenInvalidError) {
       clearCredentials();
-      throw new Error(
-        'Session expired. Run `wellplayed login` to re-authenticate.',
-      );
+      throw new Error('Session expired. Run `wellplayed login` to re-authenticate.');
     }
     throw err;
   }
 
-  const retry = await attemptGraphqlRequest<T>(url, query, variables, refreshed.accessToken, orgId);
+  const retry = await send(refreshed.accessToken);
   if (retry.statusCode === 401) {
     throw new Error(`GraphQL error 401: ${first.text}`);
   }
-  return finalizeResponse<T>(retry);
+  return retry;
 }
 
 function finalizeResponse<T>(attempt: GraphqlAttempt<T>): T {

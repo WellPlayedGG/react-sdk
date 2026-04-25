@@ -8,6 +8,7 @@ import { devCommand } from './commands/dev.js';
 import { deployCommand } from './commands/deploy.js';
 import { installSkillsCommand } from './commands/install-skills.js';
 import { createAppCommand } from './commands/create-app.js';
+import { createGraphqlCommand } from './commands/graphql.js';
 
 const program = new Command();
 
@@ -23,5 +24,6 @@ program.addCommand(devCommand);
 program.addCommand(deployCommand);
 program.addCommand(installSkillsCommand);
 program.addCommand(createAppCommand);
+program.addCommand(createGraphqlCommand());
 
 program.parse();

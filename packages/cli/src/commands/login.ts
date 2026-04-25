@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { execFile } from 'node:child_process';
 import { log } from '../utils/logger.js';
+import { runCommand } from '../utils/run-command.js';
 import { pollDeviceToken, requestDeviceCode } from '../auth/device-flow.js';
 import { saveCredentials } from '../auth/token-store.js';
 
@@ -20,8 +21,8 @@ function openInBrowser(url: string): void {
 
 export const loginCommand = new Command('login')
   .description('Authenticate with WellPlayed via OAuth 2.0 Device Flow (RFC 8628)')
-  .action(async () => {
-    try {
+  .action(() =>
+    runCommand(async () => {
       log.step(1, 'Requesting device code from Hydra...');
 
       const codeResponse = await requestDeviceCode();
@@ -56,8 +57,5 @@ export const loginCommand = new Command('login')
       });
 
       log.success('Logged in successfully!');
-    } catch (error) {
-      log.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  });
+    }),
+  );

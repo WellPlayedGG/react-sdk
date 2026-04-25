@@ -20,4 +20,9 @@ stats.html
 .yarn/install-state.gz
 .pnp.*
 
-packages/*/skills/
+packages/*/skills/*
+# Static (hand-written, version-controlled) skill bundles. The skill-bundler
+# at prepublish only manages its own slugs (wellplayed-react / wellplayed-api),
+# so static slugs like `wellplayed-cli` survive every bundler run.
+!packages/*/skills/wellplayed-cli/
+!packages/*/skills/wellplayed-cli/**

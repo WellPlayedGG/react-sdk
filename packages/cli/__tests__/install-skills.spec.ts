@@ -15,4 +15,24 @@ describe('install-skills', () => {
     expect(await fs.readFile(dest, 'utf8')).toBe('# test');
     await fs.rm(dir, { recursive: true, force: true });
   });
+
+  it('copies multiple skills (e.g. wellplayed-cli alongside wellplayed-api) from typescript-sdk', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-test-'));
+    const tsRoot = path.join(dir, 'node_modules', '@well-played.gg', 'typescript-sdk', 'skills');
+    await fs.mkdir(path.join(tsRoot, 'wellplayed-api'), { recursive: true });
+    await fs.writeFile(path.join(tsRoot, 'wellplayed-api', 'SKILL.md'), '# api');
+    await fs.mkdir(path.join(tsRoot, 'wellplayed-cli'), { recursive: true });
+    await fs.writeFile(path.join(tsRoot, 'wellplayed-cli', 'SKILL.md'), '# cli');
+
+    await installSkillsCommand.parseAsync(['node', 'x', '--project', dir]);
+
+    expect(
+      await fs.readFile(path.join(dir, '.claude', 'skills', 'wellplayed-api', 'SKILL.md'), 'utf8'),
+    ).toBe('# api');
+    expect(
+      await fs.readFile(path.join(dir, '.claude', 'skills', 'wellplayed-cli', 'SKILL.md'), 'utf8'),
+    ).toBe('# cli');
+
+    await fs.rm(dir, { recursive: true, force: true });
+  });
 });

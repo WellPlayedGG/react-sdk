@@ -13,7 +13,7 @@ Official SDK packages for building on the [WellPlayed](https://well-played.gg) p
 | [`@well-played.gg/component-sdk`](./packages/component-sdk) | Base class for framework-agnostic Web Components on the platform | [![npm](https://img.shields.io/npm/v/@well-played.gg/component-sdk)](https://www.npmjs.com/package/@well-played.gg/component-sdk) |
 | [`@well-played.gg/create-module`](./packages/create-module) | CLI scaffolding tool -- `npx @well-played.gg/create-module my-module` | [![npm](https://img.shields.io/npm/v/@well-played.gg/create-module)](https://www.npmjs.com/package/@well-played.gg/create-module) |
 | [`@well-played.gg/create-component`](./packages/create-component) | CLI scaffolding tool -- `npx @well-played.gg/create-component my-component` | [![npm](https://img.shields.io/npm/v/@well-played.gg/create-component)](https://www.npmjs.com/package/@well-played.gg/create-component) |
-| [`@well-played.gg/cli`](./packages/cli) | Developer CLI -- init, login, dev server, and deploy to the Marketplace | [![npm](https://img.shields.io/npm/v/@well-played.gg/cli)](https://www.npmjs.com/package/@well-played.gg/cli) |
+| [`@well-played.gg/cli`](./packages/cli) | Developer CLI -- init, login, dev server, GraphQL queries, and deploy to the Marketplace | [![npm](https://img.shields.io/npm/v/@well-played.gg/cli)](https://www.npmjs.com/package/@well-played.gg/cli) |
 
 ## Quick Start
 
@@ -69,6 +69,7 @@ cd my-app
 npm install
 wellplayed login
 wellplayed dev
+wellplayed graphql 'query { currentAccount { id email } }' --data-only
 wellplayed deploy --app-id YOUR_APP_ID
 ```
 
@@ -76,7 +77,7 @@ wellplayed deploy --app-id YOUR_APP_ID
 
 ```
                     +-----------------+
-                    |  @well-played.gg/cli |  init / login / dev / deploy
+                    |  @well-played.gg/cli |  init / login / dev / graphql / deploy
                     +--------+--------+
                              |
               +--------------+--------------+

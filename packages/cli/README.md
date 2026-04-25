@@ -54,6 +54,64 @@ wellplayed login
 3. After you authorize in the browser, the CLI receives an access token.
 4. The token is stored locally at `~/.wellplayed/credentials.json` (mode `0600`).
 
+### `wellplayed graphql`
+
+Run a GraphQL query or mutation against the WellPlayed API. Modeled on `gh api graphql` -- ideal for ad-hoc queries, scripts, and CI automation.
+
+```bash
+# Inline query
+wellplayed graphql 'query { currentAccount { id email } }'
+
+# From a file
+wellplayed graphql -f ./operations/list-tournaments.graphql --org my-org
+
+# With typed variables (numbers, booleans, null are JSON-coerced)
+wellplayed graphql 'mutation($input: CreateTeamInput!) { createTeam(input: $input) { id } }' \
+  -F input.name=Phoenix -F input.players=10 --org my-org
+
+# With variables loaded from a JSON file (merged under -F)
+wellplayed graphql -f ./op.graphql --variables ./vars.json --org my-org
+
+# Read query from stdin -- pipe-friendly
+echo 'query { currentAccount { id } }' | wellplayed graphql
+
+# Pipe the response into jq
+wellplayed graphql 'query { currentAccount { id email } }' --data-only | jq '.currentAccount.email'
+```
+
+**Authentication.** Uses the same credentials as `wellplayed login`, with automatic refresh-token rotation on `401`. If your session can't be refreshed you'll be prompted to log in again.
+
+**Query input** (mutually exclusive -- pass exactly one):
+
+| Form | Description |
+|------|-------------|
+| Positional `[query]` | Inline GraphQL document as the first argument |
+| `-f, --file <path>` | Read the document from a `.graphql` / `.gql` file |
+| `--stdin` | Read the document from stdin (also auto-detected when no positional/file is set and stdin is not a TTY) |
+
+**Variables**:
+
+| Option | Description |
+|--------|-------------|
+| `-F, --field <key=value>` | Add a typed variable. JSON-coerces `null`, `true`, `false`, integers, floats, and `{...}` / `[...]` literals; otherwise treats as a string. Supports `key=@file.json` to inline a JSON file. Dotted keys (`input.name=Foo`) build nested objects. Repeatable. |
+| `--raw-field <key=value>` | Same as `-F`, but the value is always a string (no JSON coercion). Repeatable. |
+| `--variables <path>` | Read a JSON object from a file. Merged underneath `-F`/`--raw-field`, which win on conflicts. |
+
+**Headers / context**:
+
+| Option | Description |
+|--------|-------------|
+| `-o, --org <shortId>` | Set the `organization-id` header. Required for any query/mutation not decorated `@WithoutOrganization` on the backend. |
+| `-H, --header <key:value>` | Add an extra HTTP header. Repeatable. `Authorization` and `Content-Type` are owned by the CLI and cannot be overridden. |
+
+**Output**:
+
+By default, `wellplayed graphql` prints the full GraphQL envelope (`{ data, errors, extensions }`) as pretty-printed JSON to stdout. This matches `gh api graphql` and preserves the GraphQL "partial data + errors" pattern. The exit code is `1` if `errors[]` is non-empty.
+
+| Option | Description |
+|--------|-------------|
+| `--data-only` | Print only the `data` payload. Throws on any GraphQL error -- use this when you want a clean pipe into `jq` and you don't care about `extensions`. |
+
 ### `wellplayed dev`
 
 Start a local Vite dev server for your app.

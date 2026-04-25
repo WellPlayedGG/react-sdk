@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { log } from '../utils/logger.js';
+import { runCommand } from '../utils/run-command.js';
 import { getToken } from '../auth/token-store.js';
 import {
   createOrganizationApp,
@@ -144,8 +145,8 @@ export const createAppCommand = new Command('create-app')
   .option('--framework <framework>', `Framework to scaffold (${SUPPORTED_FRAMEWORKS.join(', ')})`)
   .option('--port <port>', 'Local dev port used for redirect URIs', '5173')
   .option('--org <shortId>', 'Organization short-id to create the app in (skips prompt)')
-  .action(async (nameArg: string | undefined, opts: CreateAppOptions) => {
-    try {
+  .action((nameArg: string | undefined, opts: CreateAppOptions) =>
+    runCommand(async () => {
       if (!getToken()) fail('Not authenticated.', 'Run `wellplayed login` first.');
 
       const name = await resolveAppName(nameArg);
@@ -274,8 +275,5 @@ export const createAppCommand = new Command('create-app')
       log.info('');
       if (oauthAppCreated) log.info(`Redirect URI registered: ${redirectUri}`);
       if (wiringOk) log.info(`Env file written: ${join(targetDir, '.env.local')}`);
-    } catch (error) {
-      log.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  });
+    }),
+  );

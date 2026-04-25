@@ -104,6 +104,7 @@ export const initCommand = new Command('init')
           dependencies: {
             react: '^18.3.0',
             'react-dom': '^18.3.0',
+            '@well-played.gg/typescript-sdk': '^1.4.0',
           },
           devDependencies: {
             '@types/react': '^18.3.0',
@@ -188,6 +189,7 @@ export default function SampleWidget({ title = 'Hello' }: SampleWidgetProps) {
     log.info('Next steps:');
     log.info(`  cd ${answers.name}`);
     log.info('  npm install');
+    log.info('  wellplayed install-skills    # copy WellPlayed agent skills into .claude/skills/');
     log.info('  wellplayed login');
     log.info('  wellplayed dev');
   });
