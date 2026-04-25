@@ -47,8 +47,7 @@ createRoot(document.getElementById('root')!).render(
 `;
 
 const APP_TSX = `import { useQuery, gql } from '@apollo/client';
-import { useOidc } from '@axa-fr/react-oidc';
-import { useWellPlayed } from '@well-played.gg/react-sdk';
+import { useConnectedPlayer, useWellPlayed } from '@well-played.gg/react-sdk';
 
 const GET_MY_ACCOUNT = gql\`
   query getMyAccount {
@@ -99,7 +98,7 @@ function SignedInView() {
 
 function App() {
   const { accessToken } = useWellPlayed();
-  const { login } = useOidc();
+  const { login } = useConnectedPlayer();
 
   return (
     <main style={{ fontFamily: 'system-ui', padding: 32 }}>

@@ -189,7 +189,6 @@ export const createAppCommand = new Command('create-app')
               '@well-played.gg/typescript-sdk',
               '@apollo/client',
               'graphql',
-              '@axa-fr/react-oidc',
             ],
             targetDir,
           ),
