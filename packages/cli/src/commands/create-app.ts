@@ -31,6 +31,40 @@ function fail(message: string, hint?: string): never {
   process.exit(1);
 }
 
+interface StepFailure {
+  step: number;
+  label: string;
+  message: string;
+}
+
+/**
+ * Run a post-scaffold step with its own error boundary. Errors are logged and
+ * recorded in `failures` but never abort the command — the user gets as much
+ * of the scaffold on disk as possible (wiring, skills, `.mcp.json`) and a
+ * per-step follow-up list in the end-of-run summary.
+ *
+ * Step 1 (`scaffoldVite`) intentionally does NOT use this — if the Vite
+ * template can't be written, the remaining steps have nothing to operate on.
+ */
+async function runStep(
+  step: number,
+  label: string,
+  fn: () => Promise<void>,
+  failures: StepFailure[],
+): Promise<boolean> {
+  log.step(step, `${label}...`);
+  try {
+    await fn();
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    failures.push({ step, label, message });
+    log.error(`Step ${step} failed (${label}): ${message}`);
+    log.warn('Continuing with remaining steps.');
+    return false;
+  }
+}
+
 async function resolveOrganizationId(explicit: string | undefined): Promise<string> {
   const orgs = await listUserOrganizations();
   if (orgs.length === 0) {
@@ -130,74 +164,116 @@ export const createAppCommand = new Command('create-app')
 
       // Scaffold locally first — disk/npm/node failures are the most likely
       // failure mode. Delaying the remote OAuth-app mutation until after local
-      // success eliminates zombie apps in the org.
+      // success eliminates zombie apps in the org. Step 1 is the only blocking
+      // step: every other step runs under `runStep` and records failures
+      // without aborting, so the user always walks away with as much of the
+      // scaffold as possible.
       log.step(1, 'Scaffolding Vite + React + TS project...');
       await scaffoldVite(name, process.cwd());
 
-      log.step(2, 'Installing base dependencies...');
-      await npmInstall(targetDir);
+      const PLACEHOLDER_CLIENT_ID = 'REPLACE_ME';
+      const failures: StepFailure[] = [];
+      let clientId: string = PLACEHOLDER_CLIENT_ID;
+      let oauthAppCreated = false;
 
-      log.step(3, 'Installing @well-played.gg SDK packages...');
-      await npmInstallPackages(
-        [
-          '@well-played.gg/react-sdk',
-          '@well-played.gg/typescript-sdk',
-          '@apollo/client',
-          'graphql',
-          '@axa-fr/react-oidc',
-        ],
-        targetDir,
+      await runStep(2, 'Installing base dependencies', () => npmInstall(targetDir), failures);
+
+      await runStep(
+        3,
+        'Installing @well-played.gg SDK packages',
+        () =>
+          npmInstallPackages(
+            [
+              '@well-played.gg/react-sdk',
+              '@well-played.gg/typescript-sdk',
+              '@apollo/client',
+              'graphql',
+              '@axa-fr/react-oidc',
+            ],
+            targetDir,
+          ),
+        failures,
       );
 
-      log.step(4, 'Creating OAuth application...');
-      let clientId: string;
-      try {
-        const app = await createOrganizationApp(
-          {
-            name,
-            description: 'Created by @well-played.gg/cli',
-            redirectUrls: [redirectUri],
-            logoutRedirectUrls: [logoutRedirect],
-            loginUrl: logoutRedirect,
-            consentUrl: `http://localhost:${port}/consent`,
-            requiresConsent: false,
-            public: true,
-          },
-          organizationShortId,
-        );
-        // OrganizationApp.id IS the OAuth2 client ID (per schema comment).
-        clientId = app.id;
-        log.success(`Created app "${app.name}" (clientId: ${clientId})`);
-      } catch (error) {
-        log.error(
-          `Failed to create OAuth application: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        log.info(
-          `The local project at ${targetDir} was scaffolded successfully. You can retry by re-running \`wellplayed create-app\` in a fresh directory, or remove this one with \`rm -rf ${targetDir}\`.`,
-        );
-        process.exit(1);
-      }
+      await runStep(
+        4,
+        'Creating OAuth application',
+        async () => {
+          const app = await createOrganizationApp(
+            {
+              name,
+              description: 'Created by @well-played.gg/cli',
+              redirectUrls: [redirectUri],
+              logoutRedirectUrls: [logoutRedirect],
+              loginUrl: logoutRedirect,
+              consentUrl: `http://localhost:${port}/consent`,
+              requiresConsent: false,
+              public: true,
+            },
+            organizationShortId,
+          );
+          // OrganizationApp.id IS the OAuth2 client ID (per schema comment).
+          clientId = app.id;
+          oauthAppCreated = true;
+          log.success(`Created app "${app.name}" (clientId: ${clientId})`);
+        },
+        failures,
+      );
 
-      log.step(5, 'Wiring up WellPlayedProvider, App and Callback...');
-      await writeWiring({ projectDir: targetDir, organizationShortId, clientId, port });
+      // Step 5 runs even if step 4 failed — clientId falls back to
+      // PLACEHOLDER_CLIENT_ID so .env.local is written with a REPLACE_ME
+      // placeholder the user can swap out later.
+      const wiringOk = await runStep(
+        5,
+        'Wiring up WellPlayedProvider, App and Callback',
+        () => writeWiring({ projectDir: targetDir, organizationShortId, clientId, port }),
+        failures,
+      );
 
-      log.step(6, 'Installing Claude Code skills...');
-      const skillsResult = await installSkills(targetDir);
-      if (skillsResult.copiedCount === 0) {
-        log.warn('No WellPlayed SDK skills found in node_modules — continuing without skill bundles.');
-      } else {
-        log.info(`Installed ${skillsResult.copiedCount} skill(s) into ${skillsResult.claudeSkillsDir}`);
-      }
+      // Step 6 is independent of 3/4/5 — skills copy gracefully no-ops when
+      // node_modules doesn't have the SDK, and .mcp.json is written regardless.
+      await runStep(
+        6,
+        'Installing Claude Code skills',
+        async () => {
+          const skillsResult = await installSkills(targetDir);
+          if (skillsResult.copiedCount === 0) {
+            log.warn(
+              'No WellPlayed SDK skills found in node_modules — continuing without skill bundles.',
+            );
+          } else {
+            log.info(
+              `Installed ${skillsResult.copiedCount} skill(s) into ${skillsResult.claudeSkillsDir}`,
+            );
+          }
+        },
+        failures,
+      );
 
       log.success(`App "${name}" created at ./${name}`);
+      if (failures.length > 0) {
+        log.warn('Some steps did not complete cleanly — see errors above. Follow-ups:');
+        if (!oauthAppCreated) {
+          log.warn('  • OAuth app: create one at https://console.well-played.gg');
+          log.warn(`    - Redirect URI: ${redirectUri}`);
+          log.warn(`    - Logout redirect: ${logoutRedirect}`);
+          log.warn(
+            `    - Then replace VITE_WP_CLIENT_ID=${PLACEHOLDER_CLIENT_ID} in ${join(targetDir, '.env.local')}`,
+          );
+        }
+        for (const f of failures) {
+          if (f.step === 4) continue;
+          log.warn(`  • Retry step ${f.step} (${f.label}): ${f.message}`);
+        }
+      }
       log.info('Next steps:');
       log.info(`  cd ${name}`);
       log.info('  claude          # open Claude Code with the installed skills');
       log.info('  # or:');
       log.info('  npm run dev     # start the Vite dev server');
       log.info('');
-      log.info(`Redirect URI registered: ${redirectUri}`);
-      log.info(`Env file written: ${join(targetDir, '.env.local')}`);
+      if (oauthAppCreated) log.info(`Redirect URI registered: ${redirectUri}`);
+      if (wiringOk) log.info(`Env file written: ${join(targetDir, '.env.local')}`);
     } catch (error) {
       log.error(error instanceof Error ? error.message : String(error));
       process.exit(1);

@@ -1,37 +1,47 @@
 import { Command } from 'commander';
 import { execFile } from 'node:child_process';
 import { log } from '../utils/logger.js';
-import { requestDeviceCode, pollDeviceToken } from '../auth/device-flow.js';
-import { saveToken } from '../auth/token-store.js';
+import { pollDeviceToken, requestDeviceCode } from '../auth/device-flow.js';
+import { saveCredentials } from '../auth/token-store.js';
+
+function openInBrowser(url: string): void {
+  try {
+    if (process.platform === 'darwin') {
+      execFile('open', [url]);
+    } else if (process.platform === 'win32') {
+      execFile('cmd', ['/c', 'start', '', url]);
+    } else {
+      execFile('xdg-open', [url]);
+    }
+  } catch {
+    // Browser open failed — user can navigate manually.
+  }
+}
 
 export const loginCommand = new Command('login')
-  .description('Authenticate with WellPlayed via OAuth Device Flow')
+  .description('Authenticate with WellPlayed via OAuth 2.0 Device Flow (RFC 8628)')
   .action(async () => {
     try {
-      log.info('Starting authentication...');
+      log.step(1, 'Requesting device code from Hydra...');
 
       const codeResponse = await requestDeviceCode();
 
-      log.info('');
-      log.info(`  Visit: ${codeResponse.verificationUri}`);
-      log.info(`  Enter code: ${codeResponse.userCode}`);
-      log.info('');
+      // Prefer the one-click verification_uri_complete when Hydra provides it.
+      const browserUrl = codeResponse.verificationUriComplete ?? codeResponse.verificationUri;
 
-      // Try to open browser automatically
-      const url = codeResponse.verificationUri;
-      try {
-        if (process.platform === 'darwin') {
-          execFile('open', [url]);
-        } else if (process.platform === 'win32') {
-          execFile('cmd', ['/c', 'start', '', url]);
-        } else {
-          execFile('xdg-open', [url]);
-        }
-      } catch {
-        // Browser open failed, user can navigate manually
+      log.info('');
+      if (codeResponse.verificationUriComplete) {
+        log.info(`  Opening: ${codeResponse.verificationUriComplete}`);
+        log.info(`  (Code if prompted: ${codeResponse.userCode})`);
+      } else {
+        log.info(`  Visit:      ${codeResponse.verificationUri}`);
+        log.info(`  Enter code: ${codeResponse.userCode}`);
       }
+      log.info('');
 
-      log.info('Waiting for authorization...');
+      openInBrowser(browserUrl);
+
+      log.step(2, 'Waiting for authorization...');
 
       const tokenResponse = await pollDeviceToken(
         codeResponse.deviceCode,
@@ -39,13 +49,13 @@ export const loginCommand = new Command('login')
         codeResponse.expiresIn,
       );
 
-      if (tokenResponse.accessToken) {
-        saveToken(tokenResponse.accessToken, tokenResponse.expiresIn);
-        log.success('Logged in successfully!');
-      } else {
-        log.error('Authentication failed.');
-        process.exit(1);
-      }
+      saveCredentials({
+        accessToken: tokenResponse.accessToken,
+        refreshToken: tokenResponse.refreshToken,
+        expiresAt: Date.now() + tokenResponse.expiresIn * 1000,
+      });
+
+      log.success('Logged in successfully!');
     } catch (error) {
       log.error(error instanceof Error ? error.message : String(error));
       process.exit(1);
