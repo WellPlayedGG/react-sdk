@@ -154,21 +154,14 @@ export const createAppCommand = new Command('create-app')
       if (existsSync(targetDir)) fail(`Directory ${name} already exists`);
 
       const organizationShortId = await resolveOrganizationId(opts.org);
-      // Open/Closed: add new frameworks via SUPPORTED_FRAMEWORKS + a scaffolder.
-      // `resolveFramework` already throws for anything outside SUPPORTED_FRAMEWORKS,
-      // so no extra check is needed here.
       await resolveFramework(opts.framework);
 
       const port = parsePort(opts.port);
       const redirectUri = `http://localhost:${port}/auth/callback`;
       const logoutRedirect = `http://localhost:${port}/`;
 
-      // Scaffold locally first — disk/npm/node failures are the most likely
-      // failure mode. Delaying the remote OAuth-app mutation until after local
-      // success eliminates zombie apps in the org. Step 1 is the only blocking
-      // step: every other step runs under `runStep` and records failures
-      // without aborting, so the user always walks away with as much of the
-      // scaffold as possible.
+      // Scaffold locally before any remote mutation: avoids creating a zombie
+      // OAuth app in the org when local disk/npm fails.
       log.step(1, 'Scaffolding Vite + React + TS project...');
       await scaffoldVite(name, process.cwd());
 
@@ -220,9 +213,8 @@ export const createAppCommand = new Command('create-app')
         failures,
       );
 
-      // Step 5 runs even if step 4 failed — clientId falls back to
-      // PLACEHOLDER_CLIENT_ID so .env.local is written with a REPLACE_ME
-      // placeholder the user can swap out later.
+      // Step 5 runs even when step 4 failed: clientId falls back to
+      // PLACEHOLDER_CLIENT_ID so .env.local is still useful for the user.
       const wiringOk = await runStep(
         5,
         'Wiring up WellPlayedProvider, App and Callback',
@@ -230,13 +222,11 @@ export const createAppCommand = new Command('create-app')
         failures,
       );
 
-      // Step 6 is independent of 3/4/5 — skills copy gracefully no-ops when
-      // node_modules doesn't have the SDK, and .mcp.json is written regardless.
       await runStep(
         6,
-        'Installing Claude Code skills',
+        'Installing Claude Code skills, .mcp.json, and CLAUDE.md',
         async () => {
-          const skillsResult = await installSkills(targetDir);
+          const skillsResult = await installSkills(targetDir, { claudeMdVariant: 'react' });
           if (skillsResult.copiedCount === 0) {
             log.warn(
               'No WellPlayed SDK skills found in node_modules — continuing without skill bundles.',

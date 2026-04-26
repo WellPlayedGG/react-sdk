@@ -18,8 +18,17 @@ export const installSkillsCommand = new Command('install-skills')
     if (result.mcpJsonWritten) {
       log.success(`wrote ${result.mcpJsonPath}`);
     } else {
+      log.info('.mcp.json already exists — leaving untouched.');
       log.info(
-        `.mcp.json already exists — leaving untouched. To add WellPlayed, merge: { mcpServers: { wellplayed: { type: "http", url: "https://mcp.well-played.gg/mcp" } } }`,
+        'To add WellPlayed, merge: { mcpServers: { wellplayed: { type: "http", url: "https://mcp.well-played.gg/mcp" } } }',
+      );
+    }
+    if (result.claudeMdWritten) {
+      log.success(`wrote ${result.claudeMdPath}`);
+    } else {
+      log.info('CLAUDE.md already exists — leaving untouched.');
+      log.info(
+        'Make sure it tells Claude to use the typed `graphql` from `@well-played.gg/typescript-sdk`, not `gql` from `graphql`/`@apollo/client`.',
       );
     }
     log.success(`installed ${result.copiedCount} skill(s) into ${result.claudeSkillsDir}`);

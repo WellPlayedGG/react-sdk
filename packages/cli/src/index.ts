@@ -9,6 +9,7 @@ import { deployCommand } from './commands/deploy.js';
 import { installSkillsCommand } from './commands/install-skills.js';
 import { createAppCommand } from './commands/create-app.js';
 import { createGraphqlCommand } from './commands/graphql.js';
+import { upgradeCommand } from './commands/upgrade.js';
 
 const program = new Command();
 
@@ -24,6 +25,7 @@ program.addCommand(devCommand);
 program.addCommand(deployCommand);
 program.addCommand(installSkillsCommand);
 program.addCommand(createAppCommand);
+program.addCommand(upgradeCommand);
 program.addCommand(createGraphqlCommand());
 
 program.parse();

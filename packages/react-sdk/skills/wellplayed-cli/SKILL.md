@@ -41,6 +41,7 @@ Run `wellplayed logout` to revoke the refresh token at Hydra and clear local cre
 | `wellplayed graphql [query]` | Run a GraphQL operation against the WellPlayed API (see below) |
 | `wellplayed deploy --app-id <id>` | Build, upload, and submit a release to the Marketplace |
 | `wellplayed install-skills` | Copy bundled SDK skills into `<project>/.claude/skills/` |
+| `wellplayed upgrade` | Upgrade installed `@well-played.gg/*` packages and refresh skills / `.mcp.json` / `CLAUDE.md` (use `--latest` for cross-major bumps; `--rewrite-claude-md` / `--rewrite-mcp-json` for non-interactive overwrites; `-y` to skip prompts) |
 
 ## `wellplayed graphql` — the agent's best friend
 

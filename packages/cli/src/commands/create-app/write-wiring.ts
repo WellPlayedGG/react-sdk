@@ -25,9 +25,6 @@ if (!organizationId || !clientId || !redirectUri) {
   );
 }
 
-// Minimal client-side router: when we're on the OAuth callback route, render
-// the Callback component — the OidcProvider completes the exchange
-// automatically. Everywhere else, render the app.
 const isCallback = window.location.pathname === '/auth/callback';
 
 createRoot(document.getElementById('root')!).render(
@@ -46,10 +43,11 @@ createRoot(document.getElementById('root')!).render(
 );
 `;
 
-const APP_TSX = `import { useQuery, gql } from '@apollo/client';
+const APP_TSX = `import { useQuery } from '@apollo/client';
 import { useConnectedPlayer, useWellPlayed } from '@well-played.gg/react-sdk';
+import { graphql } from '@well-played.gg/typescript-sdk';
 
-const GET_MY_ACCOUNT = gql\`
+const GET_MY_ACCOUNT = graphql(\`
   query getMyAccount {
     getMyAccount {
       id
@@ -59,21 +57,11 @@ const GET_MY_ACCOUNT = gql\`
       }
     }
   }
-\`;
-
-interface GetMyAccountResult {
-  getMyAccount: {
-    id: string;
-    email: string | null;
-    permissions: { permission: string }[];
-  };
-}
+\`);
 
 function SignedInView() {
   const { apiClient } = useWellPlayed();
-  const { data, loading, error } = useQuery<GetMyAccountResult>(GET_MY_ACCOUNT, {
-    client: apiClient,
-  });
+  const { data, loading, error } = useQuery(GET_MY_ACCOUNT, { client: apiClient });
 
   if (loading) return <p>Loading account…</p>;
   if (error) return <p>Error: {error.message}</p>;

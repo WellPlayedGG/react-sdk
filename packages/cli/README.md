@@ -112,6 +112,34 @@ By default, `wellplayed graphql` prints the full GraphQL envelope (`{ data, erro
 |--------|-------------|
 | `--data-only` | Print only the `data` payload. Throws on any GraphQL error -- use this when you want a clean pipe into `jq` and you don't care about `extensions`. |
 
+### `wellplayed upgrade`
+
+Upgrade installed `@well-played.gg/*` packages and refresh bundled skills, `.mcp.json`, and `CLAUDE.md`.
+
+```bash
+wellplayed upgrade                         # interactive: prompts before overwriting CLAUDE.md / .mcp.json
+wellplayed upgrade --latest                # allow cross-major bumps (npm install <pkg>@latest)
+wellplayed upgrade -y                      # non-interactive: keep CLAUDE.md / .mcp.json untouched
+wellplayed upgrade --rewrite-claude-md     # force-overwrite CLAUDE.md
+wellplayed upgrade --no-rewrite-mcp-json   # explicitly keep .mcp.json
+```
+
+The command:
+
+1. Scans `package.json` (`dependencies` + `devDependencies`) for `@well-played.gg/*` entries.
+2. Runs `npm update <pkg...>` (default — stays within the existing semver range, i.e. current major) or `npm install <pkg>@latest ...` when `--latest` is passed.
+3. Re-installs the SDK skill bundles (always overwritten — they are SDK artifacts).
+4. Decides what to do with `CLAUDE.md` and `.mcp.json` based on the precedence: explicit flag > `--yes` (keep) > non-TTY (keep) > interactive prompt.
+5. Picks the matching `CLAUDE.md` template — `react` if `@well-played.gg/react-sdk` is installed, otherwise `generic`.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--project <path>` | `process.cwd()` | Project root (must contain `package.json`) |
+| `--latest` | off | Allow cross-major bumps via `npm install <pkg>@latest` |
+| `--rewrite-claude-md` / `--no-rewrite-claude-md` | prompt | Force or skip the CLAUDE.md overwrite, non-interactively |
+| `--rewrite-mcp-json` / `--no-rewrite-mcp-json` | prompt | Force or skip the `.mcp.json` overwrite, non-interactively |
+| `-y, --yes` | off | Non-interactive: don't prompt; keep both files untouched unless an explicit `--rewrite-*` flag overrides |
+
 ### `wellplayed dev`
 
 Start a local Vite dev server for your app.
