@@ -4,7 +4,7 @@
     "type": "git",
     "url": "git+https://github.com/WellPlayedGG/react-sdk.git"
   },
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "WellPlayed Developer CLI - Create, develop, and deploy marketplace apps",
   "bin": {
     "wellplayed": "./dist/index.js"
