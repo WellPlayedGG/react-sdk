@@ -74,6 +74,14 @@ export function clearCredentials(): void {
 export function getToken(): string | null {
   const creds = getCredentials();
   if (!creds) return null;
-  if (Date.now() + EXPIRY_SKEW_MS >= creds.expiresAt) return null;
+  if (isCredentialsExpired(creds)) return null;
   return creds.accessToken;
+}
+
+/**
+ * Returns `true` when the access token is expired or within the skew window
+ * — callers should refresh before sending the request.
+ */
+export function isCredentialsExpired(creds: StoredCredentials): boolean {
+  return Date.now() + EXPIRY_SKEW_MS >= creds.expiresAt;
 }

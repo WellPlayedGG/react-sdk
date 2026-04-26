@@ -2,6 +2,7 @@ import { request } from 'undici';
 import {
   clearCredentials,
   getCredentials,
+  isCredentialsExpired,
   saveCredentials,
   type StoredCredentials,
 } from '../auth/token-store.js';
@@ -76,15 +77,20 @@ async function attemptGraphqlRequest<T>(params: AttemptParams): Promise<GraphqlA
 }
 
 /**
- * Issue a GraphQL request with automatic access-token refresh on 401.
+ * Issue a GraphQL request with automatic access-token refresh.
  *
  * Flow:
- * 1. Send with the current access token.
- * 2. On 401, if a refresh token is available and we haven't retried yet, call
- *    `refreshAccessToken`, persist the rotated pair, and retry once.
- * 3. If the refresh itself is rejected by Hydra (invalid_grant, etc.), wipe
+ * 1. If the stored access token is expired (within the skew), refresh it
+ *    before sending. The api-warrior backend returns auth failures as
+ *    HTTP 200 + GraphQL errors (`HttpError extends GraphQLError`), so a
+ *    purely reactive 401 trigger would never fire — refresh proactively,
+ *    matching the console's OIDC behavior.
+ * 2. Send with the (possibly refreshed) access token.
+ * 3. On 401 (clock skew, token invalidated mid-request), refresh once and
+ *    retry as a safety net.
+ * 4. If the refresh itself is rejected by Hydra (invalid_grant, etc.), wipe
  *    local credentials and throw a "run `wellplayed login`" error.
- * 4. If the retried request still fails with 401, surface the original error.
+ * 5. If the retried request still fails with 401, surface the original error.
  */
 export async function graphqlRequest<T>(
   query: string,
@@ -119,14 +125,37 @@ export async function graphqlRequestRaw<T>(
   return attempt.parsed;
 }
 
+async function performRefresh(refreshToken: string): Promise<StoredCredentials> {
+  try {
+    const tokens = await refreshAccessToken(refreshToken);
+    const refreshed: StoredCredentials = {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: Date.now() + tokens.expiresIn * 1000,
+    };
+    saveCredentials(refreshed);
+    return refreshed;
+  } catch (err) {
+    if (err instanceof RefreshTokenInvalidError) {
+      clearCredentials();
+      throw new Error('Session expired. Run `wellplayed login` to re-authenticate.');
+    }
+    throw err;
+  }
+}
+
 async function graphqlRequestWithRefresh<T>(
   query: string,
   variables: Record<string, unknown> | undefined,
   options: GraphqlRequestOptions | undefined,
 ): Promise<GraphqlAttempt<T>> {
-  const creds = getCredentials();
+  let creds = getCredentials();
   if (!creds) {
     throw new Error('Not authenticated. Run `wellplayed login` first.');
+  }
+
+  if (isCredentialsExpired(creds)) {
+    creds = await performRefresh(creds.refreshToken);
   }
 
   const send = (accessToken: string): Promise<GraphqlAttempt<T>> =>
@@ -144,23 +173,7 @@ async function graphqlRequestWithRefresh<T>(
     return first;
   }
 
-  let refreshed: StoredCredentials;
-  try {
-    const tokens = await refreshAccessToken(creds.refreshToken);
-    refreshed = {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresAt: Date.now() + tokens.expiresIn * 1000,
-    };
-    saveCredentials(refreshed);
-  } catch (err) {
-    if (err instanceof RefreshTokenInvalidError) {
-      clearCredentials();
-      throw new Error('Session expired. Run `wellplayed login` to re-authenticate.');
-    }
-    throw err;
-  }
-
+  const refreshed = await performRefresh(creds.refreshToken);
   const retry = await send(refreshed.accessToken);
   if (retry.statusCode === 401) {
     throw new Error(`GraphQL error 401: ${first.text}`);
