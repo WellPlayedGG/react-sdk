@@ -5074,9 +5074,53 @@ export interface Query {
     builtinPresets: BuiltinPresetModel[]
     /** Fetch a single built-in template by slug. */
     builtinPreset: BuiltinPresetModel
-    /** Validate a Lua script without executing it: runs syntax parsing then static analysis. Returns the full list of errors and warnings. */
+    /**
+     * Validate a Lua script WITHOUT executing it. Two passes are run in parallel and merged:
+     * 
+     *   1. Syntax validation — parses the script through the Lua VM in load-only mode. Surfaces malformed syntax (unclosed blocks, dangling operators, invalid identifiers) with line/column attribution.
+     *   2. Static analysis — walks the parsed source against the requested ScriptContextType to detect unavailable globals, blocked / unknown function calls, and obvious type/return mismatches given the context contract.
+     * 
+     * No sandbox execution, no DB writes, no side effects. Useful for fast author-time feedback in the editor before a heavier `simulateScript` round-trip. The returned `errors[]` is the union of both passes — `valid` is false when either pass reports anything.
+     * 
+     * Inputs: see `ValidateScriptInput`. The `context` field selects which globals (`team`, `step`, `match`, etc.) and helpers (`metadata`, `set_metadata`, `add_rule`, ...) the static analyzer treats as available.
+     * 
+     * Outputs: `ScriptValidationResultModel` with `valid`, `errors[]`, `warnings[]`. Use `simulateScript` for a runtime preview that captures actual side-effects and instruction counts.
+     */
     validateScript: ScriptValidationResultModel
-    /** Simulate a Lua script against a mock (or real) context inside the production sandbox with tighter interactive caps. Returns a summary of side-effects the script would have produced — NO database writes occur. */
+    /**
+     * Execute a Lua script inside the production sandbox against a synthetic mock fixture (or, optionally, a real tournament step). Returns a structured summary of the side-effects the script would have produced. NO database writes occur — every effect is captured in-memory and surfaced in `effectsSummary` for diagnostic display only.
+     * 
+     * Context behavior — `context` selects which globals and helpers the script can see, mirroring the production execution surface:
+     *   - CONDITION: receives `team`, `match`, `game`, `round`, `group`, `step`, `opponents`. Expected to return a boolean. Pure helpers only — no mutations.
+     *   - ACTION: same globals as CONDITION, plus all mutation helpers (`set_metadata`, `set_custom_field`, `advance`, `eliminate`, `set_match_result`, ...). Mutations are captured as effects, not applied.
+     *   - GENERATION: receives `team_count`, `best_of`, `group`. Structure builders (`create_round`, `create_game`, `link`) are available for synthesising rounds and games inside a group at step-generation time.
+     *   - PRESET: receives `team_count`, `best_of`. Preset builders (`set_scoring`, `add_tiebreaker`, `add_rule`, `add_cross_step_rule`, `create_group`) plus the structure builders. When the outer PRESET succeeds, every captured `add_rule({condition, actions})` and `add_tiebreaker({formula})` body is RECURSIVELY simulated under its own context (CONDITION / ACTION / FORMULA). Inner errors are folded into the top-level `errors[]` array prefixed with `"In rule '<name>' condition: ..."`, `"In rule '<name>' action #<n>: ..."`, or `"In tiebreaker '<type>' formula: ..."`. The outer `effectsSummary` and instruction/time counters are NOT affected by the inner recursion.
+     *   - CROSS_STEP: receives `team`, `source_step`. Pure helpers only — used for evaluating SEED_ORDER / QUALIFY / INJECT_SCORE expressions.
+     *   - FORMULA: receives `team`, `match`, `game`, `round`, `group`. Pure helpers only. Expected to return a number.
+     * 
+     * Inputs — see `SimulateScriptInput`. Override the synthetic fixture via `overrides: SimulationContextOverridesInput`:
+     *   - `overrides.teamCount` resizes `step.teams[]` (clamped to [4, 64], snapped to a multiple of 4).
+     *   - `overrides.bestOf` sets the matches-per-game count (clamped to [1, 99]).
+     *   - `overrides.teams[]` seeds per-team metadata, custom fields, rank, and status. Same team appears in multiple projections (bracket, seeded list, group scope, opponents) — overrides are propagated to all of them so a sort-by-metadata script sees consistent data wherever it walks.
+     *   - `overrides.presetParameters[]` overrides preset-declared parameters (replaces the deprecated JSON `parameters` blob).
+     * 
+     * The legacy `parameters: String` JSON-blob input is deprecated; when both `overrides` and `parameters` are supplied, `overrides` wins.
+     * 
+     * Outputs — `ScriptSimulationResultModel`:
+     *   - `success`: true when the script ran to completion AND every recursive PRESET inner body validated.
+     *   - `errors[]`: every error captured during simulation. Each error carries `line` (1-based, null when the engine could not recover one), `column`, `message`, `code` (`SYNTAX | RUNTIME | UNDEFINED_VARIABLE | INVALID_FUNCTION | TYPE_MISMATCH | BLOCKED_FUNCTION | TIMEOUT | INSTRUCTION_LIMIT`), `phase` (`PRELUDE | BOOTSTRAP | USER_SCRIPT | UNKNOWN`), `originHelper` (set when phase=PRELUDE — names the host-injected helper that raised), `hint` (author-facing remediation), `snippet` (5-line source window around the error, USER_SCRIPT only), and `stackFrames[]` (multi-frame trace mapped to user/helper coordinates).
+     *   - `effectsSummary[]`: structured side-effects the script produced on the success path.
+     *   - `partialEffectsSummary`: effects collected before the script threw on the failure path. NOT applied — diagnostic only. Null on success and when no effects were produced before the throw.
+     *   - `executionTimeMs`: wall-clock elapsed time inside the sandbox.
+     *   - `instructionsUsed`: VM instructions consumed.
+     * 
+     * Limits — simulation runs under TIGHTER caps than runtime so interactive previews can't DoS API workers:
+     *   - Max instructions: 100000
+     *   - Max memory: 8388608 bytes
+     *   - Wall-clock timeout: 5000 ms
+     * 
+     * Errors — runtime errors (script threw at execution time) and syntax errors (parse-time failures) are both surfaced in `errors[]` with their respective `code`. Prelude errors carry `phase=PRELUDE` and an `originHelper` so the editor can render a "in helper X" affordance instead of pointing at the user line. Recursive PRESET attribution prefixes the inner error message but leaves all other diagnostic fields (line, snippet, stack frames) UNCHANGED so the editor still navigates to the inner script.
+     */
     simulateScript: ScriptSimulationResultModel
     /** Fetch a single validation job by ID, scoped to the caller's organization. */
     stepRuleSetValidationJob: (ValidationJobModel | null)
@@ -5224,6 +5268,10 @@ export type TournamentsQueryOrderBy = 'START_AT' | 'REGISTRATIONS_START_AT' | 'E
 export type OrderDirection = 'ASC' | 'DESC'
 
 export type TournamentsQueryStatus = 'ALL' | 'STARTED' | 'ENDED' | 'REGISTRATIONS_OPEN' | 'REGISTRATIONS_ENDED' | 'REGISTRATIONS_CLOSED'
+
+
+/** Discriminator for the value union carried by a SimulationPresetParameterInput. Selects which of stringValue / numberValue / booleanValue carries the actual value. */
+export type SimulationPresetParameterValueType = 'STRING' | 'NUMBER' | 'BOOLEAN'
 
 export type EventsQueryOrderBy = 'START_AT' | 'REGISTRATIONS_START_AT' | 'END_AT' | 'REGISTRATIONS_END_AT'
 
@@ -5473,7 +5521,7 @@ export interface Mutation {
     /** Confirm or decline attendance for an event reservation as the group manager */
     eventReservationConfirmPresence: EventReservation
     /** Validate a reservation and initiate the Stripe payment session */
-    eventReservationValidateAndPay: EventReservationValidateAndPay
+    eventReservationValidateAndPay: (EventReservationValidateAndPay | null)
     /** Create a new event reservation for events that require admin approval or have no-session registration flow */
     eventReservationCreate: EventReservation
     /** Add, release, or update tickets within an active reservation session */
@@ -11157,9 +11205,53 @@ export interface QueryGenqlSelection{
     builtinPreset?: (BuiltinPresetModelGenqlSelection & { __args: {
     /** Stable slug identifier (e.g. "single-elim") */
     id: Scalars['String']} })
-    /** Validate a Lua script without executing it: runs syntax parsing then static analysis. Returns the full list of errors and warnings. */
+    /**
+     * Validate a Lua script WITHOUT executing it. Two passes are run in parallel and merged:
+     * 
+     *   1. Syntax validation — parses the script through the Lua VM in load-only mode. Surfaces malformed syntax (unclosed blocks, dangling operators, invalid identifiers) with line/column attribution.
+     *   2. Static analysis — walks the parsed source against the requested ScriptContextType to detect unavailable globals, blocked / unknown function calls, and obvious type/return mismatches given the context contract.
+     * 
+     * No sandbox execution, no DB writes, no side effects. Useful for fast author-time feedback in the editor before a heavier `simulateScript` round-trip. The returned `errors[]` is the union of both passes — `valid` is false when either pass reports anything.
+     * 
+     * Inputs: see `ValidateScriptInput`. The `context` field selects which globals (`team`, `step`, `match`, etc.) and helpers (`metadata`, `set_metadata`, `add_rule`, ...) the static analyzer treats as available.
+     * 
+     * Outputs: `ScriptValidationResultModel` with `valid`, `errors[]`, `warnings[]`. Use `simulateScript` for a runtime preview that captures actual side-effects and instruction counts.
+     */
     validateScript?: (ScriptValidationResultModelGenqlSelection & { __args: {input: ValidateScriptInput} })
-    /** Simulate a Lua script against a mock (or real) context inside the production sandbox with tighter interactive caps. Returns a summary of side-effects the script would have produced — NO database writes occur. */
+    /**
+     * Execute a Lua script inside the production sandbox against a synthetic mock fixture (or, optionally, a real tournament step). Returns a structured summary of the side-effects the script would have produced. NO database writes occur — every effect is captured in-memory and surfaced in `effectsSummary` for diagnostic display only.
+     * 
+     * Context behavior — `context` selects which globals and helpers the script can see, mirroring the production execution surface:
+     *   - CONDITION: receives `team`, `match`, `game`, `round`, `group`, `step`, `opponents`. Expected to return a boolean. Pure helpers only — no mutations.
+     *   - ACTION: same globals as CONDITION, plus all mutation helpers (`set_metadata`, `set_custom_field`, `advance`, `eliminate`, `set_match_result`, ...). Mutations are captured as effects, not applied.
+     *   - GENERATION: receives `team_count`, `best_of`, `group`. Structure builders (`create_round`, `create_game`, `link`) are available for synthesising rounds and games inside a group at step-generation time.
+     *   - PRESET: receives `team_count`, `best_of`. Preset builders (`set_scoring`, `add_tiebreaker`, `add_rule`, `add_cross_step_rule`, `create_group`) plus the structure builders. When the outer PRESET succeeds, every captured `add_rule({condition, actions})` and `add_tiebreaker({formula})` body is RECURSIVELY simulated under its own context (CONDITION / ACTION / FORMULA). Inner errors are folded into the top-level `errors[]` array prefixed with `"In rule '<name>' condition: ..."`, `"In rule '<name>' action #<n>: ..."`, or `"In tiebreaker '<type>' formula: ..."`. The outer `effectsSummary` and instruction/time counters are NOT affected by the inner recursion.
+     *   - CROSS_STEP: receives `team`, `source_step`. Pure helpers only — used for evaluating SEED_ORDER / QUALIFY / INJECT_SCORE expressions.
+     *   - FORMULA: receives `team`, `match`, `game`, `round`, `group`. Pure helpers only. Expected to return a number.
+     * 
+     * Inputs — see `SimulateScriptInput`. Override the synthetic fixture via `overrides: SimulationContextOverridesInput`:
+     *   - `overrides.teamCount` resizes `step.teams[]` (clamped to [4, 64], snapped to a multiple of 4).
+     *   - `overrides.bestOf` sets the matches-per-game count (clamped to [1, 99]).
+     *   - `overrides.teams[]` seeds per-team metadata, custom fields, rank, and status. Same team appears in multiple projections (bracket, seeded list, group scope, opponents) — overrides are propagated to all of them so a sort-by-metadata script sees consistent data wherever it walks.
+     *   - `overrides.presetParameters[]` overrides preset-declared parameters (replaces the deprecated JSON `parameters` blob).
+     * 
+     * The legacy `parameters: String` JSON-blob input is deprecated; when both `overrides` and `parameters` are supplied, `overrides` wins.
+     * 
+     * Outputs — `ScriptSimulationResultModel`:
+     *   - `success`: true when the script ran to completion AND every recursive PRESET inner body validated.
+     *   - `errors[]`: every error captured during simulation. Each error carries `line` (1-based, null when the engine could not recover one), `column`, `message`, `code` (`SYNTAX | RUNTIME | UNDEFINED_VARIABLE | INVALID_FUNCTION | TYPE_MISMATCH | BLOCKED_FUNCTION | TIMEOUT | INSTRUCTION_LIMIT`), `phase` (`PRELUDE | BOOTSTRAP | USER_SCRIPT | UNKNOWN`), `originHelper` (set when phase=PRELUDE — names the host-injected helper that raised), `hint` (author-facing remediation), `snippet` (5-line source window around the error, USER_SCRIPT only), and `stackFrames[]` (multi-frame trace mapped to user/helper coordinates).
+     *   - `effectsSummary[]`: structured side-effects the script produced on the success path.
+     *   - `partialEffectsSummary`: effects collected before the script threw on the failure path. NOT applied — diagnostic only. Null on success and when no effects were produced before the throw.
+     *   - `executionTimeMs`: wall-clock elapsed time inside the sandbox.
+     *   - `instructionsUsed`: VM instructions consumed.
+     * 
+     * Limits — simulation runs under TIGHTER caps than runtime so interactive previews can't DoS API workers:
+     *   - Max instructions: 100000
+     *   - Max memory: 8388608 bytes
+     *   - Wall-clock timeout: 5000 ms
+     * 
+     * Errors — runtime errors (script threw at execution time) and syntax errors (parse-time failures) are both surfaced in `errors[]` with their respective `code`. Prelude errors carry `phase=PRELUDE` and an `originHelper` so the editor can render a "in helper X" affordance instead of pointing at the user line. Recursive PRESET attribution prefixes the inner error message but leaves all other diagnostic fields (line, snippet, stack frames) UNCHANGED so the editor still navigates to the inner script.
+     */
     simulateScript?: (ScriptSimulationResultModelGenqlSelection & { __args: {input: SimulateScriptInput} })
     /** Fetch a single validation job by ID, scoped to the caller's organization. */
     stepRuleSetValidationJob?: (ValidationJobModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
@@ -11379,10 +11471,62 @@ export interface SimulateScriptInput {
 script: Scalars['String'],
 /** Execution context the script is intended for */
 context: ScriptContextType,
-/** JSON-encoded mock parameters for simulation */
+/** DEPRECATED: JSON-encoded mock parameters for simulation. Violates the no-JSON-in-GraphQL contract. Use `overrides` instead — when both are supplied, `overrides` wins. This field will be removed in the next major release. */
 parameters?: (Scalars['String'] | null),
+/** Structured overrides applied on top of the synthetic mock fixture before the run. Preferred replacement for the deprecated `parameters` JSON blob — covers fixture sizing, per-team metadata seeding, and preset-parameter overrides. */
+overrides?: (SimulationContextOverridesInput | null),
 /** Optional: simulate against a real tournament step */
 stepId?: (Scalars['ID'] | null)}
+
+
+/** Structured overrides applied on top of the synthetic mock fixture before a simulateScript run. Replaces the deprecated JSON-string `parameters` field with strongly-typed inputs covering team-count / best-of resizing, per-team metadata seeding, and preset-parameter overrides. */
+export interface SimulationContextOverridesInput {
+/** Resize the synthetic step roster. Clamped to [4, 64] and snapped down to a multiple of 4 so groups stay balanced. Defaults to 8. */
+teamCount?: (Scalars['Int'] | null),
+/** Number of matches per game in the synthetic bracket. Clamped to [1, 99]. Defaults to 1. */
+bestOf?: (Scalars['Int'] | null),
+/** Per-team overrides applied on top of the synthetic team list. Use to seed metadata so sort-by-metadata scripts produce meaningful previews instead of all-tied results from empty bags. Overrides at positions beyond the resized team count are silently ignored. */
+teams?: (SimulationTeamOverrideInput[] | null),
+/** User-defined preset-parameter overrides (replaces the JSON `parameters` blob). Applies to PRESET-context simulations that read named parameters declared in their `parametersSchema`. */
+presetParameters?: (SimulationPresetParameterInput[] | null)}
+
+
+/** Override the synthetic state of a single team in the simulator mock fixture. Fields left null retain the fixture default. Used to seed metadata, custom fields, rank, and status so sort-by-metadata and status-based scripts produce meaningful previews. */
+export interface SimulationTeamOverrideInput {
+/** 1-based position into the synthetic step.teams[] array. Mutually exclusive with `id`; when both are set, `position` wins. */
+position?: (Scalars['Int'] | null),
+/** Synthetic team id ("team-1", "team-2", ...) of the team to override. Mutually exclusive with `position`. */
+id?: (Scalars['String'] | null),
+/** Metadata bag entries to install on the team. Adds to / overwrites the fixture default (which is empty). */
+metadata?: (SimulationKeyValueInput[] | null),
+/** Custom-field bag entries to install on the team. Same shape as `metadata` but accessed in Lua via `custom_field(t, "k")` rather than `metadata(t, "k")`. */
+customFields?: (SimulationKeyValueInput[] | null),
+/** Override the team's rank. Defaults to its position-based rank in the synthetic standings (team at position N has rank N). */
+rank?: (Scalars['Int'] | null),
+/** Override the team's scope status. Defaults to ACTIVE in the fixture. Use to simulate WITHDRAWN / ELIMINATED / WINNER / QUALIFIED branches. */
+status?: (TeamScopeStatus | null)}
+
+
+/** Key-value pair for installing entries into a metadata or custom-field bag on synthetic simulator entities. Mirrors the production `objectMetadata` / `customFieldValue` rows. Both keys and values are bare strings — Lua scripts that need numeric semantics convert at the boundary with `tonumber(metadata(t, "k"))`. */
+export interface SimulationKeyValueInput {
+/** Key name. Must be non-empty. Match production metadata-key conventions (e.g. "lgts_points", "lgts_rank_minecraft"). */
+key: Scalars['String'],
+/** String value. All production metadata bags store strings — convert at the Lua boundary with `tonumber(metadata(t, "k"))` when comparing numerically. */
+value: Scalars['String']}
+
+
+/** Override one user-defined preset parameter (declared in the preset's `parametersSchema`) for the simulation run. Replaces the JSON-string `parameters` payload with a typed value union discriminated by `type`. */
+export interface SimulationPresetParameterInput {
+/** Parameter name. Must match a key declared in the preset's `parametersSchema`. */
+name: Scalars['String'],
+/** Which of the three value fields carries the actual value. Selects between `stringValue`, `numberValue`, and `booleanValue`. */
+type: SimulationPresetParameterValueType,
+/** Value when type=STRING. */
+stringValue?: (Scalars['String'] | null),
+/** Value when type=NUMBER. Use Float since Lua numbers are doubles; INT preset parameters are truncated at the Lua boundary. */
+numberValue?: (Scalars['Float'] | null),
+/** Value when type=BOOLEAN. */
+booleanValue?: (Scalars['Boolean'] | null)}
 
 
 /** Query parameters for filtering and ordering events */
@@ -17070,6 +17214,12 @@ export const enumTournamentsQueryStatus = {
    REGISTRATIONS_OPEN: 'REGISTRATIONS_OPEN' as const,
    REGISTRATIONS_ENDED: 'REGISTRATIONS_ENDED' as const,
    REGISTRATIONS_CLOSED: 'REGISTRATIONS_CLOSED' as const
+}
+
+export const enumSimulationPresetParameterValueType = {
+   STRING: 'STRING' as const,
+   NUMBER: 'NUMBER' as const,
+   BOOLEAN: 'BOOLEAN' as const
 }
 
 export const enumEventsQueryOrderBy = {

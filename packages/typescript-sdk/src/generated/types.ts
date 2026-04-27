@@ -95,11 +95,12 @@ export default {
         433,
         434,
         435,
-        442,
-        443,
-        462,
-        465,
-        551
+        445,
+        447,
+        448,
+        467,
+        470,
+        556
     ],
     "types": {
         "KeyMapping": {
@@ -7505,7 +7506,7 @@ export default {
                         "PageInfo!"
                     ],
                     "query": [
-                        441
+                        446
                     ],
                     "eventIds": [
                         426,
@@ -7591,7 +7592,7 @@ export default {
                         "PageInfo!"
                     ],
                     "query": [
-                        445,
+                        450,
                         "EventReservationsQueryInput!"
                     ]
                 }
@@ -7666,7 +7667,7 @@ export default {
                 263,
                 {
                     "query": [
-                        447,
+                        452,
                         "UserGroupsQueryInput!"
                     ],
                     "page": [
@@ -7703,7 +7704,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        448
+                        453
                     ]
                 }
             ],
@@ -7714,7 +7715,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        449
+                        454
                     ]
                 }
             ],
@@ -7725,7 +7726,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        450
+                        455
                     ]
                 }
             ],
@@ -7740,7 +7741,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        451
+                        456
                     ]
                 }
             ],
@@ -7763,7 +7764,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        452
+                        457
                     ]
                 }
             ],
@@ -7774,7 +7775,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        453
+                        458
                     ]
                 }
             ],
@@ -7785,7 +7786,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        454
+                        459
                     ]
                 }
             ],
@@ -7796,7 +7797,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        455
+                        460
                     ]
                 }
             ],
@@ -7807,7 +7808,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        456
+                        461
                     ]
                 }
             ],
@@ -7818,7 +7819,7 @@ export default {
                         63
                     ],
                     "filter": [
-                        457
+                        462
                     ]
                 }
             ],
@@ -7887,7 +7888,7 @@ export default {
                         "ID!"
                     ],
                     "filter": [
-                        458
+                        463
                     ]
                 }
             ],
@@ -8104,6 +8105,9 @@ export default {
             "parameters": [
                 1
             ],
+            "overrides": [
+                441
+            ],
             "stepId": [
                 426
             ],
@@ -8111,21 +8115,93 @@ export default {
                 1
             ]
         },
+        "SimulationContextOverridesInput": {
+            "teamCount": [
+                52
+            ],
+            "bestOf": [
+                52
+            ],
+            "teams": [
+                442
+            ],
+            "presetParameters": [
+                444
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SimulationTeamOverrideInput": {
+            "position": [
+                52
+            ],
+            "id": [
+                1
+            ],
+            "metadata": [
+                443
+            ],
+            "customFields": [
+                443
+            ],
+            "rank": [
+                52
+            ],
+            "status": [
+                233
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SimulationKeyValueInput": {
+            "key": [
+                1
+            ],
+            "value": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SimulationPresetParameterInput": {
+            "name": [
+                1
+            ],
+            "type": [
+                445
+            ],
+            "stringValue": [
+                1
+            ],
+            "numberValue": [
+                15
+            ],
+            "booleanValue": [
+                2
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SimulationPresetParameterValueType": {},
         "EventsQuery": {
             "orderBy": [
-                442
+                447
             ],
             "orderDirection": [
                 434
             ],
             "status": [
-                443
+                448
             ],
             "showNotVisible": [
                 2
             ],
             "filterByPlayers": [
-                444
+                449
             ],
             "__typename": [
                 1
@@ -8167,7 +8243,7 @@ export default {
                 437
             ],
             "filterByPlayers": [
-                446
+                451
             ],
             "filterByGroupStatus": [
                 262
@@ -8404,7 +8480,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        460,
+                        465,
                         "CreateConfigurationInput!"
                     ]
                 }
@@ -8422,7 +8498,7 @@ export default {
                 85,
                 {
                     "input": [
-                        461,
+                        466,
                         "LeaderboardRegisterPlayerScoreInput!"
                     ]
                 }
@@ -8431,7 +8507,7 @@ export default {
                 88,
                 {
                     "input": [
-                        463,
+                        468,
                         "CreateLeaderboardInput!"
                     ]
                 }
@@ -8444,13 +8520,13 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        464,
+                        469,
                         "UpdateLeaderboardInput!"
                     ]
                 }
             ],
             "deleteLeaderboard": [
-                465,
+                470,
                 {
                     "id": [
                         426,
@@ -8466,7 +8542,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        466,
+                        471,
                         "CreateLeaderboardSeasonInput!"
                     ]
                 }
@@ -8479,13 +8555,13 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        467,
+                        472,
                         "UpdateLeaderboardSeasonInput!"
                     ]
                 }
             ],
             "deleteLeaderboardSeason": [
-                465,
+                470,
                 {
                     "id": [
                         426,
@@ -8501,7 +8577,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        468,
+                        473,
                         "CreateLeaderboardSeasonBucketInput!"
                     ]
                 }
@@ -8514,13 +8590,13 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        469,
+                        474,
                         "UpdateLeaderboardSeasonBucketInput!"
                     ]
                 }
             ],
             "deleteLeaderboardSeasonBucket": [
-                465,
+                470,
                 {
                     "id": [
                         426,
@@ -8532,7 +8608,7 @@ export default {
                 74,
                 {
                     "organization": [
-                        470,
+                        475,
                         "UpdateOrganizationInput!"
                     ]
                 }
@@ -8541,7 +8617,7 @@ export default {
                 74,
                 {
                     "organization": [
-                        472,
+                        477,
                         "CreateOrganizationInput!"
                     ]
                 }
@@ -8550,7 +8626,7 @@ export default {
                 7,
                 {
                     "input": [
-                        473,
+                        478,
                         "CreateOrganizationGroupInput!"
                     ]
                 }
@@ -8563,7 +8639,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        473,
+                        478,
                         "CreateOrganizationGroupInput!"
                     ]
                 }
@@ -8581,7 +8657,7 @@ export default {
                 59,
                 {
                     "input": [
-                        474,
+                        479,
                         "SetOrganizationMembershipInput!"
                     ]
                 }
@@ -8590,7 +8666,7 @@ export default {
                 2,
                 {
                     "input": [
-                        475,
+                        480,
                         "DeleteOrganizationMembershipInput!"
                     ]
                 }
@@ -8599,7 +8675,7 @@ export default {
                 144,
                 {
                     "input": [
-                        476,
+                        481,
                         "CreateOrganizationIdentityProvider!"
                     ]
                 }
@@ -8612,7 +8688,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        479,
+                        484,
                         "UpdateOrganizationIdentityProvider!"
                     ]
                 }
@@ -8630,7 +8706,7 @@ export default {
                 137,
                 {
                     "input": [
-                        480,
+                        485,
                         "CreateOrganizationAppInput!"
                     ]
                 }
@@ -8652,7 +8728,7 @@ export default {
                         "String!"
                     ],
                     "input": [
-                        481,
+                        486,
                         "UpdateOrganizationAppInput!"
                     ]
                 }
@@ -8674,7 +8750,7 @@ export default {
                         "String!"
                     ],
                     "manifest": [
-                        482,
+                        487,
                         "AppManifestInput!"
                     ]
                 }
@@ -8687,7 +8763,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        489,
+                        494,
                         "CreateAppReleaseInput!"
                     ]
                 }
@@ -8696,7 +8772,7 @@ export default {
                 150,
                 {
                     "input": [
-                        490,
+                        495,
                         "CreateWebhookInput!"
                     ]
                 }
@@ -8709,7 +8785,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        491,
+                        496,
                         "UpdateWebhookInput!"
                     ]
                 }
@@ -8736,7 +8812,7 @@ export default {
                 141,
                 {
                     "input": [
-                        492,
+                        497,
                         "SetOrganizationAttachedAppInput!"
                     ]
                 }
@@ -8745,7 +8821,7 @@ export default {
                 2,
                 {
                     "input": [
-                        493,
+                        498,
                         "DeleteOrganizationAttachedAppInput!"
                     ]
                 }
@@ -8754,10 +8830,10 @@ export default {
                 2,
                 {
                     "fromTemplate": [
-                        494
+                        499
                     ],
                     "fromCustom": [
-                        495
+                        500
                     ]
                 }
             ],
@@ -8774,7 +8850,7 @@ export default {
                 105,
                 {
                     "input": [
-                        496,
+                        501,
                         "EmailTemplateCreateInput!"
                     ]
                 }
@@ -8787,7 +8863,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        497,
+                        502,
                         "EmailTemplateUpdateInput!"
                     ]
                 }
@@ -8805,7 +8881,7 @@ export default {
                 77,
                 {
                     "input": [
-                        498,
+                        503,
                         "CreatePlayerInput!"
                     ]
                 }
@@ -8814,7 +8890,7 @@ export default {
                 77,
                 {
                     "input": [
-                        500,
+                        505,
                         "UpdatePlayerInput!"
                     ],
                     "id": [
@@ -8829,7 +8905,7 @@ export default {
                 77,
                 {
                     "input": [
-                        501,
+                        506,
                         "UpdateMePlayerInput!"
                     ]
                 }
@@ -8849,7 +8925,7 @@ export default {
                 62,
                 {
                     "input": [
-                        502,
+                        507,
                         "CreateTournamentInput!"
                     ]
                 }
@@ -8858,7 +8934,7 @@ export default {
                 62,
                 {
                     "input": [
-                        505,
+                        510,
                         "UpdateTournamentInput!"
                     ],
                     "id": [
@@ -8896,7 +8972,7 @@ export default {
                         401
                     ],
                     "step": [
-                        506,
+                        511,
                         "CreateTournamentStepInput!"
                     ]
                 }
@@ -8912,7 +8988,7 @@ export default {
                         401
                     ],
                     "step": [
-                        506,
+                        511,
                         "CreateTournamentStepInput!"
                     ]
                 }
@@ -8942,7 +9018,7 @@ export default {
                 166,
                 {
                     "input": [
-                        507,
+                        512,
                         "SeedStepInput!"
                     ]
                 }
@@ -8968,7 +9044,7 @@ export default {
                         "ID!"
                     ],
                     "pins": [
-                        508,
+                        513,
                         "[SeedingPinInput!]!"
                     ]
                 }
@@ -9030,7 +9106,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        509,
+                        514,
                         "[UpdateMatchScoreInput!]!"
                     ]
                 }
@@ -9043,7 +9119,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        511,
+                        516,
                         "RegisterCustomTeamsInput!"
                     ]
                 }
@@ -9056,7 +9132,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        514,
+                        519,
                         "RegisterTournamentTeamInput!"
                     ]
                 }
@@ -9065,7 +9141,7 @@ export default {
                 162,
                 {
                     "input": [
-                        515,
+                        520,
                         "UpdateTournamentTeamInput!"
                     ],
                     "tournamentId": [
@@ -9176,7 +9252,7 @@ export default {
                 181,
                 {
                     "input": [
-                        516,
+                        521,
                         "TournamentAdminUpsertInput!"
                     ]
                 }
@@ -9185,7 +9261,7 @@ export default {
                 2,
                 {
                     "input": [
-                        517,
+                        522,
                         "TournamentAdminDeleteInput!"
                     ]
                 }
@@ -9198,7 +9274,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        518,
+                        523,
                         "CreateStepRuleSetInput!"
                     ]
                 }
@@ -9251,7 +9327,7 @@ export default {
                 205,
                 {
                     "input": [
-                        529,
+                        534,
                         "CreatePresetScriptInput!"
                     ]
                 }
@@ -9264,7 +9340,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        531,
+                        536,
                         "UpdatePresetScriptInput!"
                     ]
                 }
@@ -9346,7 +9422,7 @@ export default {
                 122,
                 {
                     "input": [
-                        532,
+                        537,
                         "PlatformCdnFileCreateInput!"
                     ],
                     "platformId": [
@@ -9396,13 +9472,13 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        533,
+                        538,
                         "PlatformFileUpdateInput!"
                     ]
                 }
             ],
             "platformFileDelete": [
-                465,
+                470,
                 {
                     "id": [
                         426,
@@ -9414,7 +9490,7 @@ export default {
                 353,
                 {
                     "input": [
-                        534,
+                        539,
                         "CreatePlatformInput!"
                     ]
                 }
@@ -9427,13 +9503,13 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        535,
+                        540,
                         "UpdatePlatformInput!"
                     ]
                 }
             ],
             "platformDelete": [
-                465,
+                470,
                 {
                     "id": [
                         426,
@@ -9449,7 +9525,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        536,
+                        541,
                         "PlatformThemeInput!"
                     ]
                 }
@@ -9477,7 +9553,7 @@ export default {
                 }
             ],
             "platformRemoveCustomDomain": [
-                465,
+                470,
                 {
                     "hostname": [
                         1,
@@ -9489,7 +9565,7 @@ export default {
                 354,
                 {
                     "input": [
-                        539,
+                        544,
                         "CreatePlatformTemplateInput!"
                     ]
                 }
@@ -9502,7 +9578,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        540,
+                        545,
                         "UpdatePlatformTemplateInput!"
                     ]
                 }
@@ -9521,7 +9597,7 @@ export default {
                 }
             ],
             "platformTemplateDelete": [
-                465,
+                470,
                 {
                     "id": [
                         426,
@@ -9530,10 +9606,10 @@ export default {
                 }
             ],
             "organizationSubscriptionItemsUpdate": [
-                465,
+                470,
                 {
                     "items": [
-                        541,
+                        546,
                         "[OrganizationSubscriptionItemUpdateInput!]!"
                     ],
                     "coupon": [
@@ -9552,7 +9628,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        542,
+                        547,
                         "OrganizationSkillRatingsRegisterMatchInput!"
                     ]
                 }
@@ -9561,7 +9637,7 @@ export default {
                 382,
                 {
                     "input": [
-                        544,
+                        549,
                         "OrganizationSkillRatingCreateInput!"
                     ]
                 }
@@ -9574,13 +9650,13 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        545,
+                        550,
                         "OrganizationSkillRatingUpdateInput!"
                     ]
                 }
             ],
             "organizationSkillRatingDelete": [
-                465,
+                470,
                 {
                     "id": [
                         426,
@@ -9592,7 +9668,7 @@ export default {
                 277,
                 {
                     "input": [
-                        546,
+                        551,
                         "EventCreateInput!"
                     ]
                 }
@@ -9601,7 +9677,7 @@ export default {
                 277,
                 {
                     "input": [
-                        547,
+                        552,
                         "EventUpdateInput!"
                     ],
                     "id": [
@@ -9623,7 +9699,7 @@ export default {
                 305,
                 {
                     "input": [
-                        548,
+                        553,
                         "EventTicketConfigurationCreateInput!"
                     ]
                 }
@@ -9636,7 +9712,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        549,
+                        554,
                         "EventTicketConfigurationUpdateInput!"
                     ]
                 }
@@ -9687,11 +9763,11 @@ export default {
                         "ID!"
                     ],
                     "options": [
-                        550,
+                        555,
                         "EventReservationValidateAndPayInput!"
                     ],
                     "ticketConfigurations": [
-                        552,
+                        557,
                         "[EventReservationTicketConfigurationInput!]"
                     ]
                 }
@@ -9713,7 +9789,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        553,
+                        558,
                         "EventReservationUpdateTicketsInput!"
                     ]
                 }
@@ -9726,7 +9802,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        555,
+                        560,
                         "EventReservationRegisterTicketsInput!"
                     ]
                 }
@@ -9766,7 +9842,7 @@ export default {
                 301,
                 {
                     "input": [
-                        556,
+                        561,
                         "EventVenueCreateInput!"
                     ]
                 }
@@ -9779,7 +9855,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        557,
+                        562,
                         "EventVenueUpdateInput!"
                     ]
                 }
@@ -9801,7 +9877,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        558,
+                        563,
                         "EventVenueSeatsUpdateInput!"
                     ]
                 }
@@ -9814,7 +9890,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        561,
+                        566,
                         "EventVenueSeatTypeCreateInput!"
                     ]
                 }
@@ -9827,7 +9903,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        562,
+                        567,
                         "EventVenueSeatTypeUpdateInput!"
                     ]
                 }
@@ -9886,7 +9962,7 @@ export default {
                 374,
                 {
                     "input": [
-                        563,
+                        568,
                         "ShopCreateInput!"
                     ]
                 }
@@ -9899,7 +9975,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        564,
+                        569,
                         "ShopUpdateInput!"
                     ]
                 }
@@ -9917,7 +9993,7 @@ export default {
                 364,
                 {
                     "input": [
-                        565,
+                        570,
                         "ShopCategoryCreateInput!"
                     ]
                 }
@@ -9930,7 +10006,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        566,
+                        571,
                         "ShopCategoryUpdateInput!"
                     ]
                 }
@@ -9952,10 +10028,10 @@ export default {
                         "ID!"
                     ],
                     "paymentConfig": [
-                        567
+                        572
                     ],
                     "input": [
-                        568,
+                        573,
                         "PlayerShopProductPurshaseInput!"
                     ]
                 }
@@ -9968,7 +10044,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        570,
+                        575,
                         "ShopProductCreateInput!"
                     ]
                 }
@@ -9981,7 +10057,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        571,
+                        576,
                         "ShopProductUpdateInput!"
                     ]
                 }
@@ -9999,7 +10075,7 @@ export default {
                 307,
                 {
                     "input": [
-                        572,
+                        577,
                         "ItemCreateInput!"
                     ]
                 }
@@ -10012,7 +10088,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        573,
+                        578,
                         "ItemUpdateInput!"
                     ]
                 }
@@ -10034,7 +10110,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        574,
+                        579,
                         "PlayerItemsUpdateInput!"
                     ]
                 }
@@ -10043,7 +10119,7 @@ export default {
                 313,
                 {
                     "input": [
-                        576,
+                        581,
                         "ItemCategoryCreateInput!"
                     ]
                 }
@@ -10056,7 +10132,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        577,
+                        582,
                         "ItemCategoryUpdateInput!"
                     ]
                 }
@@ -10074,7 +10150,7 @@ export default {
                 252,
                 {
                     "input": [
-                        578,
+                        583,
                         "CurrencyCreateInput!"
                     ]
                 }
@@ -10087,7 +10163,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        579,
+                        584,
                         "CurrencyUpdateInput!"
                     ]
                 }
@@ -10109,7 +10185,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        580,
+                        585,
                         "[PlayerCurrencyUpdateInput!]!"
                     ]
                 }
@@ -10118,7 +10194,7 @@ export default {
                 320,
                 {
                     "input": [
-                        582,
+                        587,
                         "PublishMarketplaceAppInput!"
                     ]
                 }
@@ -10131,7 +10207,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        583,
+                        588,
                         "UpdateMarketplaceAppInput!"
                     ]
                 }
@@ -10140,7 +10216,7 @@ export default {
                 327,
                 {
                     "input": [
-                        584,
+                        589,
                         "InstallMarketplaceAppInput!"
                     ]
                 }
@@ -10158,7 +10234,7 @@ export default {
                 324,
                 {
                     "input": [
-                        585,
+                        590,
                         "SubmitMarketplaceAppReviewInput!"
                     ]
                 }
@@ -10167,7 +10243,7 @@ export default {
                 332,
                 {
                     "input": [
-                        586,
+                        591,
                         "SetMarketplaceAppPricingInput!"
                     ]
                 }
@@ -10176,7 +10252,7 @@ export default {
                 1,
                 {
                     "input": [
-                        587,
+                        592,
                         "CreateMarketplaceCheckoutInput!"
                     ]
                 }
@@ -10189,7 +10265,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        588,
+                        593,
                         "AppCreateReleaseInput!"
                     ]
                 }
@@ -10216,7 +10292,7 @@ export default {
                 335,
                 {
                     "input": [
-                        589,
+                        594,
                         "PlatformModuleConfigSetInput!"
                     ]
                 }
@@ -10225,7 +10301,7 @@ export default {
                 2,
                 {
                     "input": [
-                        591,
+                        596,
                         "PlatformModuleConfigDeleteInput!"
                     ]
                 }
@@ -10234,7 +10310,7 @@ export default {
                 338,
                 {
                     "input": [
-                        592,
+                        597,
                         "SetEntityMetafieldInput!"
                     ]
                 }
@@ -10243,7 +10319,7 @@ export default {
                 2,
                 {
                     "input": [
-                        593,
+                        598,
                         "DeleteEntityMetafieldInput!"
                     ]
                 }
@@ -10252,7 +10328,7 @@ export default {
                 339,
                 {
                     "input": [
-                        594,
+                        599,
                         "SetObjectMetadataInput!"
                     ]
                 }
@@ -10261,7 +10337,7 @@ export default {
                 2,
                 {
                     "input": [
-                        596,
+                        601,
                         "RemoveObjectMetadataInput!"
                     ]
                 }
@@ -10270,7 +10346,7 @@ export default {
                 345,
                 {
                     "input": [
-                        597,
+                        602,
                         "CreateCustomFieldDefinitionInput!"
                     ]
                 }
@@ -10283,7 +10359,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        599,
+                        604,
                         "UpdateCustomFieldDefinitionInput!"
                     ]
                 }
@@ -10314,7 +10390,7 @@ export default {
                 347,
                 {
                     "input": [
-                        600,
+                        605,
                         "SetCustomFieldValuesInput!"
                     ]
                 }
@@ -10351,7 +10427,7 @@ export default {
                 426
             ],
             "score": [
-                462
+                467
             ],
             "__typename": [
                 1
@@ -10451,7 +10527,7 @@ export default {
                 1
             ],
             "configuration": [
-                471
+                476
             ],
             "__typename": [
                 1
@@ -10473,7 +10549,7 @@ export default {
                 1
             ],
             "configuration": [
-                471
+                476
             ],
             "__typename": [
                 1
@@ -10538,10 +10614,10 @@ export default {
                 1
             ],
             "oauth2Configuration": [
-                477
+                482
             ],
             "openidConfiguration": [
-                478
+                483
             ],
             "__typename": [
                 1
@@ -10631,10 +10707,10 @@ export default {
                 1
             ],
             "oauth2Configuration": [
-                477
+                482
             ],
             "openidConfiguration": [
-                478
+                483
             ],
             "__typename": [
                 1
@@ -10715,7 +10791,7 @@ export default {
                 1
             ],
             "extensions": [
-                483
+                488
             ],
             "webhookUrl": [
                 1
@@ -10727,7 +10803,7 @@ export default {
                 1
             ],
             "frontendModules": [
-                485
+                490
             ],
             "__typename": [
                 1
@@ -10744,7 +10820,7 @@ export default {
                 1
             ],
             "size": [
-                484
+                489
             ],
             "__typename": [
                 1
@@ -10778,10 +10854,10 @@ export default {
                 1
             ],
             "propsSchema": [
-                486
+                491
             ],
             "events": [
-                488
+                493
             ],
             "__typename": [
                 1
@@ -10807,7 +10883,7 @@ export default {
                 1
             ],
             "options": [
-                487
+                492
             ],
             "param": [
                 1
@@ -10990,7 +11066,7 @@ export default {
                 1
             ],
             "customFields": [
-                499
+                504
             ],
             "__typename": [
                 1
@@ -11021,7 +11097,7 @@ export default {
                 1
             ],
             "customFields": [
-                499
+                504
             ],
             "__typename": [
                 1
@@ -11035,7 +11111,7 @@ export default {
                 1
             ],
             "customFields": [
-                499
+                504
             ],
             "__typename": [
                 1
@@ -11064,7 +11140,7 @@ export default {
                 9
             ],
             "configuration": [
-                503
+                508
             ],
             "__typename": [
                 1
@@ -11075,7 +11151,7 @@ export default {
                 426
             ],
             "configuration": [
-                504
+                509
             ],
             "__typename": [
                 1
@@ -11130,7 +11206,7 @@ export default {
                 9
             ],
             "configuration": [
-                503
+                508
             ],
             "__typename": [
                 1
@@ -11164,7 +11240,7 @@ export default {
                 426
             ],
             "pins": [
-                508
+                513
             ],
             "__typename": [
                 1
@@ -11192,7 +11268,7 @@ export default {
                 426
             ],
             "variables": [
-                510
+                515
             ],
             "forcedScoreValue": [
                 15
@@ -11217,7 +11293,7 @@ export default {
         },
         "RegisterCustomTeamsInput": {
             "customTeams": [
-                512
+                517
             ],
             "__typename": [
                 1
@@ -11237,7 +11313,7 @@ export default {
                 426
             ],
             "members": [
-                513
+                518
             ],
             "status": [
                 64
@@ -11251,7 +11327,7 @@ export default {
                 426
             ],
             "player": [
-                498
+                503
             ],
             "__typename": [
                 1
@@ -11321,16 +11397,16 @@ export default {
         },
         "CreateStepRuleSetInput": {
             "scoring": [
-                519
+                524
             ],
             "advancementRules": [
-                521
+                526
             ],
             "crossStepRules": [
-                523
+                528
             ],
             "structureTemplate": [
-                525
+                530
             ],
             "__typename": [
                 1
@@ -11356,7 +11432,7 @@ export default {
                 52
             ],
             "tiebreakers": [
-                520
+                525
             ],
             "__typename": [
                 1
@@ -11399,7 +11475,7 @@ export default {
                 1
             ],
             "actions": [
-                522
+                527
             ],
             "autoExecute": [
                 2
@@ -11436,7 +11512,7 @@ export default {
                 201
             ],
             "usage": [
-                524
+                529
             ],
             "__typename": [
                 1
@@ -11458,7 +11534,7 @@ export default {
         },
         "CreateStructureTemplateInput": {
             "groupTemplates": [
-                526
+                531
             ],
             "__typename": [
                 1
@@ -11481,7 +11557,7 @@ export default {
                 1
             ],
             "roundTemplates": [
-                527
+                532
             ],
             "bestOfExpr": [
                 1
@@ -11504,7 +11580,7 @@ export default {
                 52
             ],
             "gameTemplates": [
-                528
+                533
             ],
             "__typename": [
                 1
@@ -11553,7 +11629,7 @@ export default {
                 1
             ],
             "parameters": [
-                530
+                535
             ],
             "__typename": [
                 1
@@ -11590,7 +11666,7 @@ export default {
                 1
             ],
             "parameters": [
-                530
+                535
             ],
             "__typename": [
                 1
@@ -11681,10 +11757,10 @@ export default {
                 1
             ],
             "socialLinks": [
-                537
+                542
             ],
             "sections": [
-                538
+                543
             ],
             "__typename": [
                 1
@@ -11765,7 +11841,7 @@ export default {
         },
         "OrganizationSkillRatingsRegisterMatchInput": {
             "teams": [
-                543
+                548
             ],
             "__typename": [
                 1
@@ -11949,7 +12025,7 @@ export default {
                 1
             ],
             "uiMode": [
-                551
+                556
             ],
             "__typename": [
                 1
@@ -11972,10 +12048,10 @@ export default {
                 426
             ],
             "ticketIdsToAdd": [
-                554
+                559
             ],
             "ticketConfigurations": [
-                552
+                557
             ],
             "__typename": [
                 1
@@ -11997,7 +12073,7 @@ export default {
         },
         "EventReservationRegisterTicketsInput": {
             "tickets": [
-                554
+                559
             ],
             "__typename": [
                 1
@@ -12057,10 +12133,10 @@ export default {
         },
         "EventVenueSeatsUpdateInput": {
             "updateSeats": [
-                559
+                564
             ],
             "createSeats": [
-                560
+                565
             ],
             "deleteSeats": [
                 426
@@ -12210,7 +12286,7 @@ export default {
                 1
             ],
             "uiMode": [
-                551
+                556
             ],
             "__typename": [
                 1
@@ -12218,7 +12294,7 @@ export default {
         },
         "PlayerShopProductPurshaseInput": {
             "items": [
-                569
+                574
             ],
             "__typename": [
                 1
@@ -12353,7 +12429,7 @@ export default {
         },
         "PlayerItemsUpdateInput": {
             "items": [
-                575
+                580
             ],
             "__typename": [
                 1
@@ -12458,7 +12534,7 @@ export default {
         },
         "PlayerCurrencyUpdateInput": {
             "items": [
-                581
+                586
             ],
             "__typename": [
                 1
@@ -12486,7 +12562,7 @@ export default {
                 426
             ],
             "manifest": [
-                482
+                487
             ],
             "name": [
                 1
@@ -12524,7 +12600,7 @@ export default {
         },
         "UpdateMarketplaceAppInput": {
             "manifest": [
-                482
+                487
             ],
             "name": [
                 1
@@ -12627,7 +12703,7 @@ export default {
                 1
             ],
             "manifest": [
-                482
+                487
             ],
             "releaseNotes": [
                 1
@@ -12659,7 +12735,7 @@ export default {
                 1
             ],
             "props": [
-                590
+                595
             ],
             "__typename": [
                 1
@@ -12735,7 +12811,7 @@ export default {
                 426
             ],
             "entries": [
-                595
+                600
             ],
             "__typename": [
                 1
@@ -12804,7 +12880,7 @@ export default {
                 19
             ],
             "options": [
-                598
+                603
             ],
             "defaultValue": [
                 1
@@ -12850,7 +12926,7 @@ export default {
                 19
             ],
             "options": [
-                598
+                603
             ],
             "defaultValue": [
                 1
@@ -12870,7 +12946,7 @@ export default {
                 426
             ],
             "fields": [
-                601
+                606
             ],
             "__typename": [
                 1
