@@ -156,6 +156,270 @@ wellplayed deploy --app-id <appId>     # ship to the Marketplace
 | `Field "x" looks like a JSON literal but failed to parse` | Mistyped JSON in `-F`, e.g. `-F input={key:1}` (missing quotes) | Quote keys, or use `--raw-field` to keep as a string |
 | `Invalid --org "..."` | Org id contains spaces, slashes, CR/LF | Use the short id; query `myOrganizations` to find it |
 
+## Journal — debugging runtime events
+
+The **journal** is the platform's append-only log of externally interesting runtime events: rule fires, tournament step generation/reset, manual admin overrides, validator simulations. It replaces the legacy `logs(...)` query (removed) and is the canonical surface for debugging anything the engine did at runtime.
+
+### What it is
+
+- **Entries** are typed records carrying a namespaced `type` (e.g. `rule_engine.advancement_rule.fired`, `tournaments.step.generated`), a `payload` resolved to a concrete `@ObjectType`, an `actor` (who/what produced it), an optional `primaryResource`, and an optional `parentEntryId` so a single rule fire and all its emitted effects form a parent/child trace.
+- Entries are **scoped to the active organization** and visible through:
+  - `journalEntries(page, filters)` — paginated list, most-recent first.
+  - `journalEntry(id)` — single-entry lookup.
+  - `journalEntryAdded(filters)` — live-tail GraphQL subscription.
+- All three require the `organization:journal:view` permission.
+
+### Querying
+
+`JournalFiltersInput` accepts: `categories`, `types`, `typePrefix` (e.g. `rule_engine.`), `actorType`, `actorId`, `primaryResourceType`, `primaryResourceId`, `severity`, `rootOnly`, `parentEntryId`, `correlationId`, `createdAfter`, `createdBefore`, `includeSimulations`.
+
+Ad-hoc check from the terminal:
+
+```bash
+wellplayed graphql --org my-org -F stepId=<id> <<'GQL'
+query StepRuleFires($stepId: ID!) {
+  journalEntries(
+    page: { first: 50 }
+    filters: {
+      typePrefix: "rule_engine."
+      primaryResourceType: "tournament_step"
+      primaryResourceId: $stepId
+    }
+  ) {
+    nodes {
+      id type severity createdAt
+      correlationId parentEntryId
+      actor {
+        type id
+        context {
+          __typename
+          ... on AdminActorContext { accountId accountUsername }
+          ... on SystemActorContext { source }
+        }
+      }
+      primaryResource { type id }
+      payload {
+        ... on RuleEngineAdvancementRuleFiredPayload { ruleId ruleName triggerType matched }
+        ... on RuleEngineEffectAdvancePayload { teamId fromGameId toGameId }
+        ... on RuleEngineEffectEliminatePayload { teamId reason }
+      }
+    }
+    pageInfo { hasNextPage endCursor }
+    totalCount
+  }
+}
+GQL
+```
+
+In a React component, drive it with `useQuery` from `@apollo/client` and `gql.tada`:
+
+```tsx
+import { useQuery } from "@apollo/client";
+import { graphql } from "gql.tada";
+
+const StepRuleFires = graphql(`
+  query StepRuleFires($stepId: ID!) {
+    journalEntries(
+      page: { first: 50 }
+      filters: {
+        typePrefix: "rule_engine."
+        primaryResourceType: "tournament_step"
+        primaryResourceId: $stepId
+      }
+    ) {
+      nodes {
+        id
+        type
+        severity
+        createdAt
+        payload {
+          ... on RuleEngineAdvancementRuleFiredPayload {
+            ruleId
+            ruleName
+            matched
+          }
+          ... on RuleEngineEffectAdvancePayload {
+            teamId
+            toGameId
+          }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+      totalCount
+    }
+  }
+`);
+
+export const StepRuleFireList = ({ stepId }: { stepId: string }) => {
+  const { data, loading } = useQuery(StepRuleFires, {
+    variables: { stepId },
+  });
+  if (loading) return <p>Loading…</p>;
+  return (
+    <ul>
+      {data?.journalEntries.nodes.map((entry) => (
+        <li key={entry.id}>
+          [{entry.severity}] {entry.type} @ {entry.createdAt}
+        </li>
+      ))}
+    </ul>
+  );
+};
+```
+
+### Subscribing (live tail)
+
+The same `JournalFiltersInput` shape is honored on the subscription. The server filters every event before it leaves the box, so a narrowly-scoped subscription costs essentially nothing on the client.
+
+```tsx
+import { useSubscription } from "@apollo/client";
+import { graphql } from "gql.tada";
+
+const LiveStepJournal = graphql(`
+  subscription LiveStepJournal($stepId: ID!) {
+    journalEntryAdded(
+      filters: {
+        typePrefix: "rule_engine."
+        primaryResourceType: "tournament_step"
+        primaryResourceId: $stepId
+      }
+    ) {
+      id
+      type
+      severity
+      createdAt
+      payload {
+        ... on RuleEngineAdvancementRuleFiredPayload {
+          ruleId
+          matched
+        }
+      }
+    }
+  }
+`);
+
+export const LiveStepJournalTail = ({ stepId }: { stepId: string }) => {
+  const { data } = useSubscription(LiveStepJournal, {
+    variables: { stepId },
+  });
+  if (!data?.journalEntryAdded) return null;
+  const entry = data.journalEntryAdded;
+  return (
+    <p>
+      [{entry.severity}] {entry.type} @ {entry.createdAt}
+    </p>
+  );
+};
+```
+
+`useSubscription` requires the Apollo client to be configured with a WebSocket link — the React SDK wires this up by default when you scaffold via `wellplayed create-app`.
+
+### Discriminated payloads
+
+`JournalEntry.payload` is a GraphQL **interface** — clients MUST spread per-type fragments to access typed fields. The 14 concrete payload types are:
+
+| Type | Concrete payload |
+|------|------------------|
+| `rule_engine.advancement_rule.fired` | `RuleEngineAdvancementRuleFiredPayload` |
+| `rule_engine.generation_script.ran` | `RuleEngineGenerationScriptRanPayload` |
+| `rule_engine.seeding_rule.fired` | `RuleEngineSeedingRuleFiredPayload` |
+| `rule_engine.withdrawal_rule.fired` | `RuleEngineWithdrawalRuleFiredPayload` |
+| `rule_engine.cross_step.transferred` | `RuleEngineCrossStepTransferredPayload` |
+| `rule_engine.manual_override` | `RuleEngineManualOverridePayload` |
+| `rule_engine.effect.advance` | `RuleEngineEffectAdvancePayload` |
+| `rule_engine.effect.eliminate` | `RuleEngineEffectEliminatePayload` |
+| `rule_engine.effect.set_metadata` | `RuleEngineEffectSetMetadataPayload` |
+| `rule_engine.effect.end_step` | `RuleEngineEffectEndStepPayload` |
+| `rule_engine.effect.create_group` | `RuleEngineEffectCreateGroupPayload` |
+| `rule_engine.effect.emit_seeding_pin` | `RuleEngineEffectEmitSeedingPinPayload` |
+| `tournaments.step.generated` | `TournamentsStepGeneratedPayload` |
+| `tournaments.step.reset` | `TournamentsStepResetPayload` |
+
+`JournalEntry.actor.context` is also an interface (`JournalActorContextPayload`) — spread per-actor fragments. The 7 concrete actor contexts (one per `JournalActorType`) and their fields:
+
+| `actor.type` | Concrete context | Fields |
+|--------------|------------------|--------|
+| `ADMIN` | `AdminActorContext` | `accountId: ID!`, `accountUsername: String!` |
+| `PLAYER` | `PlayerActorContext` | `playerProfileId: ID!`, `accountId: ID!` |
+| `SYSTEM` | `SystemActorContext` | `source: String!` |
+| `MARKETPLACE_MODULE` | `MarketplaceModuleActorContext` | `appId: ID!`, `marketplaceAppId: ID!`, `installationId: ID!`, `appName: String!` |
+| `API_CLIENT` | `ApiClientActorContext` | `clientId: ID!`, `clientName: String!` |
+| `WEBHOOK_CALLBACK` | `WebhookCallbackActorContext` | `webhookId: ID!`, `deliveryId: ID!` |
+| `SIMULATION` | `SimulationActorContext` | `validationJobId: ID` (nullable), `source: String!` |
+
+Always select `__typename` on `actor.context` (and on `payload`) when you need to discriminate at runtime — the registry binds `actor.type` (Prisma enum) to the GraphQL `__typename` listed above. With `gql.tada` + Apollo, the discriminated-union narrowing falls naturally out of the inline fragments above.
+
+### Tracing a rule fire to its effects
+
+Every entry carries an optional `parentEntryId`. Effect entries emitted by a rule fire share the rule fire's `id` as their `parentEntryId`, and the entire cascade carries a single `correlationId`. Two ways to reconstruct the tree:
+
+1. **Field-resolver walk** — `JournalEntry.children(first, after)` returns a paginated `JournalEntries` ordered by `createdAt` ascending. Use it to drill into one fire from a tree UI.
+2. **Correlation filter** — `journalEntries(filters: { correlationId: $cid })` returns every entry sharing the same correlation id, useful for a flat timeline view.
+
+```tsx
+import { useQuery } from "@apollo/client";
+import { graphql } from "gql.tada";
+
+const RuleFireTrace = graphql(`
+  query RuleFireTrace($entryId: ID!) {
+    journalEntry(id: $entryId) {
+      id type createdAt
+      children(first: 100) {
+        nodes {
+          id type severity createdAt
+          payload {
+            ... on RuleEngineEffectAdvancePayload { teamId toGameId }
+            ... on RuleEngineEffectEliminatePayload { teamId reason }
+          }
+        }
+        pageInfo { hasNextPage endCursor }
+        totalCount
+      }
+    }
+  }
+`);
+```
+
+### Default exclusions
+
+Entries produced by the `SIMULATION` actor (validator dry-runs, `simulateScript` previews) are **excluded by default** to keep operational dashboards quiet. Opt in explicitly:
+
+```graphql
+journalEntries(filters: { includeSimulations: true }) { ... }
+```
+
+### Permission required
+
+`organization:journal:view` (id of `ORGANIZATION_JOURNAL_VIEW`). All three operations — `journalEntries`, `journalEntry`, and the `journalEntryAdded` subscription — call `permissions.checkPermissionAndThrow` with this id. A caller without the permission gets a `FORBIDDEN` GraphQL error envelope, which Apollo's `onError` link will surface as a Mantine notification when the React SDK's `errorLink` is wired (the default in `wellplayed create-app`).
+
+For **marketplace modules** this permission is opt-in: installed apps do not receive it implicitly through their default groups (`Anonymous`, `Public`, `Connected`) and must declare it in the manifest and have it granted at installation time. The permission ceiling enforced by the `OauthGuard` (`filterPermissionsByGranted`) strips it from the request context otherwise — even if the org's groups would have granted it. Plan for `FORBIDDEN` on every journal call from a freshly installed module that did not request the permission.
+
+### Error handling
+
+Journal operations only return the standard masked-error envelope. Common cases to handle:
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `FORBIDDEN` on `journalEntries`/`journalEntry`/`journalEntryAdded` | Caller lacks `organization:journal:view`, or module token without granted permission | Grant the permission to the caller's group; for marketplace modules add it to the manifest and re-install |
+| `journalEntry` returns `null` | Entry id does not exist, or belongs to a different organization (cross-tenant lookup is silently null, not an error) | Verify the active organization matches the org the entry was written under |
+| `useSubscription` reconnects in a loop | Apollo client missing the WebSocket link, or the auth context expired mid-stream | Confirm the SDK's `splitLink` (HTTP + WS) is in place; re-issue the token; subscriptions reuse the same `Bearer` and `organization-id` headers as queries |
+| Subscription delivers nothing despite events firing | Filter is too narrow (`primaryResourceId` must match exactly — the server filter is server-side and silent on no-match) | Drop filters one by one; subscribe with no filters first to confirm the channel is hot |
+
+### Retention
+
+Entries are auto-pruned by category. Don't rely on the journal for long-term archival — emit a webhook if you need to mirror events into your own warehouse.
+
+| Category | Default retention |
+|----------|-------------------|
+| `EXECUTION` | 30 days |
+| `AUDIT` | 365 days |
+| `SYSTEM` | 90 days |
+| `SIMULATION` | 7 days |
+
+### Migration from `logs(...)`
+
+The legacy `logs(...)` query, `Log` / `LogType` / `LogAuthorType` / `LogData` types, and `ORGANIZATION_LOGS_VIEW` permission have been removed. Replace every call site with `journalEntries(...)` and adapt to the typed `JournalPayload` interface — see the platform's API deprecations changelog for the full migration note.
+
 ## Related skills
 
 - `wellplayed-react` (when present) — building React apps against the WellPlayed React SDK.
