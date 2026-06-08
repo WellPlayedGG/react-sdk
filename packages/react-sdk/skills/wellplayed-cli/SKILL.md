@@ -420,6 +420,29 @@ Entries are auto-pruned by category. Don't rely on the journal for long-term arc
 
 The legacy `logs(...)` query, `Log` / `LogType` / `LogAuthorType` / `LogData` types, and `ORGANIZATION_LOGS_VIEW` permission have been removed. Replace every call site with `journalEntries(...)` and adapt to the typed `JournalPayload` interface — see the platform's API deprecations changelog for the full migration note.
 
+## Custom fields (visibility & editability)
+
+Custom fields attach typed, org-defined values to entities (players, tournament teams, events, …). Definitions live under **Data → Custom Fields**; values are read/written via the API.
+
+**Visibility** — who can read a value (`PropertyVisibility`):
+
+- `PUBLIC` — everyone, including unauthenticated callers.
+- `OWNER` — only the object's owner (profile owner, team manager, …). Permission holders do **not** see it unless they are also the owner.
+- `OWNER_OR_PERMISSION` — the owner, or a caller holding the field's view permission.
+- `WITH_PERMISSION` — only callers holding the view permission.
+
+Anonymous (unauthenticated) callers are never treated as an owner: they only ever see `PUBLIC` fields plus any field whose view permission is granted to the org's Anonymous/Public group. There is no ownership bypass.
+
+**Editability** — who can write a value (`PropertyEditability`, values `ALWAYS` / `ONE_TIME` / `WITH_PERMISSION`):
+
+- `ALWAYS` — the owner, or a caller with the field's edit permission.
+- `ONE_TIME` — the owner may set it once while empty; a caller with the edit permission may change it at any time.
+- `WITH_PERMISSION` — only a caller with the edit permission.
+
+Re-submitting a field's current value is a no-op. Owners may set their own `ALWAYS` and first-time `ONE_TIME` values without `organization:custom_fields:values:manage`.
+
+Key operations: `customFieldDefinitions(objectType)`, `customFieldValues(objectType, objectId)` and `customFieldValuesBatch(objectType, objectIds)` (both public, visibility-filtered per field), and `setCustomFieldValues(input)`.
+
 ## Related skills
 
 - `wellplayed-react` (when present) — building React apps against the WellPlayed React SDK.
