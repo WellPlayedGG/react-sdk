@@ -1,3 +1,19 @@
+"""
+Payload of a journal entry. Resolved to a concrete @ObjectType per entry type.
+"""
+interface JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+}
+
+"""
+Actor-context payload, resolved to a concrete @ObjectType per actor type.
+"""
+interface JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+}
+
 """A mapping from a source path to a target key"""
 type KeyMapping {
   """The dot-notation path to the source value in the object"""
@@ -151,7 +167,7 @@ type OrganizationGroupEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [OrganizationGroup!]!
+  node: OrganizationGroup!
 }
 
 """
@@ -613,72 +629,6 @@ type EmailConfiguration {
   emailField: PlayerField!
 }
 
-"""Details of an outgoing webhook HTTP request"""
-type WebhookLogRequest {
-  """URL the webhook was sent to"""
-  url: String!
-
-  """Serialized request body"""
-  body: String!
-
-  """Request headers sent with the webhook"""
-  headers: [StringKeyValuePair!]!
-}
-
-"""A generic string key-value pair"""
-type StringKeyValuePair {
-  """Key name"""
-  key: String!
-
-  """Value"""
-  value: String!
-}
-
-"""Details of a webhook HTTP response"""
-type WebhookLogResponse {
-  """HTTP status code returned by the endpoint"""
-  statusCode: Int!
-
-  """Response body returned by the endpoint"""
-  body: String
-
-  """Response headers returned by the endpoint"""
-  headers: [StringKeyValuePair!]
-}
-
-"""Structured value representing a webhook call log entry"""
-type WebhookCallLogValue {
-  """The outgoing webhook request details"""
-  request: WebhookLogRequest!
-
-  """The webhook response details (absent if request failed to connect)"""
-  response: WebhookLogResponse
-
-  """Error message if the webhook call failed"""
-  error: String
-}
-
-"""Data payload for an audit log entry capturing a change event"""
-type LogData {
-  """Previous state of the resource before the change"""
-  oldValue: WebhookCallLogValue
-
-  """New state of the resource after the change"""
-  newValue: WebhookCallLogValue
-
-  """ID of the account or system that performed the action"""
-  author: String
-
-  """Type of actor that performed the action (SYSTEM, USER, or APP)"""
-  authorType: LogAuthorType!
-}
-
-enum LogAuthorType {
-  SYSTEM
-  USER
-  APP
-}
-
 """Schema definition for a single field within a webhook event payload"""
 type WebhookEventConfigurationProperties {
   """Name of the field in the webhook payload"""
@@ -822,7 +772,7 @@ type OrganizationMemberEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [OrganizationMember!]!
+  node: OrganizationMember!
 }
 
 """A tournament within an organization"""
@@ -1127,7 +1077,7 @@ type PlayerEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [Player!]!
+  node: Player!
 }
 
 """Represents a user account in the platform"""
@@ -1239,7 +1189,7 @@ type LeaderboardSeasonBucketScoreEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [LeaderboardSeasonBucketScore!]!
+  node: LeaderboardSeasonBucketScore!
 }
 
 """Represents a leaderboard for tracking and ranking player scores"""
@@ -1287,7 +1237,7 @@ type LeaderboardEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [Leaderboard!]!
+  node: Leaderboard!
 }
 
 """Represents a time-bound season within a leaderboard"""
@@ -1338,7 +1288,7 @@ type LeaderboardSeasonEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [LeaderboardSeason!]!
+  node: LeaderboardSeason!
 }
 
 """Represents a score bucket (tier/division) within a leaderboard season"""
@@ -1390,7 +1340,7 @@ type LeaderboardSeasonBucketEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [LeaderboardSeasonBucket!]!
+  node: LeaderboardSeasonBucket!
 }
 
 """
@@ -1547,7 +1497,7 @@ type EmailTemplateEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [EmailTemplate!]!
+  node: EmailTemplate!
 }
 
 """The required fields for creating or updating an identity on a provider"""
@@ -2057,7 +2007,7 @@ type OrganizationAppEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [OrganizationApp!]!
+  node: OrganizationApp!
 }
 
 """A webhook auto-created when an app is installed on an organization"""
@@ -2140,7 +2090,7 @@ type OrganizationAttachedAppEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [OrganizationAttachedApp!]!
+  node: OrganizationAttachedApp!
 }
 
 """
@@ -2320,6 +2270,518 @@ type PlayerSkillRating {
   player: Player!
 }
 
+"""Timing breakdown of a Lua engine invocation, in milliseconds."""
+type RuleEngineEngineTimingStats {
+  """Time spent evaluating the Lua condition expression, in ms."""
+  conditionEvalMs: Float!
+
+  """Time spent executing the Lua action script, in ms."""
+  actionExecMs: Float!
+
+  """Total wall-clock time of the engine invocation (includes overhead)."""
+  totalMs: Float!
+}
+
+"""Outcome of evaluating the Lua condition expression of a rule."""
+type RuleEngineConditionEvaluationResult {
+  """Whether the condition matched (truthy) and triggered the action."""
+  matched: Boolean!
+
+  """Stringified raw value returned by the condition expression, if any."""
+  value: String
+}
+
+"""Structured failure details for a Lua engine invocation that errored."""
+type RuleEngineLuaExecutionErrorDetail {
+  """Machine-readable error code."""
+  code: String!
+
+  """Human-readable error message."""
+  message: String!
+
+  """Optional remediation hint targeted at preset authors."""
+  hint: String
+
+  """Optional truncated Lua stack trace fragment for debugging."""
+  stackHint: String
+}
+
+"""Audit metadata describing a manual override applied to a rule firing."""
+type RuleEngineManualOverrideContext {
+  """ID of the account that performed the override."""
+  overriddenBy: ID!
+
+  """Free-text justification supplied by the operator."""
+  reason: String!
+}
+
+"""
+Journal payload emitted when an advancement rule fires (or is skipped).
+"""
+type RuleEngineAdvancementRuleFiredPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the advancement rule."""
+  ruleId: ID!
+
+  """Human-readable rule name at the time of firing."""
+  ruleName: String!
+
+  """ID of the rule set that owns the rule."""
+  ruleSetId: ID!
+
+  """Version of the rule set snapshotted at execution time."""
+  ruleSetVersion: Int!
+
+  """
+  Tournament lifecycle event that caused the rule to be considered (MATCH_ENDED, GAME_ENDED, ROUND_ENDED, GROUP_ENDED, STEP_ENDED, MANUAL, STEP_SEEDING, ROUND_SEEDING, TEAM_WITHDREW).
+  """
+  triggerType: RuleTriggerType!
+
+  """GraphQL __typename of the trigger event payload."""
+  triggerEventTypename: String!
+
+  """Serialized JSON of the trigger event payload at execution time."""
+  triggerEventJson: String!
+
+  """Snapshotted Lua source of the rule condition."""
+  conditionSource: String!
+
+  """Outcome of evaluating the rule condition."""
+  conditionResult: RuleEngineConditionEvaluationResult!
+
+  """Snapshotted Lua source of the rule action script."""
+  actionSource: String!
+
+  """Timing breakdown of the engine invocation."""
+  engineTiming: RuleEngineEngineTimingStats!
+
+  """Lines emitted by Lua print() during execution."""
+  printOutput: [String!]!
+
+  """Whether print output was truncated to fit retention/size limits."""
+  printOutputTruncated: Boolean!
+
+  """Failure details if the engine errored, otherwise null."""
+  error: RuleEngineLuaExecutionErrorDetail
+
+  """
+  Manual override audit metadata if the firing was forced/skipped by an operator.
+  """
+  manualOverride: RuleEngineManualOverrideContext
+}
+
+"""Tournament lifecycle event that triggers a rule evaluation"""
+enum RuleTriggerType {
+  MATCH_ENDED
+  GAME_ENDED
+  ROUND_ENDED
+  GROUP_ENDED
+  STEP_ENDED
+  MANUAL
+  STEP_SEEDING
+  ROUND_SEEDING
+  TEAM_WITHDREW
+}
+
+"""
+Journal payload emitted when cross-step data is transferred between two steps.
+"""
+type RuleEngineCrossStepTransferredPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the source step the data is transferred from."""
+  sourceStepId: ID!
+
+  """ID of the target step the data is transferred to."""
+  targetStepId: ID!
+
+  """
+  Type of data pulled from the source step (TEAMS, WINNERS, QUALIFIED, ELIMINATED, WITHDRAWN, RANKINGS, SCORES).
+  """
+  dataSource: CrossStepDataSource!
+
+  """Number of keys transferred during this operation."""
+  keyCount: Int!
+
+  """
+  Up to the first ten transferred key names, for diagnostics. Caller-capped.
+  """
+  firstKeySamples: [String!]!
+
+  """Timing breakdown of the transfer invocation."""
+  engineTiming: RuleEngineEngineTimingStats!
+
+  """Failure details if the transfer errored, otherwise null."""
+  error: RuleEngineLuaExecutionErrorDetail
+}
+
+"""Type of data pulled from the source step"""
+enum CrossStepDataSource {
+  TEAMS
+  WINNERS
+  QUALIFIED
+  ELIMINATED
+  WITHDRAWN
+  RANKINGS
+  SCORES
+}
+
+"""Journal payload emitted when an ADVANCE effect is applied to a team."""
+type RuleEngineEffectAdvancePayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Effect kind discriminator — always JournalEffectKind.ADVANCE."""
+  effectKind: JournalEffectKind!
+
+  """ID of the team being advanced."""
+  targetTeamId: ID!
+
+  """ID of the step the team is advancing from."""
+  fromStepId: ID!
+
+  """ID of the step the team is advancing to."""
+  toStepId: ID!
+
+  """
+  Team status before the effect was applied. Null when no per-step score row existed yet (e.g. first cross-step advance).
+  """
+  beforeStatus: TeamScopeStatus
+
+  """
+  Team status after the effect was applied. Null when the effect was skipped before status resolution.
+  """
+  afterStatus: TeamScopeStatus
+
+  """Whether the effect was actually applied (false if skipped/no-op)."""
+  applied: Boolean!
+
+  """Reason the effect was skipped, if applicable. Null when applied."""
+  skipReason: String
+}
+
+"""Discriminator for journal entries emitted by rule-engine effects."""
+enum JournalEffectKind {
+  ADVANCE
+  ELIMINATE
+  CREATE_GROUP
+  SET_METADATA
+  END_STEP
+  EMIT_SEEDING_PIN
+}
+
+"""
+Status of a team within a particular scope (game, round, group, step, tournament)
+"""
+enum TeamScopeStatus {
+  ACTIVE
+  WINNER
+  QUALIFIED
+  ELIMINATED
+  WITHDRAWN
+}
+
+"""
+Journal payload emitted when a CREATE_GROUP effect spawns a new group within a step.
+"""
+type RuleEngineEffectCreateGroupPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Effect kind discriminator — always JournalEffectKind.CREATE_GROUP."""
+  effectKind: JournalEffectKind!
+
+  """ID of the step the group belongs to."""
+  stepId: ID!
+
+  """ID of the newly created group."""
+  groupId: ID!
+
+  """Zero-based ordering index of the group within the step."""
+  groupOrder: Int!
+
+  """Whether the effect was actually applied (false if skipped/no-op)."""
+  applied: Boolean!
+
+  """Reason the effect was skipped, if applicable. Null when applied."""
+  skipReason: String
+}
+
+"""Journal payload emitted when an ELIMINATE effect is applied to a team."""
+type RuleEngineEffectEliminatePayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Effect kind discriminator — always JournalEffectKind.ELIMINATE."""
+  effectKind: JournalEffectKind!
+
+  """ID of the team being eliminated."""
+  targetTeamId: ID!
+
+  """ID of the step in which the team was eliminated."""
+  stepId: ID!
+
+  """
+  Team status before the effect was applied. Null when no per-step score row existed yet.
+  """
+  beforeStatus: TeamScopeStatus
+
+  """
+  Team status after the effect was applied. Null when the effect was skipped before status resolution.
+  """
+  afterStatus: TeamScopeStatus
+
+  """Whether the effect was actually applied (false if skipped/no-op)."""
+  applied: Boolean!
+
+  """Reason the effect was skipped, if applicable. Null when applied."""
+  skipReason: String
+}
+
+"""
+Journal payload emitted when an EMIT_SEEDING_PIN effect pins a team to a specific game slot.
+"""
+type RuleEngineEffectEmitSeedingPinPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Effect kind discriminator — always JournalEffectKind.EMIT_SEEDING_PIN."""
+  effectKind: JournalEffectKind!
+
+  """ID of the step containing the pinned slot."""
+  stepId: ID!
+
+  """ID of the group containing the pinned slot."""
+  groupId: ID!
+
+  """ID of the game containing the pinned slot."""
+  gameId: ID!
+
+  """Zero-based slot index within the game (0 or 1 for 1v1 games)."""
+  slotIndex: Int!
+
+  """ID of the team being pinned to the slot."""
+  targetTeamId: ID!
+
+  """Whether the effect was actually applied (false if skipped/no-op)."""
+  applied: Boolean!
+
+  """Reason the effect was skipped, if applicable. Null when applied."""
+  skipReason: String
+}
+
+"""
+Journal payload emitted when an END_STEP effect transitions a step to its terminal state.
+"""
+type RuleEngineEffectEndStepPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Effect kind discriminator — always JournalEffectKind.END_STEP."""
+  effectKind: JournalEffectKind!
+
+  """ID of the step being ended."""
+  stepId: ID!
+
+  """Step status before the effect was applied."""
+  beforeStepStatus: StepStatus!
+
+  """Step status after the effect was applied."""
+  afterStepStatus: StepStatus!
+
+  """Whether the effect was actually applied (false if skipped/no-op)."""
+  applied: Boolean!
+
+  """Reason the effect was skipped, if applicable. Null when applied."""
+  skipReason: String
+}
+
+enum StepStatus {
+  CONFIGURED
+  GENERATING
+  GENERATED
+  SEEDING
+  SEEDED
+  STARTED
+  ENDED
+}
+
+"""
+Journal payload emitted when a SET_METADATA effect mutates an entity metadata key.
+"""
+type RuleEngineEffectSetMetadataPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Effect kind discriminator — always JournalEffectKind.SET_METADATA."""
+  effectKind: JournalEffectKind!
+
+  """
+  Type of the target entity whose metadata is being mutated (TournamentTeam, TournamentStep, …).
+  """
+  targetType: MetadataObjectType!
+
+  """ID of the target entity."""
+  targetId: ID!
+
+  """Metadata key being written."""
+  key: String!
+
+  """Serialized JSON of the previous value at this key, or null if absent."""
+  beforeValueJson: String
+
+  """Serialized JSON of the new value at this key, or null if cleared."""
+  afterValueJson: String
+
+  """Whether the effect was actually applied (false if skipped/no-op)."""
+  applied: Boolean!
+
+  """Reason the effect was skipped, if applicable. Null when applied."""
+  skipReason: String
+}
+
+"""
+Type of entity whose metadata is being mutated by a SET_METADATA effect (TournamentTeam, TournamentStep, TournamentStepGroup, TournamentStepGroupRound, TournamentStepGroupRoundGame).
+"""
+enum MetadataObjectType {
+  Tournament
+  TournamentTeam
+  TournamentStep
+  TournamentStepGroup
+  TournamentStepGroupRound
+  TournamentStepGroupRoundGame
+}
+
+"""
+Journal payload emitted when a structure generation Lua script runs for a step.
+"""
+type RuleEngineGenerationScriptRanPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the step the generation script targets."""
+  stepId: ID!
+
+  """Snapshotted Lua source of the generation script."""
+  script: String!
+
+  """Timing breakdown of the engine invocation."""
+  engineTiming: RuleEngineEngineTimingStats!
+
+  """Lines emitted by Lua print() during execution."""
+  printOutput: [String!]!
+
+  """Whether print output was truncated to fit retention/size limits."""
+  printOutputTruncated: Boolean!
+
+  """Failure details if the engine errored, otherwise null."""
+  error: RuleEngineLuaExecutionErrorDetail
+}
+
+"""
+Journal payload emitted when an operator manually overrides a rule firing decision.
+"""
+type RuleEngineManualOverridePayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the rule that was overridden."""
+  ruleId: ID!
+
+  """ID of the account that performed the override."""
+  overriddenBy: ID!
+
+  """Free-text justification supplied by the operator."""
+  reason: String!
+
+  """
+  The override outcome — FIRED (forced), SKIPPED (suppressed), or REPLAYED (re-run).
+  """
+  effect: ManualOverrideEffect!
+}
+
+"""
+Outcome of a manual operator override on a rule firing decision (FIRED = operator forced the rule to fire, SKIPPED = operator suppressed the firing, REPLAYED = operator re-ran an already-applied firing).
+"""
+enum ManualOverrideEffect {
+  FIRED
+  SKIPPED
+  REPLAYED
+}
+
+"""Counters describing the downstream impact of a tournament step reset."""
+type TournamentsStepResetCascadeInfo {
+  """Number of downstream tournament steps affected by the reset cascade."""
+  affectedSteps: Int!
+
+  """
+  Number of teams whose advancement state was rewound by the reset cascade.
+  """
+  affectedTeams: Int!
+}
+
+"""
+Journal payload emitted when a tournament step is reset to an earlier lifecycle state (CONFIGURED / GENERATED / SEEDED).
+"""
+type TournamentsStepResetPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the tournament step that was reset."""
+  stepId: ID!
+
+  """
+  Step status before the reset was applied (e.g. STARTED, SEEDED, GENERATED).
+  """
+  previousStatus: StepStatus!
+
+  """
+  Step status after the reset was applied (e.g. SEEDED, GENERATED, CONFIGURED).
+  """
+  newStatus: StepStatus!
+
+  """
+  Free-form reason describing why the reset was performed (e.g. "admin_initiated").
+  """
+  reason: String!
+
+  """Cascade impact counters for the reset."""
+  cascade: TournamentsStepResetCascadeInfo!
+}
+
+"""
+Journal payload emitted when a tournament step bracket is successfully generated (CONFIGURED → GENERATED).
+"""
+type TournamentsStepGeneratedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the tournament step that was generated."""
+  stepId: ID!
+
+  """
+  ID of the rule set that drove the generation. Equal to the step ID for legacy non-rule-engine steps.
+  """
+  ruleSetId: ID!
+
+  """Number of groups produced by the generation."""
+  groupCount: Int!
+
+  """Number of games produced by the generation."""
+  gameCount: Int!
+
+  """
+  Number of teams seeded into the bracket as part of generation. Zero when generation did not include seeding.
+  """
+  seededTeamCount: Int!
+
+  """Wall-clock time spent inside the generation pipeline, in milliseconds."""
+  engineTimingMs: Float!
+}
+
 """A manual seeding pin. At least one of groupId or gameId must be set."""
 type SeedingPin {
   """Team being pinned"""
@@ -2388,7 +2850,7 @@ type TournamentStepGroupRoundGameMatchEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [TournamentStepGroupRoundGameMatch!]!
+  node: TournamentStepGroupRoundGameMatch!
 }
 
 """
@@ -2455,7 +2917,7 @@ type TournamentTeamMemberEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [TournamentTeamMemberDto!]!
+  node: TournamentTeamMemberDto!
 }
 
 """A team registered to a tournament"""
@@ -2525,7 +2987,7 @@ type TournamentTeamEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [TournamentTeam!]!
+  node: TournamentTeam!
 }
 
 """Score entry for a tournament team"""
@@ -2605,16 +3067,6 @@ enum StepType {
   CUSTOM
 }
 
-enum StepStatus {
-  CONFIGURED
-  GENERATING
-  GENERATED
-  SEEDING
-  SEEDED
-  STARTED
-  ENDED
-}
-
 """Paginated list of tournaments"""
 type Tournaments {
   """List of edges containing cursor and node pairs"""
@@ -2636,7 +3088,7 @@ type TournamentEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [Tournament!]!
+  node: Tournament!
 }
 
 """A game within a tournament round, containing matches between teams"""
@@ -2828,7 +3280,7 @@ type TournamentStepGroupRoundGameMatchScoreEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [TournamentStepGroupRoundGameMatchScore!]!
+  node: TournamentStepGroupRoundGameMatchScore!
 }
 
 """An administrator assigned to a tournament with specific permissions"""
@@ -2922,19 +3374,6 @@ type AdvancementRuleModel {
 
   """Last update timestamp"""
   updatedAt: DateTime!
-}
-
-"""Tournament lifecycle event that triggers a rule evaluation"""
-enum RuleTriggerType {
-  MATCH_ENDED
-  GAME_ENDED
-  ROUND_ENDED
-  GROUP_ENDED
-  STEP_ENDED
-  MANUAL
-  STEP_SEEDING
-  ROUND_SEEDING
-  TEAM_WITHDREW
 }
 
 """Well-known purposes that mark a rule for internal use"""
@@ -3152,17 +3591,6 @@ enum StepRelativePosition {
   PREVIOUS
   NEXT
   CURRENT
-}
-
-"""Type of data pulled from the source step"""
-enum CrossStepDataSource {
-  TEAMS
-  WINNERS
-  QUALIFIED
-  ELIMINATED
-  WITHDRAWN
-  RANKINGS
-  SCORES
 }
 
 """Complete rule set attached to a tournament step"""
@@ -3736,17 +4164,6 @@ type TeamOffenderModel {
   currentStatus: TeamScopeStatus
 }
 
-"""
-Status of a team within a particular scope (game, round, group, step, tournament)
-"""
-enum TeamScopeStatus {
-  ACTIVE
-  WINNER
-  QUALIFIED
-  ELIMINATED
-  WITHDRAWN
-}
-
 """Score row entity that triggered a violation"""
 type ScoreRowOffenderModel {
   """Discriminant — always SCORE_ROW"""
@@ -4066,7 +4483,7 @@ type ValidationJobModelEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [ValidationJobModel!]!
+  node: ValidationJobModel!
 }
 
 """Paginated list of validation events"""
@@ -4090,7 +4507,7 @@ type ValidationEventModelEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [ValidationEventModel!]!
+  node: ValidationEventModel!
 }
 
 """A virtual currency defined within an organization"""
@@ -4147,7 +4564,7 @@ type CurrencyEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [Currency!]!
+  node: Currency!
 }
 
 """A player's balance for a specific currency"""
@@ -4192,7 +4609,7 @@ type PlayerCurrencyEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [PlayerCurrency!]!
+  node: PlayerCurrency!
 }
 
 """Configuration defining size constraints for a user group"""
@@ -4287,7 +4704,7 @@ type UserGroupEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [UserGroup!]!
+  node: UserGroup!
 }
 
 """Paginated list of user group members"""
@@ -4311,7 +4728,7 @@ type UserGroupMemberEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [UserGroupMember!]!
+  node: UserGroupMember!
 }
 
 """A 2D coordinate position for seat placement on a venue map"""
@@ -4391,7 +4808,7 @@ type EventVenueSeatEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [EventVenueSeat!]!
+  node: EventVenueSeat!
 }
 
 """
@@ -4637,7 +5054,7 @@ type EventEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [Event!]!
+  node: Event!
 }
 
 """Configuration of a reservation ticket including custom field values"""
@@ -4811,7 +5228,7 @@ type OmitObjectTypeEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [OmitObjectType!]!
+  node: OmitObjectType!
 }
 
 type OmitObjectType {
@@ -4916,7 +5333,7 @@ type EventSeatEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [EventSeat!]!
+  node: EventSeat!
 }
 
 """Configuration settings for a venue seat type"""
@@ -4972,7 +5389,7 @@ type EventVenueSeatTypeEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [EventVenueSeatType!]!
+  node: EventVenueSeatType!
 }
 
 """Configuration settings for an event venue"""
@@ -5041,7 +5458,7 @@ type EventVenueEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [EventVenue!]!
+  node: EventVenue!
 }
 
 """
@@ -5155,7 +5572,7 @@ type ItemEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [Item!]!
+  node: Item!
 }
 
 """Represents an item owned by a player with a quantity"""
@@ -5203,7 +5620,7 @@ type PlayerItemEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [PlayerItem!]!
+  node: PlayerItem!
 }
 
 """Represents a category used to organize items"""
@@ -5254,44 +5671,107 @@ type ItemCategoryEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [ItemCategory!]!
+  node: ItemCategory!
 }
 
-"""
-Represents an audit log entry for tracking actions within the organization
-"""
-type Log {
-  """Unique identifier of the log entry"""
+"""Who or what produced a journal entry."""
+type JournalActor {
+  """Type of actor."""
+  type: JournalActorType!
+
+  """Actor entity ID, if applicable."""
+  id: ID
+
+  """Typed context for this actor type."""
+  context: JournalActorContextPayload!
+}
+
+"""Type of actor that produced the entry."""
+enum JournalActorType {
+  ADMIN
+  PLAYER
+  SYSTEM
+  MARKETPLACE_MODULE
+  API_CLIENT
+  WEBHOOK_CALLBACK
+  SIMULATION
+}
+
+"""Reference to an entity affected by a journal entry."""
+type JournalResourceRef {
+  """Resource type (e.g. tournament_step, team, match)."""
+  type: String!
+
+  """Resource ID."""
+  id: ID!
+}
+
+"""A single journal entry."""
+type JournalEntry {
+  """Unique identifier of the journal entry."""
   id: ID!
 
-  """Type of action that was logged"""
-  type: LogType!
+  """High-level grouping for retention and visibility."""
+  category: JournalCategory!
 
-  """ID of the resource this log entry is associated with"""
-  resourceId: ID!
+  """Namespaced type string identifying the kind of entry."""
+  type: String!
 
-  """Structured data payload of the log entry"""
-  data: LogData!
+  """Severity level of the entry."""
+  severity: JournalSeverity!
 
-  """ID of the organization this log belongs to"""
-  organizationId: ID!
+  """Who or what produced the entry."""
+  actor: JournalActor!
 
-  """Timestamp when the log entry was created"""
+  """Primary resource the entry is about, if any."""
+  primaryResource: JournalResourceRef
+
+  """Additional resources referenced by this entry."""
+  secondaryResources: [JournalResourceRef!]!
+
+  """Typed payload describing the entry contents."""
+  payload: JournalPayload!
+
+  """ID of the parent journal entry, if any."""
+  parentEntryId: ID
+
+  """Correlation ID grouping related entries."""
+  correlationId: ID
+
+  """Timestamp when the entry was created."""
   createdAt: DateTime!
+
+  """Direct children of this journal entry, ordered chronologically."""
+  children(first: Float = 50, after: String): JournalEntries!
 }
 
-enum LogType {
-  WEBHOOK_CALL
-  WEBHOOK_CALL_ERROR
+"""
+High-level grouping that drives retention defaults and default visibility filters.
+"""
+enum JournalCategory {
+  EXECUTION
+  AUDIT
+  SYSTEM
+  SIMULATION
 }
 
-"""Paginated list of audit log entries"""
-type Logs {
+"""
+Severity level for a journal entry. ERROR indicates a failed execution.
+"""
+enum JournalSeverity {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+}
+
+"""Paginated list of journal entries."""
+type JournalEntries {
   """List of edges containing cursor and node pairs"""
-  edges: [LogEdge!]!
+  edges: [JournalEntryEdge!]!
 
   """Flat list of items in the current page"""
-  nodes: [Log!]!
+  nodes: [JournalEntry!]!
 
   """Pagination metadata for navigating between pages"""
   pageInfo: ResponsePageInfo!
@@ -5301,12 +5781,123 @@ type Logs {
 }
 
 """An edge in a paginated connection containing a cursor and node"""
-type LogEdge {
+type JournalEntryEdge {
   """Opaque cursor string for this edge, used for pagination"""
   cursor: String!
 
   """The item at this edge"""
-  node: [Log!]!
+  node: JournalEntry!
+}
+
+"""
+Actor-context payload attached to journal entries produced by an admin (a logged-in Account acting through the console or admin API).
+"""
+type AdminActorContext implements JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+
+  """UUID of the admin Account that produced the entry."""
+  accountId: ID!
+
+  """
+  Human-readable identifier for the admin Account (email or username, depending on the deployment).
+  """
+  accountUsername: String!
+}
+
+"""
+Actor-context payload attached to journal entries produced by a player (an end-user PlayerProfile acting through a tournament participation flow).
+"""
+type PlayerActorContext implements JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+
+  """
+  UUID of the PlayerProfile that produced the entry. Per-organization, scoped to the tenant of the entry.
+  """
+  playerProfileId: ID!
+
+  """UUID of the underlying Account that owns the PlayerProfile."""
+  accountId: ID!
+}
+
+"""
+Actor-context payload attached to journal entries produced by the platform itself (rule-engine cascades, scheduled jobs, internal services).
+"""
+type SystemActorContext implements JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+
+  """
+  Free-form discriminator identifying the system emission site (e.g. "engine.generation", "engine.cascade", "scheduler.cleanup").
+  """
+  source: String!
+}
+
+"""
+Actor-context payload attached to journal entries produced by an installed marketplace module acting through a module token.
+"""
+type MarketplaceModuleActorContext implements JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+
+  """UUID of the OrganizationApp record (the per-tenant install)."""
+  appId: ID!
+
+  """UUID of the marketplace listing the installed app references."""
+  marketplaceAppId: ID!
+
+  """UUID of the MarketplaceAppInstallation row."""
+  installationId: ID!
+
+  """Human-readable name of the marketplace app at install time."""
+  appName: String!
+}
+
+"""
+Actor-context payload attached to journal entries produced by an OAuth2 API client using a client-credentials token.
+"""
+type ApiClientActorContext implements JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+
+  """UUID of the OAuth2 client that produced the entry."""
+  clientId: ID!
+
+  """Human-readable name of the OAuth2 client."""
+  clientName: String!
+}
+
+"""
+Actor-context payload attached to journal entries produced by an inbound webhook callback.
+"""
+type WebhookCallbackActorContext implements JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+
+  """UUID of the configured webhook the callback is associated with."""
+  webhookId: ID!
+
+  """UUID of the specific delivery attempt this callback is acknowledging."""
+  deliveryId: ID!
+}
+
+"""
+Actor-context payload attached to journal entries produced inside a rule-set validator simulation run.
+"""
+type SimulationActorContext implements JournalActorContextPayload {
+  """GraphQL __typename of the concrete actor-context payload class."""
+  _typename: String!
+
+  """
+  UUID of the validation job that produced the entry. Null when the simulation ran ad-hoc (no enqueued job, e.g. inline preset preview).
+  """
+  validationJobId: ID
+
+  """
+  Free-form discriminator identifying the simulation emission site (e.g. "validator").
+  """
+  source: String!
 }
 
 """A published app listing in the marketplace"""
@@ -5402,7 +5993,7 @@ type MarketplaceAppEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [MarketplaceApp!]!
+  node: MarketplaceApp!
 }
 
 """A user review and rating for a marketplace app"""
@@ -5456,7 +6047,7 @@ type MarketplaceAppReviewEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [MarketplaceAppReview!]!
+  node: MarketplaceAppReview!
 }
 
 """A marketplace app installation within an organization"""
@@ -5519,7 +6110,7 @@ type MarketplaceAppInstallationEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [MarketplaceAppInstallation!]!
+  node: MarketplaceAppInstallation!
 }
 
 """Aggregated statistics for a marketplace app"""
@@ -5850,9 +6441,6 @@ enum ObjectType {
   """Subscription Item entity"""
   SubscriptionItem
 
-  """Log entity"""
-  Log
-
   """Platform Template entity"""
   PlatformTemplate
 
@@ -5934,9 +6522,6 @@ enum ObjectType {
   """Advancement Rule entity"""
   AdvancementRule
 
-  """Rule Execution Log entity"""
-  RuleExecutionLog
-
   """Cross Step Rule entity"""
   CrossStepRule
 
@@ -5975,6 +6560,9 @@ enum ObjectType {
 
   """Marketplace App Installation entity"""
   MarketplaceAppInstallation
+
+  """Journal Entry entity"""
+  JournalEntry
 }
 
 """Metadata entries grouped by object ID for batch queries"""
@@ -6299,7 +6887,7 @@ type PlayerShopProductPurshaseEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [PlayerShopProductPurshase!]!
+  node: PlayerShopProductPurshase!
 }
 
 """A category within a shop used to organize products"""
@@ -6350,7 +6938,7 @@ type ShopCategoryEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [ShopCategory!]!
+  node: ShopCategory!
 }
 
 """Configuration constraints for purchasing a shop product"""
@@ -6462,7 +7050,7 @@ type ShopProductEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [ShopProduct!]!
+  node: ShopProduct!
 }
 
 """A shop belonging to an organization for selling products"""
@@ -6513,7 +7101,7 @@ type ShopEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [Shop!]!
+  node: Shop!
 }
 
 """An individual item or currency within a shop product bundle"""
@@ -6564,7 +7152,7 @@ type ShopProductItemEdge {
   cursor: String!
 
   """The item at this edge"""
-  node: [ShopProductItem!]!
+  node: ShopProductItem!
 }
 
 """Configuration settings for a skill rating"""
@@ -7208,11 +7796,6 @@ input SkillRatingConfigurationInput {
 }
 
 type Query {
-  """
-  Retrieves a paginated list of audit logs for the organization, optionally filtered by resource and log type
-  """
-  logs(page: PageInfo, resourceId: ID, types: [LogType!]): Logs!
-
   """Retrieves the currently authenticated account"""
   getMyAccount: Account!
 
@@ -7385,7 +7968,21 @@ type Query {
   """
   Retrieve a paginated list of teams registered to a tournament with optional filters
   """
-  tournamentTeams(tournamentId: ID!, page: PageInfo!, memberStatus: TournamentTeamMemberStatus, status: TournamentTeamStatus, propertiesFilter: [PropertyValueInput!], playerUsernameQuery: String, playerPropertiesFilter: [PropertyValueInput!], playerIdentityProviderPropertiesFilter: [IdentityProviderPropertyInput!]): TournamentTeams!
+  tournamentTeams(
+    tournamentId: ID!
+    page: PageInfo!
+    memberStatus: TournamentTeamMemberStatus
+    status: TournamentTeamStatus
+    playerUsernameQuery: String
+    propertiesFilter: [PropertyValueInput!]
+    playerPropertiesFilter: [PropertyValueInput!]
+    playerIdentityProviderPropertiesFilter: [IdentityProviderPropertyInput!]
+
+    """
+    Filter to tournament teams that have at least one ACCEPTED member whose player profile ID is in this list. Useful for retrieving every tournament team a given player belongs to.
+    """
+    playerProfileIds: [ID!]
+  ): TournamentTeams!
 
   """
   Retrieve a paginated list of tournament players with optional filtering by username, properties, and team status
@@ -7529,6 +8126,12 @@ type Query {
 
   """Retrieve the current subscription items active for the organization"""
   organizationCurrentSubscriptionItems: [OrganizationSubscriptionItem!]!
+
+  """Paginated journal entries for the current organization."""
+  journalEntries(page: PageInfo, filters: JournalFiltersInput): JournalEntries!
+
+  """A single journal entry by id."""
+  journalEntry(id: ID!): JournalEntry
 
   """Retrieve all skill ratings for the current organization"""
   organizationSkillRatings: [OrganizationSkillRating!]!
@@ -7943,6 +8546,55 @@ enum SimulationPresetParameterValueType {
   STRING
   NUMBER
   BOOLEAN
+}
+
+"""Filters for journal queries and subscriptions."""
+input JournalFiltersInput {
+  """Restrict results to one or more journal categories."""
+  categories: [JournalCategory!]
+
+  """Restrict results to an exact list of entry types."""
+  types: [String!]
+
+  """
+  Restrict results to entry types starting with the given prefix (e.g. "rule_engine.").
+  """
+  typePrefix: String
+
+  """Restrict results to a specific actor type."""
+  actorType: JournalActorType
+
+  """Restrict results to entries produced by a specific actor id."""
+  actorId: ID
+
+  """
+  Restrict results to entries whose primary resource matches the given type.
+  """
+  primaryResourceType: String
+
+  """Restrict results to entries whose primary resource has the given id."""
+  primaryResourceId: ID
+
+  """Restrict results to one or more severities."""
+  severity: [JournalSeverity!]
+
+  """When true, only return root entries (no parent)."""
+  rootOnly: Boolean
+
+  """Restrict results to direct children of a specific entry."""
+  parentEntryId: ID
+
+  """Restrict results to entries sharing the given correlation id."""
+  correlationId: ID
+
+  """Only return entries created at or after this timestamp."""
+  createdAfter: DateTime
+
+  """Only return entries created at or before this timestamp."""
+  createdBefore: DateTime
+
+  """Defaults to false. Excludes SIMULATION when false."""
+  includeSimulations: Boolean
 }
 
 """Query parameters for filtering and ordering events"""
@@ -9740,11 +10392,10 @@ input UpdateTournamentTeamInput {
   customFields: [PropertyValueInput!]
 }
 
-"""Input for creating or updating a tournament admin with permissions"""
+"""
+Input for creating or updating a tournament admin with permissions. The upsert is keyed by (tournamentId, accountId): if a record exists for that pair the permissions are updated, otherwise a new admin assignment is created with a server-generated id.
+"""
 input TournamentAdminUpsertInput {
-  """Unique identifier for this admin assignment"""
-  id: ID!
-
   """ID of the tournament this admin is assigned to"""
   tournamentId: ID!
 
@@ -9755,11 +10406,10 @@ input TournamentAdminUpsertInput {
   permissions: [TournamentAdminPermissions!]!
 }
 
-"""Input for removing a tournament admin"""
+"""
+Input for removing a tournament admin. The admin is identified by (tournamentId, accountId).
+"""
 input TournamentAdminDeleteInput {
-  """Unique identifier for this admin assignment"""
-  id: ID!
-
   """ID of the tournament this admin is assigned to"""
   tournamentId: ID!
 
@@ -11243,6 +11893,11 @@ type Subscription {
 
   """Subscribe to streaming events emitted during a validation run."""
   validationEvents(jobId: ID!): ValidationEventModel!
+
+  """
+  Stream of new journal entries for the current organization, filtered server-side.
+  """
+  journalEntryAdded(filters: JournalFiltersInput): JournalEntry!
   presenceUserConnected: UsersConnectedEvent!
   presenceUserDisconnected: UsersDisconnectedEvent!
 }
