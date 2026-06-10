@@ -7817,8 +7817,7 @@ export default {
                         "ID!"
                     ],
                     "status": [
-                        59,
-                        "TournamentTeamStatus!"
+                        59
                     ],
                     "playerUsernameQuery": [
                         1

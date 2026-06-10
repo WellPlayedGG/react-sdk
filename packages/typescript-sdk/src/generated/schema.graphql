@@ -729,8 +729,10 @@ type OrganizationMember {
   """The ID of the organization this membership belongs to"""
   organizationId: ID!
 
-  """The permission group assigned to this member"""
-  groupId: ID!
+  """
+  The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships)
+  """
+  groupId: ID
 
   """The account ID of the member"""
   memberId: ID!
@@ -747,8 +749,10 @@ type OrganizationMember {
   """The account details of this organization member"""
   account: Account!
 
-  """The permission group assigned to this member"""
-  group: OrganizationGroup!
+  """
+  The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships)
+  """
+  group: OrganizationGroup
 }
 
 """Paginated list of organization members"""
@@ -7985,9 +7989,9 @@ type Query {
   ): TournamentTeams!
 
   """
-  Retrieve a paginated list of tournament players with optional filtering by username, properties, and team status
+  Retrieve a paginated list of tournament players (one entry per player) with optional filtering by username, custom-field properties, and team status. Omit status to include players across every team status.
   """
-  tournamentPlayers(page: PageInfo!, tournamentId: ID!, status: TournamentTeamStatus!, playerUsernameQuery: String, playerPropertiesFilter: [PropertyValueInput!], orderByProperty: OrderByProperty): TeamMembers!
+  tournamentPlayers(page: PageInfo!, tournamentId: ID!, status: TournamentTeamStatus, playerUsernameQuery: String, playerPropertiesFilter: [PropertyValueInput!], orderByProperty: OrderByProperty): TeamMembers!
 
   """
   Retrieve a paginated list of team invitations for the current authenticated player

@@ -6340,11 +6340,15 @@ type OrganizationMember {
   """When this membership was created"""
   createdAt: DateTime!
 
-  """The permission group assigned to this member"""
-  group: OrganizationGroup!
+  """
+  The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships)
+  """
+  group: OrganizationGroup
 
-  """The permission group assigned to this member"""
-  groupId: ID!
+  """
+  The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships)
+  """
+  groupId: ID
 
   """Unique identifier for this membership"""
   id: ID!
@@ -8103,9 +8107,9 @@ type Query {
   tournamentAdmins(tournamentId: ID!): [TournamentAdmin!]!
 
   """
-  Retrieve a paginated list of tournament players with optional filtering by username, properties, and team status
+  Retrieve a paginated list of tournament players (one entry per player) with optional filtering by username, custom-field properties, and team status. Omit status to include players across every team status.
   """
-  tournamentPlayers(orderByProperty: OrderByProperty, page: PageInfo!, playerPropertiesFilter: [PropertyValueInput!], playerUsernameQuery: String, status: TournamentTeamStatus!, tournamentId: ID!): TeamMembers!
+  tournamentPlayers(orderByProperty: OrderByProperty, page: PageInfo!, playerPropertiesFilter: [PropertyValueInput!], playerUsernameQuery: String, status: TournamentTeamStatus, tournamentId: ID!): TeamMembers!
 
   """Retrieve a single tournament step by its ID"""
   tournamentStep(id: ID!): TournamentStep!

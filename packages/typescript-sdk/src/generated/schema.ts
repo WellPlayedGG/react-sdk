@@ -551,8 +551,8 @@ export interface OrganizationMember {
     id: Scalars['ID']
     /** The ID of the organization this membership belongs to */
     organizationId: Scalars['ID']
-    /** The permission group assigned to this member */
-    groupId: Scalars['ID']
+    /** The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships) */
+    groupId: (Scalars['ID'] | null)
     /** The account ID of the member */
     memberId: Scalars['ID']
     /** Additional permissions granted to this specific member */
@@ -563,8 +563,8 @@ export interface OrganizationMember {
     updatedAt: Scalars['DateTime']
     /** The account details of this organization member */
     account: Account
-    /** The permission group assigned to this member */
-    group: OrganizationGroup
+    /** The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships) */
+    group: (OrganizationGroup | null)
     __typename: 'OrganizationMember'
 }
 
@@ -5466,7 +5466,7 @@ export interface Query {
     tournamentTeam: TournamentTeam
     /** Retrieve a paginated list of teams registered to a tournament with optional filters */
     tournamentTeams: TournamentTeams
-    /** Retrieve a paginated list of tournament players with optional filtering by username, properties, and team status */
+    /** Retrieve a paginated list of tournament players (one entry per player) with optional filtering by username, custom-field properties, and team status. Omit status to include players across every team status. */
     tournamentPlayers: TeamMembers
     /** Retrieve a paginated list of team invitations for the current authenticated player */
     tournamentTeamInvites: TeamMembers
@@ -6644,7 +6644,7 @@ export interface OrganizationMemberGenqlSelection{
     id?: boolean | number
     /** The ID of the organization this membership belongs to */
     organizationId?: boolean | number
-    /** The permission group assigned to this member */
+    /** The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships) */
     groupId?: boolean | number
     /** The account ID of the member */
     memberId?: boolean | number
@@ -6656,7 +6656,7 @@ export interface OrganizationMemberGenqlSelection{
     updatedAt?: boolean | number
     /** The account details of this organization member */
     account?: AccountGenqlSelection
-    /** The permission group assigned to this member */
+    /** The permission group assigned to this member, or null when the member has no group (e.g. application/module memberships) */
     group?: OrganizationGroupGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -12043,8 +12043,8 @@ export interface QueryGenqlSelection{
     tournamentTeams?: (TournamentTeamsGenqlSelection & { __args: {tournamentId: Scalars['ID'], page: PageInfo, memberStatus?: (TournamentTeamMemberStatus | null), status?: (TournamentTeamStatus | null), playerUsernameQuery?: (Scalars['String'] | null), propertiesFilter?: (PropertyValueInput[] | null), playerPropertiesFilter?: (PropertyValueInput[] | null), playerIdentityProviderPropertiesFilter?: (IdentityProviderPropertyInput[] | null), 
     /** Filter to tournament teams that have at least one ACCEPTED member whose player profile ID is in this list. Useful for retrieving every tournament team a given player belongs to. */
     playerProfileIds?: (Scalars['ID'][] | null)} })
-    /** Retrieve a paginated list of tournament players with optional filtering by username, properties, and team status */
-    tournamentPlayers?: (TeamMembersGenqlSelection & { __args: {page: PageInfo, tournamentId: Scalars['ID'], status: TournamentTeamStatus, playerUsernameQuery?: (Scalars['String'] | null), playerPropertiesFilter?: (PropertyValueInput[] | null), orderByProperty?: (OrderByProperty | null)} })
+    /** Retrieve a paginated list of tournament players (one entry per player) with optional filtering by username, custom-field properties, and team status. Omit status to include players across every team status. */
+    tournamentPlayers?: (TeamMembersGenqlSelection & { __args: {page: PageInfo, tournamentId: Scalars['ID'], status?: (TournamentTeamStatus | null), playerUsernameQuery?: (Scalars['String'] | null), playerPropertiesFilter?: (PropertyValueInput[] | null), orderByProperty?: (OrderByProperty | null)} })
     /** Retrieve a paginated list of team invitations for the current authenticated player */
     tournamentTeamInvites?: (TeamMembersGenqlSelection & { __args: {page: PageInfo, tournamentId?: (Scalars['ID'] | null), status?: (TournamentTeamMemberStatus | null)} })
     /** Retrieve all match scores for a tournament step with pagination */
