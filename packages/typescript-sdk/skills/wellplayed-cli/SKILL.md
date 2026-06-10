@@ -332,6 +332,87 @@ Entries are auto-pruned by category. Don't rely on the journal for long-term arc
 
 The legacy `logs(...)` query, `Log` / `LogType` / `LogAuthorType` / `LogData` types, and `ORGANIZATION_LOGS_VIEW` permission have been removed. Replace every call site with `journalEntries(...)` and adapt to the typed `JournalPayload` interface — see the platform's API deprecations changelog for the full migration note.
 
+## Account identities — linking and unlinking
+
+### `deleteAccountIdentity` mutation
+
+Unlinks an identity provider from an account. This is an admin-or-self operation: a caller can omit `accountId` to act on their own account, or supply it to act on another account (requires the `organization:account:identity:delete` permission scoped to `organization:account:{accountId}:identity:{identityProviderId}`).
+
+**Protected identities:**
+
+- **Creation identity** — the oldest linked identity (resolved by `createdAt` ascending, then `organizationIdentityProviderId`, then `providerId`). Deleting it raises `IDENTITY_CREATION_IDENTITY_NOT_DELETABLE`.
+- **Last identity** — when the account has only one linked identity, deletion raises `IDENTITY_LAST_IDENTITY_NOT_DELETABLE`.
+
+**Error codes:** `ACCOUNT_NOT_FOUND`, `IDENTITY_PROVIDER_NOT_FOUND`, `IDENTITY_NOT_FOUND`, `IDENTITY_LAST_IDENTITY_NOT_DELETABLE`, `IDENTITY_CREATION_IDENTITY_NOT_DELETABLE`.
+
+**`isCreationIdentity` field** — `AccountIdentity` carries an optional `isCreationIdentity: Boolean` field. It is `true` on the identity that cannot be deleted, `null` when not computed in the response (e.g. when fetching a single identity without the full list context).
+
+```bash
+# Self-service: unlink a specific provider from my own account
+wellplayed graphql --org my-org -F identityProviderId=<providerShortId> \
+  'mutation($identityProviderId: ID!) {
+    deleteAccountIdentity(identityProviderId: $identityProviderId)
+  }'
+
+# Admin: unlink a provider from another account
+wellplayed graphql --org my-org \
+  -F identityProviderId=<providerShortId> \
+  -F accountId=<accountShortId> \
+  'mutation($identityProviderId: ID!, $accountId: ID) {
+    deleteAccountIdentity(identityProviderId: $identityProviderId, accountId: $accountId)
+  }'
+```
+
+To discover which identity is the creation identity before unlinking, read the `identities` field with `isCreationIdentity`:
+
+```bash
+wellplayed graphql --org my-org 'query {
+  getMyAccount {
+    identities { organizationIdentityProviderId isCreationIdentity createdAt }
+  }
+}'
+```
+
+### Identity-link redirect contract
+
+When an org-scoped identity provider has a `linkRedirectUrl` configured, the IDP service redirects back to that URL after the OAuth callback completes. Query params are appended with `&`-aware logic (existing params in `linkRedirectUrl` are preserved):
+
+| Scenario | Added params |
+|----------|-------------|
+| Success | `success=true` |
+| Token exchange failure | `success=false`, `error=identity_provider_error` |
+| External identity already attached to another account | `success=false`, `error=identity_already_attached` |
+
+`localhost` URLs are valid in `linkRedirectUrl` (and in all other IDP URL configuration fields). The URL validator does not require a public TLD, so `http://localhost:3000/callback` is accepted.
+
+## Object metadata — visibility and access control
+
+Object metadata entries carry a `visibility` field with two values:
+
+- `PUBLIC` — returned to any caller regardless of authentication state. The `organization-id` header is still required.
+- `PRIVATE` — returned to any caller whose permission set includes `organization:metadata:view` or `organization:metadata:manage`. Authentication state is irrelevant: an organization can grant `organization:metadata:view` to its Anonymous group, in which case unauthenticated callers also receive `PRIVATE` entries. Callers without either permission receive only `PUBLIC` entries — no error is thrown.
+
+Both `objectMetadata(objectType, objectId)` and `objectMetadataBatch(objectType, objectIds[])` are decorated `@Public` — they accept requests without a Bearer token. The server filters the result set based on the caller's permission set, not on whether the caller is authenticated. The `organization-id` header is always required — callers without it are rejected by the platform.
+
+`objectMetadataBatch` accepts up to 100 object IDs in a single request.
+
+**Writing metadata** — `setObjectMetadata` requires `organization:metadata:manage`. Each entry in `SetObjectMetadataInput.entries` carries an explicit `visibility` field (`PUBLIC` or `PRIVATE`).
+
+### Lua `set_metadata` — optional visibility argument
+
+In rule-engine Lua scripts, `set_metadata` accepts an optional fourth argument controlling the visibility of the written entry:
+
+```lua
+-- 3-arg form: defaults to PRIVATE
+set_metadata(team, "key", "value")
+
+-- 4-arg form: explicit visibility
+set_metadata(team, "key", "value", "PUBLIC")
+set_metadata(team, "key", "value", "PRIVATE")
+```
+
+Passing any value other than `"PUBLIC"`, `"PRIVATE"`, or `nil` causes the script to fail with an error matching `/visibility must be one of/i`. Passing `nil` explicitly is equivalent to omitting the argument (defaults to `PRIVATE`).
+
 ## Custom fields (visibility & editability)
 
 Custom fields attach typed, org-defined values to entities (players, tournament teams, events, …). Definitions live under **Data → Custom Fields**; values are read/written via the API.
@@ -354,6 +435,35 @@ Anonymous (unauthenticated) callers are never treated as an owner: they only eve
 Re-submitting a field's current value is a no-op. Owners may set their own `ALWAYS` and first-time `ONE_TIME` values without `organization:custom_fields:values:manage`.
 
 Key operations: `customFieldDefinitions(objectType)`, `customFieldValues(objectType, objectId)` and `customFieldValuesBatch(objectType, objectIds)` (both public, visibility-filtered per field), and `setCustomFieldValues(input)`.
+
+### `setCustomFieldValues` — `deleteKeys` argument
+
+`SetCustomFieldValuesInput` accepts an optional `deleteKeys: [String!]` alongside `fields`. The two operations are applied atomically in a single mutation call:
+
+- `fields` — upsert these key-value pairs.
+- `deleteKeys` — delete the stored value rows for these keys.
+
+Constraints:
+
+- Maximum 100 keys per call (`deleteKeys` is capped at 100 entries per mutation invocation).
+- A key must not appear in both `fields` and `deleteKeys` simultaneously (`CUSTOM_FIELD_KEY_IN_BOTH_SET_AND_DELETE`).
+- Required fields can only be deleted via `deleteKeys` by a caller holding `organization:custom_fields:values:manage`; a plain owner without that permission receives `CUSTOM_FIELD_REQUIRED_VALUE_NOT_DELETABLE`. The same restriction applies to `ONE_TIME` fields.
+- Each key in `deleteKeys` must match an existing definition (`CUSTOM_FIELD_DEFINITION_NOT_FOUND`).
+
+```bash
+# Upsert one field and delete another in a single call
+wellplayed graphql --org my-org \
+  -F input.objectType=Tournament \
+  -F input.objectId=<tournamentShortId> \
+  -F 'input.fields=[{"key":"stage","value":"playoffs"}]' \
+  -F 'input.deleteKeys=["legacy_bracket"]' \
+  'mutation($input: SetCustomFieldValuesInput!) {
+    setCustomFieldValues(input: $input) {
+      definition { key name }
+      value
+    }
+  }'
+```
 
 ## Related skills
 
