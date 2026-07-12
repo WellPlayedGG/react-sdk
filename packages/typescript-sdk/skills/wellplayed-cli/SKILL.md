@@ -465,6 +465,86 @@ wellplayed graphql --org my-org \
   }'
 ```
 
+## Tournament seeding — rule-engine steps vs. legacy steps
+
+Every tournament step either has a `StepRuleSet` (built-in template or custom preset script applied via `applyBuiltinPreset` / `applyPresetScript`) or has none. A step with no rule set is a **legacy step** — a permanent, fully-supported configuration for tournaments predating the Lua rule engine, not a half-configured one. `seedTournamentStep` supports both:
+
+```graphql
+mutation SeedStep($input: SeedStepInput, $legacyInput: SeedStepLegacyInput) {
+  seedTournamentStep(input: $input, legacyInput: $legacyInput) {
+    id
+    status       # GENERATED -> SEEDING -> SEEDED
+    seedingOrder
+  }
+}
+```
+
+Pass **exactly one** of the two arguments:
+
+- **`input: SeedStepInput`** — the canonical, rule-engine-driven shape. Use this for any step that has a rule set: an ordered `orderedTeamIds` permutation of the step's teams, plus optional `pins: [SeedingPinInput!]` (group/game/slot anchors). The preset's `SEEDING` / `ROUND_SEEDING` Lua rules drive the actual placement.
+
+  ```bash
+  wellplayed graphql --org my-org \
+    -F input.stepId=<stepId> \
+    -F 'input.orderedTeamIds=["team-A","team-B","team-C","team-D"]' \
+    'mutation($input: SeedStepInput!) { seedTournamentStep(input: $input) { id status } }'
+  ```
+
+- **`legacyInput: SeedStepLegacyInput`** — only meaningful on a step with **no** rule set. Preserves the pre-rule-engine automatic/manual seeding contract for integrations that never migrated. Provide exactly one of `automaticSeeding` or `manualSeeding`:
+
+  ```bash
+  # Automatic: order the team pool with a SeedingMechanism, then spread
+  # it across entry groups with a GroupRepartitionMechanism.
+  wellplayed graphql --org my-org \
+    -F legacyInput.stepId=<stepId> \
+    -F legacyInput.automaticSeeding.seedingMechanism=REVERSE_HALF_SHIFT \
+    -F legacyInput.automaticSeeding.groupRepartitionMechanism=SEED_OPTIMIZED \
+    'mutation($legacyInput: SeedStepLegacyInput!) { seedTournamentStep(legacyInput: $legacyInput) { id status } }'
+  ```
+
+  `SeedingMechanism`: `NONE`, `REVERSE`, `HALF_SHIFT`, `REVERSE_HALF_SHIFT`, `PAIR_FLIP`. `GroupRepartitionMechanism`: `BALANCED`, `SEED_OPTIMIZED`.
+
+**Don't send `legacyInput` against a step that has a rule set** — it carries no rule-engine meaning there; use `input` so the preset's Lua seeding rules run instead.
+
+### What a legacy step gives you for free
+
+With no rule set attached, the platform still runs the step end-to-end using built-in, zero-config defaults — not silent no-ops:
+
+- **Scoring** — implicit `SUM` aggregation over raw match scores (the pre-migration match→game→round→group→step→tournament roll-up).
+- **Seeding** — a generic placement pass: walks the generated groups/rounds/games in order and drops the (ordered or legacy-derived) team list into entry games, respecting each game's team-slot capacity.
+- **Advancement** — driven by `GameLink` rows: when a game ends, winners/losers are read off recorded match scores and walked along the game's outgoing `GameLink` edges.
+- **Best-of-N series** — matches are created incrementally, one at a time, only once the prior match ended and the series is still undecided.
+- **Step completion** — the step auto-transitions to `ENDED` once every game has ended. There's no `STEP_ENDED` Lua rule, so use `setStepWinners` / `setTournamentWinners` to record results.
+
+The moment a rule set is attached (via `applyBuiltinPreset`, `applyPresetScript`, or `createStepRuleSet`), all of the above is fully replaced by the step's Lua rules.
+
+### Team withdrawal keeps two statuses in sync
+
+`withdrawTeamFromStep(stepId, teamId)` and the admin `updateTournamentTeamStatus(tournamentTeamId, status: WITHDRAWN)` mutation both now keep the team's tournament-wide `TournamentTeamStatus.WITHDRAWN` and its per-step score-row status (`team_scope_status.WITHDRAWN`) in sync across every one of the team's not-yet-`ENDED` steps. If you read standings or `tournamentStep.teamScores` right after either mutation, both statuses reflect the withdrawal.
+
+### Built-in preset: `cumulative-points-total`
+
+New `OTHER`-category built-in template alongside `cumulative-rounds-series`. Both run the same shape — the same set of teams plays `round_count` full-roster rounds — but rank teams differently:
+
+| Template | Ranks by | Aggregation |
+|----------|----------|-------------|
+| `cumulative-rounds-series` | round **wins** | `POINTS` (`points_per_round_win` per round win) |
+| `cumulative-points-total` | raw cumulative **score** total across all rounds | `SUM` of raw per-game scores |
+
+```bash
+wellplayed graphql --org my-org \
+  -F builtinPresetId=cumulative-points-total \
+  -F tournamentStepId=<stepId> \
+  -F 'parameters={"team_count":8,"round_count":5,"best_of":1,"shared_victory":false}' \
+  'mutation($builtinPresetId: String!, $tournamentStepId: ID!, $parameters: String!) {
+    applyBuiltinPreset(builtinPresetId: $builtinPresetId, tournamentStepId: $tournamentStepId, parameters: $parameters) { id version }
+  }'
+```
+
+Parameters: `team_count` (required, ≥ 2), `round_count` (default `5`), `best_of` (default `1`), `promote_step_winners_to_tournament` (default `true`), `shared_victory` (default `false` — when `true`, a full points+tiebreaker tie at the top declares every tied leader a co-champion instead of a single winner).
+
+> **Behavior-change note:** `cumulative-rounds-series` previously declared `SUM` aggregation, which silently ignored its own `points_per_round_win` parameter and ranked by raw score instead of round wins. It now declares `POINTS`, which is honored — standings correctly reflect round-win counts. This only affects rule sets built by *re-applying* the template after this change; already-persisted rule sets are unaffected until re-applied.
+
 ## Related skills
 
 - `wellplayed-react` (when present) — building React apps against the WellPlayed React SDK.
