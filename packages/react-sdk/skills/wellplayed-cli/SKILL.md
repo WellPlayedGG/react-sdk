@@ -689,6 +689,42 @@ Parameters: `team_count` (required, ≥ 2), `round_count` (default `5`), `best_o
 
 > **Behavior-change note:** `cumulative-rounds-series` previously declared `SUM` aggregation, which silently ignored its own `points_per_round_win` parameter and ranked by raw score instead of round wins. It now declares `POINTS`, which is honored — standings correctly reflect round-win counts. This only affects rule sets built by *re-applying* the template after this change; already-persisted rule sets are unaffected until re-applied.
 
+## Event reservations — `eventReservationUpdateStatus` auto-reserves tickets
+
+`eventReservationUpdateStatus` now auto-reserves tickets when a reservation is moved into a payment-validated status (`CONFIRMED`, `REGISTERED`, `PRESENCE_CONFIRMATION_PENDING`, `NOT_ATTENDING`) — for example from an admin action panel in your app — and the reservation has none yet, whatever its previous status. No separate ticket-creation call is needed for that case.
+
+- If the event has exactly **one** ticket configuration, tickets are reserved against it automatically — one per accepted group member. If the reservation's group has zero accepted members, this fails with a `BAD_REQUEST` error ("the reservation has no accepted group member, tickets cannot be reserved automatically") — accept at least one group member before moving the reservation into a payment-validated status.
+- If the event has **more than one** ticket configuration, pass the new optional `ticketsToReserve: EventReservationRegisterTicketsInput` argument to say which configuration(s) and quantities to use. Omitting it in that case fails with a `BAD_REQUEST` error asking you to disambiguate.
+- `ticketsToReserve` is ignored when the reservation already has tickets, or when the status change does not cause it to hold a seat.
+- Seats are never assigned implicitly by this call — if the event requires seat selection, reserve tickets without seats here, then assign seats afterwards with `eventReservationUpdateTickets`.
+- `reservedSeats: [ID!]!` is required on every entry of `tickets` — pass `[]` when reserving without seats.
+
+```tsx
+const [updateReservationStatus] = useMutation(graphql(`
+  mutation UpdateReservationStatus(
+    $reservationId: ID!
+    $status: EventReservationStatus!
+    $ticketsToReserve: EventReservationRegisterTicketsInput
+  ) {
+    eventReservationUpdateStatus(
+      reservationId: $reservationId
+      status: $status
+      ticketsToReserve: $ticketsToReserve
+    ) { id status }
+  }
+`));
+
+await updateReservationStatus({
+  variables: {
+    reservationId,
+    status: "CONFIRMED",
+    ticketsToReserve: {
+      tickets: [{ ticketConfigurationId, quantity: 2, reservedSeats: [] }],
+    },
+  },
+});
+```
+
 ## Related skills
 
 - `wellplayed-react` (when present) — building React apps against the WellPlayed React SDK.
