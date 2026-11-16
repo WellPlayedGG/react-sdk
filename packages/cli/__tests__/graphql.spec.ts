@@ -16,6 +16,7 @@ import {
   createGraphqlCommand,
   parseFieldFlag,
   parseHeaders,
+  validateGuestSession,
   validateOrgId,
 } from '../src/commands/graphql';
 
@@ -173,6 +174,15 @@ describe('validateOrgId', () => {
   });
 });
 
+describe('validateGuestSession', () => {
+  it('accepts a token and rejects whitespace, CR/LF and empty values', () => {
+    expect(validateGuestSession('wpgs_abc.123')).toBe('wpgs_abc.123');
+    expect(() => validateGuestSession('')).toThrow();
+    expect(() => validateGuestSession('wpgs abc')).toThrow();
+    expect(() => validateGuestSession('wpgs\r\nAuthorization: Bearer x')).toThrow();
+  });
+});
+
 describe('graphql command action', () => {
   beforeEach(() => {
     apiClientMock.graphqlRequest.mockReset();
@@ -207,6 +217,28 @@ describe('graphql command action', () => {
       { organizationId: 'org_123', headers: { 'X-Trace': 'abc' } },
     );
     expect(JSON.parse(stdout)).toEqual({ data: { ok: true } });
+  });
+
+  it('forwards --guest-session to the API client', async () => {
+    apiClientMock.graphqlRequestRaw.mockResolvedValueOnce({ data: { guestMe: null } });
+
+    await withCapturedStdout(() =>
+      createGraphqlCommand().parseAsync([
+        'node',
+        'wellplayed',
+        'query { guestMe { sessionPlayerId } }',
+        '-o',
+        'my-org',
+        '--guest-session',
+        'wpgs_token',
+      ]),
+    );
+
+    expect(apiClientMock.graphqlRequestRaw).toHaveBeenCalledWith(
+      'query { guestMe { sessionPlayerId } }',
+      undefined,
+      { organizationId: 'my-org', headers: undefined, guestSession: 'wpgs_token' },
+    );
   });
 
   it('uses graphqlRequest (data-only) when --data-only is passed', async () => {

@@ -103,6 +103,7 @@ wellplayed graphql 'query { currentAccount { id email } }' --data-only | jq '.cu
 |--------|-------------|
 | `-o, --org <shortId>` | Set the `organization-id` header. Required for any query/mutation not decorated `@WithoutOrganization` on the backend. |
 | `-H, --header <key:value>` | Add an extra HTTP header. Repeatable. `Authorization` and `Content-Type` are owned by the CLI and cannot be overridden. |
+| `--guest-session <token>` | Call as a guest: send the token in `x-guest-session` instead of your login token. No `wellplayed login` needed. |
 
 **Output**:
 
@@ -200,7 +201,7 @@ wellplayed config set MAX_NOTES=5 "WELCOME_TEXT=Hello there" --app <slug> --org 
 | Command | Description |
 |---------|-------------|
 | `install --app-id <appId> --org <shortId> [--grant <permissions...>]` | Installs the app. `--grant all` grants every permission its manifest requests |
-| `pin <version> --app <slug> --org <shortId> [--grant <permissions...>]` | Pins the installation to an approved release. `--grant` sends the installation's whole grant list, so name every permission to keep |
+| `pin <version> --app <slug> --org <shortId> [--grant <permissions...>]` | Pins the installation to an approved release. `--grant` adds the named permissions to the installation's current grants |
 | `config set <KEY=VALUE...> --app <slug> --org <shortId>` | Sets configuration values; the value is everything after the first `=` |
 
 ## Configuration (`wellplayed.json`)

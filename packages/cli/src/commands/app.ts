@@ -23,6 +23,23 @@ const INSTALL_APP_MUTATION = `
   }
 `;
 
+const INSTALLATIONS_QUERY = `
+  query myMarketplaceInstallations($page: PageInfo) {
+    myMarketplaceInstallations(page: $page) {
+      nodes {
+        grantedPermissions
+        marketplaceApp {
+          slug
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
 const PIN_RELEASE_MUTATION = `
   mutation appInstallationPin($input: AppInstallationPinInput!) {
     appInstallationPin(input: $input) {
@@ -59,6 +76,28 @@ async function resolveGrants(grant: string[], appId: string, organizationId: str
   return result.marketplaceApp.manifest.permissions;
 }
 
+interface InstallationsPage {
+  myMarketplaceInstallations: {
+    nodes: Array<{ grantedPermissions: string[]; marketplaceApp: { slug: string | null } }>;
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  };
+}
+
+async function currentGrants(appSlug: string, organizationId: string): Promise<string[]> {
+  let after: string | null = null;
+  do {
+    const { myMarketplaceInstallations: page }: InstallationsPage = await graphqlRequest<InstallationsPage>(
+      INSTALLATIONS_QUERY,
+      { page: { first: 100, after } },
+      { organizationId },
+    );
+    const installation = page.nodes.find((node) => node.marketplaceApp.slug === appSlug);
+    if (installation) return installation.grantedPermissions;
+    after = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+  } while (after);
+  throw new Error(`App "${appSlug}" is not installed in this organization.`);
+}
+
 export const installCommand = new Command('install')
   .description('Install a marketplace app in an organization')
   .requiredOption('--app-id <appId>', 'Marketplace App ID')
@@ -87,10 +126,14 @@ export const pinCommand = new Command('pin')
   .option('--grant <permissions...>', 'Permissions added by the release, granted for re-consent')
   .action((version: string, options: { app: string; org: string; grant?: string[] }) =>
     runCommand(async () => {
+      const organizationId = validateOrgId(options.org);
+      const grantedPermissions = options.grant
+        ? [...new Set([...(await currentGrants(options.app, organizationId)), ...options.grant])]
+        : undefined;
       await graphqlRequest<{ appInstallationPin: { id: string } }>(
         PIN_RELEASE_MUTATION,
-        { input: { appSlug: options.app, version, grantedPermissions: options.grant } },
-        { organizationId: validateOrgId(options.org) },
+        { input: { appSlug: options.app, version, grantedPermissions } },
+        { organizationId },
       );
       log.success(`Pinned ${options.app} to v${version}.`);
     }),

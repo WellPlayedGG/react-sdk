@@ -27,6 +27,11 @@ export interface GraphqlRequestOptions {
    * are provided.
    */
   headers?: Record<string, string>;
+  /**
+   * Guest session token. When set, the request carries `x-guest-session`
+   * instead of the stored login token, and needs no `wellplayed login`.
+   */
+  guestSession?: string;
 }
 
 export interface GraphqlEnvelope<T> {
@@ -45,7 +50,7 @@ interface AttemptParams {
   url: string;
   query: string;
   variables: Record<string, unknown> | undefined;
-  accessToken: string;
+  credentialHeaders: Record<string, string>;
   organizationId: string | undefined;
   extraHeaders: Record<string, string> | undefined;
 }
@@ -54,7 +59,7 @@ async function attemptGraphqlRequest<T>(params: AttemptParams): Promise<GraphqlA
   const headers: Record<string, string> = {
     ...(params.extraHeaders ?? {}),
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${params.accessToken}`,
+    ...params.credentialHeaders,
   };
   if (params.organizationId) {
     headers['organization-id'] = params.organizationId;
@@ -149,6 +154,20 @@ async function graphqlRequestWithRefresh<T>(
   variables: Record<string, unknown> | undefined,
   options: GraphqlRequestOptions | undefined,
 ): Promise<GraphqlAttempt<T>> {
+  const send = (credentialHeaders: Record<string, string>): Promise<GraphqlAttempt<T>> =>
+    attemptGraphqlRequest<T>({
+      url: `${getApiUrl()}graphql`,
+      query,
+      variables,
+      credentialHeaders,
+      organizationId: options?.organizationId,
+      extraHeaders: options?.headers,
+    });
+
+  if (options?.guestSession !== undefined) {
+    return send({ 'x-guest-session': options.guestSession });
+  }
+
   let creds = getCredentials();
   if (!creds) {
     throw new Error('Not authenticated. Run `wellplayed login` first.');
@@ -158,23 +177,17 @@ async function graphqlRequestWithRefresh<T>(
     creds = await performRefresh(creds.refreshToken);
   }
 
-  const send = (accessToken: string): Promise<GraphqlAttempt<T>> =>
-    attemptGraphqlRequest<T>({
-      url: `${getApiUrl()}graphql`,
-      query,
-      variables,
-      accessToken,
-      organizationId: options?.organizationId,
-      extraHeaders: options?.headers,
-    });
+  const bearer = (accessToken: string): Record<string, string> => ({
+    Authorization: `Bearer ${accessToken}`,
+  });
 
-  const first = await send(creds.accessToken);
+  const first = await send(bearer(creds.accessToken));
   if (first.statusCode !== 401) {
     return first;
   }
 
   const refreshed = await performRefresh(creds.refreshToken);
-  const retry = await send(refreshed.accessToken);
+  const retry = await send(bearer(refreshed.accessToken));
   if (retry.statusCode === 401) {
     throw new Error(`GraphQL error 401: ${first.text}`);
   }
