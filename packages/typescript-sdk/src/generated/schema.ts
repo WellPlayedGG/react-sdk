@@ -771,6 +771,8 @@ export interface AccountIdentity {
     createdAt: Scalars['DateTime']
     /** When this identity was last updated */
     updatedAt: Scalars['DateTime']
+    /** Whether this is the creation identity — the oldest linked identity. The creation identity cannot be deleted. Null when not computed in this response. */
+    isCreationIdentity: (Scalars['Boolean'] | null)
     /** Resolves the public identity provider configuration for this identity */
     organizationIdentityProvider: (PublicOrganizationIdentityProvider | null)
     __typename: 'AccountIdentity'
@@ -5640,9 +5642,9 @@ export interface Query {
     entityMetafields: EntityMetafield[]
     /** Returns all object types that support metadata and custom fields */
     allowedObjectTypes: ObjectType[]
-    /** Get metadata entries for an object */
+    /** Get metadata entries for an object. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadata: ObjectMetadata[]
-    /** Get metadata entries for multiple objects of the same type in a single query */
+    /** Get metadata entries for multiple objects of the same type in a single query. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadataBatch: ObjectMetadataBatchResult[]
     /** List all custom field definitions for a given object type */
     customFieldDefinitions: CustomFieldDefinitionModel[]
@@ -5702,6 +5704,8 @@ export interface Mutation {
     attachOrUpdateIdentityToAccount: AccountIdentity
     /** Generates a URL to redirect the user to for linking an identity provider to their account */
     generateIdentityLinkUrl: IdentityLinkUrl
+    /** Deletes a linked identity from an account. When accountId is omitted, operates on the caller's own account (self-service). The creation identity (oldest linked identity by createdAt, then organizationIdentityProviderId, then providerId) cannot be deleted. The last remaining identity cannot be deleted. Possible errors: ACCOUNT_NOT_FOUND, IDENTITY_PROVIDER_NOT_FOUND, IDENTITY_NOT_FOUND, IDENTITY_LAST_IDENTITY_NOT_DELETABLE, IDENTITY_CREATION_IDENTITY_NOT_DELETABLE. */
+    deleteAccountIdentity: Scalars['Boolean']
     /** Updates an existing configuration preset */
     updateConfiguration: Configuration
     /** Deletes a configuration preset by ID */
@@ -5804,7 +5808,7 @@ export interface Mutation {
     deleteTournamentStep: Scalars['Boolean']
     /** Generate the bracket structure for a tournament step based on its configuration or rule set */
     generateTournamentStep: Scalars['Boolean']
-    /** Seed teams into a generated tournament step. Accepts the caller-curated seeding order and optional manual pins; the preset rule set (SEEDING / ROUND_SEEDING rules) drives actual team-to-game assignment. Prior placements are discarded (idempotent re-seed). */
+    /** Seed teams into a generated tournament step. Provide exactly one of `input` (rule-engine seeding: caller-curated order + optional manual pins, driven by SEEDING / ROUND_SEEDING rules) or `legacyInput` (pre-migration automatic/manual seeding, translated to an ordered team list + group pins). Prior placements are discarded (idempotent re-seed). */
     seedTournamentStep: TournamentStep
     /** Persist a new seeding order on the step without re-seeding. Order must be a permutation of the tournament's teams. */
     updateSeedingOrder: TournamentStep
@@ -5930,7 +5934,7 @@ export interface Mutation {
     eventTicketConfigurationUpdate: EventTicketConfiguration
     /** Delete a ticket configuration from an event */
     eventTicketConfigurationDelete: EventTicketConfiguration
-    /** Update the status of an event reservation as an administrator */
+    /** Update the status of an event reservation as an administrator. When the reservation moves to a payment-validated status (REGISTERED, CONFIRMED, PRESENCE_CONFIRMATION_PENDING, NOT_ATTENDING) while it has no ticket, whatever its previous status, tickets are reserved automatically and their seats are marked as SOLD. Use ticketsToReserve to choose the ticket configurations, quantities and seats; when omitted, one ticket of the event single ticket configuration is reserved per ACCEPTED group member, and the call fails when the event has several ticket configurations. Seats are never assigned implicitly: if no seat is provided, tickets are created without a seat even when the event seat assignment mode is REQUIRED, and the seats must be assigned afterwards with eventReservationUpdateTickets. Reservations that already have tickets are never re-reserved. */
     eventReservationUpdateStatus: EventReservation
     /** Confirm or decline attendance for an event reservation as the group manager */
     eventReservationConfirmPresence: EventReservation
@@ -6056,6 +6060,14 @@ export interface Mutation {
     setCustomFieldValues: CustomFieldWithValueModel[]
     __typename: 'Mutation'
 }
+
+
+/** Legacy (pre-rule-engine) team-ordering algorithm. Only honored for steps without a rule set; steps with a rule set drive seeding through SEEDING / ROUND_SEEDING Lua rules instead. */
+export type SeedingMechanism = 'NONE' | 'REVERSE' | 'HALF_SHIFT' | 'REVERSE_HALF_SHIFT' | 'PAIR_FLIP'
+
+
+/** Legacy (pre-rule-engine) algorithm for distributing seeded teams across a step’s entry groups. Only honored for steps without a rule set. */
+export type GroupRepartitionMechanism = 'BALANCED' | 'SEED_OPTIMIZED'
 
 export type StripeUiMode = 'EMBEDDED' | 'HOSTED'
 
@@ -6876,6 +6888,8 @@ export interface AccountIdentityGenqlSelection{
     createdAt?: boolean | number
     /** When this identity was last updated */
     updatedAt?: boolean | number
+    /** Whether this is the creation identity — the oldest linked identity. The creation identity cannot be deleted. Null when not computed in this response. */
+    isCreationIdentity?: boolean | number
     /** Resolves the public identity provider configuration for this identity */
     organizationIdentityProvider?: PublicOrganizationIdentityProviderGenqlSelection
     __typename?: boolean | number
@@ -11621,8 +11635,6 @@ required: Scalars['Boolean'],
 order: Scalars['Float'],
 /** Whether the value must be unique across all entities */
 unique: Scalars['Boolean'],
-/** Whether the property is publicly visible (deprecated, use visibility instead) */
-public?: (Scalars['Boolean'] | null),
 /** Visibility level controlling who can view this property value */
 visibility?: (PropertyVisibility | null),
 /** Editability rule controlling when and by whom this property can be modified */
@@ -11657,8 +11669,6 @@ scoreFormula?: (Scalars['String'] | null)}
 
 /** Input for game-level configuration within a round */
 export interface GameConfigurationInput {
-/** Number of match wins required to win the game (best-of format) */
-wonMatchCountToWinGame?: (Scalars['Float'] | null),
 /** Whether individual match scores are aggregated as the game score */
 useMatchScoresAsGameScore: Scalars['Boolean'],
 /** Number of teams participating in each game */
@@ -11698,9 +11708,7 @@ description?: (Scalars['String'] | null)}
 /** Input for a tournament step configuration */
 export interface StepConfigurationInput {
 /** Discriminator type, always STEP for step configurations */
-type?: ConfigurationType,
-/** List of group configurations within this step */
-groups?: (GroupConfigurationInput[] | null)}
+type?: ConfigurationType}
 
 
 /** Input for a numeric comparison condition */
@@ -12219,9 +12227,9 @@ export interface QueryGenqlSelection{
     entityMetafields?: (EntityMetafieldGenqlSelection & { __args: {entityType: Scalars['String'], entityId: Scalars['ID'], filter?: (EntityMetafieldsFilterInput | null)} })
     /** Returns all object types that support metadata and custom fields */
     allowedObjectTypes?: boolean | number
-    /** Get metadata entries for an object */
+    /** Get metadata entries for an object. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadata?: (ObjectMetadataGenqlSelection & { __args: {objectType: ObjectType, objectId: Scalars['ID']} })
-    /** Get metadata entries for multiple objects of the same type in a single query */
+    /** Get metadata entries for multiple objects of the same type in a single query. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadataBatch?: (ObjectMetadataBatchResultGenqlSelection & { __args: {objectType: ObjectType, objectIds: Scalars['ID'][]} })
     /** List all custom field definitions for a given object type */
     customFieldDefinitions?: (CustomFieldDefinitionModelGenqlSelection & { __args: {objectType: ObjectType} })
@@ -12333,8 +12341,6 @@ export interface SimulateScriptInput {
 script: Scalars['String'],
 /** Execution context the script is intended for */
 context: ScriptContextType,
-/** DEPRECATED: JSON-encoded mock parameters for simulation. Violates the no-JSON-in-GraphQL contract. Use `overrides` instead — when both are supplied, `overrides` wins. This field will be removed in the next major release. */
-parameters?: (Scalars['String'] | null),
 /** Structured overrides applied on top of the synthetic mock fixture before the run. Preferred replacement for the deprecated `parameters` JSON blob — covers fixture sizing, per-team metadata seeding, and preset-parameter overrides. */
 overrides?: (SimulationContextOverridesInput | null),
 /** Optional: simulate against a real tournament step */
@@ -12599,6 +12605,12 @@ export interface MutationGenqlSelection{
     attachOrUpdateIdentityToAccount?: (AccountIdentityGenqlSelection & { __args: {identityProviderId: Scalars['ID'], token: Scalars['String']} })
     /** Generates a URL to redirect the user to for linking an identity provider to their account */
     generateIdentityLinkUrl?: (IdentityLinkUrlGenqlSelection & { __args: {identityProviderId: Scalars['ID']} })
+    /** Deletes a linked identity from an account. When accountId is omitted, operates on the caller's own account (self-service). The creation identity (oldest linked identity by createdAt, then organizationIdentityProviderId, then providerId) cannot be deleted. The last remaining identity cannot be deleted. Possible errors: ACCOUNT_NOT_FOUND, IDENTITY_PROVIDER_NOT_FOUND, IDENTITY_NOT_FOUND, IDENTITY_LAST_IDENTITY_NOT_DELETABLE, IDENTITY_CREATION_IDENTITY_NOT_DELETABLE. */
+    deleteAccountIdentity?: { __args: {
+    /** The ID of the OrganizationIdentityProvider to delete */
+    identityProviderId: Scalars['ID'], 
+    /** The account to act on. When omitted, uses the caller's own account. */
+    accountId?: (Scalars['ID'] | null)} }
     /** Updates an existing configuration preset */
     updateConfiguration?: (ConfigurationGenqlSelection & { __args: {id: Scalars['ID'], input: CreateConfigurationInput} })
     /** Deletes a configuration preset by ID */
@@ -12701,8 +12713,8 @@ export interface MutationGenqlSelection{
     deleteTournamentStep?: { __args: {stepId: Scalars['ID']} }
     /** Generate the bracket structure for a tournament step based on its configuration or rule set */
     generateTournamentStep?: { __args: {stepId: Scalars['ID'], teamsCount?: (Scalars['Int'] | null)} }
-    /** Seed teams into a generated tournament step. Accepts the caller-curated seeding order and optional manual pins; the preset rule set (SEEDING / ROUND_SEEDING rules) drives actual team-to-game assignment. Prior placements are discarded (idempotent re-seed). */
-    seedTournamentStep?: (TournamentStepGenqlSelection & { __args: {input: SeedStepInput} })
+    /** Seed teams into a generated tournament step. Provide exactly one of `input` (rule-engine seeding: caller-curated order + optional manual pins, driven by SEEDING / ROUND_SEEDING rules) or `legacyInput` (pre-migration automatic/manual seeding, translated to an ordered team list + group pins). Prior placements are discarded (idempotent re-seed). */
+    seedTournamentStep?: (TournamentStepGenqlSelection & { __args?: {input?: (SeedStepInput | null), legacyInput?: (SeedStepLegacyInput | null)} })
     /** Persist a new seeding order on the step without re-seeding. Order must be a permutation of the tournament's teams. */
     updateSeedingOrder?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], orderedTeamIds: Scalars['ID'][]} })
     /** Persist a new manual-pin list on the step without re-seeding. Pins anchor teams to a group, a game, or a specific slot within a game. */
@@ -12831,8 +12843,12 @@ export interface MutationGenqlSelection{
     eventTicketConfigurationUpdate?: (EventTicketConfigurationGenqlSelection & { __args: {ticketConfigurationId: Scalars['ID'], input: EventTicketConfigurationUpdateInput} })
     /** Delete a ticket configuration from an event */
     eventTicketConfigurationDelete?: (EventTicketConfigurationGenqlSelection & { __args: {ticketConfigurationId: Scalars['ID']} })
-    /** Update the status of an event reservation as an administrator */
-    eventReservationUpdateStatus?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], status: EventReservationStatus, confirmPaymentRefundOrCancel?: (Scalars['Boolean'] | null)} })
+    /** Update the status of an event reservation as an administrator. When the reservation moves to a payment-validated status (REGISTERED, CONFIRMED, PRESENCE_CONFIRMATION_PENDING, NOT_ATTENDING) while it has no ticket, whatever its previous status, tickets are reserved automatically and their seats are marked as SOLD. Use ticketsToReserve to choose the ticket configurations, quantities and seats; when omitted, one ticket of the event single ticket configuration is reserved per ACCEPTED group member, and the call fails when the event has several ticket configurations. Seats are never assigned implicitly: if no seat is provided, tickets are created without a seat even when the event seat assignment mode is REQUIRED, and the seats must be assigned afterwards with eventReservationUpdateTickets. Reservations that already have tickets are never re-reserved. */
+    eventReservationUpdateStatus?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], status: EventReservationStatus, confirmPaymentRefundOrCancel?: (Scalars['Boolean'] | null), 
+    /** When false, the associated payment is left untouched by the status change: nothing is refunded and pending payments are not canceled. */
+    refundPayment?: (Scalars['Boolean'] | null), 
+    /** Ticket configurations, quantities and seats to reserve when the reservation moves to a payment-validated status while it has no ticket yet. Ignored when the reservation already has tickets or when the target status is not payment-validated. */
+    ticketsToReserve?: (EventReservationRegisterTicketsInput | null)} })
     /** Confirm or decline attendance for an event reservation as the group manager */
     eventReservationConfirmPresence?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID'], confirmed: Scalars['Boolean']} })
     /** Validate a reservation and initiate the Stripe payment session */
@@ -13556,6 +13572,40 @@ pins?: (SeedingPinInput[] | null)}
 export interface SeedingPinInput {teamId: Scalars['ID'],groupId?: (Scalars['ID'] | null),gameId?: (Scalars['ID'] | null),slotIndex?: (Scalars['Int'] | null)}
 
 
+/** Legacy seeding request preserving the pre-migration seedTournamentStep semantics. Exactly one of automaticSeeding or manualSeeding must be set. */
+export interface SeedStepLegacyInput {
+/** ID of the step to seed. */
+stepId: Scalars['ID'],
+/** Use automatic seeding with a chosen algorithm. */
+automaticSeeding?: (AutomaticSeedingInput | null),
+/** Use manual seeding with explicit team-to-group assignments. */
+manualSeeding?: (ManualSeedingInput | null)}
+
+
+/** Legacy automatic seeding request. Orders the team pool with a SeedingMechanism, then spreads it across the entry groups with a GroupRepartitionMechanism. */
+export interface AutomaticSeedingInput {
+/** Algorithm to use for ordering teams during seeding. */
+seedingMechanism: SeedingMechanism,
+/** Algorithm to use for distributing teams across groups. */
+groupRepartitionMechanism: GroupRepartitionMechanism,
+/** Specific team IDs to seed; if omitted, all confirmed teams of the tournament are used. */
+teams?: (Scalars['ID'][] | null)}
+
+
+/** Legacy manual seeding request assigning teams to specific groups. */
+export interface ManualSeedingInput {
+/** List of group-to-teams assignments. */
+groups: ManualSeedingGroupInput[]}
+
+
+/** Legacy manual seeding assignment for a single group. */
+export interface ManualSeedingGroupInput {
+/** ID of the group to seed teams into. */
+group: Scalars['ID'],
+/** Ordered list of team IDs to seed into this group. */
+teams: Scalars['ID'][]}
+
+
 /** Input for updating a team score within a match */
 export interface UpdateMatchScoreInput {
 /** ID of the team whose score is being updated */
@@ -14080,6 +14130,22 @@ seatTypeId?: (Scalars['ID'] | null),
 configuration?: (EventTicketConfigurationConfigurationInput | null)}
 
 
+/** Input containing the list of ticket registrations for a reservation session */
+export interface EventReservationRegisterTicketsInput {
+/** List of ticket configurations and quantities to reserve */
+tickets: EventReservationRegisterTicketInput[]}
+
+
+/** Input for registering tickets of a specific configuration in a reservation */
+export interface EventReservationRegisterTicketInput {
+/** Identifier of the ticket configuration to reserve */
+ticketConfigurationId: Scalars['ID'],
+/** Number of tickets to reserve for this configuration */
+quantity: Scalars['Float'],
+/** List of seat IDs to reserve for these tickets */
+reservedSeats: Scalars['ID'][]}
+
+
 /** Input options for the payment session including redirect URLs and UI mode */
 export interface EventReservationValidateAndPayInput {
 /** The URL to which Stripe should send customers when payment or setup is complete. This parameter is not allowed if uiMode is "embedded". */
@@ -14108,22 +14174,6 @@ ticketIdsToRelease?: (Scalars['ID'][] | null),
 ticketIdsToAdd?: (EventReservationRegisterTicketInput[] | null),
 /** Custom field configurations to apply to specific tickets */
 ticketConfigurations?: (EventReservationTicketConfigurationInput[] | null)}
-
-
-/** Input for registering tickets of a specific configuration in a reservation */
-export interface EventReservationRegisterTicketInput {
-/** Identifier of the ticket configuration to reserve */
-ticketConfigurationId: Scalars['ID'],
-/** Number of tickets to reserve for this configuration */
-quantity: Scalars['Float'],
-/** List of seat IDs to reserve for these tickets */
-reservedSeats: Scalars['ID'][]}
-
-
-/** Input containing the list of ticket registrations for a reservation session */
-export interface EventReservationRegisterTicketsInput {
-/** List of ticket configurations and quantities to reserve */
-tickets: EventReservationRegisterTicketInput[]}
 
 
 /** Input for creating a new event venue */
@@ -14734,8 +14784,10 @@ export interface SetCustomFieldValuesInput {
 objectType: ObjectType,
 /** ID of the object to set field values on */
 objectId: Scalars['ID'],
-/** List of field key-value pairs to set */
-fields: CustomFieldValueInput[]}
+/** List of field key-value pairs to set. Omitting fields is equivalent to an empty list; combine with deleteKeys to delete only. */
+fields?: (CustomFieldValueInput[] | null),
+/** Keys whose stored value rows should be deleted. Rejected for required fields. A key must not appear in both fields and deleteKeys simultaneously. */
+deleteKeys?: (Scalars['String'][] | null)}
 
 
 /** A single key-value pair for setting a custom field */
@@ -18348,6 +18400,19 @@ export const enumEventsQueryStatus = {
    REGISTRATIONS_OPEN: 'REGISTRATIONS_OPEN' as const,
    REGISTRATIONS_ENDED: 'REGISTRATIONS_ENDED' as const,
    REGISTRATIONS_CLOSED: 'REGISTRATIONS_CLOSED' as const
+}
+
+export const enumSeedingMechanism = {
+   NONE: 'NONE' as const,
+   REVERSE: 'REVERSE' as const,
+   HALF_SHIFT: 'HALF_SHIFT' as const,
+   REVERSE_HALF_SHIFT: 'REVERSE_HALF_SHIFT' as const,
+   PAIR_FLIP: 'PAIR_FLIP' as const
+}
+
+export const enumGroupRepartitionMechanism = {
+   BALANCED: 'BALANCED' as const,
+   SEED_OPTIMIZED: 'SEED_OPTIMIZED' as const
 }
 
 export const enumStripeUiMode = {
