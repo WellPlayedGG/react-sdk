@@ -170,8 +170,12 @@ wellplayed deploy --app-id <appId> --org <shortId>
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `--app-id <appId>` | Yes | Your Marketplace App ID |
+| `--app-id <appId>` | Yes, except for a first manifest 1.1 publish | Your Marketplace App ID |
+| `--organization-app-id <id>` | Manifest 1.1, first publish | Organization app to publish when the app has no marketplace listing yet |
 | `-o, --org <shortId>` | Yes | Organization short-id that owns the app (sets the `organization-id` header) |
+| `--dry-run` | No | Check the files and print their sizes without calling the API |
+
+**Manifest 1.1 (server functions):** when `wellplayed.json` has `"version": "1.1"`, `deploy` builds nothing and uploads no bundle. It reads `releaseVersion`, `slug`, `visibility`, `allowedOrganizations`, `name` and `description`, publishes the listing (`--organization-app-id`) or updates it (`--app-id`), then creates the release with every `file` named in `functions`, `operations` and `emailTemplates` (paths inside the project directory) and waits for the review. The manifest format is described in the `wellplayed-cli` skill installed by `wellplayed install-skills`.
 
 **Prerequisites:** Run `npm run build` before deploying. The command expects production bundles at `dist/extension.js` and/or `dist/module.js` depending on your configuration.
 
@@ -182,6 +186,22 @@ wellplayed deploy --app-id <appId> --org <shortId>
 3. **Upload bundles** -- Uploads `dist/extension.js` and/or `dist/module.js` to the presigned S3 URLs.
 4. **Finalize release** -- Calls `appFinalizeRelease` to trigger server-side bundle validation. Exits with errors if validation fails.
 5. **Poll for review** -- Polls the release status every 5 seconds (up to 5 minutes) and reports `APPROVED` or `REJECTED` with review details. If the release passes review while the marketplace listing is `SUSPENDED` or `REJECTED`, nothing gets published and the command exits with an error.
+
+### `wellplayed install`, `wellplayed pin`, `wellplayed config set`
+
+Manage an app installed in an organization.
+
+```bash
+wellplayed install --app-id <appId> --org <shortId> --grant all
+wellplayed pin 1.1.0 --app <slug> --org <shortId> --grant <permission> <permission>
+wellplayed config set MAX_NOTES=5 "WELCOME_TEXT=Hello there" --app <slug> --org <shortId>
+```
+
+| Command | Description |
+|---------|-------------|
+| `install --app-id <appId> --org <shortId> [--grant <permissions...>]` | Installs the app. `--grant all` grants every permission its manifest requests |
+| `pin <version> --app <slug> --org <shortId> [--grant <permissions...>]` | Pins the installation to an approved release. `--grant` sends the installation's whole grant list, so name every permission to keep |
+| `config set <KEY=VALUE...> --app <slug> --org <shortId>` | Sets configuration values; the value is everything after the first `=` |
 
 ## Configuration (`wellplayed.json`)
 
