@@ -74,8 +74,7 @@ Modeled on `gh api graphql`. Use it for: ad-hoc API exploration, writing scripts
 |------|----------|
 | `-o, --org <shortId>` | Sets the `organization-id` header. **Required for any operation that isn't decorated `@WithoutOrganization` on the backend.** Validated to match `[A-Za-z0-9_-]+`. |
 | `-H, --header "Key: value"` | Adds an extra HTTP header. Repeatable. `Authorization` and `Content-Type` are reserved. CR/LF and non-ASCII are rejected. |
-
-The CLI always sends your login token as `Authorization`, so it cannot make guest calls: the API refuses `x-guest-session` next to another credential with `BAD_REQUEST`. See [Guests](#guests-magic-links-and-guardians).
+| `--guest-session <token>` | Calls as a guest: sends the token in `x-guest-session` and no `Authorization` (no `wellplayed login` needed). Use it with `--org`. The API refuses `x-guest-session` next to another credential, so `-H "x-guest-session: ..."` without this flag fails with `BAD_REQUEST`. See [Guests](#guests-magic-links-and-guardians). |
 
 ### Output
 
@@ -161,7 +160,7 @@ wellplayed deploy --org my-org --app-id <appId>  # ship to the Marketplace
 | `Field "x" looks like a JSON literal but failed to parse` | Mistyped JSON in `-F`, e.g. `-F input={key:1}` (missing quotes) | Quote keys, or use `--raw-field` to keep as a string |
 | `Invalid --org "..."` | Org id contains spaces, slashes, CR/LF | Use the short id; query `myOrganizations` to find it |
 | `required option '-o, --org <shortId>' not specified` on `deploy` | `deploy` now always needs the owning organization | Add `--org <shortId>` |
-| `BAD_REQUEST` with `-H "x-guest-session: ..."` | The CLI also sends `Authorization` | Make guest calls from code (see Guests) |
+| `BAD_REQUEST` with `-H "x-guest-session: ..."` | The CLI also sends `Authorization` | Use `--guest-session <token>` instead |
 
 ## Journal — debugging runtime events
 
@@ -733,7 +732,7 @@ Failed async runs: `EVENT` retries up to 10 times with exponential backoff (a `w
 | `wellplayed deploy --org my-org --organization-app-id <organizationAppId>` | First release: `publishMarketplaceApp` (slug, visibility, allowed organizations, name, description, manifest), then `appCreateRelease` with the files, `appFinalizeRelease`, and a 5-minute wait on the review that prints failed checks |
 | `wellplayed deploy --org my-org --app-id <marketplaceAppId>` | Later releases: `updateMarketplaceApp` (slug, visibility, allowed organizations), then the same release steps; bump `releaseVersion` first |
 | `wellplayed install --app-id <marketplaceAppId> --org partner-org --grant all` (or `--grant p1 p2`) | `installMarketplaceApp`; pins the listing's current version and fires `LIFECYCLE INSTALL`. `all` grants every permission of the listing manifest; a grant outside `permissions` fails with `MARKETPLACE_INVALID_MANIFEST` |
-| `wellplayed pin 1.1.0 --app my-notes --org partner-org --grant organization:emails:send` | `appInstallationPin` to any `APPROVED` version, fires `UPGRADE` (`INSTALL` if nothing was pinned). Approving a release never re-pins existing installations. `--grant` replaces the whole grant list, so name every permission to keep |
+| `wellplayed pin 1.1.0 --app my-notes --org partner-org --grant organization:emails:send` | `appInstallationPin` to any `APPROVED` version, fires `UPGRADE` (`INSTALL` if nothing was pinned). Approving a release never re-pins existing installations. `--grant` adds the named permissions to the installation's current grants (the CLI reads them first). If the target release no longer requests a granted permission, the pin fails with `MARKETPLACE_INVALID_MANIFEST`; pin through `wellplayed graphql` with the full `grantedPermissions` list then |
 | `wellplayed config set MAX_NOTES=5 "WELCOME_TEXT=Leave a note" --app my-notes --org partner-org` | `appInstallationConfigSet`; the value is everything after the first `=`. Resetting a key to its default needs `value: null` through `wellplayed graphql` |
 
 Find ids with `marketplaceApps(filter: { ownedByMe: true }) { nodes { id slug version status } }` and `organizationApps(page: { first: 20 }) { nodes { id name } }`.
@@ -761,7 +760,7 @@ wellplayed graphql --org my-org --raw-field input.appSlug=my-notes --raw-field i
     executionId status payload cached error { kind code platformCode message field details retryAfterSeconds } } }'
 ```
 
-The CLI always sends your Bearer token, and the API refuses `x-guest-session` next to another credential, so call as a guest from code:
+Test a guest call with `wellplayed graphql --guest-session <token>` (see Guests). From code:
 
 ```ts
 import { createWellPlayedClient, graphql } from "@well-played.gg/typescript-sdk";
@@ -816,7 +815,7 @@ Grant `app:` and `custom:` ids to groups or members like catalogue permissions. 
 
 ### Hook `EVENT_RESERVATION_VALIDATE`
 
-`input` = `{ hookPoint = "event.reservation.validate", phase = "START_SESSION" | "VALIDATE", eventId, reservationId, groupId, playerIds, tickets = { { ticketConfigurationId, count } } }`; `ctx.trigger.hookPoint` carries the same string. Every enabled hook of every installation runs in parallel; one `{ allow = false, reason }` makes the platform mutation fail with `APP_HOOK_DENIED` (`extensions.reason`, `extensions.appSlug`). A hook that errors or times out denies with reason `unavailable` under `onError: DENY` and is ignored under `ALLOW`.
+`input` = `{ hookPoint = "EVENT_RESERVATION_VALIDATE", phase = "START_SESSION" | "VALIDATE", eventId, reservationId, groupId, playerIds, tickets = { { ticketConfigurationId, count } } }`; `ctx.trigger.hookPoint` carries the same string. Every enabled hook of every installation runs in parallel; one `{ allow = false, reason }` makes the platform mutation fail with `APP_HOOK_DENIED` (`extensions.reason`, `extensions.appSlug`). A hook that errors or times out denies with reason `unavailable` under `onError: DENY` and is ignored under `ALLOW`.
 
 ### Limits
 
@@ -903,7 +902,7 @@ Guest-enabled operations: `guestMe`, `guestSessionEnd`, `guestWardCreate`, `gues
 
 `guestEnter(input: { email, firstName, lastName })` is public: it needs only `organization-id`, and `selfEntry` must be `TRUSTED_PARAMS` (else `GUEST_SELF_ENTRY_DISABLED`). Values are trimmed; names take 1 to 100 characters, the e-mail up to 320 (`BAD_REQUEST`).
 
-- The e-mail is matched case-insensitively against every guest that has one (self-entered, invited or admin-created). On a match, the same guest is reused, its first and last name are overwritten with the new values, and a new session opens; earlier sessions stay valid.
+- The e-mail is matched case-insensitively against every guest that has one (self-entered, invited or admin-created). On a match, the same guest is reused and a new session opens; earlier sessions stay valid. The latest trusted values win by design: the first and last name are overwritten with the new ones.
 - No match creates a guest with `origin: ENTRY` (`LIMIT_REACHED` when `ANONYMOUS_PLAYER_PROFILES` is full).
 - There is no e-mail verification: anyone who calls `guestEnter` with an e-mail gets a session for that guest. Enable `TRUSTED_PARAMS` only when the entry values come from a source that already identified the person (for example a host page that passes them in the URL of an embedded app), never from a free-text form.
 
@@ -924,14 +923,14 @@ wellplayed graphql --org my-org \
 - Revoking a link (`guestLinkRevoke`, or `revokePrevious` on a new link) also ends the sessions opened from it.
 - Sessions and links are deleted 30 days after they expire; a purged link token resolves as `INVALID`.
 
-`wellplayed graphql` always sends your login token as `authorization`, so `-H "x-guest-session: <token>"` is refused with `BAD_REQUEST`. Use the CLI for the public calls (`guestEnter`, `guestLinkResolve`, `guestLinkExchange`) and staff operations, and send guest calls with curl or a client created without a token:
+From the terminal, `--guest-session` sends the token in `x-guest-session` and drops your login token (`-H "x-guest-session: ..."` alone is refused with `BAD_REQUEST`, since the CLI also sends `Authorization`):
 
 ```bash
-curl -s https://api.warrior.well-played.gg/graphql \
-  -H 'content-type: application/json' -H 'organization-id: my-org' \
-  -H "x-guest-session: $GUEST_TOKEN" \
-  -d '{"query":"{ guestMe { sessionPlayerId actingPlayerId expiresAt profile { firstName } } }"}'
+wellplayed graphql --org my-org --guest-session "$GUEST_TOKEN" \
+  'query { guestMe { sessionPlayerId actingPlayerId expiresAt profile { firstName } } }'
 ```
+
+Add `-H "x-acting-player-id: <wardPlayerId>"` to act for a ward.
 
 In TypeScript, give `createWellPlayedClient` a `headers` callback and no `token` (a `token` adds `authorization`, and every guest call then fails with `BAD_REQUEST`):
 
@@ -1090,7 +1089,7 @@ wellplayed graphql --org my-org -F 'inputs=[{"key":"teamName","value":"The B4dwo
 - Call `guestLinkExchange` only on a user action (button), never on page load: mail scanners and link previews open URLs, and each exchange spends a use of a `maxUses: 1` link.
 - Show the reason from `guestLinkResolve` or from `extensions.status`; do not treat every failure as "expired".
 - Store the session token for the tab only (session storage or memory); it is a bearer credential for the guest and its wards.
-- `guestEnter` with an existing e-mail overwrites that guest's names, including a staff-created guest's.
+- `guestEnter` with an existing e-mail overwrites that guest's names, including a staff-created guest's: the latest trusted values win.
 
 ## Booking: slots, waitlists and registration series
 
@@ -1333,6 +1332,7 @@ Reservation payloads carry `id, eventId, status, groupId, managerId, managerUser
 ### Pitfalls
 
 - A waitlist entry for more than one seat can only be offered if the event has `allowForMoreTicketsThanGroupMembers: true` (the offer opens with the player alone in the group); otherwise it is skipped every time and stays `WAITING`.
+- An event with `visibleAt` left null is hidden from players, and so are its slots (`events`, `eventSlots`): set `visibleAt` on `eventCreate` / `eventUpdate`, or `event.visibleAt` in `eventCalendarGenerate`.
 - `onlyReservable: true` hides full slots: don't use it on a screen that offers the waitlist.
 - An offer is a reservation on the event: `eventReservationStartRegistrationSession` on that event then fails with `EVENT_ALREADY_IN_A_REGISTRATION_FOR_THIS_EVENT`; validate the offer instead.
 - `eventReservationReleaseTickets` checks only the cutoff, not `allowCancel`/`allowChange`.
@@ -1367,7 +1367,17 @@ An open pool is a tournament step with no fixed bracket. Staff create a match be
 
 With this preset, seeding registers every seeded team with 0 points, the next match of a best-of series is created automatically, and a withdrawn team's pending matches are awarded to its opponents. For a follow-up bracket, apply `seeded-playoff` (category `SINGLE_ELIMINATION`) to the next step: it keeps the previous step's teams with `rank <= team_count` and seeds them in rank order (1 vs N). Parameters: `team_count` (required: 2, 4, 8 or 16), `best_of` (1), `final_best_of` (defaults to `best_of`), `third_place` (false), `promote_step_winners_to_tournament` (true).
 
-A custom preset script enables an open pool with `set_open_pool({ teams_per_match = 2, best_of = 1, max_matches_per_team = 0, allow_rematch = true, allow_concurrent_matches = false, auto_join = true, enforce_team_min_size = true })`; `simulateScript` then lists a `SET_OPEN_POOL` entry in `effectsSummary`. Applying a preset that does not call it turns the open pool off for that step.
+A custom preset script enables an open pool with `set_open_pool({ teams_per_match = 2, best_of = 1, max_matches_per_team = 0, allow_rematch = true, allow_concurrent_matches = false, auto_join = true, enforce_team_min_size = true })`; Applying a preset that does not call it turns the open pool off for that step. A configuration out of the ranges in the table above makes `applyBuiltinPreset` / `applyPresetScript` fail with `RULE_DEFINITION_INVALID`, `extensions.ruleExecution.effectType: "SET_OPEN_POOL"` and the reason in `extensions.ruleExecution.reason`.
+
+`SET_OPEN_POOL` is a `SimulatedEffectType` value: preview a preset with `simulateScript` (context `PRESET`) and check that `effectsSummary` holds a `SET_OPEN_POOL` entry before applying it.
+
+```bash
+wellplayed graphql --org my-org -F input.context=PRESET -F input.stepId=<stepId> \
+  --raw-field input.script='set_open_pool({ teams_per_match = 3, best_of = 1, allow_rematch = false })' \
+  'query($input: SimulateScriptInput!) {
+    simulateScript(input: $input) { success errors { message } effectsSummary { type description } }
+  }'
+```
 
 ```bash
 wellplayed graphql --org my-org \
@@ -1500,7 +1510,7 @@ wellplayed graphql --org my-org \
   'mutation($input: LeaderboardRegisterPlayerScoreInput!) { leaderboardRegisterPlayerScore(input: $input) { score rank leaderboardSeasonBucketId } }'
 ```
 
-`LEADERBOARD_SCORE_REGISTERED` carries `leaderboardId`, `seasonId` (the season actually credited), `bucketId`, `playerProfileId`, `score` (new total) and `organizationId`; `mode` and `delta` are declared nullable, so do not rely on them. Seasons of one leaderboard can no longer overlap: `createLeaderboardSeason` and `updateLeaderboardSeason` fail with `LEADERBOARD_SEASON_OVERLAP` (a season may start exactly when the previous one ends). `leaderboardCurrentPlayerRanking` without `seasonId` reads the season with `start <= now < end`; between seasons it fails with `LEADERBOARD_SEASON_NOT_FOUND`, and `LEADERBOARD_PLAYER_RANKING_NOT_FOUND` means the player has no score in that season.
+`LEADERBOARD_SCORE_REGISTERED` carries `leaderboardId`, `seasonId` (the season actually credited), `bucketId`, `playerProfileId`, `score` (new total) and `organizationId`, plus `mode` (`REPLACE` or `INCREMENT`), `delta` (the change applied to the total) and `teamId` (nullable). Seasons of one leaderboard can no longer overlap: `createLeaderboardSeason` and `updateLeaderboardSeason` fail with `LEADERBOARD_SEASON_OVERLAP` (a season may start exactly when the previous one ends). `leaderboardCurrentPlayerRanking` without `seasonId` reads the season with `start <= now < end`; between seasons it fails with `LEADERBOARD_SEASON_NOT_FOUND`, and `LEADERBOARD_PLAYER_RANKING_NOT_FOUND` means the player has no score in that season.
 
 ### Leaderboard feeds
 
