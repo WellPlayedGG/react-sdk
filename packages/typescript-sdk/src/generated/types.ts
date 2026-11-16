@@ -28,110 +28,111 @@ export default {
         82,
         84,
         86,
-        88,
         91,
-        96,
-        98,
+        94,
+        97,
+        102,
+        104,
         107,
-        108,
-        109,
-        110,
-        115,
-        116,
-        121,
+        112,
+        114,
+        123,
         124,
-        128,
+        125,
+        126,
         131,
-        133,
+        132,
         137,
-        141,
-        142,
+        140,
+        144,
+        147,
         149,
-        154,
-        156,
-        159,
-        162,
-        167,
-        180,
-        188,
-        190,
-        203,
-        204,
-        213,
-        215,
+        153,
+        157,
+        158,
+        165,
+        170,
+        183,
+        192,
+        194,
+        207,
+        208,
         217,
-        218,
-        223,
-        225,
-        228,
-        240,
-        245,
-        253,
+        219,
+        221,
+        222,
+        227,
+        229,
+        232,
+        244,
+        249,
         257,
         261,
-        263,
+        265,
         267,
-        269,
         271,
         273,
-        274,
-        276,
-        282,
-        284,
-        287,
-        290,
-        293,
-        295,
+        275,
+        277,
+        278,
+        280,
+        286,
+        288,
+        291,
+        294,
         297,
-        300,
-        303,
-        305,
-        306,
+        299,
+        301,
+        304,
+        307,
         309,
-        312,
-        317,
-        319,
+        310,
+        313,
+        316,
+        321,
         323,
-        325,
         327,
-        328,
         329,
-        341,
-        345,
-        348,
-        350,
-        365,
-        372,
-        377,
-        379,
-        380,
-        381,
+        331,
+        332,
+        333,
+        351,
+        355,
+        358,
+        360,
+        375,
+        382,
+        387,
+        389,
         390,
         391,
-        392,
+        400,
+        401,
         402,
-        403,
-        416,
-        419,
-        420,
-        437,
-        438,
-        439,
-        443,
-        467,
-        480,
-        482,
-        531,
-        532,
-        533,
+        412,
+        413,
+        427,
+        430,
+        431,
+        449,
+        450,
+        451,
+        455,
+        479,
+        492,
+        494,
         543,
-        546,
-        547,
-        569,
-        572,
-        631,
-        632,
-        679
+        544,
+        545,
+        556,
+        559,
+        560,
+        583,
+        586,
+        647,
+        648,
+        697,
+        760
     ],
     "types": {
         "JournalPayload": {
@@ -139,55 +140,55 @@ export default {
                 1
             ],
             "on_RuleEngineAdvancementRuleFiredPayload": [
-                212
-            ],
-            "on_RuleEngineCrossStepTransferredPayload": [
-                214
-            ],
-            "on_RuleEngineEffectAdvancePayload": [
                 216
             ],
-            "on_RuleEngineEffectCreateGroupPayload": [
-                219
+            "on_RuleEngineCrossStepTransferredPayload": [
+                218
             ],
-            "on_RuleEngineEffectEliminatePayload": [
+            "on_RuleEngineEffectAdvancePayload": [
                 220
             ],
-            "on_RuleEngineEffectEmitSeedingPinPayload": [
-                221
+            "on_RuleEngineEffectCreateGroupPayload": [
+                223
             ],
-            "on_RuleEngineEffectEndStepPayload": [
-                222
-            ],
-            "on_RuleEngineEffectSetMetadataPayload": [
+            "on_RuleEngineEffectEliminatePayload": [
                 224
             ],
-            "on_RuleEngineGenerationScriptRanPayload": [
+            "on_RuleEngineEffectEmitSeedingPinPayload": [
+                225
+            ],
+            "on_RuleEngineEffectEndStepPayload": [
                 226
             ],
+            "on_RuleEngineEffectSetMetadataPayload": [
+                228
+            ],
+            "on_RuleEngineGenerationScriptRanPayload": [
+                230
+            ],
             "on_RuleEngineManualOverridePayload": [
-                227
-            ],
-            "on_LeaderboardFeedReconcileFailedPayload": [
-                229
-            ],
-            "on_TournamentOpenPoolMatchCorrectedPayload": [
                 231
             ],
-            "on_TournamentOpenPoolMatchCancelledPayload": [
-                232
-            ],
-            "on_TournamentOpenPoolClosedPayload": [
+            "on_LeaderboardFeedReconcileFailedPayload": [
                 233
             ],
-            "on_TournamentOpenPoolReopenedPayload": [
-                234
+            "on_TournamentOpenPoolMatchCorrectedPayload": [
+                235
             ],
-            "on_TournamentsStepResetPayload": [
+            "on_TournamentOpenPoolMatchCancelledPayload": [
                 236
             ],
-            "on_TournamentsStepGeneratedPayload": [
+            "on_TournamentOpenPoolClosedPayload": [
                 237
+            ],
+            "on_TournamentOpenPoolReopenedPayload": [
+                238
+            ],
+            "on_TournamentsStepResetPayload": [
+                240
+            ],
+            "on_TournamentsStepGeneratedPayload": [
+                241
             ],
             "__typename": [
                 1
@@ -199,25 +200,25 @@ export default {
                 1
             ],
             "on_AdminActorContext": [
-                423
+                434
             ],
             "on_PlayerActorContext": [
-                424
+                435
             ],
             "on_SystemActorContext": [
-                425
+                436
             ],
             "on_MarketplaceModuleActorContext": [
-                426
+                437
             ],
             "on_ApiClientActorContext": [
-                427
+                438
             ],
             "on_WebhookCallbackActorContext": [
-                428
+                439
             ],
             "on_SimulationActorContext": [
-                429
+                440
             ],
             "__typename": [
                 1
@@ -930,7 +931,7 @@ export default {
                 10
             ],
             "teams": [
-                249,
+                253,
                 {
                     "page": [
                         59,
@@ -942,16 +943,16 @@ export default {
                 }
             ],
             "steps": [
-                252
+                256
             ],
             "createdBy": [
                 76
             ],
             "myTeam": [
-                248
+                252
             ],
             "teamScores": [
-                251
+                255
             ],
             "__typename": [
                 1
@@ -1181,7 +1182,7 @@ export default {
                 }
             ],
             "guest": [
-                155
+                90
             ],
             "__typename": [
                 1
@@ -1340,12 +1341,247 @@ export default {
             ]
         },
         "AppConfigType": {},
+        "EmailTemplate": {
+            "id": [
+                10
+            ],
+            "triggerEvent": [
+                50
+            ],
+            "default": [
+                4
+            ],
+            "name": [
+                1
+            ],
+            "title": [
+                1
+            ],
+            "contents": [
+                1
+            ],
+            "createdAt": [
+                12
+            ],
+            "updatedAt": [
+                12
+            ],
+            "organizationId": [
+                10
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "EmailTemplates": {
+            "edges": [
+                89
+            ],
+            "nodes": [
+                87
+            ],
+            "pageInfo": [
+                8
+            ],
+            "totalCount": [
+                17
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "EmailTemplateEdge": {
+            "cursor": [
+                1
+            ],
+            "node": [
+                87
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestProfile": {
+            "playerId": [
+                10
+            ],
+            "player": [
+                73
+            ],
+            "email": [
+                1
+            ],
+            "firstName": [
+                1
+            ],
+            "lastName": [
+                1
+            ],
+            "origin": [
+                91
+            ],
+            "guardianPlayerIds": [
+                10
+            ],
+            "wardPlayerIds": [
+                10
+            ],
+            "createdAt": [
+                12
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestOrigin": {},
+        "GuestLinkContext": {
+            "id": [
+                10
+            ],
+            "purpose": [
+                1
+            ],
+            "data": [
+                1
+            ],
+            "expiresAt": [
+                12
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestSession": {
+            "token": [
+                1
+            ],
+            "playerId": [
+                10
+            ],
+            "origin": [
+                94
+            ],
+            "expiresAt": [
+                12
+            ],
+            "link": [
+                92
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestSessionOrigin": {},
+        "GuestMe": {
+            "sessionPlayerId": [
+                10
+            ],
+            "actingPlayerId": [
+                10
+            ],
+            "origin": [
+                94
+            ],
+            "expiresAt": [
+                12
+            ],
+            "link": [
+                92
+            ],
+            "profile": [
+                90
+            ],
+            "wards": [
+                90
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestLinkView": {
+            "status": [
+                97
+            ],
+            "purpose": [
+                1
+            ],
+            "expiresAt": [
+                12
+            ],
+            "firstName": [
+                1
+            ],
+            "data": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestLinkStatus": {},
+        "GuestLinkCreated": {
+            "id": [
+                10
+            ],
+            "token": [
+                1
+            ],
+            "expiresAt": [
+                12
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestProfileCreated": {
+            "profile": [
+                90
+            ],
+            "created": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestGuardianLink": {
+            "id": [
+                10
+            ],
+            "guardianPlayerId": [
+                10
+            ],
+            "wardPlayerId": [
+                10
+            ],
+            "createdAt": [
+                12
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestConfiguration": {
+            "selfEntry": [
+                102
+            ],
+            "sessionTtlMinutes": [
+                80
+            ],
+            "maxWardsPerGuardian": [
+                80
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GuestSelfEntryMode": {},
         "PermissionDefinitionDto": {
             "id": [
                 1
             ],
             "owner": [
-                88
+                104
             ],
             "description": [
                 1
@@ -1377,7 +1613,7 @@ export default {
                 1
             ],
             "type": [
-                91
+                107
             ],
             "label": [
                 1
@@ -1392,7 +1628,7 @@ export default {
                 1
             ],
             "options": [
-                89
+                105
             ],
             "param": [
                 1
@@ -1430,10 +1666,10 @@ export default {
                 1
             ],
             "propsSchema": [
-                90
+                106
             ],
             "events": [
-                92
+                108
             ],
             "__typename": [
                 1
@@ -1452,7 +1688,7 @@ export default {
         },
         "ExtensionPointModel": {
             "type": [
-                96
+                112
             ],
             "label": [
                 1
@@ -1461,7 +1697,7 @@ export default {
                 1
             ],
             "size": [
-                94
+                110
             ],
             "__typename": [
                 1
@@ -1473,7 +1709,7 @@ export default {
                 1
             ],
             "type": [
-                98
+                114
             ],
             "required": [
                 4
@@ -1482,10 +1718,10 @@ export default {
                 1
             ],
             "fields": [
-                97
+                113
             ],
             "items": [
-                97
+                113
             ],
             "maxLength": [
                 80
@@ -1566,7 +1802,7 @@ export default {
         },
         "AppStorageDeclModel": {
             "collections": [
-                101
+                117
             ],
             "__typename": [
                 1
@@ -1602,7 +1838,7 @@ export default {
                 1
             ],
             "fields": [
-                97
+                113
             ],
             "__typename": [
                 1
@@ -1610,7 +1846,7 @@ export default {
         },
         "AppFunctionTriggerModel": {
             "type": [
-                107
+                123
             ],
             "readOnly": [
                 4
@@ -1619,10 +1855,10 @@ export default {
                 80
             ],
             "hookPoint": [
-                108
+                124
             ],
             "onError": [
-                109
+                125
             ],
             "timeoutMs": [
                 80
@@ -1640,7 +1876,7 @@ export default {
                 1
             ],
             "lifecycle": [
-                110
+                126
             ],
             "__typename": [
                 1
@@ -1669,7 +1905,7 @@ export default {
                 1
             ],
             "vars": [
-                111
+                127
             ],
             "__typename": [
                 1
@@ -1694,25 +1930,25 @@ export default {
                 1
             ],
             "trigger": [
-                106
+                122
             ],
             "invoker": [
-                115
+                131
             ],
             "runAs": [
-                116
+                132
             ],
             "input": [
-                97
+                113
             ],
             "output": [
-                97
+                113
             ],
             "preload": [
-                112
+                128
             ],
             "requires": [
-                113
+                129
             ],
             "__typename": [
                 1
@@ -1728,7 +1964,7 @@ export default {
                 1
             ],
             "extensions": [
-                95
+                111
             ],
             "webhookUrl": [
                 1
@@ -1740,7 +1976,7 @@ export default {
                 1
             ],
             "frontendModules": [
-                93
+                109
             ],
             "extensionCdnPath": [
                 1
@@ -1749,25 +1985,25 @@ export default {
                 1
             ],
             "config": [
-                99
+                115
             ],
             "customPermissions": [
-                100
+                116
             ],
             "storage": [
-                102
+                118
             ],
             "operations": [
-                103
+                119
             ],
             "emailTemplates": [
-                104
+                120
             ],
             "auditTypes": [
-                105
+                121
             ],
             "functions": [
-                114
+                130
             ],
             "codeAuthorized": [
                 1
@@ -1797,13 +2033,13 @@ export default {
         },
         "CustomDomainSsl": {
             "status": [
-                121
+                137
             ],
             "validation_errors": [
-                119
+                135
             ],
             "validation_records": [
-                118
+                134
             ],
             "__typename": [
                 1
@@ -1826,13 +2062,13 @@ export default {
                 1
             ],
             "ownership_verification": [
-                122
+                138
             ],
             "ssl": [
-                120
+                136
             ],
             "status": [
-                124
+                140
             ],
             "verification_errors": [
                 1
@@ -1852,7 +2088,7 @@ export default {
         },
         "PlatformCdnFileConfigs": {
             "pageConfig": [
-                125
+                141
             ],
             "__typename": [
                 1
@@ -1872,7 +2108,7 @@ export default {
                 1
             ],
             "type": [
-                128
+                144
             ],
             "updatedAt": [
                 12
@@ -1881,7 +2117,7 @@ export default {
                 12
             ],
             "config": [
-                126
+                142
             ],
             "size": [
                 17
@@ -1913,10 +2149,10 @@ export default {
         },
         "PresignedUrl": {
             "fields": [
-                129
+                145
             ],
             "url": [
-                131
+                147
             ],
             "__typename": [
                 1
@@ -1925,7 +2161,7 @@ export default {
         "URL": {},
         "AppReleaseFile": {
             "kind": [
-                133
+                149
             ],
             "name": [
                 1
@@ -1957,7 +2193,7 @@ export default {
                 4
             ],
             "checks": [
-                134
+                150
             ],
             "__typename": [
                 1
@@ -1974,10 +2210,10 @@ export default {
                 1
             ],
             "status": [
-                137
+                153
             ],
             "manifest": [
-                117
+                133
             ],
             "extensionBundleKey": [
                 1
@@ -1989,7 +2225,7 @@ export default {
                 1
             ],
             "reviewResult": [
-                135
+                151
             ],
             "reviewedAt": [
                 12
@@ -1998,7 +2234,7 @@ export default {
                 12
             ],
             "files": [
-                132
+                148
             ],
             "__typename": [
                 1
@@ -2007,13 +2243,13 @@ export default {
         "MarketplaceAppReleaseStatus": {},
         "AppReleaseWithUploadUrls": {
             "release": [
-                136
+                152
             ],
             "extensionUploadUrl": [
-                130
+                146
             ],
             "moduleUploadUrl": [
-                130
+                146
             ],
             "__typename": [
                 1
@@ -2038,10 +2274,10 @@ export default {
                 10
             ],
             "status": [
-                141
+                157
             ],
             "manifest": [
-                117
+                133
             ],
             "name": [
                 1
@@ -2083,13 +2319,13 @@ export default {
                 1
             ],
             "visibility": [
-                142
+                158
             ],
             "allowedOrganizationIds": [
                 10
             ],
             "reviews": [
-                146,
+                162,
                 {
                     "page": [
                         59
@@ -2097,13 +2333,13 @@ export default {
                 }
             ],
             "stats": [
-                152
+                168
             ],
             "installation": [
-                148
+                164
             ],
             "pricing": [
-                153
+                169
             ],
             "__typename": [
                 1
@@ -2113,10 +2349,10 @@ export default {
         "MarketplaceAppVisibility": {},
         "MarketplaceApps": {
             "edges": [
-                144
+                160
             ],
             "nodes": [
-                140
+                156
             ],
             "pageInfo": [
                 8
@@ -2133,7 +2369,7 @@ export default {
                 1
             ],
             "node": [
-                140
+                156
             ],
             "__typename": [
                 1
@@ -2173,10 +2409,10 @@ export default {
         },
         "MarketplaceAppReviews": {
             "edges": [
-                147
+                163
             ],
             "nodes": [
-                145
+                161
             ],
             "pageInfo": [
                 8
@@ -2193,7 +2429,7 @@ export default {
                 1
             ],
             "node": [
-                145
+                161
             ],
             "__typename": [
                 1
@@ -2213,7 +2449,7 @@ export default {
                 10
             ],
             "status": [
-                149
+                165
             ],
             "grantedPermissions": [
                 1
@@ -2225,7 +2461,7 @@ export default {
                 12
             ],
             "release": [
-                136
+                152
             ],
             "configVersion": [
                 80
@@ -2237,7 +2473,7 @@ export default {
                 1
             ],
             "marketplaceApp": [
-                140
+                156
             ],
             "__typename": [
                 1
@@ -2246,10 +2482,10 @@ export default {
         "MarketplaceInstallationStatus": {},
         "MarketplaceAppInstallations": {
             "edges": [
-                151
+                167
             ],
             "nodes": [
-                148
+                164
             ],
             "pageInfo": [
                 8
@@ -2266,7 +2502,7 @@ export default {
                 1
             ],
             "node": [
-                148
+                164
             ],
             "__typename": [
                 1
@@ -2294,7 +2530,7 @@ export default {
                 10
             ],
             "type": [
-                154
+                170
             ],
             "priceAmountCents": [
                 80
@@ -2316,181 +2552,6 @@ export default {
             ]
         },
         "MarketplacePricingType": {},
-        "GuestProfile": {
-            "playerId": [
-                10
-            ],
-            "player": [
-                73
-            ],
-            "email": [
-                1
-            ],
-            "firstName": [
-                1
-            ],
-            "lastName": [
-                1
-            ],
-            "origin": [
-                156
-            ],
-            "guardianPlayerIds": [
-                10
-            ],
-            "wardPlayerIds": [
-                10
-            ],
-            "createdAt": [
-                12
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestOrigin": {},
-        "GuestLinkContext": {
-            "id": [
-                10
-            ],
-            "purpose": [
-                1
-            ],
-            "data": [
-                1
-            ],
-            "expiresAt": [
-                12
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestSession": {
-            "token": [
-                1
-            ],
-            "playerId": [
-                10
-            ],
-            "origin": [
-                159
-            ],
-            "expiresAt": [
-                12
-            ],
-            "link": [
-                157
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestSessionOrigin": {},
-        "GuestMe": {
-            "sessionPlayerId": [
-                10
-            ],
-            "actingPlayerId": [
-                10
-            ],
-            "origin": [
-                159
-            ],
-            "expiresAt": [
-                12
-            ],
-            "link": [
-                157
-            ],
-            "profile": [
-                155
-            ],
-            "wards": [
-                155
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestLinkView": {
-            "status": [
-                162
-            ],
-            "purpose": [
-                1
-            ],
-            "expiresAt": [
-                12
-            ],
-            "firstName": [
-                1
-            ],
-            "data": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestLinkStatus": {},
-        "GuestLinkCreated": {
-            "id": [
-                10
-            ],
-            "token": [
-                1
-            ],
-            "expiresAt": [
-                12
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestProfileCreated": {
-            "profile": [
-                155
-            ],
-            "created": [
-                4
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestGuardianLink": {
-            "id": [
-                10
-            ],
-            "guardianPlayerId": [
-                10
-            ],
-            "wardPlayerId": [
-                10
-            ],
-            "createdAt": [
-                12
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestConfiguration": {
-            "selfEntry": [
-                167
-            ],
-            "sessionTtlMinutes": [
-                80
-            ],
-            "maxWardsPerGuardian": [
-                80
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "GuestSelfEntryMode": {},
         "Configuration": {
             "id": [
                 10
@@ -2508,7 +2569,7 @@ export default {
                 12
             ],
             "configuration": [
-                169
+                172
             ],
             "createdById": [
                 10
@@ -2565,10 +2626,10 @@ export default {
         },
         "LeaderboardSeasonBucketScores": {
             "edges": [
-                172
+                175
             ],
             "nodes": [
-                170
+                173
             ],
             "pageInfo": [
                 8
@@ -2585,7 +2646,7 @@ export default {
                 1
             ],
             "node": [
-                170
+                173
             ],
             "__typename": [
                 1
@@ -2619,10 +2680,10 @@ export default {
         },
         "Leaderboards": {
             "edges": [
-                175
+                178
             ],
             "nodes": [
-                173
+                176
             ],
             "pageInfo": [
                 8
@@ -2639,7 +2700,7 @@ export default {
                 1
             ],
             "node": [
-                173
+                176
             ],
             "__typename": [
                 1
@@ -2676,10 +2737,10 @@ export default {
         },
         "LeaderboardSeasons": {
             "edges": [
-                178
+                181
             ],
             "nodes": [
-                176
+                179
             ],
             "pageInfo": [
                 8
@@ -2696,7 +2757,7 @@ export default {
                 1
             ],
             "node": [
-                176
+                179
             ],
             "__typename": [
                 1
@@ -2716,7 +2777,7 @@ export default {
                 17
             ],
             "scoreCalculationType": [
-                180
+                183
             ],
             "createdAt": [
                 12
@@ -2731,10 +2792,10 @@ export default {
         "LeaderboardScoreCalculationType": {},
         "LeaderboardSeasonBuckets": {
             "edges": [
-                182
+                185
             ],
             "nodes": [
-                179
+                182
             ],
             "pageInfo": [
                 8
@@ -2751,30 +2812,45 @@ export default {
                 1
             ],
             "node": [
-                179
+                182
             ],
             "__typename": [
                 1
             ]
         },
-        "EmailTemplate": {
+        "LeaderboardFeed": {
             "id": [
                 10
             ],
-            "triggerEvent": [
-                50
+            "leaderboardId": [
+                10
             ],
-            "default": [
+            "tournamentId": [
+                10
+            ],
+            "stepId": [
+                10
+            ],
+            "seasonId": [
+                10
+            ],
+            "winPoints": [
+                17
+            ],
+            "lossPoints": [
+                17
+            ],
+            "drawPoints": [
+                17
+            ],
+            "forfeitPoints": [
+                17
+            ],
+            "placementPoints": [
+                17
+            ],
+            "enabled": [
                 4
-            ],
-            "name": [
-                1
-            ],
-            "title": [
-                1
-            ],
-            "contents": [
-                1
             ],
             "createdAt": [
                 12
@@ -2782,19 +2858,16 @@ export default {
             "updatedAt": [
                 12
             ],
-            "organizationId": [
-                10
-            ],
             "__typename": [
                 1
             ]
         },
-        "EmailTemplates": {
+        "LeaderboardFeeds": {
             "edges": [
-                185
+                188
             ],
             "nodes": [
-                183
+                186
             ],
             "pageInfo": [
                 8
@@ -2806,12 +2879,29 @@ export default {
                 1
             ]
         },
-        "EmailTemplateEdge": {
+        "LeaderboardFeedEdge": {
             "cursor": [
                 1
             ],
             "node": [
-                183
+                186
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "LeaderboardFeedReconcileResult": {
+            "feedId": [
+                10
+            ],
+            "sourcesChecked": [
+                80
+            ],
+            "entriesWritten": [
+                80
+            ],
+            "pointsDelta": [
+                17
             ],
             "__typename": [
                 1
@@ -2839,10 +2929,10 @@ export default {
                 1
             ],
             "availability": [
-                188
+                192
             ],
             "requirements": [
-                186
+                190
             ],
             "createdAt": [
                 12
@@ -2869,13 +2959,13 @@ export default {
                 1
             ],
             "manifest": [
-                117
+                133
             ],
             "status": [
-                190
+                194
             ],
             "reviewResult": [
-                135
+                151
             ],
             "createdAt": [
                 12
@@ -2925,7 +3015,7 @@ export default {
                 1
             ],
             "metadata": [
-                191
+                195
             ],
             "__typename": [
                 1
@@ -2966,19 +3056,19 @@ export default {
                 1
             ],
             "configuration": [
-                192
+                196
             ],
             "creator": [
                 76
             ],
             "manifest": [
-                117
+                133
             ],
             "releases": [
-                189
+                193
             ],
             "appWebhooks": [
-                196
+                200
             ],
             "__typename": [
                 1
@@ -2986,10 +3076,10 @@ export default {
         },
         "OrganizationApps": {
             "edges": [
-                195
+                199
             ],
             "nodes": [
-                193
+                197
             ],
             "pageInfo": [
                 8
@@ -3006,7 +3096,7 @@ export default {
                 1
             ],
             "node": [
-                193
+                197
             ],
             "__typename": [
                 1
@@ -3067,7 +3157,7 @@ export default {
                 12
             ],
             "app": [
-                193
+                197
             ],
             "group": [
                 9
@@ -3078,10 +3168,10 @@ export default {
         },
         "OrganizationAttachedApps": {
             "edges": [
-                199
+                203
             ],
             "nodes": [
-                197
+                201
             ],
             "pageInfo": [
                 8
@@ -3098,7 +3188,7 @@ export default {
                 1
             ],
             "node": [
-                197
+                201
             ],
             "__typename": [
                 1
@@ -3127,7 +3217,7 @@ export default {
                 10
             ],
             "configuration": [
-                201
+                205
             ],
             "name": [
                 1
@@ -3142,7 +3232,7 @@ export default {
                 12
             ],
             "parentIdentityProvider": [
-                187
+                191
             ],
             "__typename": [
                 1
@@ -3150,10 +3240,10 @@ export default {
         },
         "IdentityProviderConfigurations": {
             "on_OAuthClientConfiguration": [
-                202
+                206
             ],
             "on_OpenidConfiguration": [
-                205
+                209
             ],
             "__typename": [
                 1
@@ -3170,7 +3260,7 @@ export default {
                 1
             ],
             "providerType": [
-                203
+                207
             ],
             "clientId": [
                 1
@@ -3179,7 +3269,7 @@ export default {
                 1
             ],
             "tokenEndpointAuthMethod": [
-                204
+                208
             ],
             "redirectUrl": [
                 1
@@ -3210,7 +3300,7 @@ export default {
                 1
             ],
             "providerType": [
-                203
+                207
             ],
             "clientId": [
                 1
@@ -3347,7 +3437,7 @@ export default {
                 80
             ],
             "triggerType": [
-                213
+                217
             ],
             "triggerEventTypename": [
                 1
@@ -3359,13 +3449,13 @@ export default {
                 1
             ],
             "conditionResult": [
-                209
+                213
             ],
             "actionSource": [
                 1
             ],
             "engineTiming": [
-                208
+                212
             ],
             "printOutput": [
                 1
@@ -3374,10 +3464,10 @@ export default {
                 4
             ],
             "error": [
-                210
+                214
             ],
             "manualOverride": [
-                211
+                215
             ],
             "__typename": [
                 1
@@ -3395,7 +3485,7 @@ export default {
                 10
             ],
             "dataSource": [
-                215
+                219
             ],
             "keyCount": [
                 80
@@ -3404,10 +3494,10 @@ export default {
                 1
             ],
             "engineTiming": [
-                208
+                212
             ],
             "error": [
-                210
+                214
             ],
             "__typename": [
                 1
@@ -3419,7 +3509,7 @@ export default {
                 1
             ],
             "effectKind": [
-                217
+                221
             ],
             "targetTeamId": [
                 10
@@ -3431,10 +3521,10 @@ export default {
                 10
             ],
             "beforeStatus": [
-                218
+                222
             ],
             "afterStatus": [
-                218
+                222
             ],
             "applied": [
                 4
@@ -3453,7 +3543,7 @@ export default {
                 1
             ],
             "effectKind": [
-                217
+                221
             ],
             "stepId": [
                 10
@@ -3479,7 +3569,7 @@ export default {
                 1
             ],
             "effectKind": [
-                217
+                221
             ],
             "targetTeamId": [
                 10
@@ -3488,10 +3578,10 @@ export default {
                 10
             ],
             "beforeStatus": [
-                218
+                222
             ],
             "afterStatus": [
-                218
+                222
             ],
             "applied": [
                 4
@@ -3508,7 +3598,7 @@ export default {
                 1
             ],
             "effectKind": [
-                217
+                221
             ],
             "stepId": [
                 10
@@ -3540,16 +3630,16 @@ export default {
                 1
             ],
             "effectKind": [
-                217
+                221
             ],
             "stepId": [
                 10
             ],
             "beforeStepStatus": [
-                223
+                227
             ],
             "afterStepStatus": [
-                223
+                227
             ],
             "applied": [
                 4
@@ -3567,10 +3657,10 @@ export default {
                 1
             ],
             "effectKind": [
-                217
+                221
             ],
             "targetType": [
-                225
+                229
             ],
             "targetId": [
                 10
@@ -3606,7 +3696,7 @@ export default {
                 1
             ],
             "engineTiming": [
-                208
+                212
             ],
             "printOutput": [
                 1
@@ -3615,7 +3705,7 @@ export default {
                 4
             ],
             "error": [
-                210
+                214
             ],
             "__typename": [
                 1
@@ -3635,7 +3725,7 @@ export default {
                 1
             ],
             "effect": [
-                228
+                232
             ],
             "__typename": [
                 1
@@ -3696,10 +3786,10 @@ export default {
                 10
             ],
             "previousScores": [
-                230
+                234
             ],
             "scores": [
-                230
+                234
             ],
             "__typename": [
                 1
@@ -3725,10 +3815,10 @@ export default {
                 10
             ],
             "previousScores": [
-                230
+                234
             ],
             "scores": [
-                230
+                234
             ],
             "wasEnded": [
                 4
@@ -3790,16 +3880,16 @@ export default {
                 10
             ],
             "previousStatus": [
-                223
+                227
             ],
             "newStatus": [
-                223
+                227
             ],
             "reason": [
                 1
             ],
             "cascade": [
-                235
+                239
             ],
             "__typename": [
                 1
@@ -3856,7 +3946,7 @@ export default {
                 17
             ],
             "status": [
-                240
+                244
             ],
             "tournamentStepGroupRoundGameId": [
                 10
@@ -3877,10 +3967,10 @@ export default {
         "MatchStatus": {},
         "TournamentStepGroupRoundGameMatches": {
             "edges": [
-                242
+                246
             ],
             "nodes": [
-                239
+                243
             ],
             "pageInfo": [
                 8
@@ -3897,7 +3987,7 @@ export default {
                 1
             ],
             "node": [
-                239
+                243
             ],
             "__typename": [
                 1
@@ -3919,7 +4009,7 @@ export default {
                 10
             ],
             "status": [
-                245
+                249
             ],
             "tournamentTeamId": [
                 10
@@ -3934,7 +4024,7 @@ export default {
                 12
             ],
             "team": [
-                248
+                252
             ],
             "__typename": [
                 1
@@ -3943,10 +4033,10 @@ export default {
         "TournamentTeamMemberStatus": {},
         "TeamMembers": {
             "edges": [
-                247
+                251
             ],
             "nodes": [
-                244
+                248
             ],
             "pageInfo": [
                 8
@@ -3963,7 +4053,7 @@ export default {
                 1
             ],
             "node": [
-                244
+                248
             ],
             "__typename": [
                 1
@@ -4001,7 +4091,7 @@ export default {
                 12
             ],
             "members": [
-                244
+                248
             ],
             "eventReservationId": [
                 10
@@ -4024,10 +4114,10 @@ export default {
         },
         "TournamentTeams": {
             "edges": [
-                250
+                254
             ],
             "nodes": [
-                248
+                252
             ],
             "pageInfo": [
                 8
@@ -4044,7 +4134,7 @@ export default {
                 1
             ],
             "node": [
-                248
+                252
             ],
             "__typename": [
                 1
@@ -4057,8 +4147,14 @@ export default {
             "score": [
                 17
             ],
+            "rank": [
+                80
+            ],
+            "status": [
+                222
+            ],
             "team": [
-                248
+                252
             ],
             "__typename": [
                 1
@@ -4081,10 +4177,10 @@ export default {
                 17
             ],
             "type": [
-                253
+                257
             ],
             "status": [
-                223
+                227
             ],
             "configuration": [
                 31
@@ -4099,13 +4195,16 @@ export default {
                 12
             ],
             "teamScores": [
-                251
+                255
             ],
             "tournament": [
                 58
             ],
             "manualPins": [
-                238
+                242
+            ],
+            "openPool": [
+                338
             ],
             "__typename": [
                 1
@@ -4114,7 +4213,7 @@ export default {
         "StepType": {},
         "Tournaments": {
             "edges": [
-                255
+                259
             ],
             "nodes": [
                 58
@@ -4148,7 +4247,7 @@ export default {
                 27
             ],
             "status": [
-                257
+                261
             ],
             "order": [
                 17
@@ -4163,10 +4262,10 @@ export default {
                 12
             ],
             "matches": [
-                239
+                243
             ],
             "gameLinks": [
-                260
+                264
             ],
             "winningGameId": [
                 10
@@ -4202,7 +4301,7 @@ export default {
                 12
             ],
             "games": [
-                256
+                260
             ],
             "__typename": [
                 1
@@ -4234,7 +4333,7 @@ export default {
                 17
             ],
             "rounds": [
-                258
+                262
             ],
             "__typename": [
                 1
@@ -4251,7 +4350,7 @@ export default {
                 10
             ],
             "outcome": [
-                261
+                265
             ],
             "__typename": [
                 1
@@ -4272,7 +4371,7 @@ export default {
                 17
             ],
             "status": [
-                263
+                267
             ],
             "createdAt": [
                 12
@@ -4287,10 +4386,10 @@ export default {
         "MatchScoreStatus": {},
         "TournamentStepGroupRoundGameMatchScores": {
             "edges": [
-                265
+                269
             ],
             "nodes": [
-                262
+                266
             ],
             "pageInfo": [
                 8
@@ -4307,7 +4406,7 @@ export default {
                 1
             ],
             "node": [
-                262
+                266
             ],
             "__typename": [
                 1
@@ -4324,7 +4423,7 @@ export default {
                 10
             ],
             "permissions": [
-                267
+                271
             ],
             "createdAt": [
                 12
@@ -4342,7 +4441,7 @@ export default {
         "TournamentAdminPermissions": {},
         "RuleActionModel": {
             "type": [
-                269
+                273
             ],
             "script": [
                 1
@@ -4366,7 +4465,7 @@ export default {
                 80
             ],
             "triggerType": [
-                213
+                217
             ],
             "triggerScope": [
                 1
@@ -4375,7 +4474,7 @@ export default {
                 1
             ],
             "actions": [
-                268
+                272
             ],
             "autoExecute": [
                 4
@@ -4387,7 +4486,7 @@ export default {
                 4
             ],
             "purpose": [
-                271
+                275
             ],
             "createdAt": [
                 12
@@ -4408,13 +4507,13 @@ export default {
                 80
             ],
             "type": [
-                273
+                277
             ],
             "formula": [
                 1
             ],
             "sortOrder": [
-                274
+                278
             ],
             "__typename": [
                 1
@@ -4427,7 +4526,7 @@ export default {
                 10
             ],
             "aggregation": [
-                276
+                280
             ],
             "formula": [
                 1
@@ -4445,7 +4544,7 @@ export default {
                 80
             ],
             "tiebreakers": [
-                272
+                276
             ],
             "__typename": [
                 1
@@ -4498,7 +4597,7 @@ export default {
                 80
             ],
             "gameTemplates": [
-                277
+                281
             ],
             "__typename": [
                 1
@@ -4533,7 +4632,7 @@ export default {
                 1
             ],
             "roundTemplates": [
-                278
+                282
             ],
             "__typename": [
                 1
@@ -4544,7 +4643,7 @@ export default {
                 10
             ],
             "groupTemplates": [
-                279
+                283
             ],
             "__typename": [
                 1
@@ -4552,7 +4651,7 @@ export default {
         },
         "CrossStepUsageModel": {
             "type": [
-                282
+                286
             ],
             "condition": [
                 1
@@ -4573,13 +4672,13 @@ export default {
                 10
             ],
             "sourceRelative": [
-                284
+                288
             ],
             "dataSource": [
-                215
+                219
             ],
             "usage": [
-                281
+                285
             ],
             "__typename": [
                 1
@@ -4606,16 +4705,16 @@ export default {
                 12
             ],
             "scoringRuleSet": [
-                275
+                279
             ],
             "advancementRules": [
-                270
+                274
             ],
             "crossStepRules": [
-                283
+                287
             ],
             "structureTemplate": [
-                280
+                284
             ],
             "createdAt": [
                 12
@@ -4632,7 +4731,7 @@ export default {
                 1
             ],
             "type": [
-                287
+                291
             ],
             "required": [
                 4
@@ -4662,7 +4761,7 @@ export default {
                 1
             ],
             "parameters": [
-                286
+                290
             ],
             "createdAt": [
                 12
@@ -4685,10 +4784,10 @@ export default {
                 1
             ],
             "category": [
-                290
+                294
             ],
             "parameters": [
-                286
+                290
             ],
             "source": [
                 1
@@ -4723,7 +4822,7 @@ export default {
         },
         "ScriptStackFrameModel": {
             "phase": [
-                293
+                297
             ],
             "line": [
                 80
@@ -4750,10 +4849,10 @@ export default {
                 1
             ],
             "code": [
-                295
+                299
             ],
             "phase": [
-                293
+                297
             ],
             "originHelper": [
                 1
@@ -4762,10 +4861,10 @@ export default {
                 1
             ],
             "snippet": [
-                291
+                295
             ],
             "stackFrames": [
-                292
+                296
             ],
             "__typename": [
                 1
@@ -4783,7 +4882,7 @@ export default {
                 1
             ],
             "code": [
-                297
+                301
             ],
             "__typename": [
                 1
@@ -4795,10 +4894,10 @@ export default {
                 4
             ],
             "errors": [
-                294
+                298
             ],
             "warnings": [
-                296
+                300
             ],
             "__typename": [
                 1
@@ -4806,7 +4905,7 @@ export default {
         },
         "SimulatedEffectModel": {
             "type": [
-                300
+                304
             ],
             "description": [
                 1
@@ -4821,16 +4920,16 @@ export default {
                 4
             ],
             "errors": [
-                294
+                298
             ],
             "warnings": [
-                296
+                300
             ],
             "effectsSummary": [
-                299
+                303
             ],
             "partialEffectsSummary": [
-                299
+                303
             ],
             "executionTimeMs": [
                 80
@@ -4844,7 +4943,7 @@ export default {
         },
         "LuaErrorDetailModel": {
             "scriptContextType": [
-                303
+                307
             ],
             "script": [
                 1
@@ -4871,7 +4970,7 @@ export default {
                 10
             ],
             "code": [
-                305
+                309
             ],
             "message": [
                 1
@@ -4880,13 +4979,13 @@ export default {
                 1
             ],
             "invariantCode": [
-                306
+                310
             ],
             "luaError": [
-                302
+                306
             ],
             "offender": [
-                307
+                311
             ],
             "__typename": [
                 1
@@ -4896,25 +4995,25 @@ export default {
         "InvariantCode": {},
         "InvariantOffenderUnion": {
             "on_RuleOffenderModel": [
-                308
+                312
             ],
             "on_CrossStepRuleOffenderModel": [
-                310
-            ],
-            "on_GameOffenderModel": [
-                311
-            ],
-            "on_RoundOffenderModel": [
-                313
-            ],
-            "on_GroupOffenderModel": [
                 314
             ],
-            "on_TeamOffenderModel": [
+            "on_GameOffenderModel": [
                 315
             ],
+            "on_RoundOffenderModel": [
+                317
+            ],
+            "on_GroupOffenderModel": [
+                318
+            ],
+            "on_TeamOffenderModel": [
+                319
+            ],
             "on_ScoreRowOffenderModel": [
-                316
+                320
             ],
             "__typename": [
                 1
@@ -4922,7 +5021,7 @@ export default {
         },
         "RuleOffenderModel": {
             "kind": [
-                309
+                313
             ],
             "ruleId": [
                 10
@@ -4931,7 +5030,7 @@ export default {
                 1
             ],
             "trigger": [
-                213
+                217
             ],
             "__typename": [
                 1
@@ -4940,16 +5039,16 @@ export default {
         "OffenderKind": {},
         "CrossStepRuleOffenderModel": {
             "kind": [
-                309
+                313
             ],
             "crossStepRuleId": [
                 10
             ],
             "dataSource": [
-                215
+                219
             ],
             "usage": [
-                282
+                286
             ],
             "__typename": [
                 1
@@ -4957,7 +5056,7 @@ export default {
         },
         "GameOffenderModel": {
             "kind": [
-                309
+                313
             ],
             "gameId": [
                 10
@@ -4972,7 +5071,7 @@ export default {
                 80
             ],
             "status": [
-                312
+                316
             ],
             "__typename": [
                 1
@@ -4981,7 +5080,7 @@ export default {
         "GameStatus": {},
         "RoundOffenderModel": {
             "kind": [
-                309
+                313
             ],
             "roundId": [
                 10
@@ -4998,7 +5097,7 @@ export default {
         },
         "GroupOffenderModel": {
             "kind": [
-                309
+                313
             ],
             "groupId": [
                 10
@@ -5015,7 +5114,7 @@ export default {
         },
         "TeamOffenderModel": {
             "kind": [
-                309
+                313
             ],
             "teamId": [
                 10
@@ -5024,7 +5123,7 @@ export default {
                 1
             ],
             "currentStatus": [
-                218
+                222
             ],
             "__typename": [
                 1
@@ -5032,10 +5131,10 @@ export default {
         },
         "ScoreRowOffenderModel": {
             "kind": [
-                309
+                313
             ],
             "scope": [
-                317
+                321
             ],
             "scoreRowId": [
                 10
@@ -5050,7 +5149,7 @@ export default {
                 80
             ],
             "status": [
-                218
+                222
             ],
             "__typename": [
                 1
@@ -5059,10 +5158,10 @@ export default {
         "ScoreRowScope": {},
         "InvariantResultModel": {
             "code": [
-                306
+                310
             ],
             "severity": [
-                319
+                323
             ],
             "passed": [
                 4
@@ -5071,7 +5170,7 @@ export default {
                 1
             ],
             "offenders": [
-                307
+                311
             ],
             "__typename": [
                 1
@@ -5086,7 +5185,7 @@ export default {
                 1
             ],
             "trigger": [
-                213
+                217
             ],
             "fireCount": [
                 80
@@ -5106,13 +5205,13 @@ export default {
                 80
             ],
             "invariantResults": [
-                318
+                322
             ],
             "errors": [
-                304
+                308
             ],
             "ruleFiredSummary": [
-                320
+                324
             ],
             "__typename": [
                 1
@@ -5120,7 +5219,7 @@ export default {
         },
         "ValidationProgressModel": {
             "stage": [
-                323
+                327
             ],
             "percent": [
                 17
@@ -5153,16 +5252,16 @@ export default {
                 10
             ],
             "status": [
-                325
+                329
             ],
             "stage": [
-                323
+                327
             ],
             "progress": [
-                322
+                326
             ],
             "result": [
-                321
+                325
             ],
             "errorSummary": [
                 1
@@ -5192,7 +5291,7 @@ export default {
                 12
             ],
             "kind": [
-                327
+                331
             ],
             "summary": [
                 1
@@ -5222,13 +5321,13 @@ export default {
                 10
             ],
             "effectType": [
-                328
+                332
             ],
             "statusBefore": [
-                329
+                333
             ],
             "statusAfter": [
-                329
+                333
             ],
             "__typename": [
                 1
@@ -5239,10 +5338,10 @@ export default {
         "ValidationStatus": {},
         "ValidationJobs": {
             "edges": [
-                331
+                335
             ],
             "nodes": [
-                324
+                328
             ],
             "pageInfo": [
                 8
@@ -5259,7 +5358,7 @@ export default {
                 1
             ],
             "node": [
-                324
+                328
             ],
             "__typename": [
                 1
@@ -5267,10 +5366,10 @@ export default {
         },
         "ValidationEvents": {
             "edges": [
-                333
+                337
             ],
             "nodes": [
-                326
+                330
             ],
             "pageInfo": [
                 8
@@ -5287,7 +5386,154 @@ export default {
                 1
             ],
             "node": [
-                326
+                330
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "OpenPoolConfiguration": {
+            "teamsPerMatch": [
+                80
+            ],
+            "bestOf": [
+                80
+            ],
+            "maxMatchesPerTeam": [
+                80
+            ],
+            "allowRematch": [
+                4
+            ],
+            "allowConcurrentMatches": [
+                4
+            ],
+            "autoJoin": [
+                4
+            ],
+            "enforceTeamMinSize": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "OpenPoolMatchTeam": {
+            "teamId": [
+                10
+            ],
+            "team": [
+                252
+            ],
+            "status": [
+                267
+            ],
+            "score": [
+                17
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "OpenPoolMatch": {
+            "id": [
+                10
+            ],
+            "gameId": [
+                10
+            ],
+            "groupId": [
+                10
+            ],
+            "stepId": [
+                10
+            ],
+            "tournamentId": [
+                10
+            ],
+            "label": [
+                1
+            ],
+            "order": [
+                80
+            ],
+            "status": [
+                244
+            ],
+            "teams": [
+                339
+            ],
+            "createdAt": [
+                12
+            ],
+            "updatedAt": [
+                12
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "OpenPoolMatches": {
+            "edges": [
+                342
+            ],
+            "nodes": [
+                340
+            ],
+            "pageInfo": [
+                8
+            ],
+            "totalCount": [
+                17
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "OpenPoolMatchEdge": {
+            "cursor": [
+                1
+            ],
+            "node": [
+                340
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "OpenPoolStanding": {
+            "teamId": [
+                10
+            ],
+            "team": [
+                252
+            ],
+            "groupId": [
+                10
+            ],
+            "rank": [
+                80
+            ],
+            "status": [
+                222
+            ],
+            "points": [
+                17
+            ],
+            "played": [
+                80
+            ],
+            "wins": [
+                80
+            ],
+            "losses": [
+                80
+            ],
+            "draws": [
+                80
+            ],
+            "forfeits": [
+                80
             ],
             "__typename": [
                 1
@@ -5330,10 +5576,10 @@ export default {
         },
         "Currencies": {
             "edges": [
-                336
+                346
             ],
             "nodes": [
-                334
+                344
             ],
             "pageInfo": [
                 8
@@ -5350,7 +5596,7 @@ export default {
                 1
             ],
             "node": [
-                334
+                344
             ],
             "__typename": [
                 1
@@ -5381,10 +5627,10 @@ export default {
         },
         "PlayerCurrencies": {
             "edges": [
-                339
+                349
             ],
             "nodes": [
-                337
+                347
             ],
             "pageInfo": [
                 8
@@ -5401,7 +5647,7 @@ export default {
                 1
             ],
             "node": [
-                337
+                347
             ],
             "__typename": [
                 1
@@ -5427,7 +5673,7 @@ export default {
                 4
             ],
             "releasePolicy": [
-                341
+                351
             ],
             "createdAt": [
                 12
@@ -5442,10 +5688,10 @@ export default {
         "RegistrationSeriesReleasePolicy": {},
         "RegistrationSeriesPage": {
             "edges": [
-                343
+                353
             ],
             "nodes": [
-                340
+                350
             ],
             "pageInfo": [
                 8
@@ -5462,7 +5708,7 @@ export default {
                 1
             ],
             "node": [
-                340
+                350
             ],
             "__typename": [
                 1
@@ -5470,7 +5716,7 @@ export default {
         },
         "RegistrationSeriesEntry": {
             "kind": [
-                345
+                355
             ],
             "status": [
                 1
@@ -5535,7 +5781,7 @@ export default {
                 10
             ],
             "status": [
-                348
+                358
             ],
             "createdAt": [
                 12
@@ -5565,7 +5811,7 @@ export default {
                 12
             ],
             "status": [
-                350
+                360
             ],
             "locked": [
                 4
@@ -5580,10 +5826,10 @@ export default {
         "UserGroupStatus": {},
         "UserGroups": {
             "edges": [
-                352
+                362
             ],
             "nodes": [
-                349
+                359
             ],
             "pageInfo": [
                 8
@@ -5600,7 +5846,7 @@ export default {
                 1
             ],
             "node": [
-                349
+                359
             ],
             "__typename": [
                 1
@@ -5608,10 +5854,10 @@ export default {
         },
         "UserGroupMembers": {
             "edges": [
-                354
+                364
             ],
             "nodes": [
-                347
+                357
             ],
             "pageInfo": [
                 8
@@ -5628,7 +5874,7 @@ export default {
                 1
             ],
             "node": [
-                347
+                357
             ],
             "__typename": [
                 1
@@ -5653,7 +5899,7 @@ export default {
                 1
             ],
             "position": [
-                355
+                365
             ],
             "__typename": [
                 1
@@ -5673,7 +5919,7 @@ export default {
                 12
             ],
             "configuration": [
-                356
+                366
             ],
             "seatTypeId": [
                 10
@@ -5684,13 +5930,13 @@ export default {
         },
         "EventVenueSeatsUpdateResult": {
             "updatedSeats": [
-                357
+                367
             ],
             "createdSeats": [
-                357
+                367
             ],
             "deletedSeats": [
-                357
+                367
             ],
             "__typename": [
                 1
@@ -5698,10 +5944,10 @@ export default {
         },
         "EventVenueSeats": {
             "edges": [
-                360
+                370
             ],
             "nodes": [
-                357
+                367
             ],
             "pageInfo": [
                 8
@@ -5718,7 +5964,7 @@ export default {
                 1
             ],
             "node": [
-                357
+                367
             ],
             "__typename": [
                 1
@@ -5755,7 +6001,7 @@ export default {
                 12
             ],
             "configuration": [
-                361
+                371
             ],
             "__typename": [
                 1
@@ -5784,7 +6030,7 @@ export default {
                 12
             ],
             "configuration": [
-                361
+                371
             ],
             "qrCode": [
                 1
@@ -5801,7 +6047,7 @@ export default {
                 1
             ],
             "status": [
-                365
+                375
             ],
             "sessionValidUntil": [
                 12
@@ -5819,10 +6065,10 @@ export default {
                 10
             ],
             "tickets": [
-                362
+                372
             ],
             "groupStatus": [
-                350
+                360
             ],
             "replacesReservationId": [
                 10
@@ -5843,7 +6089,7 @@ export default {
                 1
             ],
             "status": [
-                365
+                375
             ],
             "sessionValidUntil": [
                 12
@@ -5861,13 +6107,13 @@ export default {
                 10
             ],
             "groupStatus": [
-                350
+                360
             ],
             "replacesReservationId": [
                 10
             ],
             "tickets": [
-                363
+                373
             ],
             "__typename": [
                 1
@@ -5875,10 +6121,10 @@ export default {
         },
         "EventReservations": {
             "edges": [
-                368
+                378
             ],
             "nodes": [
-                369
+                379
             ],
             "pageInfo": [
                 8
@@ -5895,7 +6141,7 @@ export default {
                 1
             ],
             "node": [
-                369
+                379
             ],
             "__typename": [
                 1
@@ -5909,7 +6155,7 @@ export default {
                 1
             ],
             "status": [
-                365
+                375
             ],
             "sessionValidUntil": [
                 12
@@ -5927,7 +6173,7 @@ export default {
                 10
             ],
             "groupStatus": [
-                350
+                360
             ],
             "replacesReservationId": [
                 10
@@ -5961,13 +6207,13 @@ export default {
                 12
             ],
             "configuration": [
-                356
+                366
             ],
             "seatTypeId": [
                 10
             ],
             "status": [
-                372
+                382
             ],
             "reservedByTicketId": [
                 10
@@ -5985,10 +6231,10 @@ export default {
         "EventSeatStatus": {},
         "EventSeats": {
             "edges": [
-                374
+                384
             ],
             "nodes": [
-                371
+                381
             ],
             "pageInfo": [
                 8
@@ -6005,7 +6251,7 @@ export default {
                 1
             ],
             "node": [
-                371
+                381
             ],
             "__typename": [
                 1
@@ -6039,7 +6285,7 @@ export default {
                 80
             ],
             "changeScope": [
-                377
+                387
             ],
             "__typename": [
                 1
@@ -6051,16 +6297,16 @@ export default {
                 19
             ],
             "groupConfiguration": [
-                346
+                356
             ],
             "maxTicketsPerReservation": [
                 17
             ],
             "reservationStatusAfterPayment": [
-                379
+                389
             ],
             "reservationStatusAfterRegistration": [
-                380
+                390
             ],
             "sessionDuration": [
                 17
@@ -6069,16 +6315,16 @@ export default {
                 4
             ],
             "seatAssignmentMode": [
-                381
+                391
             ],
             "allowForMoreTicketsThanGroupMembers": [
                 4
             ],
             "waitlist": [
-                375
+                385
             ],
             "selfService": [
-                376
+                386
             ],
             "__typename": [
                 1
@@ -6119,7 +6365,7 @@ export default {
                 12
             ],
             "configuration": [
-                378
+                388
             ],
             "eventVenueId": [
                 10
@@ -6140,7 +6386,7 @@ export default {
                 1
             ],
             "venue": [
-                398
+                408
             ],
             "__typename": [
                 1
@@ -6178,7 +6424,7 @@ export default {
                 12
             ],
             "configuration": [
-                378
+                388
             ],
             "eventVenueId": [
                 10
@@ -6199,13 +6445,13 @@ export default {
                 1
             ],
             "venue": [
-                398
+                408
             ],
             "on_Event": [
-                382
+                392
             ],
             "on_EventWithUserReservation": [
-                384
+                394
             ],
             "__typename": [
                 1
@@ -6243,7 +6489,7 @@ export default {
                 12
             ],
             "configuration": [
-                378
+                388
             ],
             "eventVenueId": [
                 10
@@ -6264,10 +6510,10 @@ export default {
                 1
             ],
             "venue": [
-                398
+                408
             ],
             "myReservation": [
-                366
+                376
             ],
             "__typename": [
                 1
@@ -6275,10 +6521,10 @@ export default {
         },
         "Events": {
             "edges": [
-                386
+                396
             ],
             "nodes": [
-                382
+                392
             ],
             "pageInfo": [
                 8
@@ -6295,7 +6541,7 @@ export default {
                 1
             ],
             "node": [
-                382
+                392
             ],
             "__typename": [
                 1
@@ -6303,7 +6549,7 @@ export default {
         },
         "EventCalendarGenerateResult": {
             "events": [
-                382
+                392
             ],
             "createdEventCount": [
                 80
@@ -6349,7 +6595,7 @@ export default {
                 17
             ],
             "currency": [
-                390
+                400
             ],
             "maxCount": [
                 17
@@ -6367,7 +6613,7 @@ export default {
                 10
             ],
             "configuration": [
-                388
+                398
             ],
             "startsAt": [
                 12
@@ -6376,7 +6622,7 @@ export default {
                 12
             ],
             "state": [
-                391
+                401
             ],
             "stateReason": [
                 1
@@ -6388,7 +6634,7 @@ export default {
                 80
             ],
             "effectiveState": [
-                392
+                402
             ],
             "__typename": [
                 1
@@ -6416,7 +6662,7 @@ export default {
                 1
             ],
             "configuration": [
-                393
+                403
             ],
             "createdAt": [
                 12
@@ -6433,10 +6679,10 @@ export default {
         },
         "EventVenueSeatTypes": {
             "edges": [
-                396
+                406
             ],
             "nodes": [
-                394
+                404
             ],
             "pageInfo": [
                 8
@@ -6453,7 +6699,7 @@ export default {
                 1
             ],
             "node": [
-                394
+                404
             ],
             "__typename": [
                 1
@@ -6499,7 +6745,7 @@ export default {
                 12
             ],
             "configuration": [
-                397
+                407
             ],
             "organizationId": [
                 10
@@ -6513,10 +6759,10 @@ export default {
         },
         "EventVenues": {
             "edges": [
-                400
+                410
             ],
             "nodes": [
-                398
+                408
             ],
             "pageInfo": [
                 8
@@ -6533,7 +6779,7 @@ export default {
                 1
             ],
             "node": [
-                398
+                408
             ],
             "__typename": [
                 1
@@ -6556,10 +6802,10 @@ export default {
                 80
             ],
             "status": [
-                402
+                412
             ],
             "endedReason": [
-                403
+                413
             ],
             "position": [
                 80
@@ -6584,10 +6830,10 @@ export default {
         "EventWaitlistEndReason": {},
         "EventWaitlistEntries": {
             "edges": [
-                405
+                415
             ],
             "nodes": [
-                401
+                411
             ],
             "pageInfo": [
                 8
@@ -6604,7 +6850,7 @@ export default {
                 1
             ],
             "node": [
-                401
+                411
             ],
             "__typename": [
                 1
@@ -6644,10 +6890,10 @@ export default {
         },
         "Items": {
             "edges": [
-                408
+                418
             ],
             "nodes": [
-                406
+                416
             ],
             "pageInfo": [
                 8
@@ -6664,7 +6910,7 @@ export default {
                 1
             ],
             "node": [
-                406
+                416
             ],
             "__typename": [
                 1
@@ -6698,10 +6944,10 @@ export default {
         },
         "PlayerItems": {
             "edges": [
-                411
+                421
             ],
             "nodes": [
-                409
+                419
             ],
             "pageInfo": [
                 8
@@ -6718,7 +6964,7 @@ export default {
                 1
             ],
             "node": [
-                409
+                419
             ],
             "__typename": [
                 1
@@ -6755,10 +7001,10 @@ export default {
         },
         "ItemCategories": {
             "edges": [
-                414
+                424
             ],
             "nodes": [
-                412
+                422
             ],
             "pageInfo": [
                 8
@@ -6775,7 +7021,18 @@ export default {
                 1
             ],
             "node": [
-                412
+                422
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "PlayerItemsTransferResult": {
+            "from": [
+                419
+            ],
+            "to": [
+                419
             ],
             "__typename": [
                 1
@@ -6783,7 +7040,7 @@ export default {
         },
         "JournalActor": {
             "type": [
-                416
+                427
             ],
             "id": [
                 10
@@ -6812,22 +7069,22 @@ export default {
                 10
             ],
             "category": [
-                419
+                430
             ],
             "type": [
                 1
             ],
             "severity": [
-                420
+                431
             ],
             "actor": [
-                415
+                426
             ],
             "primaryResource": [
-                417
+                428
             ],
             "secondaryResources": [
-                417
+                428
             ],
             "payload": [
                 0
@@ -6842,7 +7099,7 @@ export default {
                 12
             ],
             "children": [
-                421,
+                432,
                 {
                     "first": [
                         17
@@ -6860,10 +7117,10 @@ export default {
         "JournalSeverity": {},
         "JournalEntries": {
             "edges": [
-                422
+                433
             ],
             "nodes": [
-                418
+                429
             ],
             "pageInfo": [
                 8
@@ -6880,7 +7137,7 @@ export default {
                 1
             ],
             "node": [
-                418
+                429
             ],
             "__typename": [
                 1
@@ -7012,7 +7269,7 @@ export default {
                 1
             ],
             "props": [
-                430
+                441
             ],
             "createdAt": [
                 12
@@ -7050,10 +7307,10 @@ export default {
                 1
             ],
             "propsSchema": [
-                90
+                106
             ],
             "events": [
-                92
+                108
             ],
             "grantedPermissions": [
                 1
@@ -7125,6 +7382,17 @@ export default {
                 1
             ]
         },
+        "ModerationCheckResult": {
+            "key": [
+                1
+            ],
+            "allowed": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "ObjectMetadata": {
             "key": [
                 1
@@ -7133,13 +7401,13 @@ export default {
                 1
             ],
             "type": [
-                437
+                449
             ],
             "visibility": [
-                438
+                450
             ],
             "objectType": [
-                439
+                451
             ],
             "objectId": [
                 10
@@ -7162,7 +7430,7 @@ export default {
                 10
             ],
             "entries": [
-                436
+                448
             ],
             "__typename": [
                 1
@@ -7184,7 +7452,7 @@ export default {
                 10
             ],
             "objectType": [
-                439
+                451
             ],
             "key": [
                 1
@@ -7196,7 +7464,7 @@ export default {
                 1
             ],
             "type": [
-                443
+                455
             ],
             "required": [
                 4
@@ -7214,7 +7482,7 @@ export default {
                 22
             ],
             "options": [
-                441
+                453
             ],
             "defaultValue": [
                 1
@@ -7238,7 +7506,7 @@ export default {
         "CustomFieldType": {},
         "CustomFieldWithValueModel": {
             "definition": [
-                442
+                454
             ],
             "value": [
                 1
@@ -7252,7 +7520,7 @@ export default {
                 10
             ],
             "fields": [
-                444
+                456
             ],
             "__typename": [
                 1
@@ -7263,7 +7531,7 @@ export default {
                 1
             ],
             "configuration": [
-                123
+                139
             ],
             "__typename": [
                 1
@@ -7319,7 +7587,7 @@ export default {
                 12
             ],
             "configuration": [
-                449
+                461
             ],
             "organizationId": [
                 10
@@ -7328,7 +7596,7 @@ export default {
                 1
             ],
             "customDomains": [
-                446
+                458
             ],
             "__typename": [
                 1
@@ -7345,7 +7613,7 @@ export default {
                 1
             ],
             "screenshotUrl": [
-                131
+                147
             ],
             "createdAt": [
                 12
@@ -7402,7 +7670,7 @@ export default {
         },
         "UsersConnectedEvent": {
             "usersConnected": [
-                453
+                465
             ],
             "__typename": [
                 1
@@ -7430,7 +7698,7 @@ export default {
         },
         "UsersDisconnectedEvent": {
             "usersDisconnected": [
-                455
+                467
             ],
             "__typename": [
                 1
@@ -7472,10 +7740,10 @@ export default {
         },
         "PlayerShopProductPurshasesDto": {
             "edges": [
-                460
+                472
             ],
             "nodes": [
-                458
+                470
             ],
             "pageInfo": [
                 8
@@ -7492,7 +7760,7 @@ export default {
                 1
             ],
             "node": [
-                458
+                470
             ],
             "__typename": [
                 1
@@ -7529,10 +7797,10 @@ export default {
         },
         "ShopCategories": {
             "edges": [
-                463
+                475
             ],
             "nodes": [
-                461
+                473
             ],
             "pageInfo": [
                 8
@@ -7549,7 +7817,7 @@ export default {
                 1
             ],
             "node": [
-                461
+                473
             ],
             "__typename": [
                 1
@@ -7582,7 +7850,7 @@ export default {
         },
         "ShopItemQuantity": {
             "type": [
-                467
+                479
             ],
             "id": [
                 10
@@ -7615,7 +7883,7 @@ export default {
                 17
             ],
             "configuration": [
-                464
+                476
             ],
             "metadata": [
                 24
@@ -7633,13 +7901,13 @@ export default {
                 10
             ],
             "currency": [
-                390
+                400
             ],
             "items": [
-                466
+                478
             ],
             "currencyPrices": [
-                465
+                477
             ],
             "__typename": [
                 1
@@ -7647,10 +7915,10 @@ export default {
         },
         "ShopProducts": {
             "edges": [
-                470
+                482
             ],
             "nodes": [
-                468
+                480
             ],
             "pageInfo": [
                 8
@@ -7667,7 +7935,7 @@ export default {
                 1
             ],
             "node": [
-                468
+                480
             ],
             "__typename": [
                 1
@@ -7704,10 +7972,10 @@ export default {
         },
         "Shops": {
             "edges": [
-                473
+                485
             ],
             "nodes": [
-                471
+                483
             ],
             "pageInfo": [
                 8
@@ -7724,7 +7992,7 @@ export default {
                 1
             ],
             "node": [
-                471
+                483
             ],
             "__typename": [
                 1
@@ -7744,7 +8012,7 @@ export default {
                 12
             ],
             "type": [
-                467
+                479
             ],
             "shopItemId": [
                 10
@@ -7761,10 +8029,10 @@ export default {
         },
         "ShopProductItems": {
             "edges": [
-                476
+                488
             ],
             "nodes": [
-                474
+                486
             ],
             "pageInfo": [
                 8
@@ -7781,7 +8049,7 @@ export default {
                 1
             ],
             "node": [
-                474
+                486
             ],
             "__typename": [
                 1
@@ -7823,10 +8091,10 @@ export default {
                 1
             ],
             "type": [
-                480
+                492
             ],
             "configuration": [
-                477
+                489
             ],
             "organizationId": [
                 10
@@ -7844,7 +8112,7 @@ export default {
         "SkillRatingType": {},
         "LimitOverride": {
             "limit": [
-                482
+                494
             ],
             "value": [
                 17
@@ -7865,7 +8133,7 @@ export default {
                 1
             ],
             "limitsOverride": [
-                481
+                493
             ],
             "maxCount": [
                 17
@@ -7897,7 +8165,7 @@ export default {
                 12
             ],
             "subscriptionItem": [
-                483
+                495
             ],
             "__typename": [
                 1
@@ -7919,7 +8187,7 @@ export default {
         },
         "MappingConfigurationInput": {
             "mappings": [
-                485
+                497
             ],
             "__typename": [
                 1
@@ -7941,10 +8209,10 @@ export default {
                 1
             ],
             "headers": [
-                487
+                499
             ],
             "mappingConfiguration": [
-                486
+                498
             ],
             "__typename": [
                 1
@@ -8023,7 +8291,7 @@ export default {
         },
         "MatchConfigurationInput": {
             "variables": [
-                492
+                504
             ],
             "scoreFormula": [
                 1
@@ -8043,7 +8311,7 @@ export default {
                 17
             ],
             "matchConfiguration": [
-                493
+                505
             ],
             "__typename": [
                 1
@@ -8062,7 +8330,7 @@ export default {
         },
         "RoundConfigurationInput": {
             "game": [
-                494
+                506
             ],
             "order": [
                 17
@@ -8076,7 +8344,7 @@ export default {
         },
         "GroupConfigurationInput": {
             "rounds": [
-                496
+                508
             ],
             "name": [
                 1
@@ -8093,7 +8361,7 @@ export default {
                 32
             ],
             "groups": [
-                497
+                509
             ],
             "__typename": [
                 1
@@ -8146,10 +8414,10 @@ export default {
                 1
             ],
             "numericCondition": [
-                499
+                511
             ],
             "stringCondition": [
-                501
+                513
             ],
             "propertyCondition": [
                 41
@@ -8180,7 +8448,7 @@ export default {
                 10
             ],
             "condition": [
-                502
+                514
             ],
             "errorMessage": [
                 1
@@ -8197,10 +8465,10 @@ export default {
                 1
             ],
             "stringCondition": [
-                501
+                513
             ],
             "numericCondition": [
-                500
+                512
             ],
             "propertyCondition": [
                 41
@@ -8214,10 +8482,10 @@ export default {
         },
         "RegistrationConditionsInput": {
             "teamConditions": [
-                505
+                517
             ],
             "memberConditions": [
-                504
+                516
             ],
             "__typename": [
                 1
@@ -8240,10 +8508,10 @@ export default {
                 47
             ],
             "registrationConditions": [
-                506
+                518
             ],
             "customFields": [
-                490
+                502
             ],
             "__typename": [
                 1
@@ -8278,7 +8546,7 @@ export default {
                 4
             ],
             "emailField": [
-                503
+                515
             ],
             "__typename": [
                 1
@@ -8294,7 +8562,7 @@ export default {
         },
         "PlatformCdnFileConfigsInput": {
             "pageConfig": [
-                509
+                521
             ],
             "__typename": [
                 1
@@ -8336,7 +8604,7 @@ export default {
                 1
             ],
             "position": [
-                512
+                524
             ],
             "__typename": [
                 1
@@ -8370,7 +8638,7 @@ export default {
                 80
             ],
             "changeScope": [
-                377
+                387
             ],
             "__typename": [
                 1
@@ -8378,19 +8646,19 @@ export default {
         },
         "EventConfigurationInput": {
             "customFields": [
-                490
+                502
             ],
             "groupConfiguration": [
-                511
+                523
             ],
             "maxTicketsPerReservation": [
                 17
             ],
             "reservationStatusAfterPayment": [
-                379
+                389
             ],
             "reservationStatusAfterRegistration": [
-                380
+                390
             ],
             "sessionDuration": [
                 17
@@ -8399,16 +8667,16 @@ export default {
                 4
             ],
             "seatAssignmentMode": [
-                381
+                391
             ],
             "allowForMoreTicketsThanGroupMembers": [
                 4
             ],
             "waitlist": [
-                514
+                526
             ],
             "selfService": [
-                515
+                527
             ],
             "__typename": [
                 1
@@ -8416,7 +8684,7 @@ export default {
         },
         "EventTicketConfigurationConfigurationInput": {
             "customFields": [
-                490
+                502
             ],
             "__typename": [
                 1
@@ -8473,7 +8741,7 @@ export default {
         },
         "ShopItemQuantityInput": {
             "type": [
-                467
+                479
             ],
             "id": [
                 10
@@ -8498,7 +8766,7 @@ export default {
                 76
             ],
             "configuration": [
-                168,
+                171,
                 {
                     "id": [
                         10,
@@ -8507,16 +8775,16 @@ export default {
                 }
             ],
             "leaderboardCurrentPlayerRanking": [
-                170,
+                173,
                 {
                     "input": [
-                        526,
+                        538,
                         "LeaderboardGetPlayerRankingInput!"
                     ]
                 }
             ],
             "leaderboards": [
-                174,
+                177,
                 {
                     "page": [
                         59,
@@ -8525,7 +8793,7 @@ export default {
                 }
             ],
             "leaderboard": [
-                173,
+                176,
                 {
                     "id": [
                         10,
@@ -8534,7 +8802,7 @@ export default {
                 }
             ],
             "currentLeaderboardSeason": [
-                176,
+                179,
                 {
                     "leaderboardId": [
                         10,
@@ -8543,7 +8811,7 @@ export default {
                 }
             ],
             "leaderboardSeasons": [
-                177,
+                180,
                 {
                     "leaderboardId": [
                         10,
@@ -8556,7 +8824,7 @@ export default {
                 }
             ],
             "leaderboardSeason": [
-                176,
+                179,
                 {
                     "id": [
                         10,
@@ -8565,7 +8833,7 @@ export default {
                 }
             ],
             "leaderboardSeasonBuckets": [
-                181,
+                184,
                 {
                     "seasonId": [
                         10,
@@ -8578,7 +8846,7 @@ export default {
                 }
             ],
             "leaderboardSeasonBucket": [
-                179,
+                182,
                 {
                     "id": [
                         10,
@@ -8587,7 +8855,7 @@ export default {
                 }
             ],
             "leaderboardSeasonBucketScores": [
-                171,
+                174,
                 {
                     "leaderboardSeasonBucketId": [
                         10,
@@ -8596,6 +8864,20 @@ export default {
                     "page": [
                         59,
                         "PageInfo!"
+                    ]
+                }
+            ],
+            "leaderboardFeeds": [
+                187,
+                {
+                    "leaderboardId": [
+                        10
+                    ],
+                    "tournamentId": [
+                        10
+                    ],
+                    "page": [
+                        59
                     ]
                 }
             ],
@@ -8621,7 +8903,7 @@ export default {
                 67,
                 {
                     "limits": [
-                        482,
+                        494,
                         "[OrganizationLimitsType!]"
                     ]
                 }
@@ -8660,10 +8942,10 @@ export default {
                 }
             ],
             "identityProviders": [
-                527
+                539
             ],
             "identityProvider": [
-                200,
+                204,
                 {
                     "id": [
                         10,
@@ -8672,7 +8954,7 @@ export default {
                 }
             ],
             "organizationApp": [
-                193,
+                197,
                 {
                     "id": [
                         1,
@@ -8681,7 +8963,7 @@ export default {
                 }
             ],
             "organizationApps": [
-                194,
+                198,
                 {
                     "page": [
                         59,
@@ -8690,7 +8972,7 @@ export default {
                 }
             ],
             "appReleasesByApp": [
-                189,
+                193,
                 {
                     "appId": [
                         10,
@@ -8699,7 +8981,7 @@ export default {
                 }
             ],
             "appRelease": [
-                189,
+                193,
                 {
                     "id": [
                         10,
@@ -8711,10 +8993,10 @@ export default {
                 53
             ],
             "webhooks": [
-                206
+                210
             ],
             "webhook": [
-                206,
+                210,
                 {
                     "id": [
                         10,
@@ -8723,7 +9005,7 @@ export default {
                 }
             ],
             "organizationAttachedApps": [
-                198,
+                202,
                 {
                     "page": [
                         59,
@@ -8732,7 +9014,7 @@ export default {
                 }
             ],
             "availableRootIdentityProvider": [
-                187,
+                191,
                 {
                     "id": [
                         10,
@@ -8741,7 +9023,7 @@ export default {
                 }
             ],
             "getAvailableRootIdentityProviders": [
-                187
+                191
             ],
             "emailTemplateConfigurations": [
                 49
@@ -8750,7 +9032,7 @@ export default {
                 51
             ],
             "emailTemplate": [
-                183,
+                87,
                 {
                     "id": [
                         10,
@@ -8759,7 +9041,7 @@ export default {
                 }
             ],
             "emailTemplates": [
-                184,
+                88,
                 {
                     "page": [
                         59,
@@ -8796,7 +9078,7 @@ export default {
                         "[String!]"
                     ],
                     "query": [
-                        529
+                        541
                     ]
                 }
             ],
@@ -8815,7 +9097,7 @@ export default {
                 }
             ],
             "playerSkillRatings": [
-                207,
+                211,
                 {
                     "playerId": [
                         10,
@@ -8828,7 +9110,7 @@ export default {
                 }
             ],
             "playerMatchesHistory": [
-                241,
+                245,
                 {
                     "page": [
                         59,
@@ -8850,10 +9132,10 @@ export default {
                 }
             ],
             "tournaments": [
-                254,
+                258,
                 {
                     "query": [
-                        530,
+                        542,
                         "TournamentsQuery!"
                     ],
                     "page": [
@@ -8863,7 +9145,7 @@ export default {
                 }
             ],
             "tournamentSteps": [
-                252,
+                256,
                 {
                     "tournamentId": [
                         10,
@@ -8872,7 +9154,7 @@ export default {
                 }
             ],
             "tournamentStep": [
-                252,
+                256,
                 {
                     "id": [
                         10,
@@ -8881,7 +9163,7 @@ export default {
                 }
             ],
             "tournamentStepGeneratedShape": [
-                259,
+                263,
                 {
                     "stepId": [
                         10,
@@ -8890,7 +9172,7 @@ export default {
                 }
             ],
             "match": [
-                239,
+                243,
                 {
                     "matchId": [
                         10,
@@ -8899,19 +9181,19 @@ export default {
                 }
             ],
             "tournamentTeam": [
-                248,
+                252,
                 {
                     "teamId": [
                         10,
                         "ID!"
                     ],
                     "memberStatus": [
-                        245
+                        249
                     ]
                 }
             ],
             "tournamentTeams": [
-                249,
+                253,
                 {
                     "tournamentId": [
                         10,
@@ -8922,7 +9204,7 @@ export default {
                         "PageInfo!"
                     ],
                     "memberStatus": [
-                        245
+                        249
                     ],
                     "status": [
                         60
@@ -8931,15 +9213,15 @@ export default {
                         1
                     ],
                     "propertiesFilter": [
-                        491,
+                        503,
                         "[PropertyValueInput!]"
                     ],
                     "playerPropertiesFilter": [
-                        491,
+                        503,
                         "[PropertyValueInput!]"
                     ],
                     "playerIdentityProviderPropertiesFilter": [
-                        535,
+                        547,
                         "[IdentityProviderPropertyInput!]"
                     ],
                     "playerProfileIds": [
@@ -8949,7 +9231,7 @@ export default {
                 }
             ],
             "tournamentPlayers": [
-                246,
+                250,
                 {
                     "page": [
                         59,
@@ -8966,16 +9248,16 @@ export default {
                         1
                     ],
                     "playerPropertiesFilter": [
-                        491,
+                        503,
                         "[PropertyValueInput!]"
                     ],
                     "orderByProperty": [
-                        536
+                        548
                     ]
                 }
             ],
             "tournamentTeamInvites": [
-                246,
+                250,
                 {
                     "page": [
                         59,
@@ -8985,12 +9267,12 @@ export default {
                         10
                     ],
                     "status": [
-                        245
+                        249
                     ]
                 }
             ],
             "tournamentStepGroupRoundGameMatchScoresGetForStep": [
-                264,
+                268,
                 {
                     "stepId": [
                         10,
@@ -9003,7 +9285,7 @@ export default {
                 }
             ],
             "tournamentAdmins": [
-                266,
+                270,
                 {
                     "tournamentId": [
                         10,
@@ -9011,8 +9293,35 @@ export default {
                     ]
                 }
             ],
+            "openPoolMatches": [
+                341,
+                {
+                    "stepId": [
+                        10,
+                        "ID!"
+                    ],
+                    "filter": [
+                        549
+                    ],
+                    "page": [
+                        59
+                    ]
+                }
+            ],
+            "openPoolStandings": [
+                343,
+                {
+                    "stepId": [
+                        10,
+                        "ID!"
+                    ],
+                    "groupId": [
+                        10
+                    ]
+                }
+            ],
             "stepRuleSet": [
-                285,
+                289,
                 {
                     "tournamentStepId": [
                         10,
@@ -9021,10 +9330,10 @@ export default {
                 }
             ],
             "presetScripts": [
-                288
+                292
             ],
             "presetScript": [
-                288,
+                292,
                 {
                     "id": [
                         10,
@@ -9033,15 +9342,15 @@ export default {
                 }
             ],
             "builtinPresets": [
-                289,
+                293,
                 {
                     "category": [
-                        290
+                        294
                     ]
                 }
             ],
             "builtinPreset": [
-                289,
+                293,
                 {
                     "id": [
                         1,
@@ -9050,25 +9359,25 @@ export default {
                 }
             ],
             "validateScript": [
-                298,
+                302,
                 {
                     "input": [
-                        537,
+                        550,
                         "ValidateScriptInput!"
                     ]
                 }
             ],
             "simulateScript": [
-                301,
+                305,
                 {
                     "input": [
-                        538,
+                        551,
                         "SimulateScriptInput!"
                     ]
                 }
             ],
             "stepRuleSetValidationJob": [
-                324,
+                328,
                 {
                     "jobId": [
                         10,
@@ -9077,7 +9386,7 @@ export default {
                 }
             ],
             "stepRuleSetValidationJobs": [
-                330,
+                334,
                 {
                     "stepRuleSetId": [
                         10,
@@ -9090,7 +9399,7 @@ export default {
                 }
             ],
             "stepRuleSetValidationEvents": [
-                332,
+                336,
                 {
                     "jobId": [
                         10,
@@ -9101,16 +9410,16 @@ export default {
                         "PageInfo!"
                     ],
                     "kindFilter": [
-                        327,
+                        331,
                         "[ValidationEventKind!]"
                     ]
                 }
             ],
             "platformFiles": [
-                127,
+                143,
                 {
                     "type": [
-                        128
+                        144
                     ],
                     "platformId": [
                         10
@@ -9121,7 +9430,7 @@ export default {
                 }
             ],
             "platformFile": [
-                127,
+                143,
                 {
                     "id": [
                         10,
@@ -9130,10 +9439,10 @@ export default {
                 }
             ],
             "platforms": [
-                450
+                462
             ],
             "platform": [
-                450,
+                462,
                 {
                     "platformId": [
                         10,
@@ -9142,7 +9451,7 @@ export default {
                 }
             ],
             "platformFindFromDomain": [
-                450,
+                462,
                 {
                     "domain": [
                         1,
@@ -9154,13 +9463,13 @@ export default {
                 4,
                 {
                     "domain": [
-                        131,
+                        147,
                         "URL!"
                     ]
                 }
             ],
             "platformCustomDomains": [
-                446,
+                458,
                 {
                     "platformId": [
                         10,
@@ -9169,13 +9478,13 @@ export default {
                 }
             ],
             "platformTemplatesPublic": [
-                451
+                463
             ],
             "platformTemplates": [
-                451
+                463
             ],
             "platformTemplate": [
-                451,
+                463,
                 {
                     "platformTemplateId": [
                         10,
@@ -9184,24 +9493,24 @@ export default {
                 }
             ],
             "subscriptionItems": [
-                483
+                495
             ],
             "organizationCurrentSubscriptionItems": [
-                484
+                496
             ],
             "journalEntries": [
-                421,
+                432,
                 {
                     "page": [
                         59
                     ],
                     "filters": [
-                        544
+                        557
                     ]
                 }
             ],
             "journalEntry": [
-                418,
+                429,
                 {
                     "id": [
                         10,
@@ -9210,10 +9519,10 @@ export default {
                 }
             ],
             "organizationSkillRatings": [
-                479
+                491
             ],
             "organizationSkillRating": [
-                479,
+                491,
                 {
                     "id": [
                         10,
@@ -9222,7 +9531,7 @@ export default {
                 }
             ],
             "event": [
-                384,
+                394,
                 {
                     "id": [
                         10,
@@ -9231,14 +9540,14 @@ export default {
                 }
             ],
             "events": [
-                385,
+                395,
                 {
                     "page": [
                         59,
                         "PageInfo!"
                     ],
                     "query": [
-                        545
+                        558
                     ],
                     "eventIds": [
                         10,
@@ -9247,7 +9556,7 @@ export default {
                 }
             ],
             "eventTicketConfiguration": [
-                389,
+                399,
                 {
                     "id": [
                         10,
@@ -9256,7 +9565,7 @@ export default {
                 }
             ],
             "eventTicketConfigurations": [
-                389,
+                399,
                 {
                     "eventId": [
                         10,
@@ -9265,17 +9574,17 @@ export default {
                 }
             ],
             "eventReservationsMyReservations": [
-                367,
+                377,
                 {
                     "page": [
                         59,
                         "PageInfo!"
                     ],
                     "status": [
-                        365
+                        375
                     ],
                     "groupStatus": [
-                        350
+                        360
                     ],
                     "eventIds": [
                         10,
@@ -9284,7 +9593,7 @@ export default {
                 }
             ],
             "eventReservation": [
-                364,
+                374,
                 {
                     "reservationId": [
                         10,
@@ -9293,7 +9602,7 @@ export default {
                 }
             ],
             "eventSeats": [
-                373,
+                383,
                 {
                     "eventId": [
                         10,
@@ -9313,7 +9622,7 @@ export default {
                 }
             ],
             "eventReservations": [
-                367,
+                377,
                 {
                     "eventId": [
                         10,
@@ -9324,13 +9633,13 @@ export default {
                         "PageInfo!"
                     ],
                     "query": [
-                        549,
+                        562,
                         "EventReservationsQueryInput!"
                     ]
                 }
             ],
             "eventVenues": [
-                399,
+                409,
                 {
                     "page": [
                         59,
@@ -9339,7 +9648,7 @@ export default {
                 }
             ],
             "eventVenue": [
-                398,
+                408,
                 {
                     "id": [
                         10,
@@ -9348,7 +9657,7 @@ export default {
                 }
             ],
             "eventVenueSeats": [
-                359,
+                369,
                 {
                     "venueId": [
                         10,
@@ -9364,7 +9673,7 @@ export default {
                 }
             ],
             "eventVenueSeatTypes": [
-                395,
+                405,
                 {
                     "venueId": [
                         10,
@@ -9377,16 +9686,16 @@ export default {
                 }
             ],
             "eventSlots": [
-                389,
+                399,
                 {
                     "filter": [
-                        551,
+                        564,
                         "EventSlotsFilter!"
                     ]
                 }
             ],
             "myWaitlistEntries": [
-                401,
+                411,
                 {
                     "eventIds": [
                         10,
@@ -9398,7 +9707,7 @@ export default {
                 }
             ],
             "eventWaitlistEntries": [
-                404,
+                414,
                 {
                     "eventId": [
                         10,
@@ -9408,7 +9717,7 @@ export default {
                         10
                     ],
                     "statuses": [
-                        402,
+                        412,
                         "[EventWaitlistEntryStatus!]"
                     ],
                     "page": [
@@ -9418,10 +9727,10 @@ export default {
                 }
             ],
             "organizationPaymentCollectionConfiguration": [
-                243
+                247
             ],
             "userGroupMembers": [
-                353,
+                363,
                 {
                     "groupIds": [
                         10,
@@ -9432,15 +9741,15 @@ export default {
                         "PageInfo!"
                     ],
                     "status": [
-                        348
+                        358
                     ]
                 }
             ],
             "userGroups": [
-                351,
+                361,
                 {
                     "query": [
-                        552,
+                        565,
                         "UserGroupsQueryInput!"
                     ],
                     "page": [
@@ -9450,14 +9759,14 @@ export default {
                 }
             ],
             "userGroupMyMemberships": [
-                353,
+                363,
                 {
                     "page": [
                         59,
                         "PageInfo!"
                     ],
                     "status": [
-                        348
+                        358
                     ],
                     "entityType": [
                         1
@@ -9468,43 +9777,43 @@ export default {
                 }
             ],
             "presenceAnalytics": [
-                452
+                464
             ],
             "shops": [
-                472,
+                484,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        553
+                        566
                     ]
                 }
             ],
             "shopCategories": [
-                462,
+                474,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        554
+                        567
                     ]
                 }
             ],
             "playerShopProductPurshases": [
-                459,
+                471,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        555
+                        568
                     ]
                 }
             ],
             "shopProducts": [
-                469,
+                481,
                 {
                     "shopId": [
                         10,
@@ -9514,12 +9823,12 @@ export default {
                         59
                     ],
                     "filter": [
-                        556
+                        569
                     ]
                 }
             ],
             "shopProductItems": [
-                475,
+                487,
                 {
                     "shopProductId": [
                         10,
@@ -9531,73 +9840,73 @@ export default {
                 }
             ],
             "items": [
-                407,
+                417,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        557
+                        570
                     ]
                 }
             ],
             "playerItems": [
-                410,
+                420,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        558
+                        571
                     ]
                 }
             ],
             "itemCategories": [
-                413,
+                423,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        559
+                        572
                     ]
                 }
             ],
             "currencies": [
-                335,
+                345,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        560
+                        573
                     ]
                 }
             ],
             "playerCurrencies": [
-                338,
+                348,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        561
+                        574
                     ]
                 }
             ],
             "marketplaceApps": [
-                143,
+                159,
                 {
                     "page": [
                         59
                     ],
                     "filter": [
-                        562
+                        575
                     ]
                 }
             ],
             "marketplaceApp": [
-                140,
+                156,
                 {
                     "id": [
                         10,
@@ -9606,7 +9915,7 @@ export default {
                 }
             ],
             "myMarketplaceInstallations": [
-                150,
+                166,
                 {
                     "page": [
                         59
@@ -9614,7 +9923,7 @@ export default {
                 }
             ],
             "appReleases": [
-                136,
+                152,
                 {
                     "marketplaceAppId": [
                         10,
@@ -9623,7 +9932,7 @@ export default {
                 }
             ],
             "moduleTokensForPlatform": [
-                432,
+                443,
                 {
                     "platformId": [
                         10,
@@ -9632,7 +9941,7 @@ export default {
                 }
             ],
             "extensionToken": [
-                433,
+                444,
                 {
                     "installationId": [
                         10,
@@ -9641,7 +9950,7 @@ export default {
                 }
             ],
             "platformModuleConfigs": [
-                431,
+                442,
                 {
                     "platformId": [
                         10,
@@ -9650,7 +9959,7 @@ export default {
                 }
             ],
             "entityMetafields": [
-                434,
+                445,
                 {
                     "entityType": [
                         1,
@@ -9661,18 +9970,18 @@ export default {
                         "ID!"
                     ],
                     "filter": [
-                        563
+                        576
                     ]
                 }
             ],
             "allowedObjectTypes": [
-                439
+                451
             ],
             "objectMetadata": [
-                436,
+                448,
                 {
                     "objectType": [
-                        439,
+                        451,
                         "ObjectType!"
                     ],
                     "objectId": [
@@ -9682,10 +9991,10 @@ export default {
                 }
             ],
             "objectMetadataBatch": [
-                440,
+                452,
                 {
                     "objectType": [
-                        439,
+                        451,
                         "ObjectType!"
                     ],
                     "objectIds": [
@@ -9695,19 +10004,19 @@ export default {
                 }
             ],
             "customFieldDefinitions": [
-                442,
+                454,
                 {
                     "objectType": [
-                        439,
+                        451,
                         "ObjectType!"
                     ]
                 }
             ],
             "customFieldValues": [
-                444,
+                456,
                 {
                     "objectType": [
-                        439,
+                        451,
                         "ObjectType!"
                     ],
                     "objectId": [
@@ -9717,10 +10026,10 @@ export default {
                 }
             ],
             "customFieldValuesBatch": [
-                445,
+                457,
                 {
                     "objectType": [
-                        439,
+                        451,
                         "ObjectType!"
                     ],
                     "objectIds": [
@@ -9730,13 +10039,13 @@ export default {
                 }
             ],
             "guestMe": [
-                160
+                95
             ],
             "guestConfiguration": [
-                166
+                101
             ],
             "guestLinkResolve": [
-                161,
+                96,
                 {
                     "token": [
                         1,
@@ -9766,25 +10075,25 @@ export default {
                 83,
                 {
                     "input": [
-                        564,
+                        577,
                         "AppFunctionCallInput!"
                     ]
                 }
             ],
             "permissionDefinitions": [
-                87
+                103
             ],
             "hasPermissions": [
                 4,
                 {
                     "checks": [
-                        565,
+                        578,
                         "[PermissionCheckInput!]!"
                     ]
                 }
             ],
             "registrationSeries": [
-                340,
+                350,
                 {
                     "id": [
                         10,
@@ -9793,7 +10102,7 @@ export default {
                 }
             ],
             "registrationSeriesList": [
-                342,
+                352,
                 {
                     "page": [
                         59,
@@ -9802,7 +10111,7 @@ export default {
                 }
             ],
             "myActiveRegistrations": [
-                344,
+                354,
                 {
                     "seriesId": [
                         10,
@@ -9811,7 +10120,7 @@ export default {
                 }
             ],
             "registrationSeriesPlayerEntries": [
-                344,
+                354,
                 {
                     "seriesId": [
                         10,
@@ -9824,7 +10133,16 @@ export default {
                 }
             ],
             "organizationModeration": [
-                435
+                446
+            ],
+            "moderationCheck": [
+                447,
+                {
+                    "inputs": [
+                        579,
+                        "[ModerationCheckInput!]!"
+                    ]
+                }
             ],
             "__typename": [
                 1
@@ -9846,10 +10164,10 @@ export default {
         },
         "OrganizationIdentityProviderInfo": {
             "on_OrganizationIdentityProvider": [
-                200
+                204
             ],
             "on_PublicOrganizationIdentityProviderV2": [
-                528
+                540
             ],
             "__typename": [
                 1
@@ -9894,19 +10212,19 @@ export default {
         },
         "TournamentsQuery": {
             "orderBy": [
-                531
+                543
             ],
             "orderDirection": [
-                532
+                544
             ],
             "status": [
-                533
+                545
             ],
             "showNotVisible": [
                 4
             ],
             "filterByPlayers": [
-                534
+                546
             ],
             "__typename": [
                 1
@@ -9923,7 +10241,7 @@ export default {
                 60
             ],
             "memberStatus": [
-                245
+                249
             ],
             "__typename": [
                 1
@@ -9948,7 +10266,21 @@ export default {
                 1
             ],
             "order": [
-                532
+                544
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "OpenPoolMatchesFilter": {
+            "statuses": [
+                244
+            ],
+            "teamId": [
+                10
+            ],
+            "groupId": [
+                10
             ],
             "__typename": [
                 1
@@ -9959,7 +10291,7 @@ export default {
                 1
             ],
             "context": [
-                303
+                307
             ],
             "__typename": [
                 1
@@ -9970,13 +10302,13 @@ export default {
                 1
             ],
             "context": [
-                303
+                307
             ],
             "parameters": [
                 1
             ],
             "overrides": [
-                539
+                552
             ],
             "stepId": [
                 10
@@ -9993,10 +10325,10 @@ export default {
                 80
             ],
             "teams": [
-                540
+                553
             ],
             "presetParameters": [
-                542
+                555
             ],
             "__typename": [
                 1
@@ -10010,16 +10342,16 @@ export default {
                 1
             ],
             "metadata": [
-                541
+                554
             ],
             "customFields": [
-                541
+                554
             ],
             "rank": [
                 80
             ],
             "status": [
-                218
+                222
             ],
             "__typename": [
                 1
@@ -10041,7 +10373,7 @@ export default {
                 1
             ],
             "type": [
-                543
+                556
             ],
             "stringValue": [
                 1
@@ -10059,7 +10391,7 @@ export default {
         "SimulationPresetParameterValueType": {},
         "JournalFiltersInput": {
             "categories": [
-                419
+                430
             ],
             "types": [
                 1
@@ -10068,7 +10400,7 @@ export default {
                 1
             ],
             "actorType": [
-                416
+                427
             ],
             "actorId": [
                 10
@@ -10080,7 +10412,7 @@ export default {
                 10
             ],
             "severity": [
-                420
+                431
             ],
             "rootOnly": [
                 4
@@ -10106,19 +10438,19 @@ export default {
         },
         "EventsQuery": {
             "orderBy": [
-                546
+                559
             ],
             "orderDirection": [
-                532
+                544
             ],
             "status": [
-                547
+                560
             ],
             "showNotVisible": [
                 4
             ],
             "filterByPlayers": [
-                548
+                561
             ],
             "__typename": [
                 1
@@ -10131,10 +10463,10 @@ export default {
                 10
             ],
             "reservationStatus": [
-                365
+                375
             ],
             "memberStatus": [
-                348
+                358
             ],
             "__typename": [
                 1
@@ -10142,28 +10474,28 @@ export default {
         },
         "EventReservationsQueryInput": {
             "filterByRegistrationStatus": [
-                365
+                375
             ],
             "retrieveOnlyGroupMembersWithStatus": [
-                348
+                358
             ],
             "filterByPlayerUsernameQuery": [
                 1
             ],
             "filterByReservationProperties": [
-                491
+                503
             ],
             "filterByPlayerProperties": [
-                491
+                503
             ],
             "filterByPlayerIdentityProviderProperties": [
-                535
+                547
             ],
             "filterByPlayers": [
-                550
+                563
             ],
             "filterByGroupStatus": [
-                350
+                360
             ],
             "__typename": [
                 1
@@ -10174,7 +10506,7 @@ export default {
                 10
             ],
             "memberStatus": [
-                348
+                358
             ],
             "__typename": [
                 1
@@ -10324,7 +10656,7 @@ export default {
         },
         "MarketplaceAppsFilterInput": {
             "status": [
-                141
+                157
             ],
             "search": [
                 1
@@ -10375,6 +10707,17 @@ export default {
                 1
             ],
             "resource": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ModerationCheckInput": {
+            "key": [
+                1
+            ],
+            "value": [
                 1
             ],
             "__typename": [
@@ -10450,14 +10793,14 @@ export default {
                 }
             ],
             "updateConfiguration": [
-                168,
+                171,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        567,
+                        581,
                         "CreateConfigurationInput!"
                     ]
                 }
@@ -10472,38 +10815,38 @@ export default {
                 }
             ],
             "leaderboardRegisterPlayerScore": [
-                170,
+                173,
                 {
                     "input": [
-                        568,
+                        582,
                         "LeaderboardRegisterPlayerScoreInput!"
                     ]
                 }
             ],
             "createLeaderboard": [
-                173,
+                176,
                 {
                     "input": [
-                        570,
+                        584,
                         "CreateLeaderboardInput!"
                     ]
                 }
             ],
             "updateLeaderboard": [
-                173,
+                176,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        571,
+                        585,
                         "UpdateLeaderboardInput!"
                     ]
                 }
             ],
             "deleteLeaderboard": [
-                572,
+                586,
                 {
                     "id": [
                         10,
@@ -10512,33 +10855,33 @@ export default {
                 }
             ],
             "createLeaderboardSeason": [
-                176,
+                179,
                 {
                     "leaderboardId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        573,
+                        587,
                         "CreateLeaderboardSeasonInput!"
                     ]
                 }
             ],
             "updateLeaderboardSeason": [
-                176,
+                179,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        574,
+                        588,
                         "UpdateLeaderboardSeasonInput!"
                     ]
                 }
             ],
             "deleteLeaderboardSeason": [
-                572,
+                586,
                 {
                     "id": [
                         10,
@@ -10547,33 +10890,73 @@ export default {
                 }
             ],
             "createLeaderboardSeasonBucket": [
-                179,
+                182,
                 {
                     "seasonId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        575,
+                        589,
                         "CreateLeaderboardSeasonBucketInput!"
                     ]
                 }
             ],
             "updateLeaderboardSeasonBucket": [
-                179,
+                182,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        576,
+                        590,
                         "UpdateLeaderboardSeasonBucketInput!"
                     ]
                 }
             ],
             "deleteLeaderboardSeasonBucket": [
-                572,
+                586,
+                {
+                    "id": [
+                        10,
+                        "ID!"
+                    ]
+                }
+            ],
+            "createLeaderboardFeed": [
+                186,
+                {
+                    "input": [
+                        591,
+                        "CreateLeaderboardFeedInput!"
+                    ]
+                }
+            ],
+            "updateLeaderboardFeed": [
+                186,
+                {
+                    "id": [
+                        10,
+                        "ID!"
+                    ],
+                    "input": [
+                        592,
+                        "UpdateLeaderboardFeedInput!"
+                    ]
+                }
+            ],
+            "deleteLeaderboardFeed": [
+                4,
+                {
+                    "id": [
+                        10,
+                        "ID!"
+                    ]
+                }
+            ],
+            "reconcileLeaderboardFeed": [
+                189,
                 {
                     "id": [
                         10,
@@ -10585,7 +10968,7 @@ export default {
                 70,
                 {
                     "organization": [
-                        577,
+                        593,
                         "UpdateOrganizationInput!"
                     ]
                 }
@@ -10594,7 +10977,7 @@ export default {
                 70,
                 {
                     "organization": [
-                        579,
+                        595,
                         "CreateOrganizationInput!"
                     ]
                 }
@@ -10603,7 +10986,7 @@ export default {
                 9,
                 {
                     "input": [
-                        580,
+                        596,
                         "CreateOrganizationGroupInput!"
                     ]
                 }
@@ -10616,7 +10999,7 @@ export default {
                         "ID!"
                     ],
                     "input": [
-                        580,
+                        596,
                         "CreateOrganizationGroupInput!"
                     ]
                 }
@@ -10634,7 +11017,7 @@ export default {
                 55,
                 {
                     "input": [
-                        581,
+                        597,
                         "SetOrganizationMembershipInput!"
                     ]
                 }
@@ -10643,29 +11026,29 @@ export default {
                 4,
                 {
                     "input": [
-                        582,
+                        598,
                         "DeleteOrganizationMembershipInput!"
                     ]
                 }
             ],
             "createIdentityProvider": [
-                200,
+                204,
                 {
                     "input": [
-                        583,
+                        599,
                         "CreateOrganizationIdentityProvider!"
                     ]
                 }
             ],
             "updateIdentityProvider": [
-                200,
+                204,
                 {
                     "providerId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        586,
+                        602,
                         "UpdateOrganizationIdentityProvider!"
                     ]
                 }
@@ -10680,10 +11063,10 @@ export default {
                 }
             ],
             "createOrganizationApp": [
-                193,
+                197,
                 {
                     "input": [
-                        587,
+                        603,
                         "CreateOrganizationAppInput!"
                     ]
                 }
@@ -10698,14 +11081,14 @@ export default {
                 }
             ],
             "updateOrganizationApp": [
-                193,
+                197,
                 {
                     "id": [
                         1,
                         "String!"
                     ],
                     "input": [
-                        588,
+                        604,
                         "UpdateOrganizationAppInput!"
                     ]
                 }
@@ -10720,20 +11103,20 @@ export default {
                 }
             ],
             "updateOrganizationAppManifest": [
-                193,
+                197,
                 {
                     "id": [
                         1,
                         "String!"
                     ],
                     "manifest": [
-                        589,
+                        605,
                         "AppManifestInput!"
                     ]
                 }
             ],
             "regenerateAppWebhookSecret": [
-                196,
+                200,
                 {
                     "id": [
                         10,
@@ -10742,42 +11125,42 @@ export default {
                 }
             ],
             "createAppRelease": [
-                189,
+                193,
                 {
                     "appId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        609,
+                        625,
                         "CreateAppReleaseInput!"
                     ]
                 }
             ],
             "createWebhook": [
-                206,
+                210,
                 {
                     "input": [
-                        610,
+                        626,
                         "CreateWebhookInput!"
                     ]
                 }
             ],
             "updateWebhook": [
-                206,
+                210,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        611,
+                        627,
                         "UpdateWebhookInput!"
                     ]
                 }
             ],
             "deleteWebhook": [
-                206,
+                210,
                 {
                     "id": [
                         10,
@@ -10786,7 +11169,7 @@ export default {
                 }
             ],
             "regenerateWebhookSecret": [
-                206,
+                210,
                 {
                     "id": [
                         10,
@@ -10795,10 +11178,10 @@ export default {
                 }
             ],
             "setOrganizationAttachedApp": [
-                197,
+                201,
                 {
                     "input": [
-                        612,
+                        628,
                         "SetOrganizationAttachedAppInput!"
                     ]
                 }
@@ -10807,7 +11190,7 @@ export default {
                 4,
                 {
                     "input": [
-                        613,
+                        629,
                         "DeleteOrganizationAttachedAppInput!"
                     ]
                 }
@@ -10816,10 +11199,10 @@ export default {
                 4,
                 {
                     "fromTemplate": [
-                        614
+                        630
                     ],
                     "fromCustom": [
-                        615
+                        631
                     ]
                 }
             ],
@@ -10827,35 +11210,35 @@ export default {
                 51,
                 {
                     "input": [
-                        508,
+                        520,
                         "EmailConfigurationInput!"
                     ]
                 }
             ],
             "emailTemplateCreate": [
-                183,
+                87,
                 {
                     "input": [
-                        616,
+                        632,
                         "EmailTemplateCreateInput!"
                     ]
                 }
             ],
             "emailTemplateUpdate": [
-                183,
+                87,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        617,
+                        633,
                         "EmailTemplateUpdateInput!"
                     ]
                 }
             ],
             "emailTemplateDelete": [
-                183,
+                87,
                 {
                     "id": [
                         10,
@@ -10867,7 +11250,7 @@ export default {
                 73,
                 {
                     "input": [
-                        618,
+                        634,
                         "CreatePlayerInput!"
                     ]
                 }
@@ -10876,7 +11259,7 @@ export default {
                 73,
                 {
                     "input": [
-                        620,
+                        636,
                         "UpdatePlayerInput!"
                     ],
                     "id": [
@@ -10891,7 +11274,7 @@ export default {
                 73,
                 {
                     "input": [
-                        621,
+                        637,
                         "UpdateMePlayerInput!"
                     ]
                 }
@@ -10911,7 +11294,7 @@ export default {
                 58,
                 {
                     "input": [
-                        622,
+                        638,
                         "CreateTournamentInput!"
                     ]
                 }
@@ -10920,7 +11303,7 @@ export default {
                 58,
                 {
                     "input": [
-                        625,
+                        641,
                         "UpdateTournamentInput!"
                     ],
                     "id": [
@@ -10948,33 +11331,33 @@ export default {
                 }
             ],
             "createTournamentStep": [
-                252,
+                256,
                 {
                     "tournamentId": [
                         10,
                         "ID!"
                     ],
                     "configuration": [
-                        498
+                        510
                     ],
                     "step": [
-                        626,
+                        642,
                         "CreateTournamentStepInput!"
                     ]
                 }
             ],
             "updateTournamentStep": [
-                252,
+                256,
                 {
                     "stepId": [
                         10,
                         "ID!"
                     ],
                     "configuration": [
-                        498
+                        510
                     ],
                     "step": [
-                        626,
+                        642,
                         "CreateTournamentStepInput!"
                     ]
                 }
@@ -11001,18 +11384,18 @@ export default {
                 }
             ],
             "seedTournamentStep": [
-                252,
+                256,
                 {
                     "input": [
-                        627
+                        643
                     ],
                     "legacyInput": [
-                        629
+                        645
                     ]
                 }
             ],
             "updateSeedingOrder": [
-                252,
+                256,
                 {
                     "stepId": [
                         10,
@@ -11025,20 +11408,20 @@ export default {
                 }
             ],
             "updateSeedingPins": [
-                252,
+                256,
                 {
                     "stepId": [
                         10,
                         "ID!"
                     ],
                     "pins": [
-                        628,
+                        644,
                         "[SeedingPinInput!]!"
                     ]
                 }
             ],
             "withdrawTeamFromStep": [
-                252,
+                256,
                 {
                     "stepId": [
                         10,
@@ -11051,7 +11434,7 @@ export default {
                 }
             ],
             "reseedStep": [
-                252,
+                256,
                 {
                     "stepId": [
                         10,
@@ -11087,49 +11470,49 @@ export default {
                 }
             ],
             "updateMatchScores": [
-                239,
+                243,
                 {
                     "matchId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        635,
+                        651,
                         "[UpdateMatchScoreInput!]!"
                     ]
                 }
             ],
             "registerCustomTournamentTeams": [
-                248,
+                252,
                 {
                     "tournamentId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        637,
+                        653,
                         "RegisterCustomTeamsInput!"
                     ]
                 }
             ],
             "registerTournamentTeam": [
-                248,
+                252,
                 {
                     "tournamentId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        640,
+                        656,
                         "RegisterTournamentTeamInput!"
                     ]
                 }
             ],
             "updateTournamentTeam": [
-                248,
+                252,
                 {
                     "input": [
-                        641,
+                        657,
                         "UpdateTournamentTeamInput!"
                     ],
                     "tournamentId": [
@@ -11159,7 +11542,7 @@ export default {
                 }
             ],
             "confirmTournamentTeam": [
-                248,
+                252,
                 {
                     "teamId": [
                         10,
@@ -11172,7 +11555,7 @@ export default {
                 }
             ],
             "confirmTournamentAttendance": [
-                248,
+                252,
                 {
                     "tournamentId": [
                         10,
@@ -11185,7 +11568,7 @@ export default {
                 }
             ],
             "updateTournamentTeamStatus": [
-                248,
+                252,
                 {
                     "tournamentTeamId": [
                         10,
@@ -11237,10 +11620,10 @@ export default {
                 }
             ],
             "tournamentAdminUpsert": [
-                266,
+                270,
                 {
                     "input": [
-                        642,
+                        658,
                         "TournamentAdminUpsertInput!"
                     ]
                 }
@@ -11249,26 +11632,123 @@ export default {
                 4,
                 {
                     "input": [
-                        643,
+                        659,
                         "TournamentAdminDeleteInput!"
                     ]
                 }
             ],
+            "openPoolCreateMatch": [
+                340,
+                {
+                    "input": [
+                        660,
+                        "OpenPoolCreateMatchInput!"
+                    ]
+                }
+            ],
+            "openPoolAddTeams": [
+                343,
+                {
+                    "stepId": [
+                        10,
+                        "ID!"
+                    ],
+                    "teamIds": [
+                        10,
+                        "[ID!]!"
+                    ],
+                    "groupId": [
+                        10
+                    ]
+                }
+            ],
+            "openPoolCorrectMatch": [
+                340,
+                {
+                    "matchId": [
+                        10,
+                        "ID!"
+                    ],
+                    "input": [
+                        651,
+                        "[UpdateMatchScoreInput!]!"
+                    ]
+                }
+            ],
+            "openPoolCancelMatch": [
+                4,
+                {
+                    "matchId": [
+                        10,
+                        "ID!"
+                    ],
+                    "reason": [
+                        1
+                    ]
+                }
+            ],
+            "openPoolClose": [
+                256,
+                {
+                    "stepId": [
+                        10,
+                        "ID!"
+                    ],
+                    "cancelPendingMatches": [
+                        4,
+                        "Boolean!"
+                    ]
+                }
+            ],
+            "openPoolReopen": [
+                256,
+                {
+                    "stepId": [
+                        10,
+                        "ID!"
+                    ]
+                }
+            ],
+            "tournamentTeamMemberAdd": [
+                252,
+                {
+                    "input": [
+                        661,
+                        "TournamentTeamMemberAddInput!"
+                    ]
+                }
+            ],
+            "tournamentTeamMemberRemove": [
+                252,
+                {
+                    "teamId": [
+                        10,
+                        "ID!"
+                    ],
+                    "playerId": [
+                        10,
+                        "ID!"
+                    ],
+                    "newManagerId": [
+                        10
+                    ]
+                }
+            ],
             "createStepRuleSet": [
-                285,
+                289,
                 {
                     "tournamentStepId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        644,
+                        662,
                         "CreateStepRuleSetInput!"
                     ]
                 }
             ],
             "applyPresetScript": [
-                285,
+                289,
                 {
                     "presetScriptId": [
                         10,
@@ -11284,7 +11764,7 @@ export default {
                 }
             ],
             "applyBuiltinPreset": [
-                285,
+                289,
                 {
                     "builtinPresetId": [
                         1,
@@ -11300,7 +11780,7 @@ export default {
                 }
             ],
             "duplicateBuiltinPreset": [
-                288,
+                292,
                 {
                     "builtinPresetId": [
                         1,
@@ -11312,23 +11792,23 @@ export default {
                 }
             ],
             "createPresetScript": [
-                288,
+                292,
                 {
                     "input": [
-                        655,
+                        673,
                         "CreatePresetScriptInput!"
                     ]
                 }
             ],
             "updatePresetScript": [
-                288,
+                292,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        657,
+                        675,
                         "UpdatePresetScriptInput!"
                     ]
                 }
@@ -11343,7 +11823,7 @@ export default {
                 }
             ],
             "setStepWinners": [
-                252,
+                256,
                 {
                     "stepId": [
                         10,
@@ -11380,13 +11860,13 @@ export default {
                         "ID!"
                     ],
                     "status": [
-                        218,
+                        222,
                         "TeamScopeStatus!"
                     ]
                 }
             ],
             "validateStepRuleSet": [
-                324,
+                328,
                 {
                     "stepRuleSetId": [
                         10,
@@ -11395,7 +11875,7 @@ export default {
                 }
             ],
             "cancelStepRuleSetValidation": [
-                324,
+                328,
                 {
                     "jobId": [
                         10,
@@ -11407,10 +11887,10 @@ export default {
                 1
             ],
             "platformFileCreate": [
-                127,
+                143,
                 {
                     "input": [
-                        658,
+                        676,
                         "PlatformCdnFileCreateInput!"
                     ],
                     "platformId": [
@@ -11422,7 +11902,7 @@ export default {
                 }
             ],
             "platformFilePublish": [
-                127,
+                143,
                 {
                     "id": [
                         10,
@@ -11431,7 +11911,7 @@ export default {
                 }
             ],
             "platformFileGenerateUploadUrl": [
-                130,
+                146,
                 {
                     "id": [
                         10,
@@ -11444,7 +11924,7 @@ export default {
                 }
             ],
             "platformFileValidateFileUpload": [
-                127,
+                143,
                 {
                     "id": [
                         10,
@@ -11453,20 +11933,20 @@ export default {
                 }
             ],
             "platformFileUpdate": [
-                127,
+                143,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        659,
+                        677,
                         "PlatformFileUpdateInput!"
                     ]
                 }
             ],
             "platformFileDelete": [
-                572,
+                586,
                 {
                     "id": [
                         10,
@@ -11475,29 +11955,29 @@ export default {
                 }
             ],
             "platformCreate": [
-                450,
+                462,
                 {
                     "input": [
-                        660,
+                        678,
                         "CreatePlatformInput!"
                     ]
                 }
             ],
             "platformUpdate": [
-                450,
+                462,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        661,
+                        679,
                         "UpdatePlatformInput!"
                     ]
                 }
             ],
             "platformDelete": [
-                572,
+                586,
                 {
                     "id": [
                         10,
@@ -11506,20 +11986,20 @@ export default {
                 }
             ],
             "platformThemeUpdate": [
-                450,
+                462,
                 {
                     "platformId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        662,
+                        680,
                         "PlatformThemeInput!"
                     ]
                 }
             ],
             "platformRegisterCustomDomain": [
-                123,
+                139,
                 {
                     "platformId": [
                         10,
@@ -11532,7 +12012,7 @@ export default {
                 }
             ],
             "platformForceCustomDomainRecheck": [
-                123,
+                139,
                 {
                     "hostname": [
                         1,
@@ -11541,7 +12021,7 @@ export default {
                 }
             ],
             "platformRemoveCustomDomain": [
-                572,
+                586,
                 {
                     "hostname": [
                         1,
@@ -11550,29 +12030,29 @@ export default {
                 }
             ],
             "platformTemplateCreate": [
-                451,
+                463,
                 {
                     "input": [
-                        665,
+                        683,
                         "CreatePlatformTemplateInput!"
                     ]
                 }
             ],
             "platformTemplateUpdate": [
-                451,
+                463,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        666,
+                        684,
                         "UpdatePlatformTemplateInput!"
                     ]
                 }
             ],
             "platformTemplateApply": [
-                450,
+                462,
                 {
                     "platformTemplateId": [
                         10,
@@ -11585,7 +12065,7 @@ export default {
                 }
             ],
             "platformTemplateDelete": [
-                572,
+                586,
                 {
                     "id": [
                         10,
@@ -11594,10 +12074,10 @@ export default {
                 }
             ],
             "organizationSubscriptionItemsUpdate": [
-                572,
+                586,
                 {
                     "items": [
-                        667,
+                        685,
                         "[OrganizationSubscriptionItemUpdateInput!]!"
                     ],
                     "coupon": [
@@ -11609,42 +12089,42 @@ export default {
                 }
             ],
             "organizationSkillRatingsRegisterMatch": [
-                478,
+                490,
                 {
                     "organizationSkillRatingId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        668,
+                        686,
                         "OrganizationSkillRatingsRegisterMatchInput!"
                     ]
                 }
             ],
             "organizationSkillRatingCreate": [
-                479,
+                491,
                 {
                     "input": [
-                        670,
+                        688,
                         "OrganizationSkillRatingCreateInput!"
                     ]
                 }
             ],
             "organizationSkillRatingUpdate": [
-                479,
+                491,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        671,
+                        689,
                         "OrganizationSkillRatingUpdateInput!"
                     ]
                 }
             ],
             "organizationSkillRatingDelete": [
-                572,
+                586,
                 {
                     "id": [
                         10,
@@ -11653,19 +12133,19 @@ export default {
                 }
             ],
             "eventCreate": [
-                382,
+                392,
                 {
                     "input": [
-                        672,
+                        690,
                         "EventCreateInput!"
                     ]
                 }
             ],
             "eventUpdate": [
-                382,
+                392,
                 {
                     "input": [
-                        673,
+                        691,
                         "EventUpdateInput!"
                     ],
                     "id": [
@@ -11684,29 +12164,29 @@ export default {
                 }
             ],
             "eventTicketConfigurationCreate": [
-                389,
+                399,
                 {
                     "input": [
-                        674,
+                        692,
                         "EventTicketConfigurationCreateInput!"
                     ]
                 }
             ],
             "eventTicketConfigurationUpdate": [
-                389,
+                399,
                 {
                     "ticketConfigurationId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        675,
+                        693,
                         "EventTicketConfigurationUpdateInput!"
                     ]
                 }
             ],
             "eventTicketConfigurationDelete": [
-                389,
+                399,
                 {
                     "ticketConfigurationId": [
                         10,
@@ -11715,14 +12195,14 @@ export default {
                 }
             ],
             "eventReservationUpdateStatus": [
-                364,
+                374,
                 {
                     "reservationId": [
                         10,
                         "ID!"
                     ],
                     "status": [
-                        365,
+                        375,
                         "EventReservationStatus!"
                     ],
                     "confirmPaymentRefundOrCancel": [
@@ -11732,12 +12212,12 @@ export default {
                         4
                     ],
                     "ticketsToReserve": [
-                        676
+                        694
                     ]
                 }
             ],
             "eventReservationConfirmPresence": [
-                364,
+                374,
                 {
                     "eventId": [
                         10,
@@ -11750,24 +12230,24 @@ export default {
                 }
             ],
             "eventReservationValidateAndPay": [
-                370,
+                380,
                 {
                     "eventId": [
                         10,
                         "ID!"
                     ],
                     "options": [
-                        678,
+                        696,
                         "EventReservationValidateAndPayInput!"
                     ],
                     "ticketConfigurations": [
-                        680,
+                        698,
                         "[EventReservationTicketConfigurationInput!]"
                     ]
                 }
             ],
             "eventReservationCreate": [
-                364,
+                374,
                 {
                     "eventId": [
                         10,
@@ -11776,33 +12256,33 @@ export default {
                 }
             ],
             "eventReservationUpdateTickets": [
-                364,
+                374,
                 {
                     "reservationId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        681,
+                        699,
                         "EventReservationUpdateTicketsInput!"
                     ]
                 }
             ],
             "eventReservationStartRegistrationSession": [
-                364,
+                374,
                 {
                     "eventId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        676,
+                        694,
                         "EventReservationRegisterTicketsInput!"
                     ]
                 }
             ],
             "eventReservationCancel": [
-                364,
+                374,
                 {
                     "reservationId": [
                         10,
@@ -11811,7 +12291,7 @@ export default {
                 }
             ],
             "eventVenueRequestImageUpdate": [
-                130,
+                146,
                 {
                     "id": [
                         10,
@@ -11824,7 +12304,7 @@ export default {
                 }
             ],
             "eventVenueValidateImage": [
-                398,
+                408,
                 {
                     "id": [
                         10,
@@ -11833,29 +12313,29 @@ export default {
                 }
             ],
             "eventVenueCreate": [
-                398,
+                408,
                 {
                     "input": [
-                        682,
+                        700,
                         "EventVenueCreateInput!"
                     ]
                 }
             ],
             "eventVenueUpdate": [
-                398,
+                408,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        683,
+                        701,
                         "EventVenueUpdateInput!"
                     ]
                 }
             ],
             "eventVenueDelete": [
-                398,
+                408,
                 {
                     "id": [
                         10,
@@ -11864,46 +12344,46 @@ export default {
                 }
             ],
             "eventVenueSeatsUpdate": [
-                358,
+                368,
                 {
                     "venueId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        684,
+                        702,
                         "EventVenueSeatsUpdateInput!"
                     ]
                 }
             ],
             "eventVenueSeatTypeCreate": [
-                394,
+                404,
                 {
                     "venueId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        687,
+                        705,
                         "EventVenueSeatTypeCreateInput!"
                     ]
                 }
             ],
             "eventVenueSeatTypeUpdate": [
-                394,
+                404,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        688,
+                        706,
                         "EventVenueSeatTypeUpdateInput!"
                     ]
                 }
             ],
             "eventVenueSeatTypeDelete": [
-                394,
+                404,
                 {
                     "id": [
                         10,
@@ -11912,16 +12392,16 @@ export default {
                 }
             ],
             "eventCalendarGenerate": [
-                387,
+                397,
                 {
                     "input": [
-                        689,
+                        707,
                         "EventCalendarGenerateInput!"
                     ]
                 }
             ],
             "eventWaitlistJoin": [
-                401,
+                411,
                 {
                     "ticketConfigurationId": [
                         10,
@@ -11937,7 +12417,7 @@ export default {
                 }
             ],
             "eventWaitlistLeave": [
-                401,
+                411,
                 {
                     "entryId": [
                         10,
@@ -11946,7 +12426,7 @@ export default {
                 }
             ],
             "eventWaitlistRemoveEntry": [
-                401,
+                411,
                 {
                     "entryId": [
                         10,
@@ -11955,20 +12435,20 @@ export default {
                 }
             ],
             "eventReservationChangeTickets": [
-                364,
+                374,
                 {
                     "reservationId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        693,
+                        711,
                         "EventReservationChangeTicketsInput!"
                     ]
                 }
             ],
             "eventReservationReleaseTickets": [
-                364,
+                374,
                 {
                     "reservationId": [
                         10,
@@ -11984,7 +12464,7 @@ export default {
                 1
             ],
             "userGroupInvite": [
-                347,
+                357,
                 {
                     "groupId": [
                         10,
@@ -11997,7 +12477,7 @@ export default {
                 }
             ],
             "userGroupUpdateName": [
-                349,
+                359,
                 {
                     "groupId": [
                         10,
@@ -12009,20 +12489,20 @@ export default {
                 }
             ],
             "userGroupUpdateInvite": [
-                347,
+                357,
                 {
                     "groupId": [
                         10,
                         "ID!"
                     ],
                     "status": [
-                        348,
+                        358,
                         "UserGroupMemberStatus!"
                     ]
                 }
             ],
             "userGroupDeleteInvite": [
-                347,
+                357,
                 {
                     "groupId": [
                         10,
@@ -12034,29 +12514,29 @@ export default {
                 }
             ],
             "shopCreate": [
-                471,
+                483,
                 {
                     "input": [
-                        694,
+                        712,
                         "ShopCreateInput!"
                     ]
                 }
             ],
             "shopUpdate": [
-                471,
+                483,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        695,
+                        713,
                         "ShopUpdateInput!"
                     ]
                 }
             ],
             "shopDelete": [
-                471,
+                483,
                 {
                     "id": [
                         10,
@@ -12065,29 +12545,29 @@ export default {
                 }
             ],
             "shopCategoryCreate": [
-                461,
+                473,
                 {
                     "input": [
-                        696,
+                        714,
                         "ShopCategoryCreateInput!"
                     ]
                 }
             ],
             "shopCategoryUpdate": [
-                461,
+                473,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        697,
+                        715,
                         "ShopCategoryUpdateInput!"
                     ]
                 }
             ],
             "shopCategoryDelete": [
-                461,
+                473,
                 {
                     "id": [
                         10,
@@ -12096,49 +12576,49 @@ export default {
                 }
             ],
             "playerShopProductPurshase": [
-                457,
+                469,
                 {
                     "shopId": [
                         10,
                         "ID!"
                     ],
                     "paymentConfig": [
-                        698
+                        716
                     ],
                     "input": [
-                        699,
+                        717,
                         "PlayerShopProductPurshaseInput!"
                     ]
                 }
             ],
             "shopProductCreate": [
-                468,
+                480,
                 {
                     "shopId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        701,
+                        719,
                         "ShopProductCreateInput!"
                     ]
                 }
             ],
             "shopProductUpdate": [
-                468,
+                480,
                 {
                     "productId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        702,
+                        720,
                         "ShopProductUpdateInput!"
                     ]
                 }
             ],
             "shopProductDelete": [
-                468,
+                480,
                 {
                     "productId": [
                         10,
@@ -12147,29 +12627,29 @@ export default {
                 }
             ],
             "itemCreate": [
-                406,
+                416,
                 {
                     "input": [
-                        703,
+                        721,
                         "ItemCreateInput!"
                     ]
                 }
             ],
             "itemUpdate": [
-                406,
+                416,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        704,
+                        722,
                         "ItemUpdateInput!"
                     ]
                 }
             ],
             "itemDelete": [
-                406,
+                416,
                 {
                     "id": [
                         10,
@@ -12178,42 +12658,42 @@ export default {
                 }
             ],
             "playerItemsUpdate": [
-                409,
+                419,
                 {
                     "playerId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        705,
+                        723,
                         "PlayerItemsUpdateInput!"
                     ]
                 }
             ],
             "itemCategoryCreate": [
-                412,
+                422,
                 {
                     "input": [
-                        707,
+                        725,
                         "ItemCategoryCreateInput!"
                     ]
                 }
             ],
             "itemCategoryUpdate": [
-                412,
+                422,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        708,
+                        726,
                         "ItemCategoryUpdateInput!"
                     ]
                 }
             ],
             "itemCategoryDelete": [
-                412,
+                422,
                 {
                     "id": [
                         10,
@@ -12221,30 +12701,39 @@ export default {
                     ]
                 }
             ],
-            "currencyCreate": [
-                334,
+            "playerItemsTransfer": [
+                425,
                 {
                     "input": [
-                        709,
+                        727,
+                        "PlayerItemsTransferInput!"
+                    ]
+                }
+            ],
+            "currencyCreate": [
+                344,
+                {
+                    "input": [
+                        729,
                         "CurrencyCreateInput!"
                     ]
                 }
             ],
             "currencyUpdate": [
-                334,
+                344,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        710,
+                        730,
                         "CurrencyUpdateInput!"
                     ]
                 }
             ],
             "currencyDelete": [
-                334,
+                344,
                 {
                     "id": [
                         10,
@@ -12253,45 +12742,45 @@ export default {
                 }
             ],
             "playerCurrencyUpdate": [
-                337,
+                347,
                 {
                     "playerId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        711,
+                        731,
                         "[PlayerCurrencyUpdateInput!]!"
                     ]
                 }
             ],
             "publishMarketplaceApp": [
-                140,
+                156,
                 {
                     "input": [
-                        713,
+                        733,
                         "PublishMarketplaceAppInput!"
                     ]
                 }
             ],
             "updateMarketplaceApp": [
-                140,
+                156,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        714,
+                        734,
                         "UpdateMarketplaceAppInput!"
                     ]
                 }
             ],
             "installMarketplaceApp": [
-                148,
+                164,
                 {
                     "input": [
-                        715,
+                        735,
                         "InstallMarketplaceAppInput!"
                     ]
                 }
@@ -12306,19 +12795,19 @@ export default {
                 }
             ],
             "submitMarketplaceAppReview": [
-                145,
+                161,
                 {
                     "input": [
-                        716,
+                        736,
                         "SubmitMarketplaceAppReviewInput!"
                     ]
                 }
             ],
             "setMarketplaceAppPricing": [
-                153,
+                169,
                 {
                     "input": [
-                        717,
+                        737,
                         "SetMarketplaceAppPricingInput!"
                     ]
                 }
@@ -12327,26 +12816,26 @@ export default {
                 1,
                 {
                     "input": [
-                        718,
+                        738,
                         "CreateMarketplaceCheckoutInput!"
                     ]
                 }
             ],
             "appCreateRelease": [
-                138,
+                154,
                 {
                     "marketplaceAppId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        719,
+                        739,
                         "AppCreateReleaseInput!"
                     ]
                 }
             ],
             "appFinalizeRelease": [
-                139,
+                155,
                 {
                     "releaseId": [
                         10,
@@ -12355,7 +12844,7 @@ export default {
                 }
             ],
             "appPublishRelease": [
-                136,
+                152,
                 {
                     "releaseId": [
                         10,
@@ -12364,10 +12853,10 @@ export default {
                 }
             ],
             "platformModuleConfigSet": [
-                431,
+                442,
                 {
                     "input": [
-                        721,
+                        741,
                         "PlatformModuleConfigSetInput!"
                     ]
                 }
@@ -12376,16 +12865,16 @@ export default {
                 4,
                 {
                     "input": [
-                        723,
+                        743,
                         "PlatformModuleConfigDeleteInput!"
                     ]
                 }
             ],
             "entityMetafieldSet": [
-                434,
+                445,
                 {
                     "input": [
-                        724,
+                        744,
                         "SetEntityMetafieldInput!"
                     ]
                 }
@@ -12394,16 +12883,16 @@ export default {
                 4,
                 {
                     "input": [
-                        725,
+                        745,
                         "DeleteEntityMetafieldInput!"
                     ]
                 }
             ],
             "setObjectMetadata": [
-                436,
+                448,
                 {
                     "input": [
-                        726,
+                        746,
                         "SetObjectMetadataInput!"
                     ]
                 }
@@ -12412,29 +12901,29 @@ export default {
                 4,
                 {
                     "input": [
-                        728,
+                        748,
                         "RemoveObjectMetadataInput!"
                     ]
                 }
             ],
             "createCustomFieldDefinition": [
-                442,
+                454,
                 {
                     "input": [
-                        729,
+                        749,
                         "CreateCustomFieldDefinitionInput!"
                     ]
                 }
             ],
             "updateCustomFieldDefinition": [
-                442,
+                454,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        731,
+                        751,
                         "UpdateCustomFieldDefinitionInput!"
                     ]
                 }
@@ -12449,10 +12938,10 @@ export default {
                 }
             ],
             "reorderCustomFieldDefinitions": [
-                442,
+                454,
                 {
                     "objectType": [
-                        439,
+                        451,
                         "ObjectType!"
                     ],
                     "orderedIds": [
@@ -12462,25 +12951,25 @@ export default {
                 }
             ],
             "setCustomFieldValues": [
-                444,
+                456,
                 {
                     "input": [
-                        732,
+                        752,
                         "SetCustomFieldValuesInput!"
                     ]
                 }
             ],
             "appInstallationPin": [
-                148,
+                164,
                 {
                     "input": [
-                        734,
+                        754,
                         "AppInstallationPinInput!"
                     ]
                 }
             ],
             "appFunctionsSetEnabled": [
-                148,
+                164,
                 {
                     "appSlug": [
                         1,
@@ -12496,10 +12985,10 @@ export default {
                 }
             ],
             "guestWardCreate": [
-                155,
+                90,
                 {
                     "input": [
-                        735,
+                        755,
                         "GuestWardCreateInput!"
                     ]
                 }
@@ -12514,29 +13003,29 @@ export default {
                 }
             ],
             "guestProfileCreate": [
-                164,
+                99,
                 {
                     "input": [
-                        736,
+                        756,
                         "GuestProfileCreateInput!"
                     ]
                 }
             ],
             "guestProfileUpdate": [
-                155,
+                90,
                 {
                     "playerId": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        737,
+                        757,
                         "GuestProfileUpdateInput!"
                     ]
                 }
             ],
             "guestGuardianLinkCreate": [
-                165,
+                100,
                 {
                     "guardianPlayerId": [
                         10,
@@ -12558,16 +13047,16 @@ export default {
                 }
             ],
             "guestConfigurationUpdate": [
-                166,
+                101,
                 {
                     "input": [
-                        738,
+                        758,
                         "GuestConfigurationInput!"
                     ]
                 }
             ],
             "guestLinkExchange": [
-                158,
+                93,
                 {
                     "token": [
                         1,
@@ -12579,10 +13068,10 @@ export default {
                 4
             ],
             "guestLinkCreate": [
-                163,
+                98,
                 {
                     "input": [
-                        739,
+                        759,
                         "GuestLinkCreateInput!"
                     ]
                 }
@@ -12591,7 +13080,7 @@ export default {
                 80,
                 {
                     "input": [
-                        740,
+                        761,
                         "GuestLinkRevokeInput!"
                     ]
                 }
@@ -12606,10 +13095,10 @@ export default {
                 }
             ],
             "guestEnter": [
-                158,
+                93,
                 {
                     "input": [
-                        741,
+                        762,
                         "GuestEnterInput!"
                     ]
                 }
@@ -12622,7 +13111,7 @@ export default {
                         "String!"
                     ],
                     "values": [
-                        742,
+                        763,
                         "[AppConfigValueInput!]!"
                     ]
                 }
@@ -12631,29 +13120,29 @@ export default {
                 83,
                 {
                     "input": [
-                        564,
+                        577,
                         "AppFunctionCallInput!"
                     ]
                 }
             ],
             "customPermissionCreate": [
-                87,
+                103,
                 {
                     "input": [
-                        743,
+                        764,
                         "CustomPermissionInput!"
                     ]
                 }
             ],
             "customPermissionUpdate": [
-                87,
+                103,
                 {
                     "id": [
                         1,
                         "String!"
                     ],
                     "input": [
-                        744,
+                        765,
                         "CustomPermissionUpdateInput!"
                     ]
                 }
@@ -12668,23 +13157,23 @@ export default {
                 }
             ],
             "registrationSeriesCreate": [
-                340,
+                350,
                 {
                     "input": [
-                        745,
+                        766,
                         "RegistrationSeriesCreateInput!"
                     ]
                 }
             ],
             "registrationSeriesUpdate": [
-                340,
+                350,
                 {
                     "id": [
                         10,
                         "ID!"
                     ],
                     "input": [
-                        746,
+                        767,
                         "RegistrationSeriesUpdateInput!"
                     ]
                 }
@@ -12715,10 +13204,10 @@ export default {
                 }
             ],
             "organizationModerationUpdate": [
-                435,
+                446,
                 {
                     "input": [
-                        747,
+                        768,
                         "OrganizationModerationInput!"
                     ]
                 }
@@ -12738,10 +13227,10 @@ export default {
                 32
             ],
             "stepConfiguration": [
-                498
+                510
             ],
             "tournamentConfiguration": [
-                507
+                519
             ],
             "__typename": [
                 1
@@ -12755,13 +13244,19 @@ export default {
                 10
             ],
             "score": [
-                569
+                17
+            ],
+            "mode": [
+                583
+            ],
+            "seasonId": [
+                10
             ],
             "__typename": [
                 1
             ]
         },
-        "PositiveInt": {},
+        "LeaderboardScoreMode": {},
         "CreateLeaderboardInput": {
             "name": [
                 1
@@ -12827,7 +13322,7 @@ export default {
                 17
             ],
             "scoreCalculationType": [
-                180
+                183
             ],
             "__typename": [
                 1
@@ -12841,7 +13336,68 @@ export default {
                 17
             ],
             "scoreCalculationType": [
-                180
+                183
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateLeaderboardFeedInput": {
+            "leaderboardId": [
+                10
+            ],
+            "tournamentId": [
+                10
+            ],
+            "stepId": [
+                10
+            ],
+            "seasonId": [
+                10
+            ],
+            "winPoints": [
+                17
+            ],
+            "lossPoints": [
+                17
+            ],
+            "drawPoints": [
+                17
+            ],
+            "forfeitPoints": [
+                17
+            ],
+            "placementPoints": [
+                17
+            ],
+            "enabled": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateLeaderboardFeedInput": {
+            "seasonId": [
+                10
+            ],
+            "winPoints": [
+                17
+            ],
+            "lossPoints": [
+                17
+            ],
+            "drawPoints": [
+                17
+            ],
+            "forfeitPoints": [
+                17
+            ],
+            "placementPoints": [
+                17
+            ],
+            "enabled": [
+                4
             ],
             "__typename": [
                 1
@@ -12855,7 +13411,7 @@ export default {
                 1
             ],
             "configuration": [
-                578
+                594
             ],
             "__typename": [
                 1
@@ -12863,7 +13419,7 @@ export default {
         },
         "OrganizationConfigurationInput": {
             "customFields": [
-                490
+                502
             ],
             "__typename": [
                 1
@@ -12877,7 +13433,7 @@ export default {
                 1
             ],
             "configuration": [
-                578
+                594
             ],
             "__typename": [
                 1
@@ -12888,7 +13444,7 @@ export default {
                 1
             ],
             "permissions": [
-                489
+                501
             ],
             "__typename": [
                 1
@@ -12902,7 +13458,7 @@ export default {
                 77
             ],
             "permissions": [
-                489
+                501
             ],
             "groupId": [
                 10
@@ -12942,10 +13498,10 @@ export default {
                 1
             ],
             "oauth2Configuration": [
-                584
+                600
             ],
             "openidConfiguration": [
-                585
+                601
             ],
             "__typename": [
                 1
@@ -12956,13 +13512,13 @@ export default {
                 1
             ],
             "dataRetrievers": [
-                488
+                500
             ],
             "issuer": [
                 1
             ],
             "providerType": [
-                203
+                207
             ],
             "clientId": [
                 1
@@ -12971,7 +13527,7 @@ export default {
                 1
             ],
             "tokenEndpointAuthMethod": [
-                204
+                208
             ],
             "redirectUrl": [
                 1
@@ -12994,13 +13550,13 @@ export default {
                 1
             ],
             "dataRetrievers": [
-                488
+                500
             ],
             "issuer": [
                 1
             ],
             "providerType": [
-                203
+                207
             ],
             "clientId": [
                 1
@@ -13035,10 +13591,10 @@ export default {
                 1
             ],
             "oauth2Configuration": [
-                584
+                600
             ],
             "openidConfiguration": [
-                585
+                601
             ],
             "__typename": [
                 1
@@ -13119,7 +13675,7 @@ export default {
                 1
             ],
             "extensions": [
-                590
+                606
             ],
             "webhookUrl": [
                 1
@@ -13131,28 +13687,28 @@ export default {
                 1
             ],
             "frontendModules": [
-                592
+                608
             ],
             "config": [
-                596
+                612
             ],
             "customPermissions": [
-                597
+                613
             ],
             "storage": [
-                598
+                614
             ],
             "operations": [
-                600
+                616
             ],
             "emailTemplates": [
-                601
+                617
             ],
             "auditTypes": [
-                602
+                618
             ],
             "functions": [
-                604
+                620
             ],
             "codeAuthorized": [
                 1
@@ -13163,7 +13719,7 @@ export default {
         },
         "ExtensionPointInput": {
             "type": [
-                96
+                112
             ],
             "label": [
                 1
@@ -13172,7 +13728,7 @@ export default {
                 1
             ],
             "size": [
-                591
+                607
             ],
             "__typename": [
                 1
@@ -13206,10 +13762,10 @@ export default {
                 1
             ],
             "propsSchema": [
-                593
+                609
             ],
             "events": [
-                595
+                611
             ],
             "__typename": [
                 1
@@ -13220,7 +13776,7 @@ export default {
                 1
             ],
             "type": [
-                91
+                107
             ],
             "label": [
                 1
@@ -13235,7 +13791,7 @@ export default {
                 1
             ],
             "options": [
-                594
+                610
             ],
             "param": [
                 1
@@ -13320,7 +13876,7 @@ export default {
         },
         "AppStorageDeclInput": {
             "collections": [
-                599
+                615
             ],
             "__typename": [
                 1
@@ -13367,7 +13923,7 @@ export default {
                 1
             ],
             "fields": [
-                603
+                619
             ],
             "__typename": [
                 1
@@ -13378,7 +13934,7 @@ export default {
                 1
             ],
             "type": [
-                98
+                114
             ],
             "required": [
                 4
@@ -13387,10 +13943,10 @@ export default {
                 1
             ],
             "fields": [
-                603
+                619
             ],
             "items": [
-                603
+                619
             ],
             "maxLength": [
                 80
@@ -13413,25 +13969,25 @@ export default {
                 1
             ],
             "trigger": [
-                605
+                621
             ],
             "invoker": [
-                115
+                131
             ],
             "runAs": [
-                116
+                132
             ],
             "input": [
-                603
+                619
             ],
             "output": [
-                603
+                619
             ],
             "preload": [
-                606
+                622
             ],
             "requires": [
-                608
+                624
             ],
             "__typename": [
                 1
@@ -13439,7 +13995,7 @@ export default {
         },
         "AppFunctionTriggerInput": {
             "type": [
-                107
+                123
             ],
             "readOnly": [
                 4
@@ -13448,10 +14004,10 @@ export default {
                 80
             ],
             "hookPoint": [
-                108
+                124
             ],
             "onError": [
-                109
+                125
             ],
             "timeoutMs": [
                 80
@@ -13469,7 +14025,7 @@ export default {
                 1
             ],
             "lifecycle": [
-                110
+                126
             ],
             "__typename": [
                 1
@@ -13483,7 +14039,7 @@ export default {
                 1
             ],
             "vars": [
-                607
+                623
             ],
             "__typename": [
                 1
@@ -13561,7 +14117,7 @@ export default {
                 1
             ],
             "permissions": [
-                489
+                501
             ],
             "groupId": [
                 10
@@ -13586,7 +14142,7 @@ export default {
                 10
             ],
             "variables": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -13594,7 +14150,7 @@ export default {
         },
         "EmailSendFromCustomInput": {
             "emailField": [
-                503
+                515
             ],
             "playerIds": [
                 10
@@ -13663,7 +14219,7 @@ export default {
                 1
             ],
             "customFields": [
-                619
+                635
             ],
             "__typename": [
                 1
@@ -13694,7 +14250,7 @@ export default {
                 1
             ],
             "customFields": [
-                619
+                635
             ],
             "__typename": [
                 1
@@ -13708,7 +14264,7 @@ export default {
                 1
             ],
             "customFields": [
-                619
+                635
             ],
             "__typename": [
                 1
@@ -13737,7 +14293,7 @@ export default {
                 12
             ],
             "configuration": [
-                623
+                639
             ],
             "__typename": [
                 1
@@ -13748,7 +14304,7 @@ export default {
                 10
             ],
             "configuration": [
-                624
+                640
             ],
             "__typename": [
                 1
@@ -13771,10 +14327,10 @@ export default {
                 47
             ],
             "registrationConditions": [
-                506
+                518
             ],
             "customFields": [
-                490
+                502
             ],
             "__typename": [
                 1
@@ -13803,7 +14359,7 @@ export default {
                 12
             ],
             "configuration": [
-                623
+                639
             ],
             "__typename": [
                 1
@@ -13820,10 +14376,10 @@ export default {
                 17
             ],
             "type": [
-                253
+                257
             ],
             "properties": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -13837,7 +14393,7 @@ export default {
                 10
             ],
             "pins": [
-                628
+                644
             ],
             "__typename": [
                 1
@@ -13865,10 +14421,10 @@ export default {
                 10
             ],
             "automaticSeeding": [
-                630
+                646
             ],
             "manualSeeding": [
-                633
+                649
             ],
             "__typename": [
                 1
@@ -13876,10 +14432,10 @@ export default {
         },
         "AutomaticSeedingInput": {
             "seedingMechanism": [
-                631
+                647
             ],
             "groupRepartitionMechanism": [
-                632
+                648
             ],
             "teams": [
                 10
@@ -13892,7 +14448,7 @@ export default {
         "GroupRepartitionMechanism": {},
         "ManualSeedingInput": {
             "groups": [
-                634
+                650
             ],
             "__typename": [
                 1
@@ -13914,13 +14470,13 @@ export default {
                 10
             ],
             "variables": [
-                636
+                652
             ],
             "forcedScoreValue": [
                 17
             ],
             "status": [
-                263
+                267
             ],
             "__typename": [
                 1
@@ -13939,7 +14495,7 @@ export default {
         },
         "RegisterCustomTeamsInput": {
             "customTeams": [
-                638
+                654
             ],
             "__typename": [
                 1
@@ -13953,13 +14509,13 @@ export default {
                 1
             ],
             "customFields": [
-                491
+                503
             ],
             "fromExistingTeamId": [
                 10
             ],
             "members": [
-                639
+                655
             ],
             "status": [
                 60
@@ -13973,7 +14529,7 @@ export default {
                 10
             ],
             "player": [
-                618
+                634
             ],
             "__typename": [
                 1
@@ -13987,7 +14543,7 @@ export default {
                 1
             ],
             "customFields": [
-                491
+                503
             ],
             "fromExistingTeamId": [
                 10
@@ -14004,7 +14560,7 @@ export default {
                 1
             ],
             "customFields": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -14018,7 +14574,7 @@ export default {
                 10
             ],
             "permissions": [
-                267
+                271
             ],
             "__typename": [
                 1
@@ -14035,18 +14591,58 @@ export default {
                 1
             ]
         },
+        "OpenPoolCreateMatchInput": {
+            "stepId": [
+                10
+            ],
+            "teamIds": [
+                10
+            ],
+            "groupId": [
+                10
+            ],
+            "label": [
+                1
+            ],
+            "idempotencyKey": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "TournamentTeamMemberAddInput": {
+            "teamId": [
+                10
+            ],
+            "playerId": [
+                10
+            ],
+            "moveFromOtherTeam": [
+                4
+            ],
+            "removeEmptySourceTeam": [
+                4
+            ],
+            "setAsManager": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "CreateStepRuleSetInput": {
             "scoring": [
-                645
+                663
             ],
             "advancementRules": [
-                647
+                665
             ],
             "crossStepRules": [
-                649
+                667
             ],
             "structureTemplate": [
-                651
+                669
             ],
             "__typename": [
                 1
@@ -14054,7 +14650,7 @@ export default {
         },
         "CreateScoringInput": {
             "aggregation": [
-                276
+                280
             ],
             "formula": [
                 1
@@ -14072,7 +14668,7 @@ export default {
                 80
             ],
             "tiebreakers": [
-                646
+                664
             ],
             "__typename": [
                 1
@@ -14083,13 +14679,13 @@ export default {
                 80
             ],
             "type": [
-                273
+                277
             ],
             "formula": [
                 1
             ],
             "sortOrder": [
-                274
+                278
             ],
             "__typename": [
                 1
@@ -14106,7 +14702,7 @@ export default {
                 80
             ],
             "triggerType": [
-                213
+                217
             ],
             "triggerScope": [
                 1
@@ -14115,7 +14711,7 @@ export default {
                 1
             ],
             "actions": [
-                648
+                666
             ],
             "autoExecute": [
                 4
@@ -14124,7 +14720,7 @@ export default {
                 4
             ],
             "purpose": [
-                271
+                275
             ],
             "__typename": [
                 1
@@ -14132,7 +14728,7 @@ export default {
         },
         "RuleActionInput": {
             "type": [
-                269
+                273
             ],
             "script": [
                 1
@@ -14146,13 +14742,13 @@ export default {
                 10
             ],
             "sourceRelative": [
-                284
+                288
             ],
             "dataSource": [
-                215
+                219
             ],
             "usage": [
-                650
+                668
             ],
             "__typename": [
                 1
@@ -14160,7 +14756,7 @@ export default {
         },
         "CrossStepUsageInput": {
             "type": [
-                282
+                286
             ],
             "condition": [
                 1
@@ -14174,7 +14770,7 @@ export default {
         },
         "CreateStructureTemplateInput": {
             "groupTemplates": [
-                652
+                670
             ],
             "__typename": [
                 1
@@ -14197,7 +14793,7 @@ export default {
                 1
             ],
             "roundTemplates": [
-                653
+                671
             ],
             "bestOfExpr": [
                 1
@@ -14220,7 +14816,7 @@ export default {
                 80
             ],
             "gameTemplates": [
-                654
+                672
             ],
             "__typename": [
                 1
@@ -14269,7 +14865,7 @@ export default {
                 1
             ],
             "parameters": [
-                656
+                674
             ],
             "__typename": [
                 1
@@ -14280,7 +14876,7 @@ export default {
                 1
             ],
             "type": [
-                287
+                291
             ],
             "required": [
                 4
@@ -14306,7 +14902,7 @@ export default {
                 1
             ],
             "parameters": [
-                656
+                674
             ],
             "__typename": [
                 1
@@ -14317,10 +14913,10 @@ export default {
                 1
             ],
             "type": [
-                128
+                144
             ],
             "config": [
-                510
+                522
             ],
             "__typename": [
                 1
@@ -14328,7 +14924,7 @@ export default {
         },
         "PlatformFileUpdateInput": {
             "config": [
-                510
+                522
             ],
             "__typename": [
                 1
@@ -14339,7 +14935,7 @@ export default {
                 1
             ],
             "configuration": [
-                520
+                532
             ],
             "appId": [
                 1
@@ -14356,7 +14952,7 @@ export default {
                 1
             ],
             "configuration": [
-                520
+                532
             ],
             "appId": [
                 1
@@ -14397,10 +14993,10 @@ export default {
                 1
             ],
             "socialLinks": [
-                663
+                681
             ],
             "sections": [
-                664
+                682
             ],
             "__typename": [
                 1
@@ -14442,7 +15038,7 @@ export default {
                 1
             ],
             "screenshotUrl": [
-                131
+                147
             ],
             "public": [
                 4
@@ -14459,7 +15055,7 @@ export default {
                 1
             ],
             "screenshotUrl": [
-                131
+                147
             ],
             "public": [
                 4
@@ -14481,7 +15077,7 @@ export default {
         },
         "OrganizationSkillRatingsRegisterMatchInput": {
             "teams": [
-                669
+                687
             ],
             "__typename": [
                 1
@@ -14503,10 +15099,10 @@ export default {
                 1
             ],
             "type": [
-                480
+                492
             ],
             "configuration": [
-                524
+                536
             ],
             "__typename": [
                 1
@@ -14520,10 +15116,10 @@ export default {
                 1
             ],
             "type": [
-                480
+                492
             ],
             "configuration": [
-                524
+                536
             ],
             "__typename": [
                 1
@@ -14552,7 +15148,7 @@ export default {
                 12
             ],
             "configuration": [
-                516
+                528
             ],
             "eventVenueId": [
                 10
@@ -14587,7 +15183,7 @@ export default {
                 12
             ],
             "configuration": [
-                516
+                528
             ],
             "eventVenueId": [
                 10
@@ -14610,7 +15206,7 @@ export default {
                 17
             ],
             "currency": [
-                390
+                400
             ],
             "maxCount": [
                 17
@@ -14625,7 +15221,7 @@ export default {
                 10
             ],
             "configuration": [
-                517
+                529
             ],
             "startsAt": [
                 12
@@ -14640,7 +15236,7 @@ export default {
                 10
             ],
             "state": [
-                391
+                401
             ],
             "__typename": [
                 1
@@ -14657,7 +15253,7 @@ export default {
                 17
             ],
             "currency": [
-                390
+                400
             ],
             "maxCount": [
                 17
@@ -14669,7 +15265,7 @@ export default {
                 10
             ],
             "configuration": [
-                517
+                529
             ],
             "startsAt": [
                 12
@@ -14684,7 +15280,7 @@ export default {
                 10
             ],
             "state": [
-                391
+                401
             ],
             "__typename": [
                 1
@@ -14692,7 +15288,7 @@ export default {
         },
         "EventReservationRegisterTicketsInput": {
             "tickets": [
-                677
+                695
             ],
             "__typename": [
                 1
@@ -14723,7 +15319,7 @@ export default {
                 1
             ],
             "uiMode": [
-                679
+                697
             ],
             "__typename": [
                 1
@@ -14735,7 +15331,7 @@ export default {
                 10
             ],
             "customFields": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -14746,10 +15342,10 @@ export default {
                 10
             ],
             "ticketIdsToAdd": [
-                677
+                695
             ],
             "ticketConfigurations": [
-                680
+                698
             ],
             "__typename": [
                 1
@@ -14815,10 +15411,10 @@ export default {
         },
         "EventVenueSeatsUpdateInput": {
             "updateSeats": [
-                685
+                703
             ],
             "createSeats": [
-                686
+                704
             ],
             "deleteSeats": [
                 10
@@ -14832,7 +15428,7 @@ export default {
                 1
             ],
             "configuration": [
-                513
+                525
             ],
             "seatTypeId": [
                 10
@@ -14849,7 +15445,7 @@ export default {
                 1
             ],
             "configuration": [
-                513
+                525
             ],
             "seatTypeId": [
                 10
@@ -14866,7 +15462,7 @@ export default {
                 1
             ],
             "configuration": [
-                518
+                530
             ],
             "__typename": [
                 1
@@ -14880,7 +15476,7 @@ export default {
                 1
             ],
             "configuration": [
-                518
+                530
             ],
             "__typename": [
                 1
@@ -14888,13 +15484,13 @@ export default {
         },
         "EventCalendarGenerateInput": {
             "days": [
-                690
+                708
             ],
             "slots": [
-                691
+                709
             ],
             "event": [
-                692
+                710
             ],
             "registrationSeriesId": [
                 10
@@ -14914,7 +15510,7 @@ export default {
                 10
             ],
             "slots": [
-                691
+                709
             ],
             "__typename": [
                 1
@@ -14960,7 +15556,7 @@ export default {
                 1
             ],
             "configuration": [
-                516
+                528
             ],
             "startRegistrationsAt": [
                 12
@@ -14980,7 +15576,7 @@ export default {
                 10
             ],
             "tickets": [
-                677
+                695
             ],
             "__typename": [
                 1
@@ -14997,7 +15593,7 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -15014,7 +15610,7 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -15031,7 +15627,7 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
             ],
             "shopId": [
                 10
@@ -15051,7 +15647,7 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -15068,7 +15664,7 @@ export default {
                 1
             ],
             "uiMode": [
-                679
+                697
             ],
             "__typename": [
                 1
@@ -15076,7 +15672,7 @@ export default {
         },
         "PlayerShopProductPurshaseInput": {
             "items": [
-                700
+                718
             ],
             "__typename": [
                 1
@@ -15110,22 +15706,22 @@ export default {
                 17
             ],
             "configuration": [
-                521
+                533
             ],
             "metadata": [
-                491
+                503
             ],
             "visibleAt": [
                 12
             ],
             "currency": [
-                390
+                400
             ],
             "items": [
-                523
+                535
             ],
             "currencyPrices": [
-                522
+                534
             ],
             "__typename": [
                 1
@@ -15148,22 +15744,22 @@ export default {
                 17
             ],
             "configuration": [
-                521
+                533
             ],
             "metadata": [
-                491
+                503
             ],
             "visibleAt": [
                 12
             ],
             "currency": [
-                390
+                400
             ],
             "items": [
-                523
+                535
             ],
             "currencyPrices": [
-                522
+                534
             ],
             "__typename": [
                 1
@@ -15180,7 +15776,7 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
             ],
             "categoryId": [
                 10
@@ -15200,7 +15796,7 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
             ],
             "categoryId": [
                 10
@@ -15211,7 +15807,7 @@ export default {
         },
         "PlayerItemsUpdateInput": {
             "items": [
-                706
+                724
             ],
             "__typename": [
                 1
@@ -15245,7 +15841,7 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -15262,7 +15858,32 @@ export default {
                 1
             ],
             "metadata": [
-                491
+                503
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "PlayerItemsTransferInput": {
+            "fromPlayerId": [
+                10
+            ],
+            "toPlayerId": [
+                10
+            ],
+            "items": [
+                728
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "PlayerItemsTransferItemInput": {
+            "itemId": [
+                10
+            ],
+            "quantity": [
+                80
             ],
             "__typename": [
                 1
@@ -15285,7 +15906,7 @@ export default {
                 4
             ],
             "metadata": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -15308,7 +15929,7 @@ export default {
                 4
             ],
             "metadata": [
-                491
+                503
             ],
             "__typename": [
                 1
@@ -15316,7 +15937,7 @@ export default {
         },
         "PlayerCurrencyUpdateInput": {
             "items": [
-                712
+                732
             ],
             "__typename": [
                 1
@@ -15344,7 +15965,7 @@ export default {
                 10
             ],
             "manifest": [
-                589
+                605
             ],
             "name": [
                 1
@@ -15380,7 +16001,7 @@ export default {
                 1
             ],
             "visibility": [
-                142
+                158
             ],
             "allowedOrganizationIds": [
                 10
@@ -15391,7 +16012,7 @@ export default {
         },
         "UpdateMarketplaceAppInput": {
             "manifest": [
-                589
+                605
             ],
             "name": [
                 1
@@ -15427,7 +16048,7 @@ export default {
                 1
             ],
             "visibility": [
-                142
+                158
             ],
             "allowedOrganizationIds": [
                 10
@@ -15469,7 +16090,7 @@ export default {
                 10
             ],
             "type": [
-                154
+                170
             ],
             "priceAmountCents": [
                 80
@@ -15503,7 +16124,7 @@ export default {
                 1
             ],
             "manifest": [
-                589
+                605
             ],
             "releaseNotes": [
                 1
@@ -15521,7 +16142,7 @@ export default {
                 80
             ],
             "files": [
-                720
+                740
             ],
             "__typename": [
                 1
@@ -15529,7 +16150,7 @@ export default {
         },
         "AppReleaseFileInput": {
             "kind": [
-                133
+                149
             ],
             "name": [
                 1
@@ -15552,7 +16173,7 @@ export default {
                 1
             ],
             "props": [
-                722
+                742
             ],
             "__typename": [
                 1
@@ -15622,13 +16243,13 @@ export default {
         },
         "SetObjectMetadataInput": {
             "objectType": [
-                439
+                451
             ],
             "objectId": [
                 10
             ],
             "entries": [
-                727
+                747
             ],
             "__typename": [
                 1
@@ -15642,10 +16263,10 @@ export default {
                 1
             ],
             "type": [
-                437
+                449
             ],
             "visibility": [
-                438
+                450
             ],
             "__typename": [
                 1
@@ -15653,7 +16274,7 @@ export default {
         },
         "RemoveObjectMetadataInput": {
             "objectType": [
-                439
+                451
             ],
             "objectId": [
                 10
@@ -15667,7 +16288,7 @@ export default {
         },
         "CreateCustomFieldDefinitionInput": {
             "objectType": [
-                439
+                451
             ],
             "key": [
                 1
@@ -15679,7 +16300,7 @@ export default {
                 1
             ],
             "type": [
-                443
+                455
             ],
             "required": [
                 4
@@ -15697,7 +16318,7 @@ export default {
                 22
             ],
             "options": [
-                730
+                750
             ],
             "defaultValue": [
                 1
@@ -15746,7 +16367,7 @@ export default {
                 22
             ],
             "options": [
-                730
+                750
             ],
             "defaultValue": [
                 1
@@ -15763,13 +16384,13 @@ export default {
         },
         "SetCustomFieldValuesInput": {
             "objectType": [
-                439
+                451
             ],
             "objectId": [
                 10
             ],
             "fields": [
-                733
+                753
             ],
             "deleteKeys": [
                 1
@@ -15825,7 +16446,7 @@ export default {
                 1
             ],
             "origin": [
-                156
+                91
             ],
             "guardianPlayerId": [
                 10
@@ -15853,7 +16474,7 @@ export default {
         },
         "GuestConfigurationInput": {
             "selfEntry": [
-                167
+                102
             ],
             "sessionTtlMinutes": [
                 80
@@ -15876,7 +16497,7 @@ export default {
                 12
             ],
             "maxUses": [
-                569
+                760
             ],
             "data": [
                 1
@@ -15888,6 +16509,7 @@ export default {
                 1
             ]
         },
+        "PositiveInt": {},
         "GuestLinkRevokeInput": {
             "id": [
                 10
@@ -15969,7 +16591,7 @@ export default {
                 4
             ],
             "releasePolicy": [
-                341
+                351
             ],
             "__typename": [
                 1
@@ -15992,7 +16614,7 @@ export default {
                 4
             ],
             "releasePolicy": [
-                341
+                351
             ],
             "__typename": [
                 1
@@ -16011,7 +16633,7 @@ export default {
         },
         "Subscription": {
             "validationProgress": [
-                324,
+                328,
                 {
                     "jobId": [
                         10,
@@ -16020,7 +16642,7 @@ export default {
                 }
             ],
             "validationEvents": [
-                326,
+                330,
                 {
                     "jobId": [
                         10,
@@ -16029,18 +16651,18 @@ export default {
                 }
             ],
             "journalEntryAdded": [
-                418,
+                429,
                 {
                     "filters": [
-                        544
+                        557
                     ]
                 }
             ],
             "presenceUserConnected": [
-                454
+                466
             ],
             "presenceUserDisconnected": [
-                456
+                468
             ],
             "__typename": [
                 1

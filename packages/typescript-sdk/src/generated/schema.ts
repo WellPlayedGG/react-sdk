@@ -12,8 +12,8 @@ export type Scalars = {
     EmailAddress: any,
     Int: number,
     URL: any,
-    PositiveInt: any,
     Void: any,
+    PositiveInt: any,
 }
 
 
@@ -898,6 +898,176 @@ export interface AppConfigEntry {
 
 export type AppConfigType = 'STRING' | 'TEXT' | 'NUMBER' | 'INTEGER' | 'BOOLEAN' | 'SELECT' | 'DURATION' | 'TIME' | 'DATE' | 'TIMEZONE' | 'STRING_LIST'
 
+
+/** An email template associated with a trigger event */
+export interface EmailTemplate {
+    /** Unique identifier of the email template */
+    id: Scalars['ID']
+    /** Event that triggers this email template */
+    triggerEvent: EmailTriggerEvents
+    /** Whether this is the default template for the trigger event */
+    default: Scalars['Boolean']
+    /** Display name of the email template */
+    name: Scalars['String']
+    /** Subject line of the email, supports template variables */
+    title: Scalars['String']
+    /** HTML body content of the email, supports template variables */
+    contents: Scalars['String']
+    /** Timestamp when the template was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the template was last updated */
+    updatedAt: Scalars['DateTime']
+    /** ID of the organization that owns this template */
+    organizationId: Scalars['ID']
+    __typename: 'EmailTemplate'
+}
+
+
+/** Paginated list of email templates */
+export interface EmailTemplates {
+    /** List of edges containing cursor and node pairs */
+    edges: EmailTemplateEdge[]
+    /** Flat list of items in the current page */
+    nodes: EmailTemplate[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'EmailTemplates'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface EmailTemplateEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: EmailTemplate
+    __typename: 'EmailTemplateEdge'
+}
+
+
+/** Guest identity attached to an ownerless player profile of the organization */
+export interface GuestProfile {
+    /** ID of the guest player profile */
+    playerId: Scalars['ID']
+    /** The guest player profile */
+    player: Player
+    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
+    email: (Scalars['String'] | null)
+    /** First name, same visibility as email */
+    firstName: (Scalars['String'] | null)
+    /** Last name, same visibility as email */
+    lastName: (Scalars['String'] | null)
+    /** How the guest was created */
+    origin: GuestOrigin
+    /** Players acting as guardians of this guest */
+    guardianPlayerIds: Scalars['ID'][]
+    /** Guests this player is the guardian of */
+    wardPlayerIds: Scalars['ID'][]
+    /** Creation date */
+    createdAt: Scalars['DateTime']
+    __typename: 'GuestProfile'
+}
+
+export type GuestOrigin = 'ENTRY' | 'INVITED' | 'GUARDIAN' | 'ADMIN'
+
+
+/** Magic link a guest session was opened from */
+export interface GuestLinkContext {
+    id: Scalars['ID']
+    /** Purpose set by the link creator */
+    purpose: Scalars['String']
+    /** JSON payload set by the link creator */
+    data: Scalars['String']
+    expiresAt: Scalars['DateTime']
+    __typename: 'GuestLinkContext'
+}
+
+
+/** A guest session; send its token in the x-guest-session header */
+export interface GuestSession {
+    /** Session token, returned only when the session opens */
+    token: Scalars['String']
+    /** Guest player the session belongs to */
+    playerId: Scalars['ID']
+    origin: GuestSessionOrigin
+    expiresAt: Scalars['DateTime']
+    link: (GuestLinkContext | null)
+    __typename: 'GuestSession'
+}
+
+export type GuestSessionOrigin = 'ENTRY' | 'LINK'
+
+
+/** The current guest session */
+export interface GuestMe {
+    /** Player that owns the session */
+    sessionPlayerId: Scalars['ID']
+    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
+    actingPlayerId: Scalars['ID']
+    origin: GuestSessionOrigin
+    expiresAt: Scalars['DateTime']
+    link: (GuestLinkContext | null)
+    profile: GuestProfile
+    wards: GuestProfile[]
+    __typename: 'GuestMe'
+}
+
+
+/** Read-only view of a magic link; reading it never consumes a use */
+export interface GuestLinkView {
+    status: GuestLinkStatus
+    /** Null when INVALID */
+    purpose: (Scalars['String'] | null)
+    /** Null when INVALID */
+    expiresAt: (Scalars['DateTime'] | null)
+    /** Guest first name, only when VALID */
+    firstName: (Scalars['String'] | null)
+    /** Link payload, only when VALID */
+    data: (Scalars['String'] | null)
+    __typename: 'GuestLinkView'
+}
+
+export type GuestLinkStatus = 'VALID' | 'EXPIRED' | 'REVOKED' | 'EXHAUSTED' | 'INVALID'
+
+
+/** A new magic link; the token is returned only once */
+export interface GuestLinkCreated {
+    id: Scalars['ID']
+    token: Scalars['String']
+    expiresAt: Scalars['DateTime']
+    __typename: 'GuestLinkCreated'
+}
+
+export interface GuestProfileCreated {
+    profile: GuestProfile
+    /** False when an addressable guest with the same e-mail existed */
+    created: Scalars['Boolean']
+    __typename: 'GuestProfileCreated'
+}
+
+
+/** A guardian allowed to act for a guest ward */
+export interface GuestGuardianLink {
+    id: Scalars['ID']
+    guardianPlayerId: Scalars['ID']
+    wardPlayerId: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    __typename: 'GuestGuardianLink'
+}
+
+
+/** Guest settings of the organization */
+export interface GuestConfiguration {
+    selfEntry: GuestSelfEntryMode
+    sessionTtlMinutes: Scalars['Int']
+    maxWardsPerGuardian: Scalars['Int']
+    __typename: 'GuestConfiguration'
+}
+
+export type GuestSelfEntryMode = 'DISABLED' | 'TRUSTED_PARAMS'
+
 export interface PermissionDefinitionDto {
     id: Scalars['String']
     owner: PermissionDefinitionOwner
@@ -1635,128 +1805,6 @@ export interface MarketplaceAppPricing {
 export type MarketplacePricingType = 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
 
 
-/** Guest identity attached to an ownerless player profile of the organization */
-export interface GuestProfile {
-    /** ID of the guest player profile */
-    playerId: Scalars['ID']
-    /** The guest player profile */
-    player: Player
-    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
-    email: (Scalars['String'] | null)
-    /** First name, same visibility as email */
-    firstName: (Scalars['String'] | null)
-    /** Last name, same visibility as email */
-    lastName: (Scalars['String'] | null)
-    /** How the guest was created */
-    origin: GuestOrigin
-    /** Players acting as guardians of this guest */
-    guardianPlayerIds: Scalars['ID'][]
-    /** Guests this player is the guardian of */
-    wardPlayerIds: Scalars['ID'][]
-    /** Creation date */
-    createdAt: Scalars['DateTime']
-    __typename: 'GuestProfile'
-}
-
-export type GuestOrigin = 'ENTRY' | 'INVITED' | 'GUARDIAN' | 'ADMIN'
-
-
-/** Magic link a guest session was opened from */
-export interface GuestLinkContext {
-    id: Scalars['ID']
-    /** Purpose set by the link creator */
-    purpose: Scalars['String']
-    /** JSON payload set by the link creator */
-    data: Scalars['String']
-    expiresAt: Scalars['DateTime']
-    __typename: 'GuestLinkContext'
-}
-
-
-/** A guest session; send its token in the x-guest-session header */
-export interface GuestSession {
-    /** Session token, returned only when the session opens */
-    token: Scalars['String']
-    /** Guest player the session belongs to */
-    playerId: Scalars['ID']
-    origin: GuestSessionOrigin
-    expiresAt: Scalars['DateTime']
-    link: (GuestLinkContext | null)
-    __typename: 'GuestSession'
-}
-
-export type GuestSessionOrigin = 'ENTRY' | 'LINK'
-
-
-/** The current guest session */
-export interface GuestMe {
-    /** Player that owns the session */
-    sessionPlayerId: Scalars['ID']
-    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
-    actingPlayerId: Scalars['ID']
-    origin: GuestSessionOrigin
-    expiresAt: Scalars['DateTime']
-    link: (GuestLinkContext | null)
-    profile: GuestProfile
-    wards: GuestProfile[]
-    __typename: 'GuestMe'
-}
-
-
-/** Read-only view of a magic link; reading it never consumes a use */
-export interface GuestLinkView {
-    status: GuestLinkStatus
-    /** Null when INVALID */
-    purpose: (Scalars['String'] | null)
-    /** Null when INVALID */
-    expiresAt: (Scalars['DateTime'] | null)
-    /** Guest first name, only when VALID */
-    firstName: (Scalars['String'] | null)
-    /** Link payload, only when VALID */
-    data: (Scalars['String'] | null)
-    __typename: 'GuestLinkView'
-}
-
-export type GuestLinkStatus = 'VALID' | 'EXPIRED' | 'REVOKED' | 'EXHAUSTED' | 'INVALID'
-
-
-/** A new magic link; the token is returned only once */
-export interface GuestLinkCreated {
-    id: Scalars['ID']
-    token: Scalars['String']
-    expiresAt: Scalars['DateTime']
-    __typename: 'GuestLinkCreated'
-}
-
-export interface GuestProfileCreated {
-    profile: GuestProfile
-    /** False when an addressable guest with the same e-mail existed */
-    created: Scalars['Boolean']
-    __typename: 'GuestProfileCreated'
-}
-
-
-/** A guardian allowed to act for a guest ward */
-export interface GuestGuardianLink {
-    id: Scalars['ID']
-    guardianPlayerId: Scalars['ID']
-    wardPlayerId: Scalars['ID']
-    createdAt: Scalars['DateTime']
-    __typename: 'GuestGuardianLink'
-}
-
-
-/** Guest settings of the organization */
-export interface GuestConfiguration {
-    selfEntry: GuestSelfEntryMode
-    sessionTtlMinutes: Scalars['Int']
-    maxWardsPerGuardian: Scalars['Int']
-    __typename: 'GuestConfiguration'
-}
-
-export type GuestSelfEntryMode = 'DISABLED' | 'TRUSTED_PARAMS'
-
-
 /** A reusable configuration preset for tournaments or steps */
 export interface Configuration {
     /** Unique identifier of the configuration */
@@ -1965,51 +2013,73 @@ export interface LeaderboardSeasonBucketEdge {
 }
 
 
-/** An email template associated with a trigger event */
-export interface EmailTemplate {
-    /** Unique identifier of the email template */
+/** Credits leaderboard points to the players of a tournament from its match results and final ranks */
+export interface LeaderboardFeed {
+    /** ID of the feed */
     id: Scalars['ID']
-    /** Event that triggers this email template */
-    triggerEvent: EmailTriggerEvents
-    /** Whether this is the default template for the trigger event */
-    default: Scalars['Boolean']
-    /** Display name of the email template */
-    name: Scalars['String']
-    /** Subject line of the email, supports template variables */
-    title: Scalars['String']
-    /** HTML body content of the email, supports template variables */
-    contents: Scalars['String']
-    /** Timestamp when the template was created */
+    /** ID of the leaderboard credited */
+    leaderboardId: Scalars['ID']
+    /** ID of the tournament read */
+    tournamentId: Scalars['ID']
+    /** Step read; null for every step of the tournament */
+    stepId: (Scalars['ID'] | null)
+    /** Pinned season; null for the season active when each result is credited */
+    seasonId: (Scalars['ID'] | null)
+    /** Points for a won match */
+    winPoints: Scalars['Float']
+    /** Points for a lost match */
+    lossPoints: Scalars['Float']
+    /** Points for a drawn match */
+    drawPoints: Scalars['Float']
+    /** Points for a forfeited match */
+    forfeitPoints: Scalars['Float']
+    /** Points by final rank when a fed step ends; index 0 is rank 1 */
+    placementPoints: Scalars['Float'][]
+    /** Whether the feed credits points */
+    enabled: Scalars['Boolean']
+    /** Date and time when the feed was created */
     createdAt: Scalars['DateTime']
-    /** Timestamp when the template was last updated */
+    /** Date and time when the feed was last updated */
     updatedAt: Scalars['DateTime']
-    /** ID of the organization that owns this template */
-    organizationId: Scalars['ID']
-    __typename: 'EmailTemplate'
+    __typename: 'LeaderboardFeed'
 }
 
 
-/** Paginated list of email templates */
-export interface EmailTemplates {
+/** Paginated list of leaderboard feeds */
+export interface LeaderboardFeeds {
     /** List of edges containing cursor and node pairs */
-    edges: EmailTemplateEdge[]
+    edges: LeaderboardFeedEdge[]
     /** Flat list of items in the current page */
-    nodes: EmailTemplate[]
+    nodes: LeaderboardFeed[]
     /** Pagination metadata for navigating between pages */
     pageInfo: ResponsePageInfo
     /** Total number of items across all pages */
     totalCount: (Scalars['Float'] | null)
-    __typename: 'EmailTemplates'
+    __typename: 'LeaderboardFeeds'
 }
 
 
 /** An edge in a paginated connection containing a cursor and node */
-export interface EmailTemplateEdge {
+export interface LeaderboardFeedEdge {
     /** Opaque cursor string for this edge, used for pagination */
     cursor: Scalars['String']
     /** The item at this edge */
-    node: EmailTemplate
-    __typename: 'EmailTemplateEdge'
+    node: LeaderboardFeed
+    __typename: 'LeaderboardFeedEdge'
+}
+
+
+/** Outcome of a leaderboard feed reconciliation */
+export interface LeaderboardFeedReconcileResult {
+    /** ID of the feed */
+    feedId: Scalars['ID']
+    /** Matches and placements checked */
+    sourcesChecked: Scalars['Int']
+    /** Ledger entries written */
+    entriesWritten: Scalars['Int']
+    /** Sum of the points credited or reversed */
+    pointsDelta: Scalars['Float']
+    __typename: 'LeaderboardFeedReconcileResult'
 }
 
 
@@ -2999,6 +3069,10 @@ export interface TournamentTeamScore {
     teamId: Scalars['ID']
     /** Accumulated score for this team */
     score: Scalars['Float']
+    /** Rank of the team in this scope; null until ranked */
+    rank: (Scalars['Int'] | null)
+    /** Status of the team in this scope */
+    status: TeamScopeStatus
     /** The tournament team associated with this score */
     team: TournamentTeam
     __typename: 'TournamentTeamScore'
@@ -3035,6 +3109,8 @@ export interface TournamentStep {
     tournament: Tournament
     /** Manual seeding pin overrides persisted on the step. Empty when no pins are set. Produced by `persistSeedingPins` / `seedStep`; consumed by the seeding pipeline. */
     manualPins: SeedingPin[]
+    /** Null when the step is not an open pool. */
+    openPool: (OpenPoolConfiguration | null)
     __typename: 'TournamentStep'
 }
 
@@ -4042,6 +4118,120 @@ export interface ValidationEventModelEdge {
     /** The item at this edge */
     node: ValidationEventModel
     __typename: 'ValidationEventModelEdge'
+}
+
+
+/** Rules of an open pool step, where matches are created on demand */
+export interface OpenPoolConfiguration {
+    /** Number of teams in each match */
+    teamsPerMatch: Scalars['Int']
+    /** Matches per game (odd); the game winner takes the majority */
+    bestOf: Scalars['Int']
+    /** Maximum matches a team can play in the step; 0 means unlimited */
+    maxMatchesPerTeam: Scalars['Int']
+    /** Whether the same teams can meet more than once */
+    allowRematch: Scalars['Boolean']
+    /** Whether a team can play several unfinished matches at once */
+    allowConcurrentMatches: Scalars['Boolean']
+    /** Whether a tournament team joins the step when its first match is created */
+    autoJoin: Scalars['Boolean']
+    /** Whether a team needs at least the tournament's minimum team size to play */
+    enforceTeamMinSize: Scalars['Boolean']
+    __typename: 'OpenPoolConfiguration'
+}
+
+
+/** A team taking part in an open pool match */
+export interface OpenPoolMatchTeam {
+    /** ID of the tournament team */
+    teamId: Scalars['ID']
+    /** The tournament team */
+    team: TournamentTeam
+    /** Result of the team in this match */
+    status: MatchScoreStatus
+    /** Score of the team in this match */
+    score: Scalars['Float']
+    __typename: 'OpenPoolMatchTeam'
+}
+
+
+/** A match created on demand in an open pool step */
+export interface OpenPoolMatch {
+    /** ID of the match */
+    id: Scalars['ID']
+    /** ID of the game holding the match */
+    gameId: Scalars['ID']
+    /** ID of the group (pool) of the match */
+    groupId: Scalars['ID']
+    /** ID of the open pool step */
+    stepId: Scalars['ID']
+    /** ID of the tournament */
+    tournamentId: Scalars['ID']
+    /** Label given when the match was created */
+    label: (Scalars['String'] | null)
+    /** Creation order of the match in its group */
+    order: Scalars['Int']
+    /** Status of the match */
+    status: MatchStatus
+    /** Teams of the match with their result */
+    teams: OpenPoolMatchTeam[]
+    /** Date and time when the match was created */
+    createdAt: Scalars['DateTime']
+    /** Date and time when the match was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'OpenPoolMatch'
+}
+
+
+/** Paginated list of open pool matches */
+export interface OpenPoolMatches {
+    /** List of edges containing cursor and node pairs */
+    edges: OpenPoolMatchEdge[]
+    /** Flat list of items in the current page */
+    nodes: OpenPoolMatch[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'OpenPoolMatches'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface OpenPoolMatchEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: OpenPoolMatch
+    __typename: 'OpenPoolMatchEdge'
+}
+
+
+/** Live standing of a team in an open pool step */
+export interface OpenPoolStanding {
+    /** ID of the tournament team */
+    teamId: Scalars['ID']
+    /** The tournament team */
+    team: TournamentTeam
+    /** ID of the group (pool) of the standing */
+    groupId: Scalars['ID']
+    /** Rank in the step; null until ranked */
+    rank: (Scalars['Int'] | null)
+    /** Status of the team in the step */
+    status: TeamScopeStatus
+    /** Points earned in the step */
+    points: Scalars['Float']
+    /** Ended matches played */
+    played: Scalars['Int']
+    /** Matches won */
+    wins: Scalars['Int']
+    /** Matches lost */
+    losses: Scalars['Int']
+    /** Matches drawn */
+    draws: Scalars['Int']
+    /** Matches forfeited */
+    forfeits: Scalars['Int']
+    __typename: 'OpenPoolStanding'
 }
 
 
@@ -5181,6 +5371,16 @@ export interface ItemCategoryEdge {
 }
 
 
+/** Item rows of both players after a transfer */
+export interface PlayerItemsTransferResult {
+    /** Rows of the giving player */
+    from: PlayerItem[]
+    /** Rows of the receiving player */
+    to: PlayerItem[]
+    __typename: 'PlayerItemsTransferResult'
+}
+
+
 /** Who or what produced a journal entry. */
 export interface JournalActor {
     /** Type of actor. */
@@ -5442,6 +5642,12 @@ export interface OrganizationModeration {
     blockedSubstrings: Scalars['String'][]
     updatedAt: (Scalars['DateTime'] | null)
     __typename: 'OrganizationModeration'
+}
+
+export interface ModerationCheckResult {
+    key: Scalars['String']
+    allowed: Scalars['Boolean']
+    __typename: 'ModerationCheckResult'
 }
 
 
@@ -6109,6 +6315,8 @@ export interface Query {
     leaderboardSeasonBucket: LeaderboardSeasonBucket
     /** Retrieves a paginated and ranked list of player scores within a leaderboard season bucket */
     leaderboardSeasonBucketScores: LeaderboardSeasonBucketScores
+    /** Leaderboard feeds visible to the caller. Needs organization:leaderboard:view. */
+    leaderboardFeeds: LeaderboardFeeds
     /** Get an organization by its ID */
     organization: Organization
     /** Get platform limit definitions, optionally filtered by ID */
@@ -6191,6 +6399,10 @@ export interface Query {
     tournamentStepGroupRoundGameMatchScoresGetForStep: TournamentStepGroupRoundGameMatchScores
     /** List all administrators for a specific tournament */
     tournamentAdmins: TournamentAdmin[]
+    /** Matches of an open pool step. Needs organization:tournament:match:view on the step's tournament. */
+    openPoolMatches: OpenPoolMatches
+    /** Live standings of an open pool step, ordered by rank (nulls last), then points DESC. Needs organization:tournament:step:view. */
+    openPoolStandings: OpenPoolStanding[]
     /** Fetch the rule set attached to a tournament step, including scoring, advancement rules, cross-step rules, and the structure template. Returns null when the step has no rule set. */
     stepRuleSet: (StepRuleSetModel | null)
     /** List user-created preset scripts for the current organization, sorted by most recently created first */
@@ -6393,6 +6605,8 @@ export interface Query {
     registrationSeriesPlayerEntries: RegistrationSeriesEntry[]
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration: OrganizationModeration
+    /** Tests up to 20 texts of at most 4,096 characters against the banned lists of the current organization without revealing them. */
+    moderationCheck: ModerationCheckResult[]
     __typename: 'Query'
 }
 
@@ -6471,6 +6685,14 @@ export interface Mutation {
     updateLeaderboardSeasonBucket: LeaderboardSeasonBucket
     /** Deletes a leaderboard season bucket by ID and adjusts resource limits */
     deleteLeaderboardSeasonBucket: Scalars['Void']
+    /** Create a feed from a tournament to a leaderboard and credit the results already played. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    createLeaderboardFeed: LeaderboardFeed
+    /** Update a leaderboard feed and reconcile it at once; enabled=false reverses every credited point. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    updateLeaderboardFeed: LeaderboardFeed
+    /** Delete a leaderboard feed; credited points stay and the ledger is deleted with the feed. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    deleteLeaderboardFeed: Scalars['Boolean']
+    /** Repair and backfill the points of a leaderboard feed. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    reconcileLeaderboardFeed: LeaderboardFeedReconcileResult
     /** Update an existing organization name, description, or configuration */
     updateOrganization: Organization
     /** Create a new organization with default permission groups */
@@ -6595,6 +6817,22 @@ export interface Mutation {
     tournamentAdminUpsert: TournamentAdmin
     /** Remove a tournament administrator */
     tournamentAdminDelete: Scalars['Boolean']
+    /** Create a match between teams of a STARTED open pool step. Needs organization:tournament:step:open-pool:manage on the step or the MANAGE_SCORES tournament admin permission. */
+    openPoolCreateMatch: OpenPoolMatch
+    /** Register teams in an open pool step (SEEDED or STARTED) as ACTIVE with 0 points. Needs organization:tournament:step:open-pool:manage on the step. */
+    openPoolAddTeams: OpenPoolStanding[]
+    /** Rewrite the scores of a STARTED or ENDED open pool match, then recompute scores and ranks without firing rules again. Needs organization:tournament:match:score:update on the match or the MANAGE_SCORES tournament admin permission. */
+    openPoolCorrectMatch: OpenPoolMatch
+    /** Cancel an open pool match in any status: its game is deleted and the affected teams are recomputed. Needs organization:tournament:step:open-pool:manage on the step or the MANAGE_SCORES tournament admin permission. */
+    openPoolCancelMatch: Scalars['Boolean']
+    /** Close a STARTED open pool step: ranks the teams, dispatches ROUND_ENDED, GROUP_ENDED and STEP_ENDED, and ends the step. Needs organization:tournament:step:open-pool:manage on the step. */
+    openPoolClose: TournamentStep
+    /** Reopen an ENDED open pool step when no later step is seeded: team statuses go back to ACTIVE and the step to STARTED. Needs organization:tournament:step:open-pool:manage on the step. */
+    openPoolReopen: TournamentStep
+    /** Add an ACCEPTED member to a tournament team, outside the registration window; the team status is not changed. Needs organization:tournament:team:members:manage on the team (and on the source team when moving) or the MANAGE_TEAMS tournament admin permission. */
+    tournamentTeamMemberAdd: TournamentTeam
+    /** Remove a member from a tournament team. Removing the manager sets the manager to newManagerId (an accepted member) or to none. Needs organization:tournament:team:members:manage on the team or the MANAGE_TEAMS tournament admin permission. */
+    tournamentTeamMemberRemove: TournamentTeam
     /** Create a new rule set for a tournament step. Fails with CONFLICT if the step already has a rule set. */
     createStepRuleSet: StepRuleSetModel
     /** Apply a user-created preset script to a tournament step, creating or overwriting the step's rule set. The preset's Lua script runs in the sandbox and its effects are persisted atomically. */
@@ -6765,6 +7003,8 @@ export interface Mutation {
     itemCategoryUpdate: ItemCategory
     /** Deletes an item category by ID and adjusts organization limits */
     itemCategoryDelete: ItemCategory
+    /** Move item quantities from one player to another, all or nothing. Needs organization:player:items:update on organization:player:{from}:item:{item} and organization:player:{to}:item:{item}. */
+    playerItemsTransfer: PlayerItemsTransferResult
     /** Creates a new currency for the organization */
     currencyCreate: Currency
     /** Updates an existing currency by ID */
@@ -6855,6 +7095,10 @@ export interface Mutation {
     organizationModerationUpdate: OrganizationModeration
     __typename: 'Mutation'
 }
+
+
+/** REPLACE sets the total to the given score; INCREMENT adds the given score to the total */
+export type LeaderboardScoreMode = 'REPLACE' | 'INCREMENT'
 
 
 /** Legacy (pre-rule-engine) team-ordering algorithm. Only honored for steps without a rule set; steps with a rule set drive seeding through SEEDING / ROUND_SEEDING Lua rules instead. */
@@ -7816,6 +8060,180 @@ export interface AppConfigEntryGenqlSelection{
     __scalar?: boolean | number
 }
 
+
+/** An email template associated with a trigger event */
+export interface EmailTemplateGenqlSelection{
+    /** Unique identifier of the email template */
+    id?: boolean | number
+    /** Event that triggers this email template */
+    triggerEvent?: boolean | number
+    /** Whether this is the default template for the trigger event */
+    default?: boolean | number
+    /** Display name of the email template */
+    name?: boolean | number
+    /** Subject line of the email, supports template variables */
+    title?: boolean | number
+    /** HTML body content of the email, supports template variables */
+    contents?: boolean | number
+    /** Timestamp when the template was created */
+    createdAt?: boolean | number
+    /** Timestamp when the template was last updated */
+    updatedAt?: boolean | number
+    /** ID of the organization that owns this template */
+    organizationId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of email templates */
+export interface EmailTemplatesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: EmailTemplateEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: EmailTemplateGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface EmailTemplateEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: EmailTemplateGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Guest identity attached to an ownerless player profile of the organization */
+export interface GuestProfileGenqlSelection{
+    /** ID of the guest player profile */
+    playerId?: boolean | number
+    /** The guest player profile */
+    player?: PlayerGenqlSelection
+    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
+    email?: boolean | number
+    /** First name, same visibility as email */
+    firstName?: boolean | number
+    /** Last name, same visibility as email */
+    lastName?: boolean | number
+    /** How the guest was created */
+    origin?: boolean | number
+    /** Players acting as guardians of this guest */
+    guardianPlayerIds?: boolean | number
+    /** Guests this player is the guardian of */
+    wardPlayerIds?: boolean | number
+    /** Creation date */
+    createdAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Magic link a guest session was opened from */
+export interface GuestLinkContextGenqlSelection{
+    id?: boolean | number
+    /** Purpose set by the link creator */
+    purpose?: boolean | number
+    /** JSON payload set by the link creator */
+    data?: boolean | number
+    expiresAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A guest session; send its token in the x-guest-session header */
+export interface GuestSessionGenqlSelection{
+    /** Session token, returned only when the session opens */
+    token?: boolean | number
+    /** Guest player the session belongs to */
+    playerId?: boolean | number
+    origin?: boolean | number
+    expiresAt?: boolean | number
+    link?: GuestLinkContextGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** The current guest session */
+export interface GuestMeGenqlSelection{
+    /** Player that owns the session */
+    sessionPlayerId?: boolean | number
+    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
+    actingPlayerId?: boolean | number
+    origin?: boolean | number
+    expiresAt?: boolean | number
+    link?: GuestLinkContextGenqlSelection
+    profile?: GuestProfileGenqlSelection
+    wards?: GuestProfileGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Read-only view of a magic link; reading it never consumes a use */
+export interface GuestLinkViewGenqlSelection{
+    status?: boolean | number
+    /** Null when INVALID */
+    purpose?: boolean | number
+    /** Null when INVALID */
+    expiresAt?: boolean | number
+    /** Guest first name, only when VALID */
+    firstName?: boolean | number
+    /** Link payload, only when VALID */
+    data?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A new magic link; the token is returned only once */
+export interface GuestLinkCreatedGenqlSelection{
+    id?: boolean | number
+    token?: boolean | number
+    expiresAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface GuestProfileCreatedGenqlSelection{
+    profile?: GuestProfileGenqlSelection
+    /** False when an addressable guest with the same e-mail existed */
+    created?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A guardian allowed to act for a guest ward */
+export interface GuestGuardianLinkGenqlSelection{
+    id?: boolean | number
+    guardianPlayerId?: boolean | number
+    wardPlayerId?: boolean | number
+    createdAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Guest settings of the organization */
+export interface GuestConfigurationGenqlSelection{
+    selfEntry?: boolean | number
+    sessionTtlMinutes?: boolean | number
+    maxWardsPerGuardian?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface PermissionDefinitionDtoGenqlSelection{
     id?: boolean | number
     owner?: boolean | number
@@ -8551,129 +8969,6 @@ export interface MarketplaceAppPricingGenqlSelection{
 }
 
 
-/** Guest identity attached to an ownerless player profile of the organization */
-export interface GuestProfileGenqlSelection{
-    /** ID of the guest player profile */
-    playerId?: boolean | number
-    /** The guest player profile */
-    player?: PlayerGenqlSelection
-    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
-    email?: boolean | number
-    /** First name, same visibility as email */
-    firstName?: boolean | number
-    /** Last name, same visibility as email */
-    lastName?: boolean | number
-    /** How the guest was created */
-    origin?: boolean | number
-    /** Players acting as guardians of this guest */
-    guardianPlayerIds?: boolean | number
-    /** Guests this player is the guardian of */
-    wardPlayerIds?: boolean | number
-    /** Creation date */
-    createdAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Magic link a guest session was opened from */
-export interface GuestLinkContextGenqlSelection{
-    id?: boolean | number
-    /** Purpose set by the link creator */
-    purpose?: boolean | number
-    /** JSON payload set by the link creator */
-    data?: boolean | number
-    expiresAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A guest session; send its token in the x-guest-session header */
-export interface GuestSessionGenqlSelection{
-    /** Session token, returned only when the session opens */
-    token?: boolean | number
-    /** Guest player the session belongs to */
-    playerId?: boolean | number
-    origin?: boolean | number
-    expiresAt?: boolean | number
-    link?: GuestLinkContextGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** The current guest session */
-export interface GuestMeGenqlSelection{
-    /** Player that owns the session */
-    sessionPlayerId?: boolean | number
-    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
-    actingPlayerId?: boolean | number
-    origin?: boolean | number
-    expiresAt?: boolean | number
-    link?: GuestLinkContextGenqlSelection
-    profile?: GuestProfileGenqlSelection
-    wards?: GuestProfileGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Read-only view of a magic link; reading it never consumes a use */
-export interface GuestLinkViewGenqlSelection{
-    status?: boolean | number
-    /** Null when INVALID */
-    purpose?: boolean | number
-    /** Null when INVALID */
-    expiresAt?: boolean | number
-    /** Guest first name, only when VALID */
-    firstName?: boolean | number
-    /** Link payload, only when VALID */
-    data?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A new magic link; the token is returned only once */
-export interface GuestLinkCreatedGenqlSelection{
-    id?: boolean | number
-    token?: boolean | number
-    expiresAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface GuestProfileCreatedGenqlSelection{
-    profile?: GuestProfileGenqlSelection
-    /** False when an addressable guest with the same e-mail existed */
-    created?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A guardian allowed to act for a guest ward */
-export interface GuestGuardianLinkGenqlSelection{
-    id?: boolean | number
-    guardianPlayerId?: boolean | number
-    wardPlayerId?: boolean | number
-    createdAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Guest settings of the organization */
-export interface GuestConfigurationGenqlSelection{
-    selfEntry?: boolean | number
-    sessionTtlMinutes?: boolean | number
-    maxWardsPerGuardian?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
 /** A reusable configuration preset for tournaments or steps */
 export interface ConfigurationGenqlSelection{
     /** Unique identifier of the configuration */
@@ -8897,37 +9192,45 @@ export interface LeaderboardSeasonBucketEdgeGenqlSelection{
 }
 
 
-/** An email template associated with a trigger event */
-export interface EmailTemplateGenqlSelection{
-    /** Unique identifier of the email template */
+/** Credits leaderboard points to the players of a tournament from its match results and final ranks */
+export interface LeaderboardFeedGenqlSelection{
+    /** ID of the feed */
     id?: boolean | number
-    /** Event that triggers this email template */
-    triggerEvent?: boolean | number
-    /** Whether this is the default template for the trigger event */
-    default?: boolean | number
-    /** Display name of the email template */
-    name?: boolean | number
-    /** Subject line of the email, supports template variables */
-    title?: boolean | number
-    /** HTML body content of the email, supports template variables */
-    contents?: boolean | number
-    /** Timestamp when the template was created */
+    /** ID of the leaderboard credited */
+    leaderboardId?: boolean | number
+    /** ID of the tournament read */
+    tournamentId?: boolean | number
+    /** Step read; null for every step of the tournament */
+    stepId?: boolean | number
+    /** Pinned season; null for the season active when each result is credited */
+    seasonId?: boolean | number
+    /** Points for a won match */
+    winPoints?: boolean | number
+    /** Points for a lost match */
+    lossPoints?: boolean | number
+    /** Points for a drawn match */
+    drawPoints?: boolean | number
+    /** Points for a forfeited match */
+    forfeitPoints?: boolean | number
+    /** Points by final rank when a fed step ends; index 0 is rank 1 */
+    placementPoints?: boolean | number
+    /** Whether the feed credits points */
+    enabled?: boolean | number
+    /** Date and time when the feed was created */
     createdAt?: boolean | number
-    /** Timestamp when the template was last updated */
+    /** Date and time when the feed was last updated */
     updatedAt?: boolean | number
-    /** ID of the organization that owns this template */
-    organizationId?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** Paginated list of email templates */
-export interface EmailTemplatesGenqlSelection{
+/** Paginated list of leaderboard feeds */
+export interface LeaderboardFeedsGenqlSelection{
     /** List of edges containing cursor and node pairs */
-    edges?: EmailTemplateEdgeGenqlSelection
+    edges?: LeaderboardFeedEdgeGenqlSelection
     /** Flat list of items in the current page */
-    nodes?: EmailTemplateGenqlSelection
+    nodes?: LeaderboardFeedGenqlSelection
     /** Pagination metadata for navigating between pages */
     pageInfo?: ResponsePageInfoGenqlSelection
     /** Total number of items across all pages */
@@ -8938,11 +9241,26 @@ export interface EmailTemplatesGenqlSelection{
 
 
 /** An edge in a paginated connection containing a cursor and node */
-export interface EmailTemplateEdgeGenqlSelection{
+export interface LeaderboardFeedEdgeGenqlSelection{
     /** Opaque cursor string for this edge, used for pagination */
     cursor?: boolean | number
     /** The item at this edge */
-    node?: EmailTemplateGenqlSelection
+    node?: LeaderboardFeedGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Outcome of a leaderboard feed reconciliation */
+export interface LeaderboardFeedReconcileResultGenqlSelection{
+    /** ID of the feed */
+    feedId?: boolean | number
+    /** Matches and placements checked */
+    sourcesChecked?: boolean | number
+    /** Ledger entries written */
+    entriesWritten?: boolean | number
+    /** Sum of the points credited or reversed */
+    pointsDelta?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -9949,6 +10267,10 @@ export interface TournamentTeamScoreGenqlSelection{
     teamId?: boolean | number
     /** Accumulated score for this team */
     score?: boolean | number
+    /** Rank of the team in this scope; null until ranked */
+    rank?: boolean | number
+    /** Status of the team in this scope */
+    status?: boolean | number
     /** The tournament team associated with this score */
     team?: TournamentTeamGenqlSelection
     __typename?: boolean | number
@@ -9986,6 +10308,8 @@ export interface TournamentStepGenqlSelection{
     tournament?: TournamentGenqlSelection
     /** Manual seeding pin overrides persisted on the step. Empty when no pins are set. Produced by `persistSeedingPins` / `seedStep`; consumed by the seeding pipeline. */
     manualPins?: SeedingPinGenqlSelection
+    /** Null when the step is not an open pool. */
+    openPool?: OpenPoolConfigurationGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10939,6 +11263,126 @@ export interface ValidationEventModelEdgeGenqlSelection{
     cursor?: boolean | number
     /** The item at this edge */
     node?: ValidationEventModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Rules of an open pool step, where matches are created on demand */
+export interface OpenPoolConfigurationGenqlSelection{
+    /** Number of teams in each match */
+    teamsPerMatch?: boolean | number
+    /** Matches per game (odd); the game winner takes the majority */
+    bestOf?: boolean | number
+    /** Maximum matches a team can play in the step; 0 means unlimited */
+    maxMatchesPerTeam?: boolean | number
+    /** Whether the same teams can meet more than once */
+    allowRematch?: boolean | number
+    /** Whether a team can play several unfinished matches at once */
+    allowConcurrentMatches?: boolean | number
+    /** Whether a tournament team joins the step when its first match is created */
+    autoJoin?: boolean | number
+    /** Whether a team needs at least the tournament's minimum team size to play */
+    enforceTeamMinSize?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A team taking part in an open pool match */
+export interface OpenPoolMatchTeamGenqlSelection{
+    /** ID of the tournament team */
+    teamId?: boolean | number
+    /** The tournament team */
+    team?: TournamentTeamGenqlSelection
+    /** Result of the team in this match */
+    status?: boolean | number
+    /** Score of the team in this match */
+    score?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A match created on demand in an open pool step */
+export interface OpenPoolMatchGenqlSelection{
+    /** ID of the match */
+    id?: boolean | number
+    /** ID of the game holding the match */
+    gameId?: boolean | number
+    /** ID of the group (pool) of the match */
+    groupId?: boolean | number
+    /** ID of the open pool step */
+    stepId?: boolean | number
+    /** ID of the tournament */
+    tournamentId?: boolean | number
+    /** Label given when the match was created */
+    label?: boolean | number
+    /** Creation order of the match in its group */
+    order?: boolean | number
+    /** Status of the match */
+    status?: boolean | number
+    /** Teams of the match with their result */
+    teams?: OpenPoolMatchTeamGenqlSelection
+    /** Date and time when the match was created */
+    createdAt?: boolean | number
+    /** Date and time when the match was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of open pool matches */
+export interface OpenPoolMatchesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: OpenPoolMatchEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: OpenPoolMatchGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface OpenPoolMatchEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: OpenPoolMatchGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Live standing of a team in an open pool step */
+export interface OpenPoolStandingGenqlSelection{
+    /** ID of the tournament team */
+    teamId?: boolean | number
+    /** The tournament team */
+    team?: TournamentTeamGenqlSelection
+    /** ID of the group (pool) of the standing */
+    groupId?: boolean | number
+    /** Rank in the step; null until ranked */
+    rank?: boolean | number
+    /** Status of the team in the step */
+    status?: boolean | number
+    /** Points earned in the step */
+    points?: boolean | number
+    /** Ended matches played */
+    played?: boolean | number
+    /** Matches won */
+    wins?: boolean | number
+    /** Matches lost */
+    losses?: boolean | number
+    /** Matches drawn */
+    draws?: boolean | number
+    /** Matches forfeited */
+    forfeits?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -12156,6 +12600,17 @@ export interface ItemCategoryEdgeGenqlSelection{
 }
 
 
+/** Item rows of both players after a transfer */
+export interface PlayerItemsTransferResultGenqlSelection{
+    /** Rows of the giving player */
+    from?: PlayerItemGenqlSelection
+    /** Rows of the receiving player */
+    to?: PlayerItemGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** Who or what produced a journal entry. */
 export interface JournalActorGenqlSelection{
     /** Type of actor. */
@@ -12421,6 +12876,13 @@ export interface OrganizationModerationGenqlSelection{
     /** Refused anywhere inside the text */
     blockedSubstrings?: boolean | number
     updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ModerationCheckResultGenqlSelection{
+    key?: boolean | number
+    allowed?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -13514,6 +13976,8 @@ export interface QueryGenqlSelection{
     leaderboardSeasonBucket?: (LeaderboardSeasonBucketGenqlSelection & { __args: {id: Scalars['ID']} })
     /** Retrieves a paginated and ranked list of player scores within a leaderboard season bucket */
     leaderboardSeasonBucketScores?: (LeaderboardSeasonBucketScoresGenqlSelection & { __args: {leaderboardSeasonBucketId: Scalars['ID'], page: PageInfo} })
+    /** Leaderboard feeds visible to the caller. Needs organization:leaderboard:view. */
+    leaderboardFeeds?: (LeaderboardFeedsGenqlSelection & { __args?: {leaderboardId?: (Scalars['ID'] | null), tournamentId?: (Scalars['ID'] | null), page?: (PageInfo | null)} })
     /** Get an organization by its ID */
     organization?: (OrganizationGenqlSelection & { __args: {id: Scalars['ID']} })
     /** Get platform limit definitions, optionally filtered by ID */
@@ -13602,6 +14066,10 @@ export interface QueryGenqlSelection{
     tournamentStepGroupRoundGameMatchScoresGetForStep?: (TournamentStepGroupRoundGameMatchScoresGenqlSelection & { __args: {stepId: Scalars['ID'], page: PageInfo} })
     /** List all administrators for a specific tournament */
     tournamentAdmins?: (TournamentAdminGenqlSelection & { __args: {tournamentId: Scalars['ID']} })
+    /** Matches of an open pool step. Needs organization:tournament:match:view on the step's tournament. */
+    openPoolMatches?: (OpenPoolMatchesGenqlSelection & { __args: {stepId: Scalars['ID'], filter?: (OpenPoolMatchesFilter | null), page?: (PageInfo | null)} })
+    /** Live standings of an open pool step, ordered by rank (nulls last), then points DESC. Needs organization:tournament:step:view. */
+    openPoolStandings?: (OpenPoolStandingGenqlSelection & { __args: {stepId: Scalars['ID'], groupId?: (Scalars['ID'] | null)} })
     /** Fetch the rule set attached to a tournament step, including scoring, advancement rules, cross-step rules, and the structure template. Returns null when the step has no rule set. */
     stepRuleSet?: (StepRuleSetModelGenqlSelection & { __args: {tournamentStepId: Scalars['ID']} })
     /** List user-created preset scripts for the current organization, sorted by most recently created first */
@@ -13806,6 +14274,8 @@ export interface QueryGenqlSelection{
     registrationSeriesPlayerEntries?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID'], playerId: Scalars['ID']} })
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration?: OrganizationModerationGenqlSelection
+    /** Tests up to 20 texts of at most 4,096 characters against the banned lists of the current organization without revealing them. */
+    moderationCheck?: (ModerationCheckResultGenqlSelection & { __args: {inputs: ModerationCheckInput[]} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -13894,6 +14364,16 @@ export interface OrderByProperty {
 property: Scalars['String'],
 /** Sort direction (ASC or DESC), defaults to ASC */
 order?: (OrderDirection | null)}
+
+
+/** Filter for open pool matches */
+export interface OpenPoolMatchesFilter {
+/** Keep matches in these statuses */
+statuses?: (MatchStatus[] | null),
+/** Keep matches played by this tournament team */
+teamId?: (Scalars['ID'] | null),
+/** Keep matches of this group (pool) */
+groupId?: (Scalars['ID'] | null)}
 
 
 /** Input for validating a Lua script (no execution) */
@@ -14179,6 +14659,12 @@ export interface AppFunctionCallInput {appSlug: Scalars['String'],function: Scal
 
 export interface PermissionCheckInput {permission: Scalars['String'],resource?: (Scalars['String'] | null)}
 
+export interface ModerationCheckInput {
+/** Caller label echoed back in the result */
+key: Scalars['String'],
+/** Text to test against the moderation lists */
+value: Scalars['String']}
+
 export interface MutationGenqlSelection{
     /** Deletes an account by ID from the current organization */
     deleteAccount?: { __args: {id: Scalars['ID']} }
@@ -14224,6 +14710,14 @@ export interface MutationGenqlSelection{
     updateLeaderboardSeasonBucket?: (LeaderboardSeasonBucketGenqlSelection & { __args: {id: Scalars['ID'], input: UpdateLeaderboardSeasonBucketInput} })
     /** Deletes a leaderboard season bucket by ID and adjusts resource limits */
     deleteLeaderboardSeasonBucket?: { __args: {id: Scalars['ID']} }
+    /** Create a feed from a tournament to a leaderboard and credit the results already played. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    createLeaderboardFeed?: (LeaderboardFeedGenqlSelection & { __args: {input: CreateLeaderboardFeedInput} })
+    /** Update a leaderboard feed and reconcile it at once; enabled=false reverses every credited point. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    updateLeaderboardFeed?: (LeaderboardFeedGenqlSelection & { __args: {id: Scalars['ID'], input: UpdateLeaderboardFeedInput} })
+    /** Delete a leaderboard feed; credited points stay and the ledger is deleted with the feed. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    deleteLeaderboardFeed?: { __args: {id: Scalars['ID']} }
+    /** Repair and backfill the points of a leaderboard feed. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament. */
+    reconcileLeaderboardFeed?: (LeaderboardFeedReconcileResultGenqlSelection & { __args: {id: Scalars['ID']} })
     /** Update an existing organization name, description, or configuration */
     updateOrganization?: (OrganizationGenqlSelection & { __args: {organization: UpdateOrganizationInput} })
     /** Create a new organization with default permission groups */
@@ -14348,6 +14842,22 @@ export interface MutationGenqlSelection{
     tournamentAdminUpsert?: (TournamentAdminGenqlSelection & { __args: {input: TournamentAdminUpsertInput} })
     /** Remove a tournament administrator */
     tournamentAdminDelete?: { __args: {input: TournamentAdminDeleteInput} }
+    /** Create a match between teams of a STARTED open pool step. Needs organization:tournament:step:open-pool:manage on the step or the MANAGE_SCORES tournament admin permission. */
+    openPoolCreateMatch?: (OpenPoolMatchGenqlSelection & { __args: {input: OpenPoolCreateMatchInput} })
+    /** Register teams in an open pool step (SEEDED or STARTED) as ACTIVE with 0 points. Needs organization:tournament:step:open-pool:manage on the step. */
+    openPoolAddTeams?: (OpenPoolStandingGenqlSelection & { __args: {stepId: Scalars['ID'], teamIds: Scalars['ID'][], groupId?: (Scalars['ID'] | null)} })
+    /** Rewrite the scores of a STARTED or ENDED open pool match, then recompute scores and ranks without firing rules again. Needs organization:tournament:match:score:update on the match or the MANAGE_SCORES tournament admin permission. */
+    openPoolCorrectMatch?: (OpenPoolMatchGenqlSelection & { __args: {matchId: Scalars['ID'], input: UpdateMatchScoreInput[]} })
+    /** Cancel an open pool match in any status: its game is deleted and the affected teams are recomputed. Needs organization:tournament:step:open-pool:manage on the step or the MANAGE_SCORES tournament admin permission. */
+    openPoolCancelMatch?: { __args: {matchId: Scalars['ID'], reason?: (Scalars['String'] | null)} }
+    /** Close a STARTED open pool step: ranks the teams, dispatches ROUND_ENDED, GROUP_ENDED and STEP_ENDED, and ends the step. Needs organization:tournament:step:open-pool:manage on the step. */
+    openPoolClose?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], cancelPendingMatches?: Scalars['Boolean']} })
+    /** Reopen an ENDED open pool step when no later step is seeded: team statuses go back to ACTIVE and the step to STARTED. Needs organization:tournament:step:open-pool:manage on the step. */
+    openPoolReopen?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID']} })
+    /** Add an ACCEPTED member to a tournament team, outside the registration window; the team status is not changed. Needs organization:tournament:team:members:manage on the team (and on the source team when moving) or the MANAGE_TEAMS tournament admin permission. */
+    tournamentTeamMemberAdd?: (TournamentTeamGenqlSelection & { __args: {input: TournamentTeamMemberAddInput} })
+    /** Remove a member from a tournament team. Removing the manager sets the manager to newManagerId (an accepted member) or to none. Needs organization:tournament:team:members:manage on the team or the MANAGE_TEAMS tournament admin permission. */
+    tournamentTeamMemberRemove?: (TournamentTeamGenqlSelection & { __args: {teamId: Scalars['ID'], playerId: Scalars['ID'], newManagerId?: (Scalars['ID'] | null)} })
     /** Create a new rule set for a tournament step. Fails with CONFLICT if the step already has a rule set. */
     createStepRuleSet?: (StepRuleSetModelGenqlSelection & { __args: {tournamentStepId: Scalars['ID'], input: CreateStepRuleSetInput} })
     /** Apply a user-created preset script to a tournament step, creating or overwriting the step's rule set. The preset's Lua script runs in the sandbox and its effects are persisted atomically. */
@@ -14528,6 +15038,8 @@ export interface MutationGenqlSelection{
     itemCategoryUpdate?: (ItemCategoryGenqlSelection & { __args: {id: Scalars['ID'], input: ItemCategoryUpdateInput} })
     /** Deletes an item category by ID and adjusts organization limits */
     itemCategoryDelete?: (ItemCategoryGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Move item quantities from one player to another, all or nothing. Needs organization:player:items:update on organization:player:{from}:item:{item} and organization:player:{to}:item:{item}. */
+    playerItemsTransfer?: (PlayerItemsTransferResultGenqlSelection & { __args: {input: PlayerItemsTransferInput} })
     /** Creates a new currency for the organization */
     currencyCreate?: (CurrencyGenqlSelection & { __args: {input: CurrencyCreateInput} })
     /** Updates an existing currency by ID */
@@ -14641,8 +15153,12 @@ export interface LeaderboardRegisterPlayerScoreInput {
 leaderboardId: Scalars['ID'],
 /** ID of the player to register the score for */
 playerId: Scalars['ID'],
-/** The score value to register */
-score: Scalars['PositiveInt']}
+/** The score value to register: the new total with REPLACE (at least 0), the change to apply with INCREMENT */
+score: Scalars['Float'],
+/** How the score is applied to the current total */
+mode?: LeaderboardScoreMode,
+/** Season to credit; if not set, the season active at the time of the call */
+seasonId?: (Scalars['ID'] | null)}
 
 
 /** Input for creating a new leaderboard */
@@ -14703,6 +15219,48 @@ name?: (Scalars['String'] | null),
 minScore?: (Scalars['Float'] | null),
 /** Method used to calculate scores within this bucket */
 scoreCalculationType?: (LeaderboardScoreCalculationType | null)}
+
+
+/** Input for creating a leaderboard feed */
+export interface CreateLeaderboardFeedInput {
+/** ID of the leaderboard to credit */
+leaderboardId: Scalars['ID'],
+/** ID of the tournament to read */
+tournamentId: Scalars['ID'],
+/** Step to read; every step of the tournament when not set */
+stepId?: (Scalars['ID'] | null),
+/** Pinned season. Null: the season active when each result is credited. */
+seasonId?: (Scalars['ID'] | null),
+/** Points for a won match */
+winPoints?: Scalars['Float'],
+/** Points for a lost match */
+lossPoints?: Scalars['Float'],
+/** Points for a drawn match */
+drawPoints?: Scalars['Float'],
+/** Points for a forfeited match */
+forfeitPoints?: Scalars['Float'],
+/** Index 0 = rank 1, credited when a fed step ENDS. At most 64 entries. */
+placementPoints?: Scalars['Float'][],
+/** Whether the feed credits points */
+enabled?: Scalars['Boolean']}
+
+
+/** Input for updating a leaderboard feed */
+export interface UpdateLeaderboardFeedInput {
+/** Pinned season */
+seasonId?: (Scalars['ID'] | null),
+/** Points for a won match */
+winPoints?: (Scalars['Float'] | null),
+/** Points for a lost match */
+lossPoints?: (Scalars['Float'] | null),
+/** Points for a drawn match */
+drawPoints?: (Scalars['Float'] | null),
+/** Points for a forfeited match */
+forfeitPoints?: (Scalars['Float'] | null),
+/** Index 0 = rank 1. At most 64 entries. */
+placementPoints?: (Scalars['Float'][] | null),
+/** false reverses every credited point */
+enabled?: (Scalars['Boolean'] | null)}
 
 
 /** Input for updating an existing organization */
@@ -15399,6 +15957,34 @@ export interface TournamentAdminDeleteInput {
 tournamentId: Scalars['ID'],
 /** ID of the account that has admin access */
 accountId: Scalars['ID']}
+
+
+/** Input for creating an open pool match */
+export interface OpenPoolCreateMatchInput {
+/** ID of the open pool step */
+stepId: Scalars['ID'],
+/** IDs of the tournament teams playing the match */
+teamIds: Scalars['ID'][],
+/** Group (pool) of the match; required when the step has several groups */
+groupId?: (Scalars['ID'] | null),
+/** At most 64 characters, for example a station name. */
+label?: (Scalars['String'] | null),
+/** At most 64 characters; a replay with the same key on the same step returns the existing match. */
+idempotencyKey?: (Scalars['String'] | null)}
+
+
+/** Input for adding a player to a tournament team as staff or app */
+export interface TournamentTeamMemberAddInput {
+/** ID of the tournament team */
+teamId: Scalars['ID'],
+/** ID of the player profile to add */
+playerId: Scalars['ID'],
+/** Take the player out of their accepted team in the same tournament, in the same transaction. */
+moveFromOtherTeam?: Scalars['Boolean'],
+/** With moveFromOtherTeam: delete the source team when it ends up empty and has no match score rows (TOURNAMENT_TEAM_HAS_RESULTS otherwise). */
+removeEmptySourceTeam?: Scalars['Boolean'],
+/** Make the player the team manager */
+setAsManager?: Scalars['Boolean']}
 
 
 /** Top-level input for creating a complete rule set for a tournament step */
@@ -16263,6 +16849,24 @@ externalId?: (Scalars['String'] | null),
 description?: (Scalars['String'] | null),
 /** Custom metadata key-value pairs associated with the category */
 metadata?: (PropertyValueInput[] | null)}
+
+
+/** Input for moving items from one player to another */
+export interface PlayerItemsTransferInput {
+/** ID of the player giving the items */
+fromPlayerId: Scalars['ID'],
+/** ID of the player receiving the items */
+toPlayerId: Scalars['ID'],
+/** 1 to 20 entries, distinct itemId. */
+items: PlayerItemsTransferItemInput[]}
+
+
+/** An item and the quantity to move */
+export interface PlayerItemsTransferItemInput {
+/** ID of the item */
+itemId: Scalars['ID'],
+/** >= 1 */
+quantity: Scalars['Int']}
 
 
 /** Input for creating a new currency */
@@ -17142,6 +17746,102 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const EmailTemplate_possibleTypes: string[] = ['EmailTemplate']
+    export const isEmailTemplate = (obj?: { __typename?: any } | null): obj is EmailTemplate => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplate"')
+      return EmailTemplate_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EmailTemplates_possibleTypes: string[] = ['EmailTemplates']
+    export const isEmailTemplates = (obj?: { __typename?: any } | null): obj is EmailTemplates => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplates"')
+      return EmailTemplates_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EmailTemplateEdge_possibleTypes: string[] = ['EmailTemplateEdge']
+    export const isEmailTemplateEdge = (obj?: { __typename?: any } | null): obj is EmailTemplateEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplateEdge"')
+      return EmailTemplateEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestProfile_possibleTypes: string[] = ['GuestProfile']
+    export const isGuestProfile = (obj?: { __typename?: any } | null): obj is GuestProfile => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfile"')
+      return GuestProfile_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkContext_possibleTypes: string[] = ['GuestLinkContext']
+    export const isGuestLinkContext = (obj?: { __typename?: any } | null): obj is GuestLinkContext => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkContext"')
+      return GuestLinkContext_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestSession_possibleTypes: string[] = ['GuestSession']
+    export const isGuestSession = (obj?: { __typename?: any } | null): obj is GuestSession => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestSession"')
+      return GuestSession_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestMe_possibleTypes: string[] = ['GuestMe']
+    export const isGuestMe = (obj?: { __typename?: any } | null): obj is GuestMe => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestMe"')
+      return GuestMe_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkView_possibleTypes: string[] = ['GuestLinkView']
+    export const isGuestLinkView = (obj?: { __typename?: any } | null): obj is GuestLinkView => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkView"')
+      return GuestLinkView_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkCreated_possibleTypes: string[] = ['GuestLinkCreated']
+    export const isGuestLinkCreated = (obj?: { __typename?: any } | null): obj is GuestLinkCreated => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkCreated"')
+      return GuestLinkCreated_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestProfileCreated_possibleTypes: string[] = ['GuestProfileCreated']
+    export const isGuestProfileCreated = (obj?: { __typename?: any } | null): obj is GuestProfileCreated => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfileCreated"')
+      return GuestProfileCreated_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestGuardianLink_possibleTypes: string[] = ['GuestGuardianLink']
+    export const isGuestGuardianLink = (obj?: { __typename?: any } | null): obj is GuestGuardianLink => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestGuardianLink"')
+      return GuestGuardianLink_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestConfiguration_possibleTypes: string[] = ['GuestConfiguration']
+    export const isGuestConfiguration = (obj?: { __typename?: any } | null): obj is GuestConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestConfiguration"')
+      return GuestConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const PermissionDefinitionDto_possibleTypes: string[] = ['PermissionDefinitionDto']
     export const isPermissionDefinitionDto = (obj?: { __typename?: any } | null): obj is PermissionDefinitionDto => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isPermissionDefinitionDto"')
@@ -17526,78 +18226,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const GuestProfile_possibleTypes: string[] = ['GuestProfile']
-    export const isGuestProfile = (obj?: { __typename?: any } | null): obj is GuestProfile => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfile"')
-      return GuestProfile_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestLinkContext_possibleTypes: string[] = ['GuestLinkContext']
-    export const isGuestLinkContext = (obj?: { __typename?: any } | null): obj is GuestLinkContext => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkContext"')
-      return GuestLinkContext_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestSession_possibleTypes: string[] = ['GuestSession']
-    export const isGuestSession = (obj?: { __typename?: any } | null): obj is GuestSession => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestSession"')
-      return GuestSession_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestMe_possibleTypes: string[] = ['GuestMe']
-    export const isGuestMe = (obj?: { __typename?: any } | null): obj is GuestMe => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestMe"')
-      return GuestMe_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestLinkView_possibleTypes: string[] = ['GuestLinkView']
-    export const isGuestLinkView = (obj?: { __typename?: any } | null): obj is GuestLinkView => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkView"')
-      return GuestLinkView_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestLinkCreated_possibleTypes: string[] = ['GuestLinkCreated']
-    export const isGuestLinkCreated = (obj?: { __typename?: any } | null): obj is GuestLinkCreated => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkCreated"')
-      return GuestLinkCreated_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestProfileCreated_possibleTypes: string[] = ['GuestProfileCreated']
-    export const isGuestProfileCreated = (obj?: { __typename?: any } | null): obj is GuestProfileCreated => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfileCreated"')
-      return GuestProfileCreated_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestGuardianLink_possibleTypes: string[] = ['GuestGuardianLink']
-    export const isGuestGuardianLink = (obj?: { __typename?: any } | null): obj is GuestGuardianLink => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestGuardianLink"')
-      return GuestGuardianLink_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestConfiguration_possibleTypes: string[] = ['GuestConfiguration']
-    export const isGuestConfiguration = (obj?: { __typename?: any } | null): obj is GuestConfiguration => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestConfiguration"')
-      return GuestConfiguration_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const Configuration_possibleTypes: string[] = ['Configuration']
     export const isConfiguration = (obj?: { __typename?: any } | null): obj is Configuration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isConfiguration"')
@@ -17710,26 +18338,34 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const EmailTemplate_possibleTypes: string[] = ['EmailTemplate']
-    export const isEmailTemplate = (obj?: { __typename?: any } | null): obj is EmailTemplate => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplate"')
-      return EmailTemplate_possibleTypes.includes(obj.__typename)
+    const LeaderboardFeed_possibleTypes: string[] = ['LeaderboardFeed']
+    export const isLeaderboardFeed = (obj?: { __typename?: any } | null): obj is LeaderboardFeed => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeed"')
+      return LeaderboardFeed_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const EmailTemplates_possibleTypes: string[] = ['EmailTemplates']
-    export const isEmailTemplates = (obj?: { __typename?: any } | null): obj is EmailTemplates => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplates"')
-      return EmailTemplates_possibleTypes.includes(obj.__typename)
+    const LeaderboardFeeds_possibleTypes: string[] = ['LeaderboardFeeds']
+    export const isLeaderboardFeeds = (obj?: { __typename?: any } | null): obj is LeaderboardFeeds => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeeds"')
+      return LeaderboardFeeds_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const EmailTemplateEdge_possibleTypes: string[] = ['EmailTemplateEdge']
-    export const isEmailTemplateEdge = (obj?: { __typename?: any } | null): obj is EmailTemplateEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplateEdge"')
-      return EmailTemplateEdge_possibleTypes.includes(obj.__typename)
+    const LeaderboardFeedEdge_possibleTypes: string[] = ['LeaderboardFeedEdge']
+    export const isLeaderboardFeedEdge = (obj?: { __typename?: any } | null): obj is LeaderboardFeedEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeedEdge"')
+      return LeaderboardFeedEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const LeaderboardFeedReconcileResult_possibleTypes: string[] = ['LeaderboardFeedReconcileResult']
+    export const isLeaderboardFeedReconcileResult = (obj?: { __typename?: any } | null): obj is LeaderboardFeedReconcileResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeedReconcileResult"')
+      return LeaderboardFeedReconcileResult_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -18574,6 +19210,54 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const OpenPoolConfiguration_possibleTypes: string[] = ['OpenPoolConfiguration']
+    export const isOpenPoolConfiguration = (obj?: { __typename?: any } | null): obj is OpenPoolConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolConfiguration"')
+      return OpenPoolConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatchTeam_possibleTypes: string[] = ['OpenPoolMatchTeam']
+    export const isOpenPoolMatchTeam = (obj?: { __typename?: any } | null): obj is OpenPoolMatchTeam => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchTeam"')
+      return OpenPoolMatchTeam_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatch_possibleTypes: string[] = ['OpenPoolMatch']
+    export const isOpenPoolMatch = (obj?: { __typename?: any } | null): obj is OpenPoolMatch => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatch"')
+      return OpenPoolMatch_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatches_possibleTypes: string[] = ['OpenPoolMatches']
+    export const isOpenPoolMatches = (obj?: { __typename?: any } | null): obj is OpenPoolMatches => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatches"')
+      return OpenPoolMatches_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatchEdge_possibleTypes: string[] = ['OpenPoolMatchEdge']
+    export const isOpenPoolMatchEdge = (obj?: { __typename?: any } | null): obj is OpenPoolMatchEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchEdge"')
+      return OpenPoolMatchEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolStanding_possibleTypes: string[] = ['OpenPoolStanding']
+    export const isOpenPoolStanding = (obj?: { __typename?: any } | null): obj is OpenPoolStanding => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolStanding"')
+      return OpenPoolStanding_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Currency_possibleTypes: string[] = ['Currency']
     export const isCurrency = (obj?: { __typename?: any } | null): obj is Currency => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isCurrency"')
@@ -19102,6 +19786,14 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const PlayerItemsTransferResult_possibleTypes: string[] = ['PlayerItemsTransferResult']
+    export const isPlayerItemsTransferResult = (obj?: { __typename?: any } | null): obj is PlayerItemsTransferResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerItemsTransferResult"')
+      return PlayerItemsTransferResult_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const JournalActor_possibleTypes: string[] = ['JournalActor']
     export const isJournalActor = (obj?: { __typename?: any } | null): obj is JournalActor => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isJournalActor"')
@@ -19242,6 +19934,14 @@ export interface SubscriptionGenqlSelection{
     export const isOrganizationModeration = (obj?: { __typename?: any } | null): obj is OrganizationModeration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isOrganizationModeration"')
       return OrganizationModeration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ModerationCheckResult_possibleTypes: string[] = ['ModerationCheckResult']
+    export const isModerationCheckResult = (obj?: { __typename?: any } | null): obj is ModerationCheckResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isModerationCheckResult"')
+      return ModerationCheckResult_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -19855,6 +20555,31 @@ export const enumAppConfigType = {
    STRING_LIST: 'STRING_LIST' as const
 }
 
+export const enumGuestOrigin = {
+   ENTRY: 'ENTRY' as const,
+   INVITED: 'INVITED' as const,
+   GUARDIAN: 'GUARDIAN' as const,
+   ADMIN: 'ADMIN' as const
+}
+
+export const enumGuestSessionOrigin = {
+   ENTRY: 'ENTRY' as const,
+   LINK: 'LINK' as const
+}
+
+export const enumGuestLinkStatus = {
+   VALID: 'VALID' as const,
+   EXPIRED: 'EXPIRED' as const,
+   REVOKED: 'REVOKED' as const,
+   EXHAUSTED: 'EXHAUSTED' as const,
+   INVALID: 'INVALID' as const
+}
+
+export const enumGuestSelfEntryMode = {
+   DISABLED: 'DISABLED' as const,
+   TRUSTED_PARAMS: 'TRUSTED_PARAMS' as const
+}
+
 export const enumPermissionDefinitionOwner = {
    ORGANIZATION: 'ORGANIZATION' as const,
    APP: 'APP' as const
@@ -20011,31 +20736,6 @@ export const enumMarketplacePricingType = {
    FREE: 'FREE' as const,
    ONE_TIME: 'ONE_TIME' as const,
    SUBSCRIPTION: 'SUBSCRIPTION' as const
-}
-
-export const enumGuestOrigin = {
-   ENTRY: 'ENTRY' as const,
-   INVITED: 'INVITED' as const,
-   GUARDIAN: 'GUARDIAN' as const,
-   ADMIN: 'ADMIN' as const
-}
-
-export const enumGuestSessionOrigin = {
-   ENTRY: 'ENTRY' as const,
-   LINK: 'LINK' as const
-}
-
-export const enumGuestLinkStatus = {
-   VALID: 'VALID' as const,
-   EXPIRED: 'EXPIRED' as const,
-   REVOKED: 'REVOKED' as const,
-   EXHAUSTED: 'EXHAUSTED' as const,
-   INVALID: 'INVALID' as const
-}
-
-export const enumGuestSelfEntryMode = {
-   DISABLED: 'DISABLED' as const,
-   TRUSTED_PARAMS: 'TRUSTED_PARAMS' as const
 }
 
 export const enumLeaderboardScoreCalculationType = {
@@ -20834,6 +21534,11 @@ export const enumEventsQueryStatus = {
    REGISTRATIONS_OPEN: 'REGISTRATIONS_OPEN' as const,
    REGISTRATIONS_ENDED: 'REGISTRATIONS_ENDED' as const,
    REGISTRATIONS_CLOSED: 'REGISTRATIONS_CLOSED' as const
+}
+
+export const enumLeaderboardScoreMode = {
+   REPLACE: 'REPLACE' as const,
+   INCREMENT: 'INCREMENT' as const
 }
 
 export const enumSeedingMechanism = {
