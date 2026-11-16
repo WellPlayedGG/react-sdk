@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { buildSchema, parse, validate } from 'graphql';
+import { buildSchema, getVariableValues, parse, validate, type OperationDefinitionNode } from 'graphql';
 
 const apiClientMock = vi.hoisted(() => ({ graphqlRequest: vi.fn() }));
 const undiciMock = vi.hoisted(() => ({ request: vi.fn() }));
@@ -24,7 +24,7 @@ vi.mock('node:fs', async (importOriginal) => {
   return {
     ...actual,
     readFileSync: vi.fn((...args: Parameters<typeof actual.readFileSync>) =>
-      String(args[0]).endsWith('extension.js') ? Buffer.from('bundle source') : actual.readFileSync(...args),
+      /(extension|module)\.js$/.test(String(args[0])) ? Buffer.from('bundle source') : actual.readFileSync(...args),
     ),
   };
 });
@@ -80,7 +80,9 @@ describe('wellplayed deploy review outcome', () => {
     apiClientMock.graphqlRequest.mockReset();
     undiciMock.request.mockReset();
     undiciMock.request.mockResolvedValue({ statusCode: 204, body: { text: async () => '' } });
+    appConfig.scopes = [];
     appConfig.extensions = [];
+    appConfig.platformModules = [];
     vi.spyOn(log, 'info').mockImplementation(() => undefined);
     vi.spyOn(log, 'step').mockImplementation(() => undefined);
     vi.spyOn(log, 'warn').mockImplementation(() => undefined);
@@ -155,7 +157,7 @@ describe('wellplayed deploy review outcome', () => {
   });
 
   it('builds the upload form from the presigned field list', async () => {
-    appConfig.extensions = [{ name: 'panel', type: 'EVENT_PAGE', displayName: 'Panel', entry: 'src/panel.tsx', activePages: [] }];
+    appConfig.extensions = [{ name: 'panel', type: 'tab', displayName: 'Panel', entry: 'src/panel.tsx', activePages: [] }];
     respondWith('APPROVED', 'PUBLISHED');
 
     await deploy();
@@ -168,5 +170,68 @@ describe('wellplayed deploy review outcome', () => {
     expect(form).toContain('name="Policy"\r\n\r\nc2lnbmVk\r\n');
     expect(form).not.toContain('[object Object]');
     expect(form).toContain('bundle source');
+    const contentTypeField = form.indexOf('name="Content-Type"\r\n\r\napplication/javascript\r\n');
+    expect(contentTypeField).toBeGreaterThan(-1);
+    expect(contentTypeField).toBeLessThan(form.indexOf('name="file"'));
+  });
+
+  it('maps wellplayed.json to a manifest that AppManifestInput accepts', async () => {
+    appConfig.scopes = ['organization:marketplace:view'];
+    appConfig.extensions = [
+      { name: 'panel', type: 'tab', displayName: 'Panel', entry: 'src/panel.tsx', activePages: ['/tournaments/:id'] },
+    ];
+    appConfig.platformModules = [
+      {
+        name: 'scoreboard',
+        displayName: 'Scoreboard',
+        entry: 'src/scoreboard.tsx',
+        propsSchema: {
+          title: { type: 'STRING', label: 'Title', defaultValue: 3 },
+          mode: { type: 'SELECT', label: 'Mode', required: true, options: [{ label: 'Live', value: 'live' }] },
+        },
+        events: ['goal'],
+      },
+    ];
+    respondWith('APPROVED', 'PUBLISHED');
+
+    await deploy();
+
+    const [query, variables] = apiClientMock.graphqlRequest.mock.calls.find(([q]: [string]) =>
+      q.includes('appCreateRelease'),
+    );
+    const operation = parse(query).definitions[0] as OperationDefinitionNode;
+    expect(getVariableValues(schema, operation.variableDefinitions ?? [], variables).errors).toBeUndefined();
+    expect(variables.input.manifest).toEqual({
+      version: '1.0',
+      permissions: ['organization:marketplace:view'],
+      extensions: [{ type: 'TAB', label: 'Panel', activePages: ['/tournaments/:id'] }],
+      webhookEvents: [],
+      metafieldNamespaces: [],
+      frontendModules: [
+        {
+          name: 'scoreboard',
+          displayName: 'Scoreboard',
+          version: '1.2.0',
+          events: [{ name: 'goal' }],
+          propsSchema: [
+            { key: 'title', type: 'STRING', label: 'Title', required: false, defaultValue: '3' },
+            { key: 'mode', type: 'SELECT', label: 'Mode', required: true, options: [{ label: 'Live', value: 'live' }] },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('refuses an unknown extension type before calling the API', async () => {
+    appConfig.extensions = [{ name: 'panel', type: 'sidebar', displayName: 'Panel', entry: 'src/panel.tsx', activePages: [] }];
+    respondWith('APPROVED', 'PUBLISHED');
+
+    await deploy();
+
+    expect(error).toHaveBeenCalledWith(
+      'Extension "panel" has type "sidebar", which WellPlayed does not support. Use one of: tab, admin-navigation, dashboard-widget.',
+    );
+    expect(exit).toHaveBeenCalledWith(1);
+    expect(apiClientMock.graphqlRequest).not.toHaveBeenCalled();
   });
 });
