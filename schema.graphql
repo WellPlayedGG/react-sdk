@@ -1207,6 +1207,205 @@ enum AppConfigType {
   STRING_LIST
 }
 
+"""An email template associated with a trigger event"""
+type EmailTemplate {
+  """Unique identifier of the email template"""
+  id: ID!
+
+  """Event that triggers this email template"""
+  triggerEvent: EmailTriggerEvents!
+
+  """Whether this is the default template for the trigger event"""
+  default: Boolean!
+
+  """Display name of the email template"""
+  name: String!
+
+  """Subject line of the email, supports template variables"""
+  title: String!
+
+  """HTML body content of the email, supports template variables"""
+  contents: String!
+
+  """Timestamp when the template was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the template was last updated"""
+  updatedAt: DateTime!
+
+  """ID of the organization that owns this template"""
+  organizationId: ID!
+}
+
+"""Paginated list of email templates"""
+type EmailTemplates {
+  """List of edges containing cursor and node pairs"""
+  edges: [EmailTemplateEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [EmailTemplate!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type EmailTemplateEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: EmailTemplate!
+}
+
+"""
+Guest identity attached to an ownerless player profile of the organization
+"""
+type GuestProfile {
+  """ID of the guest player profile"""
+  playerId: ID!
+
+  """The guest player profile"""
+  player: Player!
+
+  """
+  Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view
+  """
+  email: String
+
+  """First name, same visibility as email"""
+  firstName: String
+
+  """Last name, same visibility as email"""
+  lastName: String
+
+  """How the guest was created"""
+  origin: GuestOrigin!
+
+  """Players acting as guardians of this guest"""
+  guardianPlayerIds: [ID!]!
+
+  """Guests this player is the guardian of"""
+  wardPlayerIds: [ID!]!
+
+  """Creation date"""
+  createdAt: DateTime!
+}
+
+enum GuestOrigin {
+  ENTRY
+  INVITED
+  GUARDIAN
+  ADMIN
+}
+
+"""Magic link a guest session was opened from"""
+type GuestLinkContext {
+  id: ID!
+
+  """Purpose set by the link creator"""
+  purpose: String!
+
+  """JSON payload set by the link creator"""
+  data: String!
+  expiresAt: DateTime!
+}
+
+"""A guest session; send its token in the x-guest-session header"""
+type GuestSession {
+  """Session token, returned only when the session opens"""
+  token: String!
+
+  """Guest player the session belongs to"""
+  playerId: ID!
+  origin: GuestSessionOrigin!
+  expiresAt: DateTime!
+  link: GuestLinkContext
+}
+
+enum GuestSessionOrigin {
+  ENTRY
+  LINK
+}
+
+"""The current guest session"""
+type GuestMe {
+  """Player that owns the session"""
+  sessionPlayerId: ID!
+
+  """
+  Player the request acts as: the session player, or a ward through x-acting-player-id
+  """
+  actingPlayerId: ID!
+  origin: GuestSessionOrigin!
+  expiresAt: DateTime!
+  link: GuestLinkContext
+  profile: GuestProfile!
+  wards: [GuestProfile!]!
+}
+
+"""Read-only view of a magic link; reading it never consumes a use"""
+type GuestLinkView {
+  status: GuestLinkStatus!
+
+  """Null when INVALID"""
+  purpose: String
+
+  """Null when INVALID"""
+  expiresAt: DateTime
+
+  """Guest first name, only when VALID"""
+  firstName: String
+
+  """Link payload, only when VALID"""
+  data: String
+}
+
+enum GuestLinkStatus {
+  VALID
+  EXPIRED
+  REVOKED
+  EXHAUSTED
+  INVALID
+}
+
+"""A new magic link; the token is returned only once"""
+type GuestLinkCreated {
+  id: ID!
+  token: String!
+  expiresAt: DateTime!
+}
+
+type GuestProfileCreated {
+  profile: GuestProfile!
+
+  """False when an addressable guest with the same e-mail existed"""
+  created: Boolean!
+}
+
+"""A guardian allowed to act for a guest ward"""
+type GuestGuardianLink {
+  id: ID!
+  guardianPlayerId: ID!
+  wardPlayerId: ID!
+  createdAt: DateTime!
+}
+
+"""Guest settings of the organization"""
+type GuestConfiguration {
+  selfEntry: GuestSelfEntryMode!
+  sessionTtlMinutes: Int!
+  maxWardsPerGuardian: Int!
+}
+
+enum GuestSelfEntryMode {
+  DISABLED
+  TRUSTED_PARAMS
+}
+
 type PermissionDefinitionDto {
   id: String!
   owner: PermissionDefinitionOwner!
@@ -2121,151 +2320,6 @@ enum MarketplacePricingType {
   SUBSCRIPTION
 }
 
-"""
-Guest identity attached to an ownerless player profile of the organization
-"""
-type GuestProfile {
-  """ID of the guest player profile"""
-  playerId: ID!
-
-  """The guest player profile"""
-  player: Player!
-
-  """
-  Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view
-  """
-  email: String
-
-  """First name, same visibility as email"""
-  firstName: String
-
-  """Last name, same visibility as email"""
-  lastName: String
-
-  """How the guest was created"""
-  origin: GuestOrigin!
-
-  """Players acting as guardians of this guest"""
-  guardianPlayerIds: [ID!]!
-
-  """Guests this player is the guardian of"""
-  wardPlayerIds: [ID!]!
-
-  """Creation date"""
-  createdAt: DateTime!
-}
-
-enum GuestOrigin {
-  ENTRY
-  INVITED
-  GUARDIAN
-  ADMIN
-}
-
-"""Magic link a guest session was opened from"""
-type GuestLinkContext {
-  id: ID!
-
-  """Purpose set by the link creator"""
-  purpose: String!
-
-  """JSON payload set by the link creator"""
-  data: String!
-  expiresAt: DateTime!
-}
-
-"""A guest session; send its token in the x-guest-session header"""
-type GuestSession {
-  """Session token, returned only when the session opens"""
-  token: String!
-
-  """Guest player the session belongs to"""
-  playerId: ID!
-  origin: GuestSessionOrigin!
-  expiresAt: DateTime!
-  link: GuestLinkContext
-}
-
-enum GuestSessionOrigin {
-  ENTRY
-  LINK
-}
-
-"""The current guest session"""
-type GuestMe {
-  """Player that owns the session"""
-  sessionPlayerId: ID!
-
-  """
-  Player the request acts as: the session player, or a ward through x-acting-player-id
-  """
-  actingPlayerId: ID!
-  origin: GuestSessionOrigin!
-  expiresAt: DateTime!
-  link: GuestLinkContext
-  profile: GuestProfile!
-  wards: [GuestProfile!]!
-}
-
-"""Read-only view of a magic link; reading it never consumes a use"""
-type GuestLinkView {
-  status: GuestLinkStatus!
-
-  """Null when INVALID"""
-  purpose: String
-
-  """Null when INVALID"""
-  expiresAt: DateTime
-
-  """Guest first name, only when VALID"""
-  firstName: String
-
-  """Link payload, only when VALID"""
-  data: String
-}
-
-enum GuestLinkStatus {
-  VALID
-  EXPIRED
-  REVOKED
-  EXHAUSTED
-  INVALID
-}
-
-"""A new magic link; the token is returned only once"""
-type GuestLinkCreated {
-  id: ID!
-  token: String!
-  expiresAt: DateTime!
-}
-
-type GuestProfileCreated {
-  profile: GuestProfile!
-
-  """False when an addressable guest with the same e-mail existed"""
-  created: Boolean!
-}
-
-"""A guardian allowed to act for a guest ward"""
-type GuestGuardianLink {
-  id: ID!
-  guardianPlayerId: ID!
-  wardPlayerId: ID!
-  createdAt: DateTime!
-}
-
-"""Guest settings of the organization"""
-type GuestConfiguration {
-  selfEntry: GuestSelfEntryMode!
-  sessionTtlMinutes: Int!
-  maxWardsPerGuardian: Int!
-}
-
-enum GuestSelfEntryMode {
-  DISABLED
-  TRUSTED_PARAMS
-}
-
 """A reusable configuration preset for tournaments or steps"""
 type Configuration {
   """Unique identifier of the configuration"""
@@ -2500,43 +2554,57 @@ type LeaderboardSeasonBucketEdge {
   node: LeaderboardSeasonBucket!
 }
 
-"""An email template associated with a trigger event"""
-type EmailTemplate {
-  """Unique identifier of the email template"""
+"""
+Credits leaderboard points to the players of a tournament from its match results and final ranks
+"""
+type LeaderboardFeed {
+  """ID of the feed"""
   id: ID!
 
-  """Event that triggers this email template"""
-  triggerEvent: EmailTriggerEvents!
+  """ID of the leaderboard credited"""
+  leaderboardId: ID!
 
-  """Whether this is the default template for the trigger event"""
-  default: Boolean!
+  """ID of the tournament read"""
+  tournamentId: ID!
 
-  """Display name of the email template"""
-  name: String!
+  """Step read; null for every step of the tournament"""
+  stepId: ID
 
-  """Subject line of the email, supports template variables"""
-  title: String!
+  """Pinned season; null for the season active when each result is credited"""
+  seasonId: ID
 
-  """HTML body content of the email, supports template variables"""
-  contents: String!
+  """Points for a won match"""
+  winPoints: Float!
 
-  """Timestamp when the template was created"""
+  """Points for a lost match"""
+  lossPoints: Float!
+
+  """Points for a drawn match"""
+  drawPoints: Float!
+
+  """Points for a forfeited match"""
+  forfeitPoints: Float!
+
+  """Points by final rank when a fed step ends; index 0 is rank 1"""
+  placementPoints: [Float!]!
+
+  """Whether the feed credits points"""
+  enabled: Boolean!
+
+  """Date and time when the feed was created"""
   createdAt: DateTime!
 
-  """Timestamp when the template was last updated"""
+  """Date and time when the feed was last updated"""
   updatedAt: DateTime!
-
-  """ID of the organization that owns this template"""
-  organizationId: ID!
 }
 
-"""Paginated list of email templates"""
-type EmailTemplates {
+"""Paginated list of leaderboard feeds"""
+type LeaderboardFeeds {
   """List of edges containing cursor and node pairs"""
-  edges: [EmailTemplateEdge!]!
+  edges: [LeaderboardFeedEdge!]!
 
   """Flat list of items in the current page"""
-  nodes: [EmailTemplate!]!
+  nodes: [LeaderboardFeed!]!
 
   """Pagination metadata for navigating between pages"""
   pageInfo: ResponsePageInfo!
@@ -2546,12 +2614,27 @@ type EmailTemplates {
 }
 
 """An edge in a paginated connection containing a cursor and node"""
-type EmailTemplateEdge {
+type LeaderboardFeedEdge {
   """Opaque cursor string for this edge, used for pagination"""
   cursor: String!
 
   """The item at this edge"""
-  node: EmailTemplate!
+  node: LeaderboardFeed!
+}
+
+"""Outcome of a leaderboard feed reconciliation"""
+type LeaderboardFeedReconcileResult {
+  """ID of the feed"""
+  feedId: ID!
+
+  """Matches and placements checked"""
+  sourcesChecked: Int!
+
+  """Ledger entries written"""
+  entriesWritten: Int!
+
+  """Sum of the points credited or reversed"""
+  pointsDelta: Float!
 }
 
 """The required fields for creating or updating an identity on a provider"""
@@ -3866,6 +3949,12 @@ type TournamentTeamScore {
   """Accumulated score for this team"""
   score: Float!
 
+  """Rank of the team in this scope; null until ranked"""
+  rank: Int
+
+  """Status of the team in this scope"""
+  status: TeamScopeStatus!
+
   """The tournament team associated with this score"""
   team: TournamentTeam!
 }
@@ -3925,6 +4014,9 @@ type TournamentStep {
   Manual seeding pin overrides persisted on the step. Empty when no pins are set. Produced by `persistSeedingPins` / `seedStep`; consumed by the seeding pipeline.
   """
   manualPins: [SeedingPin!]!
+
+  """Null when the step is not an open pool."""
+  openPool: OpenPoolConfiguration
 }
 
 enum StepType {
@@ -5378,6 +5470,145 @@ type ValidationEventModelEdge {
   node: ValidationEventModel!
 }
 
+"""Rules of an open pool step, where matches are created on demand"""
+type OpenPoolConfiguration {
+  """Number of teams in each match"""
+  teamsPerMatch: Int!
+
+  """Matches per game (odd); the game winner takes the majority"""
+  bestOf: Int!
+
+  """Maximum matches a team can play in the step; 0 means unlimited"""
+  maxMatchesPerTeam: Int!
+
+  """Whether the same teams can meet more than once"""
+  allowRematch: Boolean!
+
+  """Whether a team can play several unfinished matches at once"""
+  allowConcurrentMatches: Boolean!
+
+  """
+  Whether a tournament team joins the step when its first match is created
+  """
+  autoJoin: Boolean!
+
+  """
+  Whether a team needs at least the tournament's minimum team size to play
+  """
+  enforceTeamMinSize: Boolean!
+}
+
+"""A team taking part in an open pool match"""
+type OpenPoolMatchTeam {
+  """ID of the tournament team"""
+  teamId: ID!
+
+  """The tournament team"""
+  team: TournamentTeam!
+
+  """Result of the team in this match"""
+  status: MatchScoreStatus!
+
+  """Score of the team in this match"""
+  score: Float!
+}
+
+"""A match created on demand in an open pool step"""
+type OpenPoolMatch {
+  """ID of the match"""
+  id: ID!
+
+  """ID of the game holding the match"""
+  gameId: ID!
+
+  """ID of the group (pool) of the match"""
+  groupId: ID!
+
+  """ID of the open pool step"""
+  stepId: ID!
+
+  """ID of the tournament"""
+  tournamentId: ID!
+
+  """Label given when the match was created"""
+  label: String
+
+  """Creation order of the match in its group"""
+  order: Int!
+
+  """Status of the match"""
+  status: MatchStatus!
+
+  """Teams of the match with their result"""
+  teams: [OpenPoolMatchTeam!]!
+
+  """Date and time when the match was created"""
+  createdAt: DateTime!
+
+  """Date and time when the match was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Paginated list of open pool matches"""
+type OpenPoolMatches {
+  """List of edges containing cursor and node pairs"""
+  edges: [OpenPoolMatchEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [OpenPoolMatch!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type OpenPoolMatchEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: OpenPoolMatch!
+}
+
+"""Live standing of a team in an open pool step"""
+type OpenPoolStanding {
+  """ID of the tournament team"""
+  teamId: ID!
+
+  """The tournament team"""
+  team: TournamentTeam!
+
+  """ID of the group (pool) of the standing"""
+  groupId: ID!
+
+  """Rank in the step; null until ranked"""
+  rank: Int
+
+  """Status of the team in the step"""
+  status: TeamScopeStatus!
+
+  """Points earned in the step"""
+  points: Float!
+
+  """Ended matches played"""
+  played: Int!
+
+  """Matches won"""
+  wins: Int!
+
+  """Matches lost"""
+  losses: Int!
+
+  """Matches drawn"""
+  draws: Int!
+
+  """Matches forfeited"""
+  forfeits: Int!
+}
+
 """A virtual currency defined within an organization"""
 type Currency {
   """Unique identifier of the currency"""
@@ -5882,6 +6113,9 @@ type EventReservation {
   """Identifier of the reservation this one replaced"""
   replacesReservationId: ID
 
+  """Name of the team of this reservation"""
+  groupName: String
+
   """Tournament teams created from this reservation"""
   tournamentTeamIds: [ID!]!
 }
@@ -5934,6 +6168,9 @@ type EventReservationWithTicketsAndQrCode {
 
   """Identifier of the reservation this one replaced"""
   replacesReservationId: ID
+
+  """Name of the team of this reservation"""
+  groupName: String
 
   """List of tickets with QR codes for this reservation"""
   tickets: [EventReservationTicketWithQrCode!]!
@@ -5995,6 +6232,9 @@ type OmitObjectType {
 
   """Identifier of the reservation this one replaced"""
   replacesReservationId: ID
+
+  """Name of the team of this reservation"""
+  groupName: String
 }
 
 """
@@ -6863,6 +7103,15 @@ type ItemCategoryEdge {
   node: ItemCategory!
 }
 
+"""Item rows of both players after a transfer"""
+type PlayerItemsTransferResult {
+  """Rows of the giving player"""
+  from: [PlayerItem!]!
+
+  """Rows of the receiving player"""
+  to: [PlayerItem!]!
+}
+
 """Who or what produced a journal entry."""
 type JournalActor {
   """Type of actor."""
@@ -7185,6 +7434,11 @@ type OrganizationModeration {
   """Refused anywhere inside the text"""
   blockedSubstrings: [String!]!
   updatedAt: DateTime
+}
+
+type ModerationCheckResult {
+  key: String!
+  allowed: Boolean!
 }
 
 """A typed metadata entry attached to an organization object"""
@@ -8867,6 +9121,11 @@ type Query {
   """
   leaderboardSeasonBucketScores(leaderboardSeasonBucketId: ID!, page: PageInfo!): LeaderboardSeasonBucketScores!
 
+  """
+  Leaderboard feeds visible to the caller. Needs organization:leaderboard:view.
+  """
+  leaderboardFeeds(leaderboardId: ID, tournamentId: ID, page: PageInfo): LeaderboardFeeds!
+
   """Get an organization by its ID"""
   organization(id: ID!): Organization!
 
@@ -9035,6 +9294,16 @@ type Query {
 
   """List all administrators for a specific tournament"""
   tournamentAdmins(tournamentId: ID!): [TournamentAdmin!]!
+
+  """
+  Matches of an open pool step. Needs organization:tournament:match:view on the step's tournament.
+  """
+  openPoolMatches(stepId: ID!, filter: OpenPoolMatchesFilter, page: PageInfo): OpenPoolMatches!
+
+  """
+  Live standings of an open pool step, ordered by rank (nulls last), then points DESC. Needs organization:tournament:step:view.
+  """
+  openPoolStandings(stepId: ID!, groupId: ID): [OpenPoolStanding!]!
 
   """
   Fetch the rule set attached to a tournament step, including scoring, advancement rules, cross-step rules, and the structure template. Returns null when the step has no rule set.
@@ -9357,6 +9626,11 @@ type Query {
   Banned words and substrings applied to nicknames and team names of the current organization.
   """
   organizationModeration: OrganizationModeration!
+
+  """
+  Tests up to 20 texts of at most 4,096 characters against the banned lists of the current organization without revealing them.
+  """
+  moderationCheck(inputs: [ModerationCheckInput!]!): [ModerationCheckResult!]!
 }
 
 """Input for retrieving a player ranking on a leaderboard"""
@@ -9481,6 +9755,18 @@ input OrderByProperty {
 
   """Sort direction (ASC or DESC), defaults to ASC"""
   order: OrderDirection
+}
+
+"""Filter for open pool matches"""
+input OpenPoolMatchesFilter {
+  """Keep matches in these statuses"""
+  statuses: [MatchStatus!]
+
+  """Keep matches played by this tournament team"""
+  teamId: ID
+
+  """Keep matches of this group (pool)"""
+  groupId: ID
 }
 
 """Input for validating a Lua script (no execution)"""
@@ -9691,6 +9977,21 @@ input EventsQuery {
 
   """Filter events by specific players and their statuses"""
   filterByPlayers: [EventsQueryPlayerIdWithTeamStatusInput!]
+
+  """Filter events held in these venues"""
+  venueIds: [ID!]
+
+  """Keep events that end after this time"""
+  from: DateTime
+
+  """Keep events that start before this time"""
+  to: DateTime
+
+  """Filter events linked to this tournament"""
+  tournamentId: ID
+
+  """Filter events assigned to this registration series"""
+  registrationSeriesId: ID
 }
 
 enum EventsQueryOrderBy {
@@ -9926,6 +10227,14 @@ input PermissionCheckInput {
   resource: String
 }
 
+input ModerationCheckInput {
+  """Caller label echoed back in the result"""
+  key: String!
+
+  """Text to test against the moderation lists"""
+  value: String!
+}
+
 type Mutation {
   """Deletes an account by ID from the current organization"""
   deleteAccount(id: ID!): Boolean!
@@ -10006,6 +10315,26 @@ type Mutation {
 
   """Deletes a leaderboard season bucket by ID and adjusts resource limits"""
   deleteLeaderboardSeasonBucket(id: ID!): Void!
+
+  """
+  Create a feed from a tournament to a leaderboard and credit the results already played. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament.
+  """
+  createLeaderboardFeed(input: CreateLeaderboardFeedInput!): LeaderboardFeed!
+
+  """
+  Update a leaderboard feed and reconcile it at once; enabled=false reverses every credited point. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament.
+  """
+  updateLeaderboardFeed(id: ID!, input: UpdateLeaderboardFeedInput!): LeaderboardFeed!
+
+  """
+  Delete a leaderboard feed; credited points stay and the ledger is deleted with the feed. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament.
+  """
+  deleteLeaderboardFeed(id: ID!): Boolean!
+
+  """
+  Repair and backfill the points of a leaderboard feed. Needs organization:leaderboard:update on the leaderboard and organization:tournament:view on the tournament.
+  """
+  reconcileLeaderboardFeed(id: ID!): LeaderboardFeedReconcileResult!
 
   """Update an existing organization name, description, or configuration"""
   updateOrganization(organization: UpdateOrganizationInput!): Organization!
@@ -10236,6 +10565,46 @@ type Mutation {
   tournamentAdminDelete(input: TournamentAdminDeleteInput!): Boolean!
 
   """
+  Create a match between teams of a STARTED open pool step. Needs organization:tournament:step:open-pool:manage on the step or the MANAGE_SCORES tournament admin permission.
+  """
+  openPoolCreateMatch(input: OpenPoolCreateMatchInput!): OpenPoolMatch!
+
+  """
+  Register teams in an open pool step (SEEDED or STARTED) as ACTIVE with 0 points. Needs organization:tournament:step:open-pool:manage on the step.
+  """
+  openPoolAddTeams(stepId: ID!, teamIds: [ID!]!, groupId: ID): [OpenPoolStanding!]!
+
+  """
+  Rewrite the scores of a STARTED or ENDED open pool match, then recompute scores and ranks without firing rules again. Needs organization:tournament:match:score:update on the match or the MANAGE_SCORES tournament admin permission.
+  """
+  openPoolCorrectMatch(matchId: ID!, input: [UpdateMatchScoreInput!]!): OpenPoolMatch!
+
+  """
+  Cancel an open pool match in any status: its game is deleted and the affected teams are recomputed. Needs organization:tournament:step:open-pool:manage on the step or the MANAGE_SCORES tournament admin permission.
+  """
+  openPoolCancelMatch(matchId: ID!, reason: String): Boolean!
+
+  """
+  Close a STARTED open pool step: ranks the teams, dispatches ROUND_ENDED, GROUP_ENDED and STEP_ENDED, and ends the step. Needs organization:tournament:step:open-pool:manage on the step.
+  """
+  openPoolClose(stepId: ID!, cancelPendingMatches: Boolean! = false): TournamentStep!
+
+  """
+  Reopen an ENDED open pool step when no later step is seeded: team statuses go back to ACTIVE and the step to STARTED. Needs organization:tournament:step:open-pool:manage on the step.
+  """
+  openPoolReopen(stepId: ID!): TournamentStep!
+
+  """
+  Add an ACCEPTED member to a tournament team, outside the registration window; the team status is not changed. Needs organization:tournament:team:members:manage on the team (and on the source team when moving) or the MANAGE_TEAMS tournament admin permission.
+  """
+  tournamentTeamMemberAdd(input: TournamentTeamMemberAddInput!): TournamentTeam!
+
+  """
+  Remove a member from a tournament team. Removing the manager sets the manager to newManagerId (an accepted member) or to none. Needs organization:tournament:team:members:manage on the team or the MANAGE_TEAMS tournament admin permission.
+  """
+  tournamentTeamMemberRemove(teamId: ID!, playerId: ID!, newManagerId: ID): TournamentTeam!
+
+  """
   Create a new rule set for a tournament step. Fails with CONFLICT if the step already has a rule set.
   """
   createStepRuleSet(tournamentStepId: ID!, input: CreateStepRuleSetInput!): StepRuleSetModel!
@@ -10440,7 +10809,12 @@ type Mutation {
   """
   Create a new event reservation for events that require admin approval or have no-session registration flow
   """
-  eventReservationCreate(eventId: ID!): EventReservation!
+  eventReservationCreate(
+    eventId: ID!
+
+    """Name of the team, checked against the group name rules"""
+    groupName: String
+  ): EventReservation!
 
   """Add, release, or update tickets within an active reservation session"""
   eventReservationUpdateTickets(reservationId: ID!, input: EventReservationUpdateTicketsInput!): EventReservation!
@@ -10448,7 +10822,15 @@ type Mutation {
   """
   Start a new registration session for an event, reserving tickets and creating a time-limited session
   """
-  eventReservationStartRegistrationSession(eventId: ID!, input: EventReservationRegisterTicketsInput!): EventReservation!
+  eventReservationStartRegistrationSession(
+    eventId: ID!
+    input: EventReservationRegisterTicketsInput!
+
+    """
+    Validated reservation of the caller that this session replaces once validated
+    """
+    replaceReservationId: ID
+  ): EventReservation!
 
   """
   Cancel an event reservation, releasing all tickets and deleting the associated group
@@ -10590,6 +10972,11 @@ type Mutation {
 
   """Deletes an item category by ID and adjusts organization limits"""
   itemCategoryDelete(id: ID!): ItemCategory!
+
+  """
+  Move item quantities from one player to another, all or nothing. Needs organization:player:items:update on organization:player:{from}:item:{item} and organization:player:{to}:item:{item}.
+  """
+  playerItemsTransfer(input: PlayerItemsTransferInput!): PlayerItemsTransferResult!
 
   """Creates a new currency for the organization"""
   currencyCreate(input: CurrencyCreateInput!): Currency!
@@ -10762,12 +11149,27 @@ input LeaderboardRegisterPlayerScoreInput {
   """ID of the player to register the score for"""
   playerId: ID!
 
-  """The score value to register"""
-  score: PositiveInt!
+  """
+  The score value to register: the new total with REPLACE (at least 0), the change to apply with INCREMENT
+  """
+  score: Float!
+
+  """How the score is applied to the current total"""
+  mode: LeaderboardScoreMode! = REPLACE
+
+  """
+  Season to credit; if not set, the season active at the time of the call
+  """
+  seasonId: ID
 }
 
-"""Integers that will have a value greater than 0."""
-scalar PositiveInt
+"""
+REPLACE sets the total to the given score; INCREMENT adds the given score to the total
+"""
+enum LeaderboardScoreMode {
+  REPLACE
+  INCREMENT
+}
 
 """Input for creating a new leaderboard"""
 input CreateLeaderboardInput {
@@ -10844,6 +11246,63 @@ input UpdateLeaderboardSeasonBucketInput {
 
   """Method used to calculate scores within this bucket"""
   scoreCalculationType: LeaderboardScoreCalculationType
+}
+
+"""Input for creating a leaderboard feed"""
+input CreateLeaderboardFeedInput {
+  """ID of the leaderboard to credit"""
+  leaderboardId: ID!
+
+  """ID of the tournament to read"""
+  tournamentId: ID!
+
+  """Step to read; every step of the tournament when not set"""
+  stepId: ID
+
+  """Pinned season. Null: the season active when each result is credited."""
+  seasonId: ID
+
+  """Points for a won match"""
+  winPoints: Float! = 0
+
+  """Points for a lost match"""
+  lossPoints: Float! = 0
+
+  """Points for a drawn match"""
+  drawPoints: Float! = 0
+
+  """Points for a forfeited match"""
+  forfeitPoints: Float! = 0
+
+  """Index 0 = rank 1, credited when a fed step ENDS. At most 64 entries."""
+  placementPoints: [Float!]! = []
+
+  """Whether the feed credits points"""
+  enabled: Boolean! = true
+}
+
+"""Input for updating a leaderboard feed"""
+input UpdateLeaderboardFeedInput {
+  """Pinned season"""
+  seasonId: ID
+
+  """Points for a won match"""
+  winPoints: Float
+
+  """Points for a lost match"""
+  lossPoints: Float
+
+  """Points for a drawn match"""
+  drawPoints: Float
+
+  """Points for a forfeited match"""
+  forfeitPoints: Float
+
+  """Index 0 = rank 1. At most 64 entries."""
+  placementPoints: [Float!]
+
+  """false reverses every credited point"""
+  enabled: Boolean
 }
 
 """Input for updating an existing organization"""
@@ -11857,6 +12316,48 @@ input TournamentAdminDeleteInput {
   accountId: ID!
 }
 
+"""Input for creating an open pool match"""
+input OpenPoolCreateMatchInput {
+  """ID of the open pool step"""
+  stepId: ID!
+
+  """IDs of the tournament teams playing the match"""
+  teamIds: [ID!]!
+
+  """Group (pool) of the match; required when the step has several groups"""
+  groupId: ID
+
+  """At most 64 characters, for example a station name."""
+  label: String
+
+  """
+  At most 64 characters; a replay with the same key on the same step returns the existing match.
+  """
+  idempotencyKey: String
+}
+
+"""Input for adding a player to a tournament team as staff or app"""
+input TournamentTeamMemberAddInput {
+  """ID of the tournament team"""
+  teamId: ID!
+
+  """ID of the player profile to add"""
+  playerId: ID!
+
+  """
+  Take the player out of their accepted team in the same tournament, in the same transaction.
+  """
+  moveFromOtherTeam: Boolean! = false
+
+  """
+  With moveFromOtherTeam: delete the source team when it ends up empty and has no match score rows (TOURNAMENT_TEAM_HAS_RESULTS otherwise).
+  """
+  removeEmptySourceTeam: Boolean! = false
+
+  """Make the player the team manager"""
+  setAsManager: Boolean! = false
+}
+
 """Top-level input for creating a complete rule set for a tournament step"""
 input CreateStepRuleSetInput {
   """Scoring configuration"""
@@ -12480,6 +12981,9 @@ Input containing the list of ticket registrations for a reservation session
 input EventReservationRegisterTicketsInput {
   """List of ticket configurations and quantities to reserve"""
   tickets: [EventReservationRegisterTicketInput!]!
+
+  """Name of the team, checked against the group name rules"""
+  groupName: String
 }
 
 """
@@ -13018,6 +13522,27 @@ input ItemCategoryUpdateInput {
   metadata: [PropertyValueInput!]
 }
 
+"""Input for moving items from one player to another"""
+input PlayerItemsTransferInput {
+  """ID of the player giving the items"""
+  fromPlayerId: ID!
+
+  """ID of the player receiving the items"""
+  toPlayerId: ID!
+
+  """1 to 20 entries, distinct itemId."""
+  items: [PlayerItemsTransferItemInput!]!
+}
+
+"""An item and the quantity to move"""
+input PlayerItemsTransferItemInput {
+  """ID of the item"""
+  itemId: ID!
+
+  """>= 1"""
+  quantity: Int!
+}
+
 """Input for creating a new currency"""
 input CurrencyCreateInput {
   """Short symbol representing the currency (e.g., GP, CR)"""
@@ -13546,6 +14071,9 @@ input GuestLinkCreateInput {
   data: String
   revokePrevious: Boolean! = false
 }
+
+"""Integers that will have a value greater than 0."""
+scalar PositiveInt
 
 """id, or playerId with an optional purpose"""
 input GuestLinkRevokeInput {
