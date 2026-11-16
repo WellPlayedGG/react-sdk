@@ -694,6 +694,9 @@ enum WebhookEventType {
   TOURNAMENT_TEAM_MEMBER_UPDATED
   TOURNAMENT_MATCH_SCORE_UPDATED
   TOURNAMENT_MATCH_STATUS_UPDATED
+  TOURNAMENT_MATCH_CREATED
+  TOURNAMENT_MATCH_CORRECTED
+  TOURNAMENT_MATCH_CANCELLED
   ORGANIZATION_MEMBER_ADDED
   ORGANIZATION_MEMBER_REMOVED
   EVENT_CREATED
@@ -703,11 +706,19 @@ enum WebhookEventType {
   EVENT_RESERVATION_CANCELLED
   EVENT_RESERVATION_STATUS_UPDATED
   EVENT_RESERVATION_PRESENCE_CONFIRMED
+  EVENT_RESERVATION_VALIDATED
+  EVENT_RESERVATION_SESSION_EXPIRED
+  EVENT_RESERVATION_TICKETS_CHANGED
+  EVENT_RESERVATION_TICKETS_RELEASED
+  EVENT_WAITLIST_JOINED
+  EVENT_WAITLIST_OFFERED
+  EVENT_WAITLIST_ENDED
   SHOP_PURCHASE_COMPLETED
   SHOP_PURCHASE_FAILED
   SHOP_PRODUCT_CREATED
   PLAYER_CURRENCY_UPDATED
   PLAYER_ITEM_UPDATED
+  PLAYER_ITEMS_TRANSFERRED
   CURRENCY_CREATED
   ITEM_CREATED
   LEADERBOARD_SCORE_REGISTERED
@@ -824,6 +835,9 @@ type Tournament {
 
   """Date and time from which the tournament is visible in public listings"""
   visibleAt: DateTime
+
+  """ID of the registration series this tournament belongs to"""
+  registrationSeriesId: ID
 
   """Teams registered to this tournament"""
   teams(page: PageInfo!, status: TournamentTeamStatus): TournamentTeams!
@@ -1063,6 +1077,9 @@ type Player {
 
   """The custom fields configured for this player profile"""
   customFields(properties: [String!]): [PropertyConfigWithValue!]!
+
+  """Guest identity; null when the caller cannot see the guest's data"""
+  guest: GuestProfile
 }
 
 """Paginated list of player profiles"""
@@ -1116,6 +1133,992 @@ scalar EmailAddress @specifiedBy(url: "https://html.spec.whatwg.org/multipage/in
 type IdentityLinkUrl {
   """The redirect URL for identity provider linking"""
   url: String!
+}
+
+type AppFunctionError {
+  kind: AppFunctionErrorKind!
+  code: String!
+  platformCode: AppFunctionPlatformErrorCode
+  message: String!
+  field: String
+  details: String
+  retryAfterSeconds: Int
+}
+
+enum AppFunctionErrorKind {
+  PLATFORM
+  APP
+}
+
+enum AppFunctionPlatformErrorCode {
+  NOT_FOUND
+  NOT_CONFIGURED
+  DISABLED
+  INVOKER_NOT_ALLOWED
+  INPUT_INVALID
+  FORBIDDEN
+  QUOTA_EXCEEDED
+  UNAVAILABLE
+  IDEMPOTENCY_IN_PROGRESS
+  CAUSATION_DEPTH_EXCEEDED
+  LIMIT_EXCEEDED
+  TIMEOUT
+  SCRIPT_ERROR
+  OUTPUT_TOO_LARGE
+}
+
+type AppFunctionResult {
+  executionId: ID!
+  status: AppFunctionStatus!
+  payload: String
+  error: AppFunctionError
+  replayed: Boolean!
+  cached: Boolean!
+}
+
+enum AppFunctionStatus {
+  SUCCEEDED
+  FAILED
+}
+
+type AppConfigEntry {
+  key: String!
+  type: AppConfigType!
+  label: String!
+  description: String
+  value: String
+  defaultValue: String
+  public: Boolean!
+  required: Boolean!
+  options: [String!]
+}
+
+enum AppConfigType {
+  STRING
+  TEXT
+  NUMBER
+  INTEGER
+  BOOLEAN
+  SELECT
+  DURATION
+  TIME
+  DATE
+  TIMEZONE
+  STRING_LIST
+}
+
+type PermissionDefinitionDto {
+  id: String!
+  owner: PermissionDefinitionOwner!
+  description: String!
+  resources: [String!]!
+  appSlug: String
+}
+
+enum PermissionDefinitionOwner {
+  ORGANIZATION
+  APP
+}
+
+"""
+A selectable option for a frontend module prop of type "select"
+"""
+type FrontendModulePropOptionModel {
+  """Display label for this option"""
+  label: String!
+
+  """Value for this option"""
+  value: String!
+}
+
+"""Schema definition for a single prop of a frontend module"""
+type FrontendModulePropSchemaModel {
+  """Property key/name"""
+  key: String!
+
+  """Data type of this prop"""
+  type: FrontendModulePropType!
+
+  """Display label for this prop"""
+  label: String!
+
+  """Description of what this prop controls"""
+  description: String
+
+  """Whether this prop is required"""
+  required: Boolean!
+
+  """Default value for this prop (serialized as string)"""
+  defaultValue: String
+
+  """Available options for select-type props"""
+  options: [FrontendModulePropOptionModel!]
+
+  """Route parameter name for route-param type props"""
+  param: String
+}
+
+enum FrontendModulePropType {
+  STRING
+  NUMBER
+  BOOLEAN
+  SELECT
+  ROUTE_PARAM
+}
+
+"""An event that a frontend module can emit"""
+type FrontendModuleEventModel {
+  """Unique event name identifier"""
+  name: String!
+
+  """Description of when this event is emitted"""
+  description: String
+}
+
+"""A frontend micro-frontend module registered by a marketplace app"""
+type FrontendModuleModel {
+  """Unique name identifier for this module"""
+  name: String!
+
+  """Human-readable display name for this module"""
+  displayName: String!
+
+  """Description of what this module provides"""
+  description: String
+
+  """Named export from the bundle to use as the module entry point"""
+  exportName: String!
+
+  """Semantic version of this module"""
+  version: String!
+
+  """Schema defining the props this module accepts"""
+  propsSchema: [FrontendModulePropSchemaModel!]!
+
+  """Events this module can emit"""
+  events: [FrontendModuleEventModel!]!
+}
+
+"""Size constraints for an extension point iframe"""
+type ExtensionPointSizeModel {
+  """Maximum width in pixels for the extension point"""
+  maxWidth: Int
+
+  """Maximum height in pixels for the extension point"""
+  maxHeight: Int
+}
+
+"""A UI extension point where an app renders content within the platform"""
+type ExtensionPointModel {
+  """Location type where this extension point is rendered"""
+  type: ExtensionPointType!
+
+  """Display label for the extension point tab or widget"""
+  label: String!
+
+  """
+  URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview")
+  """
+  activePages: [String!]!
+
+  """Optional size constraints for the extension point iframe"""
+  size: ExtensionPointSizeModel
+}
+
+enum ExtensionPointType {
+  TAB
+  DASHBOARD_WIDGET
+  ADMIN_NAVIGATION
+}
+
+"""A typed field of a function input, output or audit type"""
+type AppFieldDeclModel {
+  name: String!
+  type: AppFieldType!
+  required: Boolean!
+  options: [String!]
+  fields: [AppFieldDeclModel!]
+  items: AppFieldDeclModel
+  maxLength: Int
+  min: Float
+  max: Float
+}
+
+enum AppFieldType {
+  STRING
+  TEXT
+  NUMBER
+  INTEGER
+  BOOLEAN
+  ID
+  EMAIL
+  DATE
+  DATETIME
+  ENUM
+  OBJECT
+  LIST
+}
+
+"""A configuration key declared by an app"""
+type AppConfigDeclModel {
+  key: String!
+  type: AppConfigType!
+  label: String!
+  description: String
+  required: Boolean!
+  defaultValue: String
+  options: [String!]
+  min: Float
+  max: Float
+  pattern: String
+
+  """Readable without authentication"""
+  public: Boolean!
+}
+
+"""A permission defined by an app"""
+type AppCustomPermissionDeclModel {
+  name: String!
+  description: String!
+  resources: [String!]!
+}
+
+"""A storage collection declared by an app"""
+type AppStorageCollectionDeclModel {
+  name: String!
+  ttlSeconds: Int
+}
+
+"""Storage declared by an app"""
+type AppStorageDeclModel {
+  collections: [AppStorageCollectionDeclModel!]!
+}
+
+"""A GraphQL operation file shipped by an app"""
+type AppOperationDeclModel {
+  name: String!
+  file: String!
+}
+
+"""An e-mail template shipped by an app"""
+type AppEmailTemplateDeclModel {
+  key: String!
+  subject: String!
+  file: String!
+}
+
+"""An audit entry type written by an app"""
+type AppAuditTypeDeclModel {
+  type: String!
+  fields: [AppFieldDeclModel!]!
+}
+
+"""What runs a function; only the fields of its type are set"""
+type AppFunctionTriggerModel {
+  type: AppFunctionTriggerType!
+  readOnly: Boolean
+  cacheSeconds: Int
+  hookPoint: AppHookPoint
+  onError: AppHookErrorPolicy
+  timeoutMs: Int
+  events: [WebhookEventType!]
+  selfTrigger: Boolean
+  cron: String
+  timezone: String
+  lifecycle: [AppLifecycleTransition!]
+}
+
+enum AppFunctionTriggerType {
+  CALL
+  HOOK
+  EVENT
+  TIMER
+  CRON
+  LIFECYCLE
+}
+
+enum AppHookPoint {
+  EVENT_RESERVATION_VALIDATE
+}
+
+enum AppHookErrorPolicy {
+  DENY
+  ALLOW
+}
+
+enum AppLifecycleTransition {
+  INSTALL
+  UPGRADE
+  UNINSTALL
+  CONFIG_UPDATED
+}
+
+"""A variable passed to a preload operation"""
+type AppFunctionPreloadVarModel {
+  name: String!
+  value: String!
+}
+
+"""An operation run before a function starts"""
+type AppFunctionPreloadDeclModel {
+  name: String!
+  op: String!
+  vars: [AppFunctionPreloadVarModel!]!
+}
+
+"""A permission the caller must hold"""
+type AppFunctionRequirementDeclModel {
+  permission: String!
+  resource: String
+}
+
+"""A server function shipped by an app"""
+type AppFunctionDeclModel {
+  name: String!
+  file: String!
+  trigger: AppFunctionTriggerModel!
+  invoker: [AppFunctionInvokerKind!]!
+  runAs: AppFunctionRunAs!
+  input: [AppFieldDeclModel!]!
+  output: [AppFieldDeclModel!]!
+  preload: [AppFunctionPreloadDeclModel!]!
+  requires: [AppFunctionRequirementDeclModel!]!
+}
+
+enum AppFunctionInvokerKind {
+  ANONYMOUS
+  PLAYER
+  GUEST
+  MEMBER
+}
+
+enum AppFunctionRunAs {
+  APP
+  INVOKER
+}
+
+"""
+The manifest describing a marketplace app capabilities and configuration
+"""
+type AppManifestModel {
+  """Manifest schema version"""
+  version: String!
+
+  """Permissions requested by this app (OrganizationPermission IDs)"""
+  permissions: [String!]!
+
+  """UI extensions registered by this app"""
+  extensions: [ExtensionPointModel!]!
+
+  """URL to receive webhook events when app is installed"""
+  webhookUrl: String
+
+  """Webhook event types this app subscribes to"""
+  webhookEvents: [WebhookEventType!]!
+
+  """Metafield namespaces this app is allowed to use"""
+  metafieldNamespaces: [String!]!
+
+  """Frontend micro-frontend modules registered by this app"""
+  frontendModules: [FrontendModuleModel!]!
+
+  """S3 CDN path for the extension bundle (injected on publish)"""
+  extensionCdnPath: String
+
+  """S3 CDN path for the module bundle (injected on publish)"""
+  moduleCdnPath: String
+  config: [AppConfigDeclModel!]
+  customPermissions: [AppCustomPermissionDeclModel!]
+  storage: AppStorageDeclModel
+  operations: [AppOperationDeclModel!]
+  emailTemplates: [AppEmailTemplateDeclModel!]
+  auditTypes: [AppAuditTypeDeclModel!]
+  functions: [AppFunctionDeclModel!]
+
+  """
+  Open functions that check their caller in code instead of declaring requires
+  """
+  codeAuthorized: [String!]
+}
+
+"""
+DNS TXT record required for SSL certificate validation of a custom domain
+"""
+type CustomDomainSslValidationRecord {
+  """Name of the TXT DNS record to create for validation"""
+  txt_name: String
+
+  """Value of the TXT DNS record to create for validation"""
+  txt_value: String
+}
+
+"""
+An error encountered during SSL certificate validation for a custom domain
+"""
+type CustomDomainSslValidationError {
+  """Human-readable error message describing the validation failure"""
+  message: String
+}
+
+"""SSL certificate status and validation details for a custom domain"""
+type CustomDomainSsl {
+  """Current status of the SSL certificate validation process"""
+  status: CustomDomainValidationStatus
+
+  """List of validation errors encountered during SSL provisioning"""
+  validation_errors: [CustomDomainSslValidationError!]
+
+  """DNS records required for SSL certificate validation"""
+  validation_records: [CustomDomainSslValidationRecord!]
+}
+
+enum CustomDomainValidationStatus {
+  initializing
+  pending_validation
+  deleted
+  pending_issuance
+  pending_deployment
+  pending_deletion
+  pending_expiration
+  expired
+  active
+  initializing_timed_out
+  validation_timed_out
+  issuance_timed_out
+  deployment_timed_out
+  deletion_timed_out
+  pending_cleanup
+  staging_deployment
+  staging_active
+  deactivating
+  inactive
+  backup_issued
+  holding_deployment
+}
+
+"""DNS record required to verify ownership of a custom domain"""
+type CustomDomainOwnershipVerification {
+  """Name of the DNS record to create for ownership verification"""
+  name: String
+
+  """Value of the DNS record to create for ownership verification"""
+  value: String
+}
+
+"""
+Custom domain registration data from Cloudflare, including SSL and ownership verification status
+"""
+type CustomDomainData {
+  """The hostname of the custom domain"""
+  hostname: String!
+
+  """Ownership verification DNS record details"""
+  ownership_verification: CustomDomainOwnershipVerification
+
+  """SSL certificate status and validation information"""
+  ssl: CustomDomainSsl!
+
+  """Current provisioning status of the custom domain"""
+  status: CustomDomainStatus
+
+  """List of verification error messages, if any"""
+  verification_errors: [String!]
+}
+
+enum CustomDomainStatus {
+  active
+  pending
+  active_redeploying
+  moved
+  pending_deletion
+  deleted
+  pending_blocked
+  pending_migration
+  pending_provisioned
+  test_pending
+  test_active
+  test_active_apex
+  test_blocked
+  test_failed
+  provisioned
+  blocked
+}
+
+"""
+Page-specific configuration for a CDN file, defining the URL path it serves
+"""
+type PlatformCdnFilePageConfig {
+  """The URL path pattern this page responds to (e.g. /events/:id)"""
+  path: String!
+}
+
+"""Configuration options for a CDN file"""
+type PlatformCdnFileConfigs {
+  """Page-specific configuration, required for PAGE type files"""
+  pageConfig: PlatformCdnFilePageConfig
+}
+
+"""
+A file stored on the platform CDN, such as a page template, component, text asset, or image
+"""
+type PlatformCdnFile {
+  """Unique identifier of the CDN file"""
+  id: ID!
+
+  """The platform this file belongs to, if associated with a platform"""
+  platformId: ID
+
+  """
+  The platform template this file belongs to, if associated with a template
+  """
+  platformTemplateId: ID
+
+  """The file name including path segments"""
+  name: String!
+
+  """The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE)"""
+  type: PlatformCdnFileType!
+
+  """When this file was last updated"""
+  updatedAt: DateTime!
+
+  """When this file was created"""
+  createdAt: DateTime!
+
+  """File configuration options such as page routing config"""
+  config: PlatformCdnFileConfigs
+
+  """File size in bytes"""
+  size: Float!
+
+  """The CDN path for the published production version of this file"""
+  prodCdnPath: String
+
+  """
+  The CDN path for the development version of this file, visible only to authorized editors
+  """
+  devCdnPath: String
+
+  """The text contents of the file, if applicable"""
+  contents: String
+}
+
+enum PlatformCdnFileType {
+  PAGE
+  COMPONENT
+  TEXT
+  IMAGE
+}
+
+"""A key-value pair representing a field in a presigned upload form"""
+type PresignedUrlField {
+  """The form field name"""
+  key: String!
+
+  """The form field value"""
+  value: String!
+}
+
+"""A presigned URL with form fields for uploading a file directly to S3"""
+type PresignedUrl {
+  """Form fields required for the presigned POST upload"""
+  fields: [PresignedUrlField!]!
+
+  """The S3 endpoint URL to POST the file upload to"""
+  url: URL!
+}
+
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986: https://www.ietf.org/rfc/rfc3986.txt.
+"""
+scalar URL
+
+"""A server file shipped with a release"""
+type AppReleaseFile {
+  kind: AppReleaseFileKind!
+  name: String!
+  sha256: String!
+}
+
+"""Kind of server file shipped with a release"""
+enum AppReleaseFileKind {
+  FUNCTION
+  OPERATION
+  EMAIL_TEMPLATE
+}
+
+"""Result of a single automated review check"""
+type AppReviewCheck {
+  """Name identifier of the check (e.g. manifest_valid, urls_https)"""
+  name: String!
+
+  """Whether this check passed"""
+  passed: Boolean!
+
+  """Details or error message for this check"""
+  details: String
+}
+
+"""Result of the automated app review process"""
+type AppReviewResult {
+  """Whether all review checks passed"""
+  passed: Boolean!
+
+  """Individual check results"""
+  checks: [AppReviewCheck!]!
+}
+
+"""A versioned release of a marketplace app"""
+type MarketplaceAppRelease {
+  """Unique identifier of the release"""
+  id: ID!
+
+  """ID of the marketplace app"""
+  marketplaceAppId: ID!
+
+  """Semantic version string"""
+  version: String!
+
+  """Current review status of the release"""
+  status: MarketplaceAppReleaseStatus!
+
+  """App manifest for this release"""
+  manifest: AppManifestModel!
+
+  """S3 key for the extension bundle"""
+  extensionBundleKey: String
+
+  """S3 key for the module bundle"""
+  moduleBundleKey: String
+
+  """Release notes describing changes"""
+  releaseNotes: String
+
+  """Automated review result details"""
+  reviewResult: AppReviewResult
+
+  """When the release was reviewed"""
+  reviewedAt: DateTime
+
+  """When the release was created"""
+  createdAt: DateTime!
+
+  """Server files shipped with the release"""
+  files: [AppReleaseFile!]!
+}
+
+"""Status of a marketplace app release"""
+enum MarketplaceAppReleaseStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+"""A release with presigned URLs for bundle upload"""
+type AppReleaseWithUploadUrls {
+  """The created release"""
+  release: MarketplaceAppRelease!
+
+  """Presigned POST data for extension bundle upload"""
+  extensionUploadUrl: PresignedUrl
+
+  """Presigned POST data for module bundle upload"""
+  moduleUploadUrl: PresignedUrl
+}
+
+"""Bundle validation error details"""
+type AppBundleValidationError {
+  """Whether validation passed"""
+  valid: Boolean!
+
+  """List of validation errors"""
+  errors: [String!]!
+}
+
+"""A published app listing in the marketplace"""
+type MarketplaceApp {
+  """Unique identifier of the marketplace app"""
+  id: ID!
+
+  """ID of the underlying organization app"""
+  organizationAppId: ID!
+
+  """Current publication status of the app"""
+  status: MarketplaceAppStatus!
+
+  """App manifest describing capabilities and configuration"""
+  manifest: AppManifestModel!
+
+  """Display name of the marketplace app"""
+  name: String!
+
+  """Full description of the app"""
+  description: String!
+
+  """Short summary displayed on app cards"""
+  shortDescription: String!
+
+  """URL of the app icon image"""
+  icon: String
+
+  """URLs of app screenshot images"""
+  screenshots: [String!]!
+
+  """Category tags for filtering and discovery"""
+  categories: [String!]!
+
+  """Current semantic version of the app"""
+  version: String!
+
+  """URL to the app privacy policy"""
+  privacyPolicyUrl: String
+
+  """URL to the app support page"""
+  supportUrl: String
+
+  """URL to the app website"""
+  websiteUrl: String
+
+  """Timestamp when the app was first published"""
+  createdAt: DateTime!
+
+  """Timestamp when the app listing was last updated"""
+  updatedAt: DateTime!
+
+  """Unique slug that addresses the app in function calls"""
+  slug: String
+
+  """Listing visibility of the app"""
+  visibility: MarketplaceAppVisibility!
+
+  """Organizations allowed to install a private app"""
+  allowedOrganizationIds: [ID!]
+
+  """Reviews for this marketplace app"""
+  reviews(page: PageInfo): MarketplaceAppReviews!
+
+  """Aggregated stats for this marketplace app"""
+  stats: MarketplaceAppStats!
+
+  """Current organization installation of this app, if any"""
+  installation: MarketplaceAppInstallation
+
+  """Pricing information for this marketplace app"""
+  pricing: MarketplaceAppPricing
+}
+
+"""Status of a marketplace app listing"""
+enum MarketplaceAppStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  REJECTED
+  SUSPENDED
+}
+
+"""Who can list and install a marketplace app"""
+enum MarketplaceAppVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+"""Paginated list of marketplace apps"""
+type MarketplaceApps {
+  """List of edges containing cursor and node pairs"""
+  edges: [MarketplaceAppEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [MarketplaceApp!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type MarketplaceAppEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: MarketplaceApp!
+}
+
+"""A user review and rating for a marketplace app"""
+type MarketplaceAppReview {
+  """Unique identifier of the review"""
+  id: ID!
+
+  """ID of the marketplace app being reviewed"""
+  marketplaceAppId: ID!
+
+  """ID of the organization that submitted the review"""
+  organizationId: ID!
+
+  """ID of the account that authored the review"""
+  accountId: ID!
+
+  """Star rating from 1 to 5"""
+  rating: Int!
+
+  """Review title"""
+  title: String!
+
+  """Review body text"""
+  body: String!
+
+  """Timestamp when the review was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the review was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Paginated list of marketplace app reviews"""
+type MarketplaceAppReviews {
+  """List of edges containing cursor and node pairs"""
+  edges: [MarketplaceAppReviewEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [MarketplaceAppReview!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type MarketplaceAppReviewEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: MarketplaceAppReview!
+}
+
+"""A marketplace app installation within an organization"""
+type MarketplaceAppInstallation {
+  """Unique identifier of the installation"""
+  id: ID!
+
+  """ID of the installed marketplace app"""
+  marketplaceAppId: ID!
+
+  """ID of the organization where the app is installed"""
+  organizationId: ID!
+
+  """ID of the account that performed the installation"""
+  installedById: ID!
+
+  """Current status of the installation"""
+  status: MarketplaceInstallationStatus!
+
+  """
+  Permissions granted to this app by the organization (OrganizationPermission IDs)
+  """
+  grantedPermissions: [String!]!
+
+  """Timestamp when the app was installed"""
+  createdAt: DateTime!
+
+  """Timestamp when the installation was last updated"""
+  updatedAt: DateTime!
+
+  """Release pinned by this installation"""
+  release: MarketplaceAppRelease
+
+  """Version of the installation config"""
+  configVersion: Int!
+
+  """Whether the app functions can run"""
+  functionsEnabled: Boolean!
+
+  """Functions disabled one by one"""
+  disabledFunctions: [String!]!
+
+  """The marketplace app for this installation"""
+  marketplaceApp: MarketplaceApp!
+}
+
+"""Status of a marketplace app installation"""
+enum MarketplaceInstallationStatus {
+  ACTIVE
+  SUSPENDED
+  UNINSTALLED
+}
+
+"""Paginated list of marketplace app installations"""
+type MarketplaceAppInstallations {
+  """List of edges containing cursor and node pairs"""
+  edges: [MarketplaceAppInstallationEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [MarketplaceAppInstallation!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type MarketplaceAppInstallationEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: MarketplaceAppInstallation!
+}
+
+"""Aggregated statistics for a marketplace app"""
+type MarketplaceAppStats {
+  """Total number of active installations across all organizations"""
+  totalInstallations: Int!
+
+  """Average star rating from all reviews"""
+  averageRating: Float
+
+  """Total number of reviews submitted for this app"""
+  totalReviews: Int!
+}
+
+"""Pricing configuration for a marketplace app"""
+type MarketplaceAppPricing {
+  """Unique identifier of the pricing record"""
+  id: ID!
+
+  """ID of the marketplace app this pricing applies to"""
+  marketplaceAppId: ID!
+
+  """Pricing model type (e.g. one-time, subscription, free)"""
+  type: MarketplacePricingType!
+
+  """Price amount in the smallest currency unit (e.g. cents)"""
+  priceAmountCents: Int!
+
+  """ISO 4217 currency code"""
+  currency: String!
+
+  """Number of free trial days for subscription pricing"""
+  trialDays: Int!
+
+  """Timestamp when the pricing was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the pricing was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Pricing model for a marketplace app"""
+enum MarketplacePricingType {
+  FREE
+  ONE_TIME
+  SUBSCRIPTION
 }
 
 """A reusable configuration preset for tournaments or steps"""
@@ -1352,109 +2355,6 @@ type LeaderboardSeasonBucketEdge {
   node: LeaderboardSeasonBucket!
 }
 
-"""
-DNS TXT record required for SSL certificate validation of a custom domain
-"""
-type CustomDomainSslValidationRecord {
-  """Name of the TXT DNS record to create for validation"""
-  txt_name: String
-
-  """Value of the TXT DNS record to create for validation"""
-  txt_value: String
-}
-
-"""
-An error encountered during SSL certificate validation for a custom domain
-"""
-type CustomDomainSslValidationError {
-  """Human-readable error message describing the validation failure"""
-  message: String
-}
-
-"""SSL certificate status and validation details for a custom domain"""
-type CustomDomainSsl {
-  """Current status of the SSL certificate validation process"""
-  status: CustomDomainValidationStatus
-
-  """List of validation errors encountered during SSL provisioning"""
-  validation_errors: [CustomDomainSslValidationError!]
-
-  """DNS records required for SSL certificate validation"""
-  validation_records: [CustomDomainSslValidationRecord!]
-}
-
-enum CustomDomainValidationStatus {
-  initializing
-  pending_validation
-  deleted
-  pending_issuance
-  pending_deployment
-  pending_deletion
-  pending_expiration
-  expired
-  active
-  initializing_timed_out
-  validation_timed_out
-  issuance_timed_out
-  deployment_timed_out
-  deletion_timed_out
-  pending_cleanup
-  staging_deployment
-  staging_active
-  deactivating
-  inactive
-  backup_issued
-  holding_deployment
-}
-
-"""DNS record required to verify ownership of a custom domain"""
-type CustomDomainOwnershipVerification {
-  """Name of the DNS record to create for ownership verification"""
-  name: String
-
-  """Value of the DNS record to create for ownership verification"""
-  value: String
-}
-
-"""
-Custom domain registration data from Cloudflare, including SSL and ownership verification status
-"""
-type CustomDomainData {
-  """The hostname of the custom domain"""
-  hostname: String!
-
-  """Ownership verification DNS record details"""
-  ownership_verification: CustomDomainOwnershipVerification
-
-  """SSL certificate status and validation information"""
-  ssl: CustomDomainSsl!
-
-  """Current provisioning status of the custom domain"""
-  status: CustomDomainStatus
-
-  """List of verification error messages, if any"""
-  verification_errors: [String!]
-}
-
-enum CustomDomainStatus {
-  active
-  pending
-  active_redeploying
-  moved
-  pending_deletion
-  deleted
-  pending_blocked
-  pending_migration
-  pending_provisioned
-  test_pending
-  test_active
-  test_active_apex
-  test_blocked
-  test_failed
-  provisioned
-  blocked
-}
-
 """An email template associated with a trigger event"""
 type EmailTemplate {
   """Unique identifier of the email template"""
@@ -1548,323 +2448,6 @@ enum IdentityProviderAvailability {
   PUBLIC
   PREVIEW
   PRIVATE
-}
-
-"""
-A selectable option for a frontend module prop of type "select"
-"""
-type FrontendModulePropOptionModel {
-  """Display label for this option"""
-  label: String!
-
-  """Value for this option"""
-  value: String!
-}
-
-"""Schema definition for a single prop of a frontend module"""
-type FrontendModulePropSchemaModel {
-  """Property key/name"""
-  key: String!
-
-  """Data type of this prop"""
-  type: FrontendModulePropType!
-
-  """Display label for this prop"""
-  label: String!
-
-  """Description of what this prop controls"""
-  description: String
-
-  """Whether this prop is required"""
-  required: Boolean!
-
-  """Default value for this prop (serialized as string)"""
-  defaultValue: String
-
-  """Available options for select-type props"""
-  options: [FrontendModulePropOptionModel!]
-
-  """Route parameter name for route-param type props"""
-  param: String
-}
-
-enum FrontendModulePropType {
-  STRING
-  NUMBER
-  BOOLEAN
-  SELECT
-  ROUTE_PARAM
-}
-
-"""An event that a frontend module can emit"""
-type FrontendModuleEventModel {
-  """Unique event name identifier"""
-  name: String!
-
-  """Description of when this event is emitted"""
-  description: String
-}
-
-"""A frontend micro-frontend module registered by a marketplace app"""
-type FrontendModuleModel {
-  """Unique name identifier for this module"""
-  name: String!
-
-  """Human-readable display name for this module"""
-  displayName: String!
-
-  """Description of what this module provides"""
-  description: String
-
-  """Named export from the bundle to use as the module entry point"""
-  exportName: String!
-
-  """Semantic version of this module"""
-  version: String!
-
-  """Schema defining the props this module accepts"""
-  propsSchema: [FrontendModulePropSchemaModel!]!
-
-  """Events this module can emit"""
-  events: [FrontendModuleEventModel!]!
-}
-
-"""Size constraints for an extension point iframe"""
-type ExtensionPointSizeModel {
-  """Maximum width in pixels for the extension point"""
-  maxWidth: Int
-
-  """Maximum height in pixels for the extension point"""
-  maxHeight: Int
-}
-
-"""A UI extension point where an app renders content within the platform"""
-type ExtensionPointModel {
-  """Location type where this extension point is rendered"""
-  type: ExtensionPointType!
-
-  """Display label for the extension point tab or widget"""
-  label: String!
-
-  """
-  URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview")
-  """
-  activePages: [String!]!
-
-  """Optional size constraints for the extension point iframe"""
-  size: ExtensionPointSizeModel
-}
-
-enum ExtensionPointType {
-  TAB
-  DASHBOARD_WIDGET
-  ADMIN_NAVIGATION
-}
-
-"""
-The manifest describing a marketplace app capabilities and configuration
-"""
-type AppManifestModel {
-  """Manifest schema version"""
-  version: String!
-
-  """Permissions requested by this app (OrganizationPermission IDs)"""
-  permissions: [String!]!
-
-  """UI extensions registered by this app"""
-  extensions: [ExtensionPointModel!]!
-
-  """URL to receive webhook events when app is installed"""
-  webhookUrl: String
-
-  """Webhook event types this app subscribes to"""
-  webhookEvents: [WebhookEventType!]!
-
-  """Metafield namespaces this app is allowed to use"""
-  metafieldNamespaces: [String!]!
-
-  """Frontend micro-frontend modules registered by this app"""
-  frontendModules: [FrontendModuleModel!]!
-
-  """S3 CDN path for the extension bundle (injected on publish)"""
-  extensionCdnPath: String
-
-  """S3 CDN path for the module bundle (injected on publish)"""
-  moduleCdnPath: String
-}
-
-"""
-Page-specific configuration for a CDN file, defining the URL path it serves
-"""
-type PlatformCdnFilePageConfig {
-  """The URL path pattern this page responds to (e.g. /events/:id)"""
-  path: String!
-}
-
-"""Configuration options for a CDN file"""
-type PlatformCdnFileConfigs {
-  """Page-specific configuration, required for PAGE type files"""
-  pageConfig: PlatformCdnFilePageConfig
-}
-
-"""
-A file stored on the platform CDN, such as a page template, component, text asset, or image
-"""
-type PlatformCdnFile {
-  """Unique identifier of the CDN file"""
-  id: ID!
-
-  """The platform this file belongs to, if associated with a platform"""
-  platformId: ID
-
-  """
-  The platform template this file belongs to, if associated with a template
-  """
-  platformTemplateId: ID
-
-  """The file name including path segments"""
-  name: String!
-
-  """The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE)"""
-  type: PlatformCdnFileType!
-
-  """When this file was last updated"""
-  updatedAt: DateTime!
-
-  """When this file was created"""
-  createdAt: DateTime!
-
-  """File configuration options such as page routing config"""
-  config: PlatformCdnFileConfigs
-
-  """File size in bytes"""
-  size: Float!
-
-  """The CDN path for the published production version of this file"""
-  prodCdnPath: String
-
-  """
-  The CDN path for the development version of this file, visible only to authorized editors
-  """
-  devCdnPath: String
-
-  """The text contents of the file, if applicable"""
-  contents: String
-}
-
-enum PlatformCdnFileType {
-  PAGE
-  COMPONENT
-  TEXT
-  IMAGE
-}
-
-"""A key-value pair representing a field in a presigned upload form"""
-type PresignedUrlField {
-  """The form field name"""
-  key: String!
-
-  """The form field value"""
-  value: String!
-}
-
-"""A presigned URL with form fields for uploading a file directly to S3"""
-type PresignedUrl {
-  """Form fields required for the presigned POST upload"""
-  fields: [PresignedUrlField!]!
-
-  """The S3 endpoint URL to POST the file upload to"""
-  url: URL!
-}
-
-"""
-A field whose value conforms to the standard URL format as specified in RFC3986: https://www.ietf.org/rfc/rfc3986.txt.
-"""
-scalar URL
-
-"""Result of a single automated review check"""
-type AppReviewCheck {
-  """Name identifier of the check (e.g. manifest_valid, urls_https)"""
-  name: String!
-
-  """Whether this check passed"""
-  passed: Boolean!
-
-  """Details or error message for this check"""
-  details: String
-}
-
-"""Result of the automated app review process"""
-type AppReviewResult {
-  """Whether all review checks passed"""
-  passed: Boolean!
-
-  """Individual check results"""
-  checks: [AppReviewCheck!]!
-}
-
-"""A versioned release of a marketplace app"""
-type MarketplaceAppRelease {
-  """Unique identifier of the release"""
-  id: ID!
-
-  """ID of the marketplace app"""
-  marketplaceAppId: ID!
-
-  """Semantic version string"""
-  version: String!
-
-  """Current review status of the release"""
-  status: MarketplaceAppReleaseStatus!
-
-  """App manifest for this release"""
-  manifest: AppManifestModel!
-
-  """S3 key for the extension bundle"""
-  extensionBundleKey: String
-
-  """S3 key for the module bundle"""
-  moduleBundleKey: String
-
-  """Release notes describing changes"""
-  releaseNotes: String
-
-  """Automated review result details"""
-  reviewResult: AppReviewResult
-
-  """When the release was reviewed"""
-  reviewedAt: DateTime
-
-  """When the release was created"""
-  createdAt: DateTime!
-}
-
-"""Status of a marketplace app release"""
-enum MarketplaceAppReleaseStatus {
-  PENDING_REVIEW
-  APPROVED
-  REJECTED
-}
-
-"""A release with presigned URLs for bundle upload"""
-type AppReleaseWithUploadUrls {
-  """The created release"""
-  release: MarketplaceAppRelease!
-
-  """Presigned POST data for extension bundle upload"""
-  extensionUploadUrl: PresignedUrl
-
-  """Presigned POST data for module bundle upload"""
-  moduleUploadUrl: PresignedUrl
-}
-
-"""Bundle validation error details"""
-type AppBundleValidationError {
-  """Whether validation passed"""
-  valid: Boolean!
-
-  """List of validation errors"""
-  errors: [String!]!
 }
 
 """A versioned release of an app with a snapshot of its manifest"""
@@ -2728,6 +3311,127 @@ enum ManualOverrideEffect {
   REPLAYED
 }
 
+"""
+Journal payload emitted when a leaderboard feed fails to reconcile one of its sources.
+"""
+type LeaderboardFeedReconcileFailedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the leaderboard feed."""
+  feedId: ID!
+
+  """Key of the source that failed to reconcile."""
+  sourceKey: String!
+
+  """Message of the reconcile error."""
+  errorMessage: String!
+}
+
+"""One team score row of an open pool match."""
+type OpenPoolJournalScoreRow {
+  """ID of the tournament team."""
+  tournamentTeamId: ID!
+
+  """Score of the team in the match."""
+  score: Float!
+
+  """Whether the team won the match."""
+  isWinner: Boolean!
+
+  """Whether the team forfeited the match."""
+  isForfeited: Boolean!
+}
+
+"""
+Journal payload emitted when staff correct the scores of an open pool match.
+"""
+type TournamentOpenPoolMatchCorrectedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the tournament."""
+  tournamentId: ID!
+
+  """ID of the open pool step."""
+  stepId: ID!
+
+  """ID of the step group."""
+  groupId: ID!
+
+  """ID of the corrected match."""
+  matchId: ID!
+
+  """ID of the game holding the match."""
+  gameId: ID!
+
+  """Score rows before the correction."""
+  previousScores: [OpenPoolJournalScoreRow!]!
+
+  """Score rows after the correction."""
+  scores: [OpenPoolJournalScoreRow!]!
+}
+
+"""Journal payload emitted when staff cancel an open pool match."""
+type TournamentOpenPoolMatchCancelledPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the tournament."""
+  tournamentId: ID!
+
+  """ID of the open pool step."""
+  stepId: ID!
+
+  """ID of the step group."""
+  groupId: ID!
+
+  """ID of the cancelled match."""
+  matchId: ID!
+
+  """ID of the deleted game."""
+  gameId: ID!
+
+  """Score rows before the cancellation."""
+  previousScores: [OpenPoolJournalScoreRow!]!
+
+  """Score rows left after the cancellation."""
+  scores: [OpenPoolJournalScoreRow!]!
+
+  """Whether the match had ended when it was cancelled."""
+  wasEnded: Boolean!
+
+  """Reason given by the staff member."""
+  cancelReason: String
+}
+
+"""Journal payload emitted when staff close an open pool step."""
+type TournamentOpenPoolClosedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the tournament."""
+  tournamentId: ID!
+
+  """ID of the closed step."""
+  stepId: ID!
+
+  """Number of unfinished matches cancelled by the close."""
+  cancelledMatchCount: Int!
+}
+
+"""Journal payload emitted when staff reopen an open pool step."""
+type TournamentOpenPoolReopenedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the tournament."""
+  tournamentId: ID!
+
+  """ID of the reopened step."""
+  stepId: ID!
+}
+
 """Counters describing the downstream impact of a tournament step reset."""
 type TournamentsStepResetCascadeInfo {
   """Number of downstream tournament steps affected by the reset cascade."""
@@ -2972,6 +3676,9 @@ type TournamentTeam {
 
   """List of members belonging to this team"""
   members: [TournamentTeamMemberDto!]!
+
+  """ID of the event reservation this team was created from"""
+  eventReservationId: ID
 
   """
   Custom fields configured for this tournament team with their values and visibility rules
@@ -4628,6 +5335,96 @@ type PlayerCurrencyEdge {
   node: PlayerCurrency!
 }
 
+"""
+A group of events and tournaments sharing one limit of active registrations per player
+"""
+type RegistrationSeries {
+  """Unique identifier of the series"""
+  id: ID!
+
+  """Display name of the series"""
+  name: String!
+
+  """Active registrations a player may hold in the series"""
+  maxActiveRegistrations: Int!
+
+  """Active waitlist entries a player may hold in the series"""
+  maxActiveWaitlistEntries: Int
+
+  """Whether a registered player may also join a waitlist"""
+  allowWaitlistWhileRegistered: Boolean!
+
+  """Whether registering ends the player's waitlist entries"""
+  leaveWaitlistsOnRegistration: Boolean!
+
+  """When a registration stops counting as active"""
+  releasePolicy: RegistrationSeriesReleasePolicy!
+
+  """Timestamp when the series was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the series was last updated"""
+  updatedAt: DateTime!
+}
+
+enum RegistrationSeriesReleasePolicy {
+  SLOT_START
+  SLOT_END
+  NEVER
+}
+
+"""Paginated list of registration series"""
+type RegistrationSeriesPage {
+  """List of edges containing cursor and node pairs"""
+  edges: [RegistrationSeriesEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [RegistrationSeries!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type RegistrationSeriesEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: RegistrationSeries!
+}
+
+"""
+A reservation, waitlist entry or tournament team counted against a series limit
+"""
+type RegistrationSeriesEntry {
+  """Kind of entry"""
+  kind: RegistrationSeriesEntryKind!
+
+  """Status of the underlying reservation, entry or team"""
+  status: String!
+
+  """Whether the player manages the reservation or team"""
+  isManager: Boolean!
+  eventId: ID
+  ticketConfigurationId: ID
+  reservationId: ID
+  waitlistEntryId: ID
+  tournamentId: ID
+  tournamentTeamId: ID
+  startsAt: DateTime
+  endsAt: DateTime
+}
+
+enum RegistrationSeriesEntryKind {
+  EVENT_RESERVATION
+  WAITLIST_ENTRY
+  TOURNAMENT_TEAM
+}
+
 """Configuration defining size constraints for a user group"""
 type UserGroupConfiguration {
   """Maximum number of accepted members allowed in the group"""
@@ -4827,258 +5624,6 @@ type EventVenueSeatEdge {
   node: EventVenueSeat!
 }
 
-"""
-Configuration settings for an event including registration, ticketing, and seating options
-"""
-type EventConfiguration {
-  """Custom fields that are defined on each teams"""
-  customFields: [Property!]
-
-  """Configuration of the group"""
-  groupConfiguration: UserGroupConfiguration
-
-  """Maximum number of tickets per reservation"""
-  maxTicketsPerReservation: Float
-
-  """
-  Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet
-  """
-  reservationStatusAfterPayment: EventReservationStatusAfterPayment
-
-  """
-  Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started.
-  """
-  reservationStatusAfterRegistration: EventReservationStatusAfterRegistration
-
-  """
-  The number of seconds before registration session expires, default is 15 minutes
-  """
-  sessionDuration: Float
-
-  """
-  If true, a new session will be allowed after the previous one has expired
-  """
-  allowForNewSessionAfterTimeout: Boolean
-
-  """
-  If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL
-  """
-  seatAssignmentMode: SeatAssignmentMode
-
-  """Allow to reserve more tickets than group members"""
-  allowForMoreTicketsThanGroupMembers: Boolean
-}
-
-enum EventReservationStatusAfterPayment {
-  PRESENCE_CONFIRMATION_PENDING
-  REGISTERED
-  CONFIRMED
-}
-
-enum EventReservationStatusAfterRegistration {
-  NONE
-  REQUIRES_ADMIN_APPROVAL
-  PENDING
-}
-
-enum SeatAssignmentMode {
-  NONE
-  REQUIRED
-  OPTIONAL
-}
-
-"""Represents an event within the platform"""
-type Event implements EventInterface {
-  """Unique identifier of the event"""
-  id: ID!
-
-  """Display title of the event"""
-  title: String!
-
-  """Detailed description of the event"""
-  description: String!
-
-  """Timestamp when the event was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the event was last updated"""
-  updatedAt: DateTime!
-
-  """Scheduled start date and time of the event"""
-  startAt: DateTime
-
-  """Scheduled end date and time of the event"""
-  endAt: DateTime
-
-  """Date and time when registrations open"""
-  startRegistrationsAt: DateTime
-
-  """Date and time when registrations close"""
-  endRegistrationsAt: DateTime
-
-  """Date and time when the event becomes publicly visible"""
-  visibleAt: DateTime
-
-  """
-  Event configuration including group, ticketing, and registration settings
-  """
-  configuration: EventConfiguration
-
-  """Identifier of the venue where the event takes place"""
-  eventVenueId: ID
-
-  """Identifier of the organization that owns this event"""
-  organizationId: ID!
-
-  """Identifier of the account that created this event"""
-  createdById: ID!
-
-  """
-  Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS.
-  """
-  decryptionKey: String!
-
-  """The venue where this event is taking place"""
-  venue: EventVenue
-}
-
-"""Base interface for all event types"""
-interface EventInterface {
-  """Unique identifier of the event"""
-  id: ID!
-
-  """Display title of the event"""
-  title: String!
-
-  """Detailed description of the event"""
-  description: String!
-
-  """Timestamp when the event was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the event was last updated"""
-  updatedAt: DateTime!
-
-  """Scheduled start date and time of the event"""
-  startAt: DateTime
-
-  """Scheduled end date and time of the event"""
-  endAt: DateTime
-
-  """Date and time when registrations open"""
-  startRegistrationsAt: DateTime
-
-  """Date and time when registrations close"""
-  endRegistrationsAt: DateTime
-
-  """Date and time when the event becomes publicly visible"""
-  visibleAt: DateTime
-
-  """
-  Event configuration including group, ticketing, and registration settings
-  """
-  configuration: EventConfiguration
-
-  """Identifier of the venue where the event takes place"""
-  eventVenueId: ID
-
-  """Identifier of the organization that owns this event"""
-  organizationId: ID!
-
-  """Identifier of the account that created this event"""
-  createdById: ID!
-
-  """
-  Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS.
-  """
-  decryptionKey: String!
-
-  """The venue where this event is taking place"""
-  venue: EventVenue
-}
-
-"""Event with the current authenticated user's reservation details"""
-type EventWithUserReservation implements EventInterface {
-  """Unique identifier of the event"""
-  id: ID!
-
-  """Display title of the event"""
-  title: String!
-
-  """Detailed description of the event"""
-  description: String!
-
-  """Timestamp when the event was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the event was last updated"""
-  updatedAt: DateTime!
-
-  """Scheduled start date and time of the event"""
-  startAt: DateTime
-
-  """Scheduled end date and time of the event"""
-  endAt: DateTime
-
-  """Date and time when registrations open"""
-  startRegistrationsAt: DateTime
-
-  """Date and time when registrations close"""
-  endRegistrationsAt: DateTime
-
-  """Date and time when the event becomes publicly visible"""
-  visibleAt: DateTime
-
-  """
-  Event configuration including group, ticketing, and registration settings
-  """
-  configuration: EventConfiguration
-
-  """Identifier of the venue where the event takes place"""
-  eventVenueId: ID
-
-  """Identifier of the organization that owns this event"""
-  organizationId: ID!
-
-  """Identifier of the account that created this event"""
-  createdById: ID!
-
-  """
-  Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS.
-  """
-  decryptionKey: String!
-
-  """The venue where this event is taking place"""
-  venue: EventVenue
-
-  """The reservation of the current user for this event"""
-  myReservation: EventReservationWithTicketsAndQrCode
-}
-
-"""Paginated list of events"""
-type Events {
-  """List of edges containing cursor and node pairs"""
-  edges: [EventEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [Event!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type EventEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: Event!
-}
-
 """Configuration of a reservation ticket including custom field values"""
 type EventReservationTicketConfiguration {
   """Custom fields with their configured properties and filled values"""
@@ -5177,6 +5722,12 @@ type EventReservation {
 
   """Current validation status of the associated user group"""
   groupStatus: UserGroupStatus!
+
+  """Identifier of the reservation this one replaced"""
+  replacesReservationId: ID
+
+  """Tournament teams created from this reservation"""
+  tournamentTeamIds: [ID!]!
 }
 
 enum EventReservationStatus {
@@ -5224,6 +5775,9 @@ type EventReservationWithTicketsAndQrCode {
 
   """Current validation status of the associated user group"""
   groupStatus: UserGroupStatus!
+
+  """Identifier of the reservation this one replaced"""
+  replacesReservationId: ID
 
   """List of tickets with QR codes for this reservation"""
   tickets: [EventReservationTicketWithQrCode!]!
@@ -5282,6 +5836,9 @@ type OmitObjectType {
 
   """Current validation status of the associated user group"""
   groupStatus: UserGroupStatus!
+
+  """Identifier of the reservation this one replaced"""
+  replacesReservationId: ID
 }
 
 """
@@ -5356,6 +5913,436 @@ type EventSeatEdge {
 
   """The item at this edge"""
   node: EventSeat!
+}
+
+"""Waitlist settings of the time slots of an event"""
+type EventWaitlistConfiguration {
+  """Whether players may join the waitlist of a full slot"""
+  enabled: Boolean!
+
+  """Seconds an offer holds the seats, default is 86400"""
+  offerDurationSeconds: Int
+
+  """
+  Seconds an offer holds the seats when made on the day of the slot, in the venue timezone
+  """
+  sameDayOfferDurationSeconds: Int
+
+  """
+  Maximum seats one entry may request, default is maxTicketsPerReservation
+  """
+  maxQuantity: Int
+}
+
+"""What a reservation manager may change after validation"""
+type EventSelfServiceConfiguration {
+  """Manager may cancel a validated free reservation"""
+  allowCancel: Boolean!
+
+  """Manager may move a validated free reservation"""
+  allowChange: Boolean!
+
+  """
+  Self-service closes this many seconds before the earliest slot start of the reservation, default is 0
+  """
+  cutoffSeconds: Int
+
+  """Allowed targets of a move, default is SAME_EVENT"""
+  changeScope: EventReservationChangeScope
+}
+
+enum EventReservationChangeScope {
+  SAME_EVENT
+  SAME_VENUE
+  SAME_SERIES
+}
+
+"""
+Configuration settings for an event including registration, ticketing, and seating options
+"""
+type EventConfiguration {
+  """Custom fields that are defined on each teams"""
+  customFields: [Property!]
+
+  """Configuration of the group"""
+  groupConfiguration: UserGroupConfiguration
+
+  """Maximum number of tickets per reservation"""
+  maxTicketsPerReservation: Float
+
+  """
+  Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet
+  """
+  reservationStatusAfterPayment: EventReservationStatusAfterPayment
+
+  """
+  Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started.
+  """
+  reservationStatusAfterRegistration: EventReservationStatusAfterRegistration
+
+  """
+  The number of seconds before registration session expires, default is 15 minutes
+  """
+  sessionDuration: Float
+
+  """
+  If true, a new session will be allowed after the previous one has expired
+  """
+  allowForNewSessionAfterTimeout: Boolean
+
+  """
+  If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL
+  """
+  seatAssignmentMode: SeatAssignmentMode
+
+  """Allow to reserve more tickets than group members"""
+  allowForMoreTicketsThanGroupMembers: Boolean
+
+  """Waitlist settings of the time slots"""
+  waitlist: EventWaitlistConfiguration
+
+  """Self-service cancel and move settings"""
+  selfService: EventSelfServiceConfiguration
+}
+
+enum EventReservationStatusAfterPayment {
+  PRESENCE_CONFIRMATION_PENDING
+  REGISTERED
+  CONFIRMED
+}
+
+enum EventReservationStatusAfterRegistration {
+  NONE
+  REQUIRES_ADMIN_APPROVAL
+  PENDING
+}
+
+enum SeatAssignmentMode {
+  NONE
+  REQUIRED
+  OPTIONAL
+}
+
+"""Represents an event within the platform"""
+type Event implements EventInterface {
+  """Unique identifier of the event"""
+  id: ID!
+
+  """Display title of the event"""
+  title: String!
+
+  """Detailed description of the event"""
+  description: String!
+
+  """Timestamp when the event was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the event was last updated"""
+  updatedAt: DateTime!
+
+  """Scheduled start date and time of the event"""
+  startAt: DateTime
+
+  """Scheduled end date and time of the event"""
+  endAt: DateTime
+
+  """Date and time when registrations open"""
+  startRegistrationsAt: DateTime
+
+  """Date and time when registrations close"""
+  endRegistrationsAt: DateTime
+
+  """Date and time when the event becomes publicly visible"""
+  visibleAt: DateTime
+
+  """
+  Event configuration including group, ticketing, and registration settings
+  """
+  configuration: EventConfiguration
+
+  """Identifier of the venue where the event takes place"""
+  eventVenueId: ID
+
+  """Identifier of the organization that owns this event"""
+  organizationId: ID!
+
+  """Identifier of the account that created this event"""
+  createdById: ID!
+
+  """Identifier of the tournament this event is linked to"""
+  tournamentId: ID
+
+  """Identifier of the registration series this event belongs to"""
+  registrationSeriesId: ID
+
+  """
+  Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS.
+  """
+  decryptionKey: String!
+
+  """The venue where this event is taking place"""
+  venue: EventVenue
+}
+
+"""Base interface for all event types"""
+interface EventInterface {
+  """Unique identifier of the event"""
+  id: ID!
+
+  """Display title of the event"""
+  title: String!
+
+  """Detailed description of the event"""
+  description: String!
+
+  """Timestamp when the event was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the event was last updated"""
+  updatedAt: DateTime!
+
+  """Scheduled start date and time of the event"""
+  startAt: DateTime
+
+  """Scheduled end date and time of the event"""
+  endAt: DateTime
+
+  """Date and time when registrations open"""
+  startRegistrationsAt: DateTime
+
+  """Date and time when registrations close"""
+  endRegistrationsAt: DateTime
+
+  """Date and time when the event becomes publicly visible"""
+  visibleAt: DateTime
+
+  """
+  Event configuration including group, ticketing, and registration settings
+  """
+  configuration: EventConfiguration
+
+  """Identifier of the venue where the event takes place"""
+  eventVenueId: ID
+
+  """Identifier of the organization that owns this event"""
+  organizationId: ID!
+
+  """Identifier of the account that created this event"""
+  createdById: ID!
+
+  """Identifier of the tournament this event is linked to"""
+  tournamentId: ID
+
+  """Identifier of the registration series this event belongs to"""
+  registrationSeriesId: ID
+
+  """
+  Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS.
+  """
+  decryptionKey: String!
+
+  """The venue where this event is taking place"""
+  venue: EventVenue
+}
+
+"""Event with the current authenticated user's reservation details"""
+type EventWithUserReservation implements EventInterface {
+  """Unique identifier of the event"""
+  id: ID!
+
+  """Display title of the event"""
+  title: String!
+
+  """Detailed description of the event"""
+  description: String!
+
+  """Timestamp when the event was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the event was last updated"""
+  updatedAt: DateTime!
+
+  """Scheduled start date and time of the event"""
+  startAt: DateTime
+
+  """Scheduled end date and time of the event"""
+  endAt: DateTime
+
+  """Date and time when registrations open"""
+  startRegistrationsAt: DateTime
+
+  """Date and time when registrations close"""
+  endRegistrationsAt: DateTime
+
+  """Date and time when the event becomes publicly visible"""
+  visibleAt: DateTime
+
+  """
+  Event configuration including group, ticketing, and registration settings
+  """
+  configuration: EventConfiguration
+
+  """Identifier of the venue where the event takes place"""
+  eventVenueId: ID
+
+  """Identifier of the organization that owns this event"""
+  organizationId: ID!
+
+  """Identifier of the account that created this event"""
+  createdById: ID!
+
+  """Identifier of the tournament this event is linked to"""
+  tournamentId: ID
+
+  """Identifier of the registration series this event belongs to"""
+  registrationSeriesId: ID
+
+  """
+  Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS.
+  """
+  decryptionKey: String!
+
+  """The venue where this event is taking place"""
+  venue: EventVenue
+
+  """The reservation of the current user for this event"""
+  myReservation: EventReservationWithTicketsAndQrCode
+}
+
+"""Paginated list of events"""
+type Events {
+  """List of edges containing cursor and node pairs"""
+  edges: [EventEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [Event!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type EventEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: Event!
+}
+
+"""Outcome of a calendar generation run"""
+type EventCalendarGenerateResult {
+  """Events of the requested days"""
+  events: [Event!]!
+
+  """Events created by this run"""
+  createdEventCount: Int!
+
+  """Events that already existed"""
+  existingEventCount: Int!
+
+  """Slots created by this run"""
+  createdSlotCount: Int!
+
+  """Slots that already existed"""
+  existingSlotCount: Int!
+}
+
+"""
+Configuration for a ticket type including custom fields that attendees must fill
+"""
+type EventTicketConfigurationConfiguration {
+  """
+  Custom fields that attendees must fill when purchasing this ticket type
+  """
+  customFields: [Property!]!
+}
+
+"""
+A ticket type configuration for an event, defining pricing, availability, and custom fields
+"""
+type EventTicketConfiguration {
+  """Unique identifier of the ticket configuration"""
+  id: ID!
+
+  """Display name of the ticket type"""
+  name: String!
+
+  """Description of what this ticket type includes"""
+  description: String!
+
+  """Timestamp when the ticket configuration was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the ticket configuration was last updated"""
+  updatedAt: DateTime!
+
+  """Price of the ticket in the smallest currency unit (e.g., cents)"""
+  price: Float!
+
+  """Currency code for the ticket price"""
+  currency: ShopCurrencies!
+
+  """Maximum number of tickets available for this configuration"""
+  maxCount: Float!
+
+  """Current number of tickets that have been sold or reserved"""
+  currentCount: Float!
+
+  """Whether this ticket type is currently available for purchase"""
+  buyable: Boolean!
+
+  """Identifier of the event this ticket configuration belongs to"""
+  eventId: ID!
+
+  """Identifier of the venue seat type associated with this ticket"""
+  seatTypeId: ID
+
+  """Additional configuration including custom fields for this ticket type"""
+  configuration: EventTicketConfigurationConfiguration
+
+  """Start of the time slot sold by this ticket configuration"""
+  startsAt: DateTime
+
+  """End of the time slot sold by this ticket configuration"""
+  endsAt: DateTime
+
+  """State of the time slot set by the organizer"""
+  state: EventSlotState!
+
+  """Reason shown for a closed or blocked slot"""
+  stateReason: String
+
+  """Tournament linked to this slot, overriding the tournament of the event"""
+  tournamentId: ID
+
+  """Seats still available, never negative"""
+  freeCount: Int!
+
+  """State of the slot at the time of the request, PAST once started"""
+  effectiveState: EventSlotEffectiveState!
+}
+
+enum ShopCurrencies {
+  USD
+  EUR
+  GBP
+}
+
+enum EventSlotState {
+  OPEN
+  CLOSED
+  BLOCKED
+}
+
+enum EventSlotEffectiveState {
+  OPEN
+  CLOSED
+  BLOCKED
+  PAST
 }
 
 """Configuration settings for a venue seat type"""
@@ -5457,6 +6444,9 @@ type EventVenue {
 
   """Identifier of the organization that owns this venue"""
   organizationId: ID!
+
+  """IANA timezone of the venue, such as Europe/Paris"""
+  timezone: String!
 }
 
 """Paginated list of event venues"""
@@ -5483,64 +6473,230 @@ type EventVenueEdge {
   node: EventVenue!
 }
 
-"""
-Configuration for a ticket type including custom fields that attendees must fill
-"""
-type EventTicketConfigurationConfiguration {
-  """
-  Custom fields that attendees must fill when purchasing this ticket type
-  """
-  customFields: [Property!]!
-}
-
-"""
-A ticket type configuration for an event, defining pricing, availability, and custom fields
-"""
-type EventTicketConfiguration {
-  """Unique identifier of the ticket configuration"""
+"""A player waiting for seats on a time slot"""
+type EventWaitlistEntry {
+  """Unique identifier of the entry"""
   id: ID!
 
-  """Display name of the ticket type"""
-  name: String!
-
-  """Description of what this ticket type includes"""
-  description: String!
-
-  """Timestamp when the ticket configuration was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the ticket configuration was last updated"""
-  updatedAt: DateTime!
-
-  """Price of the ticket in the smallest currency unit (e.g., cents)"""
-  price: Float!
-
-  """Currency code for the ticket price"""
-  currency: ShopCurrencies!
-
-  """Maximum number of tickets available for this configuration"""
-  maxCount: Float!
-
-  """Current number of tickets that have been sold or reserved"""
-  currentCount: Float!
-
-  """Whether this ticket type is currently available for purchase"""
-  buyable: Boolean!
-
-  """Identifier of the event this ticket configuration belongs to"""
+  """Event of the slot"""
   eventId: ID!
 
-  """Identifier of the venue seat type associated with this ticket"""
-  seatTypeId: ID
+  """Ticket configuration (slot) waited for"""
+  ticketConfigurationId: ID!
 
-  """Additional configuration including custom fields for this ticket type"""
-  configuration: EventTicketConfigurationConfiguration
+  """Player who joined the waitlist"""
+  playerId: ID!
+
+  """Number of seats requested"""
+  quantity: Int!
+
+  """Current status of the entry"""
+  status: EventWaitlistEntryStatus!
+
+  """Why the entry left the waitlist"""
+  endedReason: EventWaitlistEndReason
+
+  """Position among the waiting entries of the slot, 1 being next"""
+  position: Int
+
+  """Reservation holding the offered seats"""
+  offerReservationId: ID
+
+  """Expiry of the current offer"""
+  offerExpiresAt: DateTime
+
+  """Timestamp when the entry was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the entry was last updated"""
+  updatedAt: DateTime!
 }
 
-enum ShopCurrencies {
-  USD
-  EUR
-  GBP
+enum EventWaitlistEntryStatus {
+  WAITING
+  OFFERED
+  ACCEPTED
+  EXPIRED
+  LEFT
+}
+
+enum EventWaitlistEndReason {
+  LEFT
+  REMOVED
+  REPLACED
+  REGISTERED_ELSEWHERE
+  ALREADY_REGISTERED
+  OFFER_EXPIRED
+  SLOT_CLOSED
+}
+
+"""Paginated list of waitlist entries"""
+type EventWaitlistEntries {
+  """List of edges containing cursor and node pairs"""
+  edges: [EventWaitlistEntryEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [EventWaitlistEntry!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type EventWaitlistEntryEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: EventWaitlistEntry!
+}
+
+"""
+Guest identity attached to an ownerless player profile of the organization
+"""
+type GuestProfile {
+  """ID of the guest player profile"""
+  playerId: ID!
+
+  """The guest player profile"""
+  player: Player!
+
+  """
+  Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view
+  """
+  email: String
+
+  """First name, same visibility as email"""
+  firstName: String
+
+  """Last name, same visibility as email"""
+  lastName: String
+
+  """How the guest was created"""
+  origin: GuestOrigin!
+
+  """Players acting as guardians of this guest"""
+  guardianPlayerIds: [ID!]!
+
+  """Guests this player is the guardian of"""
+  wardPlayerIds: [ID!]!
+
+  """Creation date"""
+  createdAt: DateTime!
+}
+
+enum GuestOrigin {
+  ENTRY
+  INVITED
+  GUARDIAN
+  ADMIN
+}
+
+"""Magic link a guest session was opened from"""
+type GuestLinkContext {
+  id: ID!
+
+  """Purpose set by the link creator"""
+  purpose: String!
+
+  """JSON payload set by the link creator"""
+  data: String!
+  expiresAt: DateTime!
+}
+
+"""A guest session; send its token in the x-guest-session header"""
+type GuestSession {
+  """Session token, returned only when the session opens"""
+  token: String!
+
+  """Guest player the session belongs to"""
+  playerId: ID!
+  origin: GuestSessionOrigin!
+  expiresAt: DateTime!
+  link: GuestLinkContext
+}
+
+enum GuestSessionOrigin {
+  ENTRY
+  LINK
+}
+
+"""The current guest session"""
+type GuestMe {
+  """Player that owns the session"""
+  sessionPlayerId: ID!
+
+  """
+  Player the request acts as: the session player, or a ward through x-acting-player-id
+  """
+  actingPlayerId: ID!
+  origin: GuestSessionOrigin!
+  expiresAt: DateTime!
+  link: GuestLinkContext
+  profile: GuestProfile!
+  wards: [GuestProfile!]!
+}
+
+"""Read-only view of a magic link; reading it never consumes a use"""
+type GuestLinkView {
+  status: GuestLinkStatus!
+
+  """Null when INVALID"""
+  purpose: String
+
+  """Null when INVALID"""
+  expiresAt: DateTime
+
+  """Guest first name, only when VALID"""
+  firstName: String
+
+  """Link payload, only when VALID"""
+  data: String
+}
+
+enum GuestLinkStatus {
+  VALID
+  EXPIRED
+  REVOKED
+  EXHAUSTED
+  INVALID
+}
+
+"""A new magic link; the token is returned only once"""
+type GuestLinkCreated {
+  id: ID!
+  token: String!
+  expiresAt: DateTime!
+}
+
+type GuestProfileCreated {
+  profile: GuestProfile!
+
+  """False when an addressable guest with the same e-mail existed"""
+  created: Boolean!
+}
+
+"""A guardian allowed to act for a guest ward"""
+type GuestGuardianLink {
+  id: ID!
+  guardianPlayerId: ID!
+  wardPlayerId: ID!
+  createdAt: DateTime!
+}
+
+"""Guest settings of the organization"""
+type GuestConfiguration {
+  selfEntry: GuestSelfEntryMode!
+  sessionTtlMinutes: Int!
+  maxWardsPerGuardian: Int!
+}
+
+enum GuestSelfEntryMode {
+  DISABLED
+  TRUSTED_PARAMS
 }
 
 """Represents a virtual item that can be assigned to players"""
@@ -5922,265 +7078,6 @@ type SimulationActorContext implements JournalActorContextPayload {
   source: String!
 }
 
-"""A published app listing in the marketplace"""
-type MarketplaceApp {
-  """Unique identifier of the marketplace app"""
-  id: ID!
-
-  """ID of the underlying organization app"""
-  organizationAppId: ID!
-
-  """Current publication status of the app"""
-  status: MarketplaceAppStatus!
-
-  """App manifest describing capabilities and configuration"""
-  manifest: AppManifestModel!
-
-  """Display name of the marketplace app"""
-  name: String!
-
-  """Full description of the app"""
-  description: String!
-
-  """Short summary displayed on app cards"""
-  shortDescription: String!
-
-  """URL of the app icon image"""
-  icon: String
-
-  """URLs of app screenshot images"""
-  screenshots: [String!]!
-
-  """Category tags for filtering and discovery"""
-  categories: [String!]!
-
-  """Current semantic version of the app"""
-  version: String!
-
-  """URL to the app privacy policy"""
-  privacyPolicyUrl: String
-
-  """URL to the app support page"""
-  supportUrl: String
-
-  """URL to the app website"""
-  websiteUrl: String
-
-  """Timestamp when the app was first published"""
-  createdAt: DateTime!
-
-  """Timestamp when the app listing was last updated"""
-  updatedAt: DateTime!
-
-  """Reviews for this marketplace app"""
-  reviews(page: PageInfo): MarketplaceAppReviews!
-
-  """Aggregated stats for this marketplace app"""
-  stats: MarketplaceAppStats!
-
-  """Current organization installation of this app, if any"""
-  installation: MarketplaceAppInstallation
-
-  """Pricing information for this marketplace app"""
-  pricing: MarketplaceAppPricing
-}
-
-"""Status of a marketplace app listing"""
-enum MarketplaceAppStatus {
-  DRAFT
-  IN_REVIEW
-  PUBLISHED
-  REJECTED
-  SUSPENDED
-}
-
-"""Paginated list of marketplace apps"""
-type MarketplaceApps {
-  """List of edges containing cursor and node pairs"""
-  edges: [MarketplaceAppEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [MarketplaceApp!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type MarketplaceAppEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: MarketplaceApp!
-}
-
-"""A user review and rating for a marketplace app"""
-type MarketplaceAppReview {
-  """Unique identifier of the review"""
-  id: ID!
-
-  """ID of the marketplace app being reviewed"""
-  marketplaceAppId: ID!
-
-  """ID of the organization that submitted the review"""
-  organizationId: ID!
-
-  """ID of the account that authored the review"""
-  accountId: ID!
-
-  """Star rating from 1 to 5"""
-  rating: Int!
-
-  """Review title"""
-  title: String!
-
-  """Review body text"""
-  body: String!
-
-  """Timestamp when the review was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the review was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Paginated list of marketplace app reviews"""
-type MarketplaceAppReviews {
-  """List of edges containing cursor and node pairs"""
-  edges: [MarketplaceAppReviewEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [MarketplaceAppReview!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type MarketplaceAppReviewEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: MarketplaceAppReview!
-}
-
-"""A marketplace app installation within an organization"""
-type MarketplaceAppInstallation {
-  """Unique identifier of the installation"""
-  id: ID!
-
-  """ID of the installed marketplace app"""
-  marketplaceAppId: ID!
-
-  """ID of the organization where the app is installed"""
-  organizationId: ID!
-
-  """ID of the account that performed the installation"""
-  installedById: ID!
-
-  """Current status of the installation"""
-  status: MarketplaceInstallationStatus!
-
-  """
-  Permissions granted to this app by the organization (OrganizationPermission IDs)
-  """
-  grantedPermissions: [String!]!
-
-  """Timestamp when the app was installed"""
-  createdAt: DateTime!
-
-  """Timestamp when the installation was last updated"""
-  updatedAt: DateTime!
-
-  """The marketplace app for this installation"""
-  marketplaceApp: MarketplaceApp!
-}
-
-"""Status of a marketplace app installation"""
-enum MarketplaceInstallationStatus {
-  ACTIVE
-  SUSPENDED
-  UNINSTALLED
-}
-
-"""Paginated list of marketplace app installations"""
-type MarketplaceAppInstallations {
-  """List of edges containing cursor and node pairs"""
-  edges: [MarketplaceAppInstallationEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [MarketplaceAppInstallation!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type MarketplaceAppInstallationEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: MarketplaceAppInstallation!
-}
-
-"""Aggregated statistics for a marketplace app"""
-type MarketplaceAppStats {
-  """Total number of active installations across all organizations"""
-  totalInstallations: Int!
-
-  """Average star rating from all reviews"""
-  averageRating: Float
-
-  """Total number of reviews submitted for this app"""
-  totalReviews: Int!
-}
-
-"""Pricing configuration for a marketplace app"""
-type MarketplaceAppPricing {
-  """Unique identifier of the pricing record"""
-  id: ID!
-
-  """ID of the marketplace app this pricing applies to"""
-  marketplaceAppId: ID!
-
-  """Pricing model type (e.g. one-time, subscription, free)"""
-  type: MarketplacePricingType!
-
-  """Price amount in the smallest currency unit (e.g. cents)"""
-  priceAmountCents: Int!
-
-  """ISO 4217 currency code"""
-  currency: String!
-
-  """Number of free trial days for subscription pricing"""
-  trialDays: Int!
-
-  """Timestamp when the pricing was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the pricing was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Pricing model for a marketplace app"""
-enum MarketplacePricingType {
-  FREE
-  ONE_TIME
-  SUBSCRIPTION
-}
-
 """A single configuration property for a platform module"""
 type ModuleConfigProp {
   """Configuration property key"""
@@ -6267,6 +7164,16 @@ type EntityMetafield {
 
   """Timestamp when the metafield was last updated"""
   updatedAt: DateTime!
+}
+
+"""Terms refused in moderated player text"""
+type OrganizationModeration {
+  """Refused as whole words"""
+  blockedWords: [String!]!
+
+  """Refused anywhere inside the text"""
+  blockedSubstrings: [String!]!
+  updatedAt: DateTime
 }
 
 """A typed metadata entry attached to an organization object"""
@@ -6585,6 +7492,45 @@ enum ObjectType {
 
   """Journal Entry entity"""
   JournalEntry
+
+  """Marketplace App Release File entity"""
+  MarketplaceAppReleaseFile
+
+  """Permission Definition entity"""
+  PermissionDefinition
+
+  """App Email Delivery entity"""
+  AppEmailDelivery
+
+  """Guest Profile entity"""
+  GuestProfile
+
+  """Guest Guardian Link entity"""
+  GuestGuardianLink
+
+  """Guest Link entity"""
+  GuestLink
+
+  """Guest Session entity"""
+  GuestSession
+
+  """Guest Configuration entity"""
+  GuestConfiguration
+
+  """Organization Moderation entity"""
+  OrganizationModeration
+
+  """Registration Series entity"""
+  RegistrationSeries
+
+  """Event Waitlist Entry entity"""
+  EventWaitlistEntry
+
+  """Leaderboard Feed entity"""
+  LeaderboardFeed
+
+  """Leaderboard Feed Entry entity"""
+  LeaderboardFeedEntry
 }
 
 """Metadata entries grouped by object ID for batch queries"""
@@ -6658,6 +7604,9 @@ type CustomFieldDefinitionModel {
 
   """Timestamp when the definition was last updated"""
   updatedAt: DateTime!
+
+  """Whether values are checked against the organization moderation lists"""
+  moderated: Boolean!
 }
 
 enum CustomFieldType {
@@ -7285,6 +8234,14 @@ enum OrganizationLimitsType {
   SHOP_PRODUCTS
   MARKETPLACE_PUBLISHED_APPS
   MARKETPLACE_INSTALLATIONS
+  APP_FUNCTION_INVOCATIONS
+  APP_FUNCTION_CONCURRENCY
+  APP_TIMERS_PENDING
+  APP_EMAILS
+  APP_FUNCTIONS
+  APP_CRONS
+  REGISTRATION_SERIES
+  EVENTS_MAX_WAITLIST_ENTRIES
 }
 
 """
@@ -7714,6 +8671,40 @@ input EventVenueSeatConfigurationInput {
   position: PositionInput!
 }
 
+input EventWaitlistConfigurationInput {
+  """Whether players may join the waitlist of a full slot"""
+  enabled: Boolean!
+
+  """Seconds an offer holds the seats, default is 86400"""
+  offerDurationSeconds: Int
+
+  """
+  Seconds an offer holds the seats when made on the day of the slot, in the venue timezone
+  """
+  sameDayOfferDurationSeconds: Int
+
+  """
+  Maximum seats one entry may request, default is maxTicketsPerReservation
+  """
+  maxQuantity: Int
+}
+
+input EventSelfServiceConfigurationInput {
+  """Manager may cancel a validated free reservation"""
+  allowCancel: Boolean!
+
+  """Manager may move a validated free reservation"""
+  allowChange: Boolean!
+
+  """
+  Self-service closes this many seconds before the earliest slot start of the reservation, default is 0
+  """
+  cutoffSeconds: Int
+
+  """Allowed targets of a move, default is SAME_EVENT"""
+  changeScope: EventReservationChangeScope
+}
+
 """Input for event configuration settings"""
 input EventConfigurationInput {
   """Custom fields that are defined on each teams"""
@@ -7752,6 +8743,20 @@ input EventConfigurationInput {
 
   """Allow to reserve more tickets than group members"""
   allowForMoreTicketsThanGroupMembers: Boolean
+
+  """Waitlist settings of the time slots"""
+  waitlist: EventWaitlistConfigurationInput
+
+  """Self-service cancel and move settings"""
+  selfService: EventSelfServiceConfigurationInput
+}
+
+"""Input for ticket configuration settings"""
+input EventTicketConfigurationConfigurationInput {
+  """
+  Custom fields that attendees must fill when purchasing this ticket type
+  """
+  customFields: [PropertyInput!]!
 }
 
 """Input for venue seat type configuration settings"""
@@ -7764,14 +8769,6 @@ input EventVenueSeatTypeConfigurationInput {
 input EventVenueConfigurationInput {
   """URL or S3 key of the venue image"""
   imageUrl: String
-}
-
-"""Input for ticket configuration settings"""
-input EventTicketConfigurationConfigurationInput {
-  """
-  Custom fields that attendees must fill when purchasing this ticket type
-  """
-  customFields: [PropertyInput!]!
 }
 
 """Input for platform configuration settings"""
@@ -8209,6 +9206,15 @@ type Query {
   """Retrieve a paginated list of seat types for a specific venue"""
   eventVenueSeatTypes(venueId: ID!, page: PageInfo!): EventVenueSeatTypes!
 
+  """Time slots matching the filter, ordered by start time"""
+  eventSlots(filter: EventSlotsFilter!): [EventTicketConfiguration!]!
+
+  """Waitlist entries of the caller's player"""
+  myWaitlistEntries(eventIds: [ID!], activeOnly: Boolean = true): [EventWaitlistEntry!]!
+
+  """Waitlist entries of an event, in queue order"""
+  eventWaitlistEntries(eventId: ID!, ticketConfigurationId: ID, statuses: [EventWaitlistEntryStatus!], page: PageInfo!): EventWaitlistEntries!
+
   """
   Retrieve the payment collection configuration for the current organization, including Stripe account details and fees
   """
@@ -8305,6 +9311,35 @@ type Query {
   Get custom field values for multiple objects of the same type in a single query
   """
   customFieldValuesBatch(objectType: ObjectType!, objectIds: [ID!]!): [CustomFieldValuesBatchResultModel!]!
+  appInstallationPublicConfig(appSlug: String!): [AppConfigEntry!]!
+  appInstallationConfig(appSlug: String!): [AppConfigEntry!]!
+  appFunctionRead(input: AppFunctionCallInput!): AppFunctionResult!
+  permissionDefinitions: [PermissionDefinitionDto!]!
+  hasPermissions(checks: [PermissionCheckInput!]!): [Boolean!]!
+
+  """Retrieve a registration series by ID"""
+  registrationSeries(id: ID!): RegistrationSeries!
+
+  """Paginated list of the registration series of the organization"""
+  registrationSeriesList(page: PageInfo!): RegistrationSeriesPage!
+
+  """The caller's registrations that count against the series limits"""
+  myActiveRegistrations(seriesId: ID!): [RegistrationSeriesEntry!]!
+
+  """A player's registrations that count against the series limits"""
+  registrationSeriesPlayerEntries(seriesId: ID!, playerId: ID!): [RegistrationSeriesEntry!]!
+
+  """The current guest session"""
+  guestMe: GuestMe!
+  guestConfiguration: GuestConfiguration!
+
+  """Read a magic link without consuming it"""
+  guestLinkResolve(token: String!): GuestLinkView!
+
+  """
+  Banned words and substrings applied to nicknames and team names of the current organization.
+  """
+  organizationModeration: OrganizationModeration!
 }
 
 """Input for retrieving a player ranking on a leaderboard"""
@@ -8711,6 +9746,28 @@ input EventReservationsQueryPlayerIdWithGroupStatusInput {
   memberStatus: UserGroupMemberStatus
 }
 
+"""
+Filter for time slots; at least one criterion is required and at most 1000 slots are returned
+"""
+input EventSlotsFilter {
+  """Restrict to these events"""
+  eventIds: [ID!]
+
+  """Restrict to events held in these venues"""
+  venueIds: [ID!]
+
+  """Slots starting at or after this time"""
+  from: DateTime
+
+  """Slots starting before this time"""
+  to: DateTime
+
+  """
+  Keep only open, buyable slots that have not started and still have free seats
+  """
+  onlyReservable: Boolean
+}
+
 """Query input for filtering user groups by their IDs"""
 input UserGroupsQueryInput {
   """List of user group IDs to retrieve"""
@@ -8838,6 +9895,18 @@ input EntityMetafieldsFilterInput {
 
   """Filter by the app ID that owns the metafields"""
   appId: ID
+}
+
+input AppFunctionCallInput {
+  appSlug: String!
+  function: String!
+  payload: String
+  idempotencyKey: String
+}
+
+input PermissionCheckInput {
+  permission: String!
+  resource: String
 }
 
 type Mutation {
@@ -9399,6 +10468,30 @@ type Mutation {
   eventVenueSeatTypeDelete(id: ID!): EventVenueSeatType!
 
   """
+  Create the missing events and time slots of the given days; existing ones are left untouched
+  """
+  eventCalendarGenerate(input: EventCalendarGenerateInput!): EventCalendarGenerateResult!
+
+  """Join the waitlist of a full time slot"""
+  eventWaitlistJoin(ticketConfigurationId: ID!, quantity: Int!, replaceEntryId: ID): EventWaitlistEntry!
+
+  """Leave one of the caller's waitlist entries"""
+  eventWaitlistLeave(entryId: ID!): EventWaitlistEntry!
+
+  """Remove an entry from a waitlist"""
+  eventWaitlistRemoveEntry(entryId: ID!): EventWaitlistEntry!
+
+  """
+  Move a validated free reservation to other time slots, on the same or another event
+  """
+  eventReservationChangeTickets(reservationId: ID!, input: EventReservationChangeTicketsInput!): EventReservation!
+
+  """
+  Release unassigned tickets of a validated reservation; at least one ticket must remain
+  """
+  eventReservationReleaseTickets(reservationId: ID!, reservationTicketIds: [ID!]!): EventReservation!
+
+  """
   Create or update the Stripe Connect account for the organization and return the onboarding/update URL
   """
   organizationPaymentCollectionConfigurationCreateOrUpdateAccount: String!
@@ -9554,6 +10647,69 @@ type Mutation {
 
   """Set custom field values on an object"""
   setCustomFieldValues(input: SetCustomFieldValuesInput!): [CustomFieldWithValueModel!]!
+  appInstallationPin(input: AppInstallationPinInput!): MarketplaceAppInstallation!
+  appFunctionsSetEnabled(appSlug: String!, function: String, enabled: Boolean!): MarketplaceAppInstallation!
+  appInstallationConfigSet(appSlug: String!, values: [AppConfigValueInput!]!): [AppConfigEntry!]!
+  appFunctionCall(input: AppFunctionCallInput!): AppFunctionResult!
+  customPermissionCreate(input: CustomPermissionInput!): PermissionDefinitionDto!
+  customPermissionUpdate(id: String!, input: CustomPermissionUpdateInput!): PermissionDefinitionDto!
+  customPermissionDelete(id: String!): Boolean!
+
+  """Create a registration series"""
+  registrationSeriesCreate(input: RegistrationSeriesCreateInput!): RegistrationSeries!
+
+  """Update a registration series"""
+  registrationSeriesUpdate(id: ID!, input: RegistrationSeriesUpdateInput!): RegistrationSeries!
+
+  """
+  Delete a registration series; its events and tournaments leave the series
+  """
+  registrationSeriesDelete(id: ID!): Boolean!
+
+  """
+  Assign events and tournaments to a series, or remove them from their series when seriesId is null
+  """
+  registrationSeriesAssign(seriesId: ID, eventIds: [ID!], tournamentIds: [ID!]): Boolean!
+
+  """Create a guest ward; the session player becomes its guardian"""
+  guestWardCreate(input: GuestWardCreateInput!): GuestProfile!
+
+  """
+  Unlink a ward; deletes it when created by its guardian and no other guardian remains
+  """
+  guestWardRemove(wardPlayerId: ID!): Boolean!
+
+  """
+  Create a guest, or return the existing addressable guest with the same e-mail
+  """
+  guestProfileCreate(input: GuestProfileCreateInput!): GuestProfileCreated!
+  guestProfileUpdate(playerId: ID!, input: GuestProfileUpdateInput!): GuestProfile!
+  guestGuardianLinkCreate(guardianPlayerId: ID!, wardPlayerId: ID!): GuestGuardianLink!
+  guestGuardianLinkDelete(id: ID!): Boolean!
+  guestConfigurationUpdate(input: GuestConfigurationInput!): GuestConfiguration!
+
+  """Consume one use of a magic link and open a guest session"""
+  guestLinkExchange(token: String!): GuestSession!
+
+  """Revoke the current guest session"""
+  guestSessionEnd: Boolean!
+  guestLinkCreate(input: GuestLinkCreateInput!): GuestLinkCreated!
+
+  """Number of links revoked"""
+  guestLinkRevoke(input: GuestLinkRevokeInput!): Int!
+
+  """Number of sessions revoked"""
+  guestSessionsRevoke(playerId: ID!): Int!
+
+  """
+  Open a guest session from trusted entry parameters; needs selfEntry TRUSTED_PARAMS
+  """
+  guestEnter(input: GuestEnterInput!): GuestSession!
+
+  """
+  Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation).
+  """
+  organizationModerationUpdate(input: OrganizationModerationInput!): OrganizationModeration!
 }
 
 """Input for creating or updating a reusable configuration preset"""
@@ -9945,6 +11101,18 @@ input AppManifestInput {
 
   """Frontend micro-frontend modules registered by this app"""
   frontendModules: [FrontendModuleInput!]! = []
+  config: [AppConfigDeclInput!]
+  customPermissions: [AppCustomPermissionDeclInput!]
+  storage: AppStorageDeclInput
+  operations: [AppOperationDeclInput!]
+  emailTemplates: [AppEmailTemplateDeclInput!]
+  auditTypes: [AppAuditTypeDeclInput!]
+  functions: [AppFunctionDeclInput!]
+
+  """
+  Open functions that check their caller in code instead of declaring requires
+  """
+  codeAuthorized: [String!]
 }
 
 """Input for defining a UI extension point in an app manifest"""
@@ -10042,6 +11210,130 @@ input FrontendModuleEventInput {
 
   """Description of when this event is emitted"""
   description: String
+}
+
+"""A configuration key declared by an app"""
+input AppConfigDeclInput {
+  key: String!
+  type: AppConfigType!
+  label: String!
+  description: String
+  required: Boolean
+  defaultValue: String
+  options: [String!]
+  min: Float
+  max: Float
+  pattern: String
+
+  """Readable without authentication"""
+  public: Boolean
+}
+
+"""A permission defined by an app"""
+input AppCustomPermissionDeclInput {
+  name: String!
+  description: String!
+  resources: [String!]
+}
+
+"""Storage declared by an app"""
+input AppStorageDeclInput {
+  collections: [AppStorageCollectionDeclInput!]!
+}
+
+"""A storage collection declared by an app"""
+input AppStorageCollectionDeclInput {
+  name: String!
+  ttlSeconds: Int
+}
+
+"""A GraphQL operation file shipped by an app"""
+input AppOperationDeclInput {
+  name: String!
+  file: String!
+}
+
+"""An e-mail template shipped by an app"""
+input AppEmailTemplateDeclInput {
+  key: String!
+  subject: String!
+  file: String!
+}
+
+"""An audit entry type written by an app"""
+input AppAuditTypeDeclInput {
+  type: String!
+  fields: [AppFieldDeclInput!]!
+}
+
+"""
+A typed field of a function input, output or audit type; OBJECT uses fields, LIST uses items
+"""
+input AppFieldDeclInput {
+  name: String!
+  type: AppFieldType!
+  required: Boolean
+  options: [String!]
+  fields: [AppFieldDeclInput!]
+  items: AppFieldDeclInput
+  maxLength: Int
+  min: Float
+  max: Float
+}
+
+"""A server function shipped by an app"""
+input AppFunctionDeclInput {
+  name: String!
+  file: String!
+  trigger: AppFunctionTriggerInput!
+  invoker: [AppFunctionInvokerKind!]
+  runAs: AppFunctionRunAs
+  input: [AppFieldDeclInput!]
+  output: [AppFieldDeclInput!]
+  preload: [AppFunctionPreloadDeclInput!]
+  requires: [AppFunctionRequirementDeclInput!]
+}
+
+"""
+What runs a function. CALL: readOnly, cacheSeconds. HOOK: hookPoint, onError, timeoutMs. EVENT: events, selfTrigger. CRON: cron, timezone. LIFECYCLE: lifecycle
+"""
+input AppFunctionTriggerInput {
+  type: AppFunctionTriggerType!
+  readOnly: Boolean
+  cacheSeconds: Int
+  hookPoint: AppHookPoint
+  onError: AppHookErrorPolicy
+  timeoutMs: Int
+  events: [WebhookEventType!]
+  selfTrigger: Boolean
+  cron: String
+  timezone: String
+  lifecycle: [AppLifecycleTransition!]
+}
+
+"""An operation run before a function starts"""
+input AppFunctionPreloadDeclInput {
+  name: String!
+
+  """Name of a declared operation"""
+  op: String!
+  vars: [AppFunctionPreloadVarInput!]
+}
+
+"""A variable passed to a preload operation"""
+input AppFunctionPreloadVarInput {
+  name: String!
+
+  """Template using $input, $config, $data.<earlier preload> or $caller"""
+  value: String!
+}
+
+"""A permission the caller must hold"""
+input AppFunctionRequirementDeclInput {
+  permission: String!
+
+  """Template using $input, $config, $data.<earlier preload> or $caller"""
+  resource: String
 }
 
 """Input for creating a new app release"""
@@ -11029,6 +12321,9 @@ input EventCreateInput {
 
   """Identifier of the venue where the event takes place"""
   eventVenueId: ID
+
+  """Identifier of the tournament this event is linked to"""
+  tournamentId: ID
 }
 
 """Input for updating an existing event with partial fields"""
@@ -11061,6 +12356,9 @@ input EventUpdateInput {
 
   """Identifier of the venue where the event takes place"""
   eventVenueId: ID
+
+  """Identifier of the tournament this event is linked to"""
+  tournamentId: ID
 }
 
 """Input for creating a new ticket configuration for an event"""
@@ -11091,6 +12389,21 @@ input EventTicketConfigurationCreateInput {
 
   """Additional configuration including custom fields for this ticket type"""
   configuration: EventTicketConfigurationConfigurationInput
+
+  """Start of the time slot sold by this ticket configuration"""
+  startsAt: DateTime
+
+  """End of the time slot sold by this ticket configuration"""
+  endsAt: DateTime
+
+  """Reason shown for a closed or blocked slot"""
+  stateReason: String
+
+  """Tournament linked to this slot, overriding the tournament of the event"""
+  tournamentId: ID
+
+  """State of the time slot, default is OPEN"""
+  state: EventSlotState
 }
 
 """
@@ -11120,6 +12433,21 @@ input EventTicketConfigurationUpdateInput {
 
   """Additional configuration including custom fields for this ticket type"""
   configuration: EventTicketConfigurationConfigurationInput
+
+  """Start of the time slot sold by this ticket configuration"""
+  startsAt: DateTime
+
+  """End of the time slot sold by this ticket configuration"""
+  endsAt: DateTime
+
+  """Reason shown for a closed or blocked slot"""
+  stateReason: String
+
+  """Tournament linked to this slot, overriding the tournament of the event"""
+  tournamentId: ID
+
+  """State of the time slot, default is OPEN"""
+  state: EventSlotState
 }
 
 """
@@ -11217,6 +12545,9 @@ input EventVenueCreateInput {
 
   """Postal or ZIP code of the venue"""
   postalCode: String!
+
+  """IANA timezone of the venue, default is UTC"""
+  timezone: String
 }
 
 """Input for updating an existing event venue with partial fields"""
@@ -11241,6 +12572,9 @@ input EventVenueUpdateInput {
 
   """Postal or ZIP code of the venue"""
   postalCode: String
+
+  """IANA timezone of the venue, default is UTC"""
+  timezone: String
 }
 
 """
@@ -11306,6 +12640,98 @@ input EventVenueSeatTypeUpdateInput {
 
   """Configuration settings for this seat type"""
   configuration: EventVenueSeatTypeConfigurationInput
+}
+
+"""
+Idempotent generation of one event per day and venue with its time slots
+"""
+input EventCalendarGenerateInput {
+  """Days to generate"""
+  days: [EventCalendarDayInput!]!
+
+  """Slot template shared by every day"""
+  slots: EventCalendarSlotTemplateInput!
+
+  """Event template shared by every day"""
+  event: EventCalendarEventTemplateInput!
+
+  """Registration series assigned to every generated event"""
+  registrationSeriesId: ID
+}
+
+"""One day to generate in one venue"""
+input EventCalendarDayInput {
+  """Venue of the day"""
+  venueId: ID!
+
+  """Local date of the day (YYYY-MM-DD)"""
+  date: String!
+
+  """Tournament linked to the event of the day"""
+  tournamentId: ID
+
+  """Slot template overriding the shared one for this day"""
+  slots: EventCalendarSlotTemplateInput
+}
+
+"""Template of the time slots generated for one day"""
+input EventCalendarSlotTemplateInput {
+  """Local start time of the first slot (HH:mm)"""
+  firstStartTime: String!
+
+  """Local start time of the last slot (HH:mm)"""
+  lastStartTime: String!
+
+  """Minutes between two slot starts"""
+  intervalMinutes: Int!
+
+  """Duration of each slot in minutes"""
+  durationMinutes: Int!
+
+  """Seats per slot"""
+  maxCount: Int!
+
+  """Price of a seat in the smallest currency unit"""
+  price: Int!
+
+  """Currency code of the price"""
+  currency: String!
+
+  """Slot name pattern; {start} is replaced by the local start time"""
+  namePattern: String
+
+  """Description of each slot"""
+  description: String
+}
+
+"""Template of the event created for each day"""
+input EventCalendarEventTemplateInput {
+  """Title pattern of each event"""
+  titlePattern: String!
+
+  """Description of each event"""
+  description: String!
+
+  """Configuration applied to each event"""
+  configuration: EventConfigurationInput
+
+  """Date and time when registrations open"""
+  startRegistrationsAt: DateTime
+
+  """Date and time when registrations close"""
+  endRegistrationsAt: DateTime
+
+  """Date and time when the events become publicly visible"""
+  visibleAt: DateTime
+}
+
+"""New tickets of a reservation, on the same or another event"""
+input EventReservationChangeTicketsInput {
+  """Event to move the reservation to; the current event when omitted"""
+  targetEventId: ID
+
+  """Tickets replacing the current ones"""
+  tickets: [EventReservationRegisterTicketInput!]!
 }
 
 """Input for creating a new shop"""
@@ -11670,6 +13096,15 @@ input PublishMarketplaceAppInput {
 
   """Website URL"""
   websiteUrl: String
+
+  """Unique app slug"""
+  slug: String
+
+  """Listing visibility"""
+  visibility: MarketplaceAppVisibility = PUBLIC
+
+  """Organizations allowed to install a private app"""
+  allowedOrganizationIds: [ID!]
 }
 
 """Input for updating an existing marketplace app listing"""
@@ -11706,6 +13141,15 @@ input UpdateMarketplaceAppInput {
 
   """Website URL"""
   websiteUrl: String
+
+  """Unique app slug"""
+  slug: String
+
+  """Listing visibility"""
+  visibility: MarketplaceAppVisibility
+
+  """Organizations allowed to install a private app"""
+  allowedOrganizationIds: [ID!]
 }
 
 """Input for installing a marketplace app into an organization"""
@@ -11786,6 +13230,16 @@ input AppCreateReleaseInput {
 
   """Estimated module bundle size in bytes for presigned URL"""
   moduleBundleSize: Int
+
+  """Functions, operations and e-mail templates"""
+  files: [AppReleaseFileInput!]
+}
+
+"""A server file shipped with a release"""
+input AppReleaseFileInput {
+  kind: AppReleaseFileKind!
+  name: String!
+  content: String!
 }
 
 """Input for setting module configuration on a platform"""
@@ -11944,6 +13398,9 @@ input CreateCustomFieldDefinitionInput {
 
   """Optional regex pattern the value must match"""
   validationRegex: String
+
+  """Whether values are checked against the organization moderation lists"""
+  moderated: Boolean
 }
 
 """A label/value option for SELECT or MULTI_SELECT custom fields"""
@@ -11986,6 +13443,9 @@ input UpdateCustomFieldDefinitionInput {
 
   """Updated regex validation pattern"""
   validationRegex: String
+
+  """Whether values are checked against the organization moderation lists"""
+  moderated: Boolean
 }
 
 """Input for setting custom field values on an object"""
@@ -12014,6 +13474,108 @@ input CustomFieldValueInput {
 
   """Value to set for this field"""
   value: String!
+}
+
+input AppInstallationPinInput {
+  appSlug: String!
+  version: String!
+  grantedPermissions: [String!]
+}
+
+input AppConfigValueInput {
+  key: String!
+  value: String
+}
+
+input CustomPermissionInput {
+  name: String!
+  description: String!
+  resources: [String!]
+}
+
+input CustomPermissionUpdateInput {
+  description: String
+  resources: [String!]
+}
+
+"""Input for creating a registration series"""
+input RegistrationSeriesCreateInput {
+  """Display name of the series"""
+  name: String!
+  maxActiveRegistrations: Int = 1
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean = false
+  leaveWaitlistsOnRegistration: Boolean = true
+  releasePolicy: RegistrationSeriesReleasePolicy = SLOT_END
+}
+
+"""Input for updating a registration series"""
+input RegistrationSeriesUpdateInput {
+  name: String
+  maxActiveRegistrations: Int
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean
+  leaveWaitlistsOnRegistration: Boolean
+  releasePolicy: RegistrationSeriesReleasePolicy
+}
+
+input GuestWardCreateInput {
+  firstName: String!
+  lastName: String
+}
+
+input GuestProfileCreateInput {
+  email: EmailAddress
+  firstName: String
+  lastName: String
+
+  """INVITED or ADMIN only"""
+  origin: GuestOrigin! = ADMIN
+  guardianPlayerId: ID
+}
+
+input GuestProfileUpdateInput {
+  email: EmailAddress
+
+  """Removes the contact e-mail"""
+  clearEmail: Boolean
+  firstName: String
+  lastName: String
+}
+
+input GuestConfigurationInput {
+  selfEntry: GuestSelfEntryMode
+  sessionTtlMinutes: Int
+  maxWardsPerGuardian: Int
+}
+
+input GuestLinkCreateInput {
+  playerId: ID!
+  purpose: String!
+  expiresAt: DateTime!
+  maxUses: PositiveInt
+
+  """JSON payload"""
+  data: String
+  revokePrevious: Boolean! = false
+}
+
+"""id, or playerId with an optional purpose"""
+input GuestLinkRevokeInput {
+  id: ID
+  playerId: ID
+  purpose: String
+}
+
+input GuestEnterInput {
+  email: EmailAddress!
+  firstName: String!
+  lastName: String!
+}
+
+input OrganizationModerationInput {
+  blockedWords: [String!]!
+  blockedSubstrings: [String!]!
 }
 
 type Subscription {

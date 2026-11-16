@@ -18,7 +18,7 @@ export type Scalars = {
 
 
 /** Payload of a journal entry. Resolved to a concrete @ObjectType per entry type. */
-export type JournalPayload = (RuleEngineAdvancementRuleFiredPayload | RuleEngineCrossStepTransferredPayload | RuleEngineEffectAdvancePayload | RuleEngineEffectCreateGroupPayload | RuleEngineEffectEliminatePayload | RuleEngineEffectEmitSeedingPinPayload | RuleEngineEffectEndStepPayload | RuleEngineEffectSetMetadataPayload | RuleEngineGenerationScriptRanPayload | RuleEngineManualOverridePayload | TournamentsStepResetPayload | TournamentsStepGeneratedPayload) & { __isUnion?: true }
+export type JournalPayload = (RuleEngineAdvancementRuleFiredPayload | RuleEngineCrossStepTransferredPayload | RuleEngineEffectAdvancePayload | RuleEngineEffectCreateGroupPayload | RuleEngineEffectEliminatePayload | RuleEngineEffectEmitSeedingPinPayload | RuleEngineEffectEndStepPayload | RuleEngineEffectSetMetadataPayload | RuleEngineGenerationScriptRanPayload | RuleEngineManualOverridePayload | LeaderboardFeedReconcileFailedPayload | TournamentOpenPoolMatchCorrectedPayload | TournamentOpenPoolMatchCancelledPayload | TournamentOpenPoolClosedPayload | TournamentOpenPoolReopenedPayload | TournamentsStepResetPayload | TournamentsStepGeneratedPayload) & { __isUnion?: true }
 
 
 /** Actor-context payload, resolved to a concrete @ObjectType per actor type. */
@@ -542,7 +542,7 @@ export interface WebhookEventConfiguration {
     __typename: 'WebhookEventConfiguration'
 }
 
-export type WebhookEventType = 'PLAYER_CREATED' | 'PLAYER_UPDATED' | 'PLAYER_DELETED' | 'TOURNAMENT_CREATED' | 'TOURNAMENT_UPDATED' | 'TOURNAMENT_DELETED' | 'TOURNAMENT_STEP_CREATED' | 'TOURNAMENT_STEP_UPDATED' | 'TOURNAMENT_STEP_DELETED' | 'TOURNAMENT_STEP_GENERATED' | 'TOURNAMENT_STEP_SEEDED' | 'TOURNAMENT_TEAM_REGISTERED' | 'TOURNAMENT_TEAM_UPDATED' | 'TOURNAMENT_TEAM_DELETED_ADMIN' | 'TOURNAMENT_TEAM_DELETED' | 'TOURNAMENT_TEAM_STATUS_UPDATED' | 'TOURNAMENT_TEAM_ATTENDANCE_UPDATED' | 'TOURNAMENT_TEAM_CONFIRMATION_UPDATED' | 'TOURNAMENT_TEAM_MEMBER_UPDATED' | 'TOURNAMENT_MATCH_SCORE_UPDATED' | 'TOURNAMENT_MATCH_STATUS_UPDATED' | 'ORGANIZATION_MEMBER_ADDED' | 'ORGANIZATION_MEMBER_REMOVED' | 'EVENT_CREATED' | 'EVENT_UPDATED' | 'EVENT_DELETED' | 'EVENT_RESERVATION_CREATED' | 'EVENT_RESERVATION_CANCELLED' | 'EVENT_RESERVATION_STATUS_UPDATED' | 'EVENT_RESERVATION_PRESENCE_CONFIRMED' | 'SHOP_PURCHASE_COMPLETED' | 'SHOP_PURCHASE_FAILED' | 'SHOP_PRODUCT_CREATED' | 'PLAYER_CURRENCY_UPDATED' | 'PLAYER_ITEM_UPDATED' | 'CURRENCY_CREATED' | 'ITEM_CREATED' | 'LEADERBOARD_SCORE_REGISTERED' | 'LEADERBOARD_CREATED' | 'LEADERBOARD_DELETED' | 'SKILL_RATING_MATCH_REGISTERED' | 'PLATFORM_CREATED' | 'PLATFORM_UPDATED' | 'PLATFORM_DELETED'
+export type WebhookEventType = 'PLAYER_CREATED' | 'PLAYER_UPDATED' | 'PLAYER_DELETED' | 'TOURNAMENT_CREATED' | 'TOURNAMENT_UPDATED' | 'TOURNAMENT_DELETED' | 'TOURNAMENT_STEP_CREATED' | 'TOURNAMENT_STEP_UPDATED' | 'TOURNAMENT_STEP_DELETED' | 'TOURNAMENT_STEP_GENERATED' | 'TOURNAMENT_STEP_SEEDED' | 'TOURNAMENT_TEAM_REGISTERED' | 'TOURNAMENT_TEAM_UPDATED' | 'TOURNAMENT_TEAM_DELETED_ADMIN' | 'TOURNAMENT_TEAM_DELETED' | 'TOURNAMENT_TEAM_STATUS_UPDATED' | 'TOURNAMENT_TEAM_ATTENDANCE_UPDATED' | 'TOURNAMENT_TEAM_CONFIRMATION_UPDATED' | 'TOURNAMENT_TEAM_MEMBER_UPDATED' | 'TOURNAMENT_MATCH_SCORE_UPDATED' | 'TOURNAMENT_MATCH_STATUS_UPDATED' | 'TOURNAMENT_MATCH_CREATED' | 'TOURNAMENT_MATCH_CORRECTED' | 'TOURNAMENT_MATCH_CANCELLED' | 'ORGANIZATION_MEMBER_ADDED' | 'ORGANIZATION_MEMBER_REMOVED' | 'EVENT_CREATED' | 'EVENT_UPDATED' | 'EVENT_DELETED' | 'EVENT_RESERVATION_CREATED' | 'EVENT_RESERVATION_CANCELLED' | 'EVENT_RESERVATION_STATUS_UPDATED' | 'EVENT_RESERVATION_PRESENCE_CONFIRMED' | 'EVENT_RESERVATION_VALIDATED' | 'EVENT_RESERVATION_SESSION_EXPIRED' | 'EVENT_RESERVATION_TICKETS_CHANGED' | 'EVENT_RESERVATION_TICKETS_RELEASED' | 'EVENT_WAITLIST_JOINED' | 'EVENT_WAITLIST_OFFERED' | 'EVENT_WAITLIST_ENDED' | 'SHOP_PURCHASE_COMPLETED' | 'SHOP_PURCHASE_FAILED' | 'SHOP_PRODUCT_CREATED' | 'PLAYER_CURRENCY_UPDATED' | 'PLAYER_ITEM_UPDATED' | 'PLAYER_ITEMS_TRANSFERRED' | 'CURRENCY_CREATED' | 'ITEM_CREATED' | 'LEADERBOARD_SCORE_REGISTERED' | 'LEADERBOARD_CREATED' | 'LEADERBOARD_DELETED' | 'SKILL_RATING_MATCH_REGISTERED' | 'PLATFORM_CREATED' | 'PLATFORM_UPDATED' | 'PLATFORM_DELETED'
 
 
 /** A member of an organization with their group assignment and permissions */
@@ -623,6 +623,8 @@ export interface Tournament {
     tournamentSeriesId: (Scalars['ID'] | null)
     /** Date and time from which the tournament is visible in public listings */
     visibleAt: (Scalars['DateTime'] | null)
+    /** ID of the registration series this tournament belongs to */
+    registrationSeriesId: (Scalars['ID'] | null)
     /** Teams registered to this tournament */
     teams: TournamentTeams
     /** Steps registered for this tournament */
@@ -801,6 +803,8 @@ export interface Player {
     owner: (Account | null)
     /** The custom fields configured for this player profile */
     customFields: PropertyConfigWithValue[]
+    /** Guest identity; null when the caller cannot see the guest's data */
+    guest: (GuestProfile | null)
     __typename: 'Player'
 }
 
@@ -851,6 +855,784 @@ export interface IdentityLinkUrl {
     url: Scalars['String']
     __typename: 'IdentityLinkUrl'
 }
+
+export interface AppFunctionError {
+    kind: AppFunctionErrorKind
+    code: Scalars['String']
+    platformCode: (AppFunctionPlatformErrorCode | null)
+    message: Scalars['String']
+    field: (Scalars['String'] | null)
+    details: (Scalars['String'] | null)
+    retryAfterSeconds: (Scalars['Int'] | null)
+    __typename: 'AppFunctionError'
+}
+
+export type AppFunctionErrorKind = 'PLATFORM' | 'APP'
+
+export type AppFunctionPlatformErrorCode = 'NOT_FOUND' | 'NOT_CONFIGURED' | 'DISABLED' | 'INVOKER_NOT_ALLOWED' | 'INPUT_INVALID' | 'FORBIDDEN' | 'QUOTA_EXCEEDED' | 'UNAVAILABLE' | 'IDEMPOTENCY_IN_PROGRESS' | 'CAUSATION_DEPTH_EXCEEDED' | 'LIMIT_EXCEEDED' | 'TIMEOUT' | 'SCRIPT_ERROR' | 'OUTPUT_TOO_LARGE'
+
+export interface AppFunctionResult {
+    executionId: Scalars['ID']
+    status: AppFunctionStatus
+    payload: (Scalars['String'] | null)
+    error: (AppFunctionError | null)
+    replayed: Scalars['Boolean']
+    cached: Scalars['Boolean']
+    __typename: 'AppFunctionResult'
+}
+
+export type AppFunctionStatus = 'SUCCEEDED' | 'FAILED'
+
+export interface AppConfigEntry {
+    key: Scalars['String']
+    type: AppConfigType
+    label: Scalars['String']
+    description: (Scalars['String'] | null)
+    value: (Scalars['String'] | null)
+    defaultValue: (Scalars['String'] | null)
+    public: Scalars['Boolean']
+    required: Scalars['Boolean']
+    options: (Scalars['String'][] | null)
+    __typename: 'AppConfigEntry'
+}
+
+export type AppConfigType = 'STRING' | 'TEXT' | 'NUMBER' | 'INTEGER' | 'BOOLEAN' | 'SELECT' | 'DURATION' | 'TIME' | 'DATE' | 'TIMEZONE' | 'STRING_LIST'
+
+export interface PermissionDefinitionDto {
+    id: Scalars['String']
+    owner: PermissionDefinitionOwner
+    description: Scalars['String']
+    resources: Scalars['String'][]
+    appSlug: (Scalars['String'] | null)
+    __typename: 'PermissionDefinitionDto'
+}
+
+export type PermissionDefinitionOwner = 'ORGANIZATION' | 'APP'
+
+
+/** A selectable option for a frontend module prop of type "select" */
+export interface FrontendModulePropOptionModel {
+    /** Display label for this option */
+    label: Scalars['String']
+    /** Value for this option */
+    value: Scalars['String']
+    __typename: 'FrontendModulePropOptionModel'
+}
+
+
+/** Schema definition for a single prop of a frontend module */
+export interface FrontendModulePropSchemaModel {
+    /** Property key/name */
+    key: Scalars['String']
+    /** Data type of this prop */
+    type: FrontendModulePropType
+    /** Display label for this prop */
+    label: Scalars['String']
+    /** Description of what this prop controls */
+    description: (Scalars['String'] | null)
+    /** Whether this prop is required */
+    required: Scalars['Boolean']
+    /** Default value for this prop (serialized as string) */
+    defaultValue: (Scalars['String'] | null)
+    /** Available options for select-type props */
+    options: (FrontendModulePropOptionModel[] | null)
+    /** Route parameter name for route-param type props */
+    param: (Scalars['String'] | null)
+    __typename: 'FrontendModulePropSchemaModel'
+}
+
+export type FrontendModulePropType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'ROUTE_PARAM'
+
+
+/** An event that a frontend module can emit */
+export interface FrontendModuleEventModel {
+    /** Unique event name identifier */
+    name: Scalars['String']
+    /** Description of when this event is emitted */
+    description: (Scalars['String'] | null)
+    __typename: 'FrontendModuleEventModel'
+}
+
+
+/** A frontend micro-frontend module registered by a marketplace app */
+export interface FrontendModuleModel {
+    /** Unique name identifier for this module */
+    name: Scalars['String']
+    /** Human-readable display name for this module */
+    displayName: Scalars['String']
+    /** Description of what this module provides */
+    description: (Scalars['String'] | null)
+    /** Named export from the bundle to use as the module entry point */
+    exportName: Scalars['String']
+    /** Semantic version of this module */
+    version: Scalars['String']
+    /** Schema defining the props this module accepts */
+    propsSchema: FrontendModulePropSchemaModel[]
+    /** Events this module can emit */
+    events: FrontendModuleEventModel[]
+    __typename: 'FrontendModuleModel'
+}
+
+
+/** Size constraints for an extension point iframe */
+export interface ExtensionPointSizeModel {
+    /** Maximum width in pixels for the extension point */
+    maxWidth: (Scalars['Int'] | null)
+    /** Maximum height in pixels for the extension point */
+    maxHeight: (Scalars['Int'] | null)
+    __typename: 'ExtensionPointSizeModel'
+}
+
+
+/** A UI extension point where an app renders content within the platform */
+export interface ExtensionPointModel {
+    /** Location type where this extension point is rendered */
+    type: ExtensionPointType
+    /** Display label for the extension point tab or widget */
+    label: Scalars['String']
+    /** URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview") */
+    activePages: Scalars['String'][]
+    /** Optional size constraints for the extension point iframe */
+    size: (ExtensionPointSizeModel | null)
+    __typename: 'ExtensionPointModel'
+}
+
+export type ExtensionPointType = 'TAB' | 'DASHBOARD_WIDGET' | 'ADMIN_NAVIGATION'
+
+
+/** A typed field of a function input, output or audit type */
+export interface AppFieldDeclModel {
+    name: Scalars['String']
+    type: AppFieldType
+    required: Scalars['Boolean']
+    options: (Scalars['String'][] | null)
+    fields: (AppFieldDeclModel[] | null)
+    items: (AppFieldDeclModel | null)
+    maxLength: (Scalars['Int'] | null)
+    min: (Scalars['Float'] | null)
+    max: (Scalars['Float'] | null)
+    __typename: 'AppFieldDeclModel'
+}
+
+export type AppFieldType = 'STRING' | 'TEXT' | 'NUMBER' | 'INTEGER' | 'BOOLEAN' | 'ID' | 'EMAIL' | 'DATE' | 'DATETIME' | 'ENUM' | 'OBJECT' | 'LIST'
+
+
+/** A configuration key declared by an app */
+export interface AppConfigDeclModel {
+    key: Scalars['String']
+    type: AppConfigType
+    label: Scalars['String']
+    description: (Scalars['String'] | null)
+    required: Scalars['Boolean']
+    defaultValue: (Scalars['String'] | null)
+    options: (Scalars['String'][] | null)
+    min: (Scalars['Float'] | null)
+    max: (Scalars['Float'] | null)
+    pattern: (Scalars['String'] | null)
+    /** Readable without authentication */
+    public: Scalars['Boolean']
+    __typename: 'AppConfigDeclModel'
+}
+
+
+/** A permission defined by an app */
+export interface AppCustomPermissionDeclModel {
+    name: Scalars['String']
+    description: Scalars['String']
+    resources: Scalars['String'][]
+    __typename: 'AppCustomPermissionDeclModel'
+}
+
+
+/** A storage collection declared by an app */
+export interface AppStorageCollectionDeclModel {
+    name: Scalars['String']
+    ttlSeconds: (Scalars['Int'] | null)
+    __typename: 'AppStorageCollectionDeclModel'
+}
+
+
+/** Storage declared by an app */
+export interface AppStorageDeclModel {
+    collections: AppStorageCollectionDeclModel[]
+    __typename: 'AppStorageDeclModel'
+}
+
+
+/** A GraphQL operation file shipped by an app */
+export interface AppOperationDeclModel {
+    name: Scalars['String']
+    file: Scalars['String']
+    __typename: 'AppOperationDeclModel'
+}
+
+
+/** An e-mail template shipped by an app */
+export interface AppEmailTemplateDeclModel {
+    key: Scalars['String']
+    subject: Scalars['String']
+    file: Scalars['String']
+    __typename: 'AppEmailTemplateDeclModel'
+}
+
+
+/** An audit entry type written by an app */
+export interface AppAuditTypeDeclModel {
+    type: Scalars['String']
+    fields: AppFieldDeclModel[]
+    __typename: 'AppAuditTypeDeclModel'
+}
+
+
+/** What runs a function; only the fields of its type are set */
+export interface AppFunctionTriggerModel {
+    type: AppFunctionTriggerType
+    readOnly: (Scalars['Boolean'] | null)
+    cacheSeconds: (Scalars['Int'] | null)
+    hookPoint: (AppHookPoint | null)
+    onError: (AppHookErrorPolicy | null)
+    timeoutMs: (Scalars['Int'] | null)
+    events: (WebhookEventType[] | null)
+    selfTrigger: (Scalars['Boolean'] | null)
+    cron: (Scalars['String'] | null)
+    timezone: (Scalars['String'] | null)
+    lifecycle: (AppLifecycleTransition[] | null)
+    __typename: 'AppFunctionTriggerModel'
+}
+
+export type AppFunctionTriggerType = 'CALL' | 'HOOK' | 'EVENT' | 'TIMER' | 'CRON' | 'LIFECYCLE'
+
+export type AppHookPoint = 'EVENT_RESERVATION_VALIDATE'
+
+export type AppHookErrorPolicy = 'DENY' | 'ALLOW'
+
+export type AppLifecycleTransition = 'INSTALL' | 'UPGRADE' | 'UNINSTALL' | 'CONFIG_UPDATED'
+
+
+/** A variable passed to a preload operation */
+export interface AppFunctionPreloadVarModel {
+    name: Scalars['String']
+    value: Scalars['String']
+    __typename: 'AppFunctionPreloadVarModel'
+}
+
+
+/** An operation run before a function starts */
+export interface AppFunctionPreloadDeclModel {
+    name: Scalars['String']
+    op: Scalars['String']
+    vars: AppFunctionPreloadVarModel[]
+    __typename: 'AppFunctionPreloadDeclModel'
+}
+
+
+/** A permission the caller must hold */
+export interface AppFunctionRequirementDeclModel {
+    permission: Scalars['String']
+    resource: (Scalars['String'] | null)
+    __typename: 'AppFunctionRequirementDeclModel'
+}
+
+
+/** A server function shipped by an app */
+export interface AppFunctionDeclModel {
+    name: Scalars['String']
+    file: Scalars['String']
+    trigger: AppFunctionTriggerModel
+    invoker: AppFunctionInvokerKind[]
+    runAs: AppFunctionRunAs
+    input: AppFieldDeclModel[]
+    output: AppFieldDeclModel[]
+    preload: AppFunctionPreloadDeclModel[]
+    requires: AppFunctionRequirementDeclModel[]
+    __typename: 'AppFunctionDeclModel'
+}
+
+export type AppFunctionInvokerKind = 'ANONYMOUS' | 'PLAYER' | 'GUEST' | 'MEMBER'
+
+export type AppFunctionRunAs = 'APP' | 'INVOKER'
+
+
+/** The manifest describing a marketplace app capabilities and configuration */
+export interface AppManifestModel {
+    /** Manifest schema version */
+    version: Scalars['String']
+    /** Permissions requested by this app (OrganizationPermission IDs) */
+    permissions: Scalars['String'][]
+    /** UI extensions registered by this app */
+    extensions: ExtensionPointModel[]
+    /** URL to receive webhook events when app is installed */
+    webhookUrl: (Scalars['String'] | null)
+    /** Webhook event types this app subscribes to */
+    webhookEvents: WebhookEventType[]
+    /** Metafield namespaces this app is allowed to use */
+    metafieldNamespaces: Scalars['String'][]
+    /** Frontend micro-frontend modules registered by this app */
+    frontendModules: FrontendModuleModel[]
+    /** S3 CDN path for the extension bundle (injected on publish) */
+    extensionCdnPath: (Scalars['String'] | null)
+    /** S3 CDN path for the module bundle (injected on publish) */
+    moduleCdnPath: (Scalars['String'] | null)
+    config: (AppConfigDeclModel[] | null)
+    customPermissions: (AppCustomPermissionDeclModel[] | null)
+    storage: (AppStorageDeclModel | null)
+    operations: (AppOperationDeclModel[] | null)
+    emailTemplates: (AppEmailTemplateDeclModel[] | null)
+    auditTypes: (AppAuditTypeDeclModel[] | null)
+    functions: (AppFunctionDeclModel[] | null)
+    /** Open functions that check their caller in code instead of declaring requires */
+    codeAuthorized: (Scalars['String'][] | null)
+    __typename: 'AppManifestModel'
+}
+
+
+/** DNS TXT record required for SSL certificate validation of a custom domain */
+export interface CustomDomainSslValidationRecord {
+    /** Name of the TXT DNS record to create for validation */
+    txt_name: (Scalars['String'] | null)
+    /** Value of the TXT DNS record to create for validation */
+    txt_value: (Scalars['String'] | null)
+    __typename: 'CustomDomainSslValidationRecord'
+}
+
+
+/** An error encountered during SSL certificate validation for a custom domain */
+export interface CustomDomainSslValidationError {
+    /** Human-readable error message describing the validation failure */
+    message: (Scalars['String'] | null)
+    __typename: 'CustomDomainSslValidationError'
+}
+
+
+/** SSL certificate status and validation details for a custom domain */
+export interface CustomDomainSsl {
+    /** Current status of the SSL certificate validation process */
+    status: (CustomDomainValidationStatus | null)
+    /** List of validation errors encountered during SSL provisioning */
+    validation_errors: (CustomDomainSslValidationError[] | null)
+    /** DNS records required for SSL certificate validation */
+    validation_records: (CustomDomainSslValidationRecord[] | null)
+    __typename: 'CustomDomainSsl'
+}
+
+export type CustomDomainValidationStatus = 'initializing' | 'pending_validation' | 'deleted' | 'pending_issuance' | 'pending_deployment' | 'pending_deletion' | 'pending_expiration' | 'expired' | 'active' | 'initializing_timed_out' | 'validation_timed_out' | 'issuance_timed_out' | 'deployment_timed_out' | 'deletion_timed_out' | 'pending_cleanup' | 'staging_deployment' | 'staging_active' | 'deactivating' | 'inactive' | 'backup_issued' | 'holding_deployment'
+
+
+/** DNS record required to verify ownership of a custom domain */
+export interface CustomDomainOwnershipVerification {
+    /** Name of the DNS record to create for ownership verification */
+    name: (Scalars['String'] | null)
+    /** Value of the DNS record to create for ownership verification */
+    value: (Scalars['String'] | null)
+    __typename: 'CustomDomainOwnershipVerification'
+}
+
+
+/** Custom domain registration data from Cloudflare, including SSL and ownership verification status */
+export interface CustomDomainData {
+    /** The hostname of the custom domain */
+    hostname: Scalars['String']
+    /** Ownership verification DNS record details */
+    ownership_verification: (CustomDomainOwnershipVerification | null)
+    /** SSL certificate status and validation information */
+    ssl: CustomDomainSsl
+    /** Current provisioning status of the custom domain */
+    status: (CustomDomainStatus | null)
+    /** List of verification error messages, if any */
+    verification_errors: (Scalars['String'][] | null)
+    __typename: 'CustomDomainData'
+}
+
+export type CustomDomainStatus = 'active' | 'pending' | 'active_redeploying' | 'moved' | 'pending_deletion' | 'deleted' | 'pending_blocked' | 'pending_migration' | 'pending_provisioned' | 'test_pending' | 'test_active' | 'test_active_apex' | 'test_blocked' | 'test_failed' | 'provisioned' | 'blocked'
+
+
+/** Page-specific configuration for a CDN file, defining the URL path it serves */
+export interface PlatformCdnFilePageConfig {
+    /** The URL path pattern this page responds to (e.g. /events/:id) */
+    path: Scalars['String']
+    __typename: 'PlatformCdnFilePageConfig'
+}
+
+
+/** Configuration options for a CDN file */
+export interface PlatformCdnFileConfigs {
+    /** Page-specific configuration, required for PAGE type files */
+    pageConfig: (PlatformCdnFilePageConfig | null)
+    __typename: 'PlatformCdnFileConfigs'
+}
+
+
+/** A file stored on the platform CDN, such as a page template, component, text asset, or image */
+export interface PlatformCdnFile {
+    /** Unique identifier of the CDN file */
+    id: Scalars['ID']
+    /** The platform this file belongs to, if associated with a platform */
+    platformId: (Scalars['ID'] | null)
+    /** The platform template this file belongs to, if associated with a template */
+    platformTemplateId: (Scalars['ID'] | null)
+    /** The file name including path segments */
+    name: Scalars['String']
+    /** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
+    type: PlatformCdnFileType
+    /** When this file was last updated */
+    updatedAt: Scalars['DateTime']
+    /** When this file was created */
+    createdAt: Scalars['DateTime']
+    /** File configuration options such as page routing config */
+    config: (PlatformCdnFileConfigs | null)
+    /** File size in bytes */
+    size: Scalars['Float']
+    /** The CDN path for the published production version of this file */
+    prodCdnPath: (Scalars['String'] | null)
+    /** The CDN path for the development version of this file, visible only to authorized editors */
+    devCdnPath: (Scalars['String'] | null)
+    /** The text contents of the file, if applicable */
+    contents: (Scalars['String'] | null)
+    __typename: 'PlatformCdnFile'
+}
+
+export type PlatformCdnFileType = 'PAGE' | 'COMPONENT' | 'TEXT' | 'IMAGE'
+
+
+/** A key-value pair representing a field in a presigned upload form */
+export interface PresignedUrlField {
+    /** The form field name */
+    key: Scalars['String']
+    /** The form field value */
+    value: Scalars['String']
+    __typename: 'PresignedUrlField'
+}
+
+
+/** A presigned URL with form fields for uploading a file directly to S3 */
+export interface PresignedUrl {
+    /** Form fields required for the presigned POST upload */
+    fields: PresignedUrlField[]
+    /** The S3 endpoint URL to POST the file upload to */
+    url: Scalars['URL']
+    __typename: 'PresignedUrl'
+}
+
+
+/** A server file shipped with a release */
+export interface AppReleaseFile {
+    kind: AppReleaseFileKind
+    name: Scalars['String']
+    sha256: Scalars['String']
+    __typename: 'AppReleaseFile'
+}
+
+
+/** Kind of server file shipped with a release */
+export type AppReleaseFileKind = 'FUNCTION' | 'OPERATION' | 'EMAIL_TEMPLATE'
+
+
+/** Result of a single automated review check */
+export interface AppReviewCheck {
+    /** Name identifier of the check (e.g. manifest_valid, urls_https) */
+    name: Scalars['String']
+    /** Whether this check passed */
+    passed: Scalars['Boolean']
+    /** Details or error message for this check */
+    details: (Scalars['String'] | null)
+    __typename: 'AppReviewCheck'
+}
+
+
+/** Result of the automated app review process */
+export interface AppReviewResult {
+    /** Whether all review checks passed */
+    passed: Scalars['Boolean']
+    /** Individual check results */
+    checks: AppReviewCheck[]
+    __typename: 'AppReviewResult'
+}
+
+
+/** A versioned release of a marketplace app */
+export interface MarketplaceAppRelease {
+    /** Unique identifier of the release */
+    id: Scalars['ID']
+    /** ID of the marketplace app */
+    marketplaceAppId: Scalars['ID']
+    /** Semantic version string */
+    version: Scalars['String']
+    /** Current review status of the release */
+    status: MarketplaceAppReleaseStatus
+    /** App manifest for this release */
+    manifest: AppManifestModel
+    /** S3 key for the extension bundle */
+    extensionBundleKey: (Scalars['String'] | null)
+    /** S3 key for the module bundle */
+    moduleBundleKey: (Scalars['String'] | null)
+    /** Release notes describing changes */
+    releaseNotes: (Scalars['String'] | null)
+    /** Automated review result details */
+    reviewResult: (AppReviewResult | null)
+    /** When the release was reviewed */
+    reviewedAt: (Scalars['DateTime'] | null)
+    /** When the release was created */
+    createdAt: Scalars['DateTime']
+    /** Server files shipped with the release */
+    files: AppReleaseFile[]
+    __typename: 'MarketplaceAppRelease'
+}
+
+
+/** Status of a marketplace app release */
+export type MarketplaceAppReleaseStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
+
+
+/** A release with presigned URLs for bundle upload */
+export interface AppReleaseWithUploadUrls {
+    /** The created release */
+    release: MarketplaceAppRelease
+    /** Presigned POST data for extension bundle upload */
+    extensionUploadUrl: (PresignedUrl | null)
+    /** Presigned POST data for module bundle upload */
+    moduleUploadUrl: (PresignedUrl | null)
+    __typename: 'AppReleaseWithUploadUrls'
+}
+
+
+/** Bundle validation error details */
+export interface AppBundleValidationError {
+    /** Whether validation passed */
+    valid: Scalars['Boolean']
+    /** List of validation errors */
+    errors: Scalars['String'][]
+    __typename: 'AppBundleValidationError'
+}
+
+
+/** A published app listing in the marketplace */
+export interface MarketplaceApp {
+    /** Unique identifier of the marketplace app */
+    id: Scalars['ID']
+    /** ID of the underlying organization app */
+    organizationAppId: Scalars['ID']
+    /** Current publication status of the app */
+    status: MarketplaceAppStatus
+    /** App manifest describing capabilities and configuration */
+    manifest: AppManifestModel
+    /** Display name of the marketplace app */
+    name: Scalars['String']
+    /** Full description of the app */
+    description: Scalars['String']
+    /** Short summary displayed on app cards */
+    shortDescription: Scalars['String']
+    /** URL of the app icon image */
+    icon: (Scalars['String'] | null)
+    /** URLs of app screenshot images */
+    screenshots: Scalars['String'][]
+    /** Category tags for filtering and discovery */
+    categories: Scalars['String'][]
+    /** Current semantic version of the app */
+    version: Scalars['String']
+    /** URL to the app privacy policy */
+    privacyPolicyUrl: (Scalars['String'] | null)
+    /** URL to the app support page */
+    supportUrl: (Scalars['String'] | null)
+    /** URL to the app website */
+    websiteUrl: (Scalars['String'] | null)
+    /** Timestamp when the app was first published */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the app listing was last updated */
+    updatedAt: Scalars['DateTime']
+    /** Unique slug that addresses the app in function calls */
+    slug: (Scalars['String'] | null)
+    /** Listing visibility of the app */
+    visibility: MarketplaceAppVisibility
+    /** Organizations allowed to install a private app */
+    allowedOrganizationIds: (Scalars['ID'][] | null)
+    /** Reviews for this marketplace app */
+    reviews: MarketplaceAppReviews
+    /** Aggregated stats for this marketplace app */
+    stats: MarketplaceAppStats
+    /** Current organization installation of this app, if any */
+    installation: (MarketplaceAppInstallation | null)
+    /** Pricing information for this marketplace app */
+    pricing: (MarketplaceAppPricing | null)
+    __typename: 'MarketplaceApp'
+}
+
+
+/** Status of a marketplace app listing */
+export type MarketplaceAppStatus = 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED'
+
+
+/** Who can list and install a marketplace app */
+export type MarketplaceAppVisibility = 'PUBLIC' | 'PRIVATE'
+
+
+/** Paginated list of marketplace apps */
+export interface MarketplaceApps {
+    /** List of edges containing cursor and node pairs */
+    edges: MarketplaceAppEdge[]
+    /** Flat list of items in the current page */
+    nodes: MarketplaceApp[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'MarketplaceApps'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface MarketplaceAppEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: MarketplaceApp
+    __typename: 'MarketplaceAppEdge'
+}
+
+
+/** A user review and rating for a marketplace app */
+export interface MarketplaceAppReview {
+    /** Unique identifier of the review */
+    id: Scalars['ID']
+    /** ID of the marketplace app being reviewed */
+    marketplaceAppId: Scalars['ID']
+    /** ID of the organization that submitted the review */
+    organizationId: Scalars['ID']
+    /** ID of the account that authored the review */
+    accountId: Scalars['ID']
+    /** Star rating from 1 to 5 */
+    rating: Scalars['Int']
+    /** Review title */
+    title: Scalars['String']
+    /** Review body text */
+    body: Scalars['String']
+    /** Timestamp when the review was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the review was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'MarketplaceAppReview'
+}
+
+
+/** Paginated list of marketplace app reviews */
+export interface MarketplaceAppReviews {
+    /** List of edges containing cursor and node pairs */
+    edges: MarketplaceAppReviewEdge[]
+    /** Flat list of items in the current page */
+    nodes: MarketplaceAppReview[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'MarketplaceAppReviews'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface MarketplaceAppReviewEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: MarketplaceAppReview
+    __typename: 'MarketplaceAppReviewEdge'
+}
+
+
+/** A marketplace app installation within an organization */
+export interface MarketplaceAppInstallation {
+    /** Unique identifier of the installation */
+    id: Scalars['ID']
+    /** ID of the installed marketplace app */
+    marketplaceAppId: Scalars['ID']
+    /** ID of the organization where the app is installed */
+    organizationId: Scalars['ID']
+    /** ID of the account that performed the installation */
+    installedById: Scalars['ID']
+    /** Current status of the installation */
+    status: MarketplaceInstallationStatus
+    /** Permissions granted to this app by the organization (OrganizationPermission IDs) */
+    grantedPermissions: Scalars['String'][]
+    /** Timestamp when the app was installed */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the installation was last updated */
+    updatedAt: Scalars['DateTime']
+    /** Release pinned by this installation */
+    release: (MarketplaceAppRelease | null)
+    /** Version of the installation config */
+    configVersion: Scalars['Int']
+    /** Whether the app functions can run */
+    functionsEnabled: Scalars['Boolean']
+    /** Functions disabled one by one */
+    disabledFunctions: Scalars['String'][]
+    /** The marketplace app for this installation */
+    marketplaceApp: MarketplaceApp
+    __typename: 'MarketplaceAppInstallation'
+}
+
+
+/** Status of a marketplace app installation */
+export type MarketplaceInstallationStatus = 'ACTIVE' | 'SUSPENDED' | 'UNINSTALLED'
+
+
+/** Paginated list of marketplace app installations */
+export interface MarketplaceAppInstallations {
+    /** List of edges containing cursor and node pairs */
+    edges: MarketplaceAppInstallationEdge[]
+    /** Flat list of items in the current page */
+    nodes: MarketplaceAppInstallation[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'MarketplaceAppInstallations'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface MarketplaceAppInstallationEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: MarketplaceAppInstallation
+    __typename: 'MarketplaceAppInstallationEdge'
+}
+
+
+/** Aggregated statistics for a marketplace app */
+export interface MarketplaceAppStats {
+    /** Total number of active installations across all organizations */
+    totalInstallations: Scalars['Int']
+    /** Average star rating from all reviews */
+    averageRating: (Scalars['Float'] | null)
+    /** Total number of reviews submitted for this app */
+    totalReviews: Scalars['Int']
+    __typename: 'MarketplaceAppStats'
+}
+
+
+/** Pricing configuration for a marketplace app */
+export interface MarketplaceAppPricing {
+    /** Unique identifier of the pricing record */
+    id: Scalars['ID']
+    /** ID of the marketplace app this pricing applies to */
+    marketplaceAppId: Scalars['ID']
+    /** Pricing model type (e.g. one-time, subscription, free) */
+    type: MarketplacePricingType
+    /** Price amount in the smallest currency unit (e.g. cents) */
+    priceAmountCents: Scalars['Int']
+    /** ISO 4217 currency code */
+    currency: Scalars['String']
+    /** Number of free trial days for subscription pricing */
+    trialDays: Scalars['Int']
+    /** Timestamp when the pricing was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the pricing was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'MarketplaceAppPricing'
+}
+
+
+/** Pricing model for a marketplace app */
+export type MarketplacePricingType = 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
 
 
 /** A reusable configuration preset for tournaments or steps */
@@ -1061,66 +1843,6 @@ export interface LeaderboardSeasonBucketEdge {
 }
 
 
-/** DNS TXT record required for SSL certificate validation of a custom domain */
-export interface CustomDomainSslValidationRecord {
-    /** Name of the TXT DNS record to create for validation */
-    txt_name: (Scalars['String'] | null)
-    /** Value of the TXT DNS record to create for validation */
-    txt_value: (Scalars['String'] | null)
-    __typename: 'CustomDomainSslValidationRecord'
-}
-
-
-/** An error encountered during SSL certificate validation for a custom domain */
-export interface CustomDomainSslValidationError {
-    /** Human-readable error message describing the validation failure */
-    message: (Scalars['String'] | null)
-    __typename: 'CustomDomainSslValidationError'
-}
-
-
-/** SSL certificate status and validation details for a custom domain */
-export interface CustomDomainSsl {
-    /** Current status of the SSL certificate validation process */
-    status: (CustomDomainValidationStatus | null)
-    /** List of validation errors encountered during SSL provisioning */
-    validation_errors: (CustomDomainSslValidationError[] | null)
-    /** DNS records required for SSL certificate validation */
-    validation_records: (CustomDomainSslValidationRecord[] | null)
-    __typename: 'CustomDomainSsl'
-}
-
-export type CustomDomainValidationStatus = 'initializing' | 'pending_validation' | 'deleted' | 'pending_issuance' | 'pending_deployment' | 'pending_deletion' | 'pending_expiration' | 'expired' | 'active' | 'initializing_timed_out' | 'validation_timed_out' | 'issuance_timed_out' | 'deployment_timed_out' | 'deletion_timed_out' | 'pending_cleanup' | 'staging_deployment' | 'staging_active' | 'deactivating' | 'inactive' | 'backup_issued' | 'holding_deployment'
-
-
-/** DNS record required to verify ownership of a custom domain */
-export interface CustomDomainOwnershipVerification {
-    /** Name of the DNS record to create for ownership verification */
-    name: (Scalars['String'] | null)
-    /** Value of the DNS record to create for ownership verification */
-    value: (Scalars['String'] | null)
-    __typename: 'CustomDomainOwnershipVerification'
-}
-
-
-/** Custom domain registration data from Cloudflare, including SSL and ownership verification status */
-export interface CustomDomainData {
-    /** The hostname of the custom domain */
-    hostname: Scalars['String']
-    /** Ownership verification DNS record details */
-    ownership_verification: (CustomDomainOwnershipVerification | null)
-    /** SSL certificate status and validation information */
-    ssl: CustomDomainSsl
-    /** Current provisioning status of the custom domain */
-    status: (CustomDomainStatus | null)
-    /** List of verification error messages, if any */
-    verification_errors: (Scalars['String'][] | null)
-    __typename: 'CustomDomainData'
-}
-
-export type CustomDomainStatus = 'active' | 'pending' | 'active_redeploying' | 'moved' | 'pending_deletion' | 'deleted' | 'pending_blocked' | 'pending_migration' | 'pending_provisioned' | 'test_pending' | 'test_active' | 'test_active_apex' | 'test_blocked' | 'test_failed' | 'provisioned' | 'blocked'
-
-
 /** An email template associated with a trigger event */
 export interface EmailTemplate {
     /** Unique identifier of the email template */
@@ -1199,264 +1921,6 @@ export interface PublicIdentityProvider {
 }
 
 export type IdentityProviderAvailability = 'PUBLIC' | 'PREVIEW' | 'PRIVATE'
-
-
-/** A selectable option for a frontend module prop of type "select" */
-export interface FrontendModulePropOptionModel {
-    /** Display label for this option */
-    label: Scalars['String']
-    /** Value for this option */
-    value: Scalars['String']
-    __typename: 'FrontendModulePropOptionModel'
-}
-
-
-/** Schema definition for a single prop of a frontend module */
-export interface FrontendModulePropSchemaModel {
-    /** Property key/name */
-    key: Scalars['String']
-    /** Data type of this prop */
-    type: FrontendModulePropType
-    /** Display label for this prop */
-    label: Scalars['String']
-    /** Description of what this prop controls */
-    description: (Scalars['String'] | null)
-    /** Whether this prop is required */
-    required: Scalars['Boolean']
-    /** Default value for this prop (serialized as string) */
-    defaultValue: (Scalars['String'] | null)
-    /** Available options for select-type props */
-    options: (FrontendModulePropOptionModel[] | null)
-    /** Route parameter name for route-param type props */
-    param: (Scalars['String'] | null)
-    __typename: 'FrontendModulePropSchemaModel'
-}
-
-export type FrontendModulePropType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'ROUTE_PARAM'
-
-
-/** An event that a frontend module can emit */
-export interface FrontendModuleEventModel {
-    /** Unique event name identifier */
-    name: Scalars['String']
-    /** Description of when this event is emitted */
-    description: (Scalars['String'] | null)
-    __typename: 'FrontendModuleEventModel'
-}
-
-
-/** A frontend micro-frontend module registered by a marketplace app */
-export interface FrontendModuleModel {
-    /** Unique name identifier for this module */
-    name: Scalars['String']
-    /** Human-readable display name for this module */
-    displayName: Scalars['String']
-    /** Description of what this module provides */
-    description: (Scalars['String'] | null)
-    /** Named export from the bundle to use as the module entry point */
-    exportName: Scalars['String']
-    /** Semantic version of this module */
-    version: Scalars['String']
-    /** Schema defining the props this module accepts */
-    propsSchema: FrontendModulePropSchemaModel[]
-    /** Events this module can emit */
-    events: FrontendModuleEventModel[]
-    __typename: 'FrontendModuleModel'
-}
-
-
-/** Size constraints for an extension point iframe */
-export interface ExtensionPointSizeModel {
-    /** Maximum width in pixels for the extension point */
-    maxWidth: (Scalars['Int'] | null)
-    /** Maximum height in pixels for the extension point */
-    maxHeight: (Scalars['Int'] | null)
-    __typename: 'ExtensionPointSizeModel'
-}
-
-
-/** A UI extension point where an app renders content within the platform */
-export interface ExtensionPointModel {
-    /** Location type where this extension point is rendered */
-    type: ExtensionPointType
-    /** Display label for the extension point tab or widget */
-    label: Scalars['String']
-    /** URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview") */
-    activePages: Scalars['String'][]
-    /** Optional size constraints for the extension point iframe */
-    size: (ExtensionPointSizeModel | null)
-    __typename: 'ExtensionPointModel'
-}
-
-export type ExtensionPointType = 'TAB' | 'DASHBOARD_WIDGET' | 'ADMIN_NAVIGATION'
-
-
-/** The manifest describing a marketplace app capabilities and configuration */
-export interface AppManifestModel {
-    /** Manifest schema version */
-    version: Scalars['String']
-    /** Permissions requested by this app (OrganizationPermission IDs) */
-    permissions: Scalars['String'][]
-    /** UI extensions registered by this app */
-    extensions: ExtensionPointModel[]
-    /** URL to receive webhook events when app is installed */
-    webhookUrl: (Scalars['String'] | null)
-    /** Webhook event types this app subscribes to */
-    webhookEvents: WebhookEventType[]
-    /** Metafield namespaces this app is allowed to use */
-    metafieldNamespaces: Scalars['String'][]
-    /** Frontend micro-frontend modules registered by this app */
-    frontendModules: FrontendModuleModel[]
-    /** S3 CDN path for the extension bundle (injected on publish) */
-    extensionCdnPath: (Scalars['String'] | null)
-    /** S3 CDN path for the module bundle (injected on publish) */
-    moduleCdnPath: (Scalars['String'] | null)
-    __typename: 'AppManifestModel'
-}
-
-
-/** Page-specific configuration for a CDN file, defining the URL path it serves */
-export interface PlatformCdnFilePageConfig {
-    /** The URL path pattern this page responds to (e.g. /events/:id) */
-    path: Scalars['String']
-    __typename: 'PlatformCdnFilePageConfig'
-}
-
-
-/** Configuration options for a CDN file */
-export interface PlatformCdnFileConfigs {
-    /** Page-specific configuration, required for PAGE type files */
-    pageConfig: (PlatformCdnFilePageConfig | null)
-    __typename: 'PlatformCdnFileConfigs'
-}
-
-
-/** A file stored on the platform CDN, such as a page template, component, text asset, or image */
-export interface PlatformCdnFile {
-    /** Unique identifier of the CDN file */
-    id: Scalars['ID']
-    /** The platform this file belongs to, if associated with a platform */
-    platformId: (Scalars['ID'] | null)
-    /** The platform template this file belongs to, if associated with a template */
-    platformTemplateId: (Scalars['ID'] | null)
-    /** The file name including path segments */
-    name: Scalars['String']
-    /** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
-    type: PlatformCdnFileType
-    /** When this file was last updated */
-    updatedAt: Scalars['DateTime']
-    /** When this file was created */
-    createdAt: Scalars['DateTime']
-    /** File configuration options such as page routing config */
-    config: (PlatformCdnFileConfigs | null)
-    /** File size in bytes */
-    size: Scalars['Float']
-    /** The CDN path for the published production version of this file */
-    prodCdnPath: (Scalars['String'] | null)
-    /** The CDN path for the development version of this file, visible only to authorized editors */
-    devCdnPath: (Scalars['String'] | null)
-    /** The text contents of the file, if applicable */
-    contents: (Scalars['String'] | null)
-    __typename: 'PlatformCdnFile'
-}
-
-export type PlatformCdnFileType = 'PAGE' | 'COMPONENT' | 'TEXT' | 'IMAGE'
-
-
-/** A key-value pair representing a field in a presigned upload form */
-export interface PresignedUrlField {
-    /** The form field name */
-    key: Scalars['String']
-    /** The form field value */
-    value: Scalars['String']
-    __typename: 'PresignedUrlField'
-}
-
-
-/** A presigned URL with form fields for uploading a file directly to S3 */
-export interface PresignedUrl {
-    /** Form fields required for the presigned POST upload */
-    fields: PresignedUrlField[]
-    /** The S3 endpoint URL to POST the file upload to */
-    url: Scalars['URL']
-    __typename: 'PresignedUrl'
-}
-
-
-/** Result of a single automated review check */
-export interface AppReviewCheck {
-    /** Name identifier of the check (e.g. manifest_valid, urls_https) */
-    name: Scalars['String']
-    /** Whether this check passed */
-    passed: Scalars['Boolean']
-    /** Details or error message for this check */
-    details: (Scalars['String'] | null)
-    __typename: 'AppReviewCheck'
-}
-
-
-/** Result of the automated app review process */
-export interface AppReviewResult {
-    /** Whether all review checks passed */
-    passed: Scalars['Boolean']
-    /** Individual check results */
-    checks: AppReviewCheck[]
-    __typename: 'AppReviewResult'
-}
-
-
-/** A versioned release of a marketplace app */
-export interface MarketplaceAppRelease {
-    /** Unique identifier of the release */
-    id: Scalars['ID']
-    /** ID of the marketplace app */
-    marketplaceAppId: Scalars['ID']
-    /** Semantic version string */
-    version: Scalars['String']
-    /** Current review status of the release */
-    status: MarketplaceAppReleaseStatus
-    /** App manifest for this release */
-    manifest: AppManifestModel
-    /** S3 key for the extension bundle */
-    extensionBundleKey: (Scalars['String'] | null)
-    /** S3 key for the module bundle */
-    moduleBundleKey: (Scalars['String'] | null)
-    /** Release notes describing changes */
-    releaseNotes: (Scalars['String'] | null)
-    /** Automated review result details */
-    reviewResult: (AppReviewResult | null)
-    /** When the release was reviewed */
-    reviewedAt: (Scalars['DateTime'] | null)
-    /** When the release was created */
-    createdAt: Scalars['DateTime']
-    __typename: 'MarketplaceAppRelease'
-}
-
-
-/** Status of a marketplace app release */
-export type MarketplaceAppReleaseStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
-
-
-/** A release with presigned URLs for bundle upload */
-export interface AppReleaseWithUploadUrls {
-    /** The created release */
-    release: MarketplaceAppRelease
-    /** Presigned POST data for extension bundle upload */
-    extensionUploadUrl: (PresignedUrl | null)
-    /** Presigned POST data for module bundle upload */
-    moduleUploadUrl: (PresignedUrl | null)
-    __typename: 'AppReleaseWithUploadUrls'
-}
-
-
-/** Bundle validation error details */
-export interface AppBundleValidationError {
-    /** Whether validation passed */
-    valid: Scalars['Boolean']
-    /** List of validation errors */
-    errors: Scalars['String'][]
-    __typename: 'AppBundleValidationError'
-}
 
 
 /** A versioned release of an app with a snapshot of its manifest */
@@ -2083,6 +2547,108 @@ export interface RuleEngineManualOverridePayload {
 export type ManualOverrideEffect = 'FIRED' | 'SKIPPED' | 'REPLAYED'
 
 
+/** Journal payload emitted when a leaderboard feed fails to reconcile one of its sources. */
+export interface LeaderboardFeedReconcileFailedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the leaderboard feed. */
+    feedId: Scalars['ID']
+    /** Key of the source that failed to reconcile. */
+    sourceKey: Scalars['String']
+    /** Message of the reconcile error. */
+    errorMessage: Scalars['String']
+    __typename: 'LeaderboardFeedReconcileFailedPayload'
+}
+
+
+/** One team score row of an open pool match. */
+export interface OpenPoolJournalScoreRow {
+    /** ID of the tournament team. */
+    tournamentTeamId: Scalars['ID']
+    /** Score of the team in the match. */
+    score: Scalars['Float']
+    /** Whether the team won the match. */
+    isWinner: Scalars['Boolean']
+    /** Whether the team forfeited the match. */
+    isForfeited: Scalars['Boolean']
+    __typename: 'OpenPoolJournalScoreRow'
+}
+
+
+/** Journal payload emitted when staff correct the scores of an open pool match. */
+export interface TournamentOpenPoolMatchCorrectedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the open pool step. */
+    stepId: Scalars['ID']
+    /** ID of the step group. */
+    groupId: Scalars['ID']
+    /** ID of the corrected match. */
+    matchId: Scalars['ID']
+    /** ID of the game holding the match. */
+    gameId: Scalars['ID']
+    /** Score rows before the correction. */
+    previousScores: OpenPoolJournalScoreRow[]
+    /** Score rows after the correction. */
+    scores: OpenPoolJournalScoreRow[]
+    __typename: 'TournamentOpenPoolMatchCorrectedPayload'
+}
+
+
+/** Journal payload emitted when staff cancel an open pool match. */
+export interface TournamentOpenPoolMatchCancelledPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the open pool step. */
+    stepId: Scalars['ID']
+    /** ID of the step group. */
+    groupId: Scalars['ID']
+    /** ID of the cancelled match. */
+    matchId: Scalars['ID']
+    /** ID of the deleted game. */
+    gameId: Scalars['ID']
+    /** Score rows before the cancellation. */
+    previousScores: OpenPoolJournalScoreRow[]
+    /** Score rows left after the cancellation. */
+    scores: OpenPoolJournalScoreRow[]
+    /** Whether the match had ended when it was cancelled. */
+    wasEnded: Scalars['Boolean']
+    /** Reason given by the staff member. */
+    cancelReason: (Scalars['String'] | null)
+    __typename: 'TournamentOpenPoolMatchCancelledPayload'
+}
+
+
+/** Journal payload emitted when staff close an open pool step. */
+export interface TournamentOpenPoolClosedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the closed step. */
+    stepId: Scalars['ID']
+    /** Number of unfinished matches cancelled by the close. */
+    cancelledMatchCount: Scalars['Int']
+    __typename: 'TournamentOpenPoolClosedPayload'
+}
+
+
+/** Journal payload emitted when staff reopen an open pool step. */
+export interface TournamentOpenPoolReopenedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the reopened step. */
+    stepId: Scalars['ID']
+    __typename: 'TournamentOpenPoolReopenedPayload'
+}
+
+
 /** Counters describing the downstream impact of a tournament step reset. */
 export interface TournamentsStepResetCascadeInfo {
     /** Number of downstream tournament steps affected by the reset cascade. */
@@ -2271,6 +2837,8 @@ export interface TournamentTeam {
     updatedAt: Scalars['DateTime']
     /** List of members belonging to this team */
     members: TournamentTeamMemberDto[]
+    /** ID of the event reservation this team was created from */
+    eventReservationId: (Scalars['ID'] | null)
     /** Custom fields configured for this tournament team with their values and visibility rules */
     customFields: PropertyConfigWithValue[]
     /** The tournament this team is registered to */
@@ -3447,6 +4015,78 @@ export interface PlayerCurrencyEdge {
 }
 
 
+/** A group of events and tournaments sharing one limit of active registrations per player */
+export interface RegistrationSeries {
+    /** Unique identifier of the series */
+    id: Scalars['ID']
+    /** Display name of the series */
+    name: Scalars['String']
+    /** Active registrations a player may hold in the series */
+    maxActiveRegistrations: Scalars['Int']
+    /** Active waitlist entries a player may hold in the series */
+    maxActiveWaitlistEntries: (Scalars['Int'] | null)
+    /** Whether a registered player may also join a waitlist */
+    allowWaitlistWhileRegistered: Scalars['Boolean']
+    /** Whether registering ends the player's waitlist entries */
+    leaveWaitlistsOnRegistration: Scalars['Boolean']
+    /** When a registration stops counting as active */
+    releasePolicy: RegistrationSeriesReleasePolicy
+    /** Timestamp when the series was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the series was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'RegistrationSeries'
+}
+
+export type RegistrationSeriesReleasePolicy = 'SLOT_START' | 'SLOT_END' | 'NEVER'
+
+
+/** Paginated list of registration series */
+export interface RegistrationSeriesPage {
+    /** List of edges containing cursor and node pairs */
+    edges: RegistrationSeriesEdge[]
+    /** Flat list of items in the current page */
+    nodes: RegistrationSeries[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'RegistrationSeriesPage'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface RegistrationSeriesEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: RegistrationSeries
+    __typename: 'RegistrationSeriesEdge'
+}
+
+
+/** A reservation, waitlist entry or tournament team counted against a series limit */
+export interface RegistrationSeriesEntry {
+    /** Kind of entry */
+    kind: RegistrationSeriesEntryKind
+    /** Status of the underlying reservation, entry or team */
+    status: Scalars['String']
+    /** Whether the player manages the reservation or team */
+    isManager: Scalars['Boolean']
+    eventId: (Scalars['ID'] | null)
+    ticketConfigurationId: (Scalars['ID'] | null)
+    reservationId: (Scalars['ID'] | null)
+    waitlistEntryId: (Scalars['ID'] | null)
+    tournamentId: (Scalars['ID'] | null)
+    tournamentTeamId: (Scalars['ID'] | null)
+    startsAt: (Scalars['DateTime'] | null)
+    endsAt: (Scalars['DateTime'] | null)
+    __typename: 'RegistrationSeriesEntry'
+}
+
+export type RegistrationSeriesEntryKind = 'EVENT_RESERVATION' | 'WAITLIST_ENTRY' | 'TOURNAMENT_TEAM'
+
+
 /** Configuration defining size constraints for a user group */
 export interface UserGroupConfiguration {
     /** Maximum number of accepted members allowed in the group */
@@ -3623,142 +4263,6 @@ export interface EventVenueSeatEdge {
 }
 
 
-/** Configuration settings for an event including registration, ticketing, and seating options */
-export interface EventConfiguration {
-    /** Custom fields that are defined on each teams */
-    customFields: (Property[] | null)
-    /** Configuration of the group */
-    groupConfiguration: (UserGroupConfiguration | null)
-    /** Maximum number of tickets per reservation */
-    maxTicketsPerReservation: (Scalars['Float'] | null)
-    /** Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet */
-    reservationStatusAfterPayment: (EventReservationStatusAfterPayment | null)
-    /** Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started. */
-    reservationStatusAfterRegistration: (EventReservationStatusAfterRegistration | null)
-    /** The number of seconds before registration session expires, default is 15 minutes */
-    sessionDuration: (Scalars['Float'] | null)
-    /** If true, a new session will be allowed after the previous one has expired */
-    allowForNewSessionAfterTimeout: (Scalars['Boolean'] | null)
-    /** If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL */
-    seatAssignmentMode: (SeatAssignmentMode | null)
-    /** Allow to reserve more tickets than group members */
-    allowForMoreTicketsThanGroupMembers: (Scalars['Boolean'] | null)
-    __typename: 'EventConfiguration'
-}
-
-export type EventReservationStatusAfterPayment = 'PRESENCE_CONFIRMATION_PENDING' | 'REGISTERED' | 'CONFIRMED'
-
-export type EventReservationStatusAfterRegistration = 'NONE' | 'REQUIRES_ADMIN_APPROVAL' | 'PENDING'
-
-export type SeatAssignmentMode = 'NONE' | 'REQUIRED' | 'OPTIONAL'
-
-
-/** Represents an event within the platform */
-export interface Event {
-    /** Unique identifier of the event */
-    id: Scalars['ID']
-    /** Display title of the event */
-    title: Scalars['String']
-    /** Detailed description of the event */
-    description: Scalars['String']
-    /** Timestamp when the event was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the event was last updated */
-    updatedAt: Scalars['DateTime']
-    /** Scheduled start date and time of the event */
-    startAt: (Scalars['DateTime'] | null)
-    /** Scheduled end date and time of the event */
-    endAt: (Scalars['DateTime'] | null)
-    /** Date and time when registrations open */
-    startRegistrationsAt: (Scalars['DateTime'] | null)
-    /** Date and time when registrations close */
-    endRegistrationsAt: (Scalars['DateTime'] | null)
-    /** Date and time when the event becomes publicly visible */
-    visibleAt: (Scalars['DateTime'] | null)
-    /** Event configuration including group, ticketing, and registration settings */
-    configuration: (EventConfiguration | null)
-    /** Identifier of the venue where the event takes place */
-    eventVenueId: (Scalars['ID'] | null)
-    /** Identifier of the organization that owns this event */
-    organizationId: Scalars['ID']
-    /** Identifier of the account that created this event */
-    createdById: Scalars['ID']
-    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
-    decryptionKey: Scalars['String']
-    /** The venue where this event is taking place */
-    venue: (EventVenue | null)
-    __typename: 'Event'
-}
-
-
-/** Base interface for all event types */
-export type EventInterface = (Event | EventWithUserReservation) & { __isUnion?: true }
-
-
-/** Event with the current authenticated user's reservation details */
-export interface EventWithUserReservation {
-    /** Unique identifier of the event */
-    id: Scalars['ID']
-    /** Display title of the event */
-    title: Scalars['String']
-    /** Detailed description of the event */
-    description: Scalars['String']
-    /** Timestamp when the event was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the event was last updated */
-    updatedAt: Scalars['DateTime']
-    /** Scheduled start date and time of the event */
-    startAt: (Scalars['DateTime'] | null)
-    /** Scheduled end date and time of the event */
-    endAt: (Scalars['DateTime'] | null)
-    /** Date and time when registrations open */
-    startRegistrationsAt: (Scalars['DateTime'] | null)
-    /** Date and time when registrations close */
-    endRegistrationsAt: (Scalars['DateTime'] | null)
-    /** Date and time when the event becomes publicly visible */
-    visibleAt: (Scalars['DateTime'] | null)
-    /** Event configuration including group, ticketing, and registration settings */
-    configuration: (EventConfiguration | null)
-    /** Identifier of the venue where the event takes place */
-    eventVenueId: (Scalars['ID'] | null)
-    /** Identifier of the organization that owns this event */
-    organizationId: Scalars['ID']
-    /** Identifier of the account that created this event */
-    createdById: Scalars['ID']
-    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
-    decryptionKey: Scalars['String']
-    /** The venue where this event is taking place */
-    venue: (EventVenue | null)
-    /** The reservation of the current user for this event */
-    myReservation: (EventReservationWithTicketsAndQrCode | null)
-    __typename: 'EventWithUserReservation'
-}
-
-
-/** Paginated list of events */
-export interface Events {
-    /** List of edges containing cursor and node pairs */
-    edges: EventEdge[]
-    /** Flat list of items in the current page */
-    nodes: Event[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'Events'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface EventEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: Event
-    __typename: 'EventEdge'
-}
-
-
 /** Configuration of a reservation ticket including custom field values */
 export interface EventReservationTicketConfiguration {
     /** Custom fields with their configured properties and filled values */
@@ -3835,6 +4339,10 @@ export interface EventReservation {
     tickets: EventReservationTicket[]
     /** Current validation status of the associated user group */
     groupStatus: UserGroupStatus
+    /** Identifier of the reservation this one replaced */
+    replacesReservationId: (Scalars['ID'] | null)
+    /** Tournament teams created from this reservation */
+    tournamentTeamIds: Scalars['ID'][]
     __typename: 'EventReservation'
 }
 
@@ -3861,6 +4369,8 @@ export interface EventReservationWithTicketsAndQrCode {
     groupId: Scalars['ID']
     /** Current validation status of the associated user group */
     groupStatus: UserGroupStatus
+    /** Identifier of the reservation this one replaced */
+    replacesReservationId: (Scalars['ID'] | null)
     /** List of tickets with QR codes for this reservation */
     tickets: EventReservationTicketWithQrCode[]
     __typename: 'EventReservationWithTicketsAndQrCode'
@@ -3909,6 +4419,8 @@ export interface OmitObjectType {
     groupId: Scalars['ID']
     /** Current validation status of the associated user group */
     groupStatus: UserGroupStatus
+    /** Identifier of the reservation this one replaced */
+    replacesReservationId: (Scalars['ID'] | null)
     __typename: 'OmitObjectType'
 }
 
@@ -3973,6 +4485,260 @@ export interface EventSeatEdge {
     node: EventSeat
     __typename: 'EventSeatEdge'
 }
+
+
+/** Waitlist settings of the time slots of an event */
+export interface EventWaitlistConfiguration {
+    /** Whether players may join the waitlist of a full slot */
+    enabled: Scalars['Boolean']
+    /** Seconds an offer holds the seats, default is 86400 */
+    offerDurationSeconds: (Scalars['Int'] | null)
+    /** Seconds an offer holds the seats when made on the day of the slot, in the venue timezone */
+    sameDayOfferDurationSeconds: (Scalars['Int'] | null)
+    /** Maximum seats one entry may request, default is maxTicketsPerReservation */
+    maxQuantity: (Scalars['Int'] | null)
+    __typename: 'EventWaitlistConfiguration'
+}
+
+
+/** What a reservation manager may change after validation */
+export interface EventSelfServiceConfiguration {
+    /** Manager may cancel a validated free reservation */
+    allowCancel: Scalars['Boolean']
+    /** Manager may move a validated free reservation */
+    allowChange: Scalars['Boolean']
+    /** Self-service closes this many seconds before the earliest slot start of the reservation, default is 0 */
+    cutoffSeconds: (Scalars['Int'] | null)
+    /** Allowed targets of a move, default is SAME_EVENT */
+    changeScope: (EventReservationChangeScope | null)
+    __typename: 'EventSelfServiceConfiguration'
+}
+
+export type EventReservationChangeScope = 'SAME_EVENT' | 'SAME_VENUE' | 'SAME_SERIES'
+
+
+/** Configuration settings for an event including registration, ticketing, and seating options */
+export interface EventConfiguration {
+    /** Custom fields that are defined on each teams */
+    customFields: (Property[] | null)
+    /** Configuration of the group */
+    groupConfiguration: (UserGroupConfiguration | null)
+    /** Maximum number of tickets per reservation */
+    maxTicketsPerReservation: (Scalars['Float'] | null)
+    /** Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet */
+    reservationStatusAfterPayment: (EventReservationStatusAfterPayment | null)
+    /** Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started. */
+    reservationStatusAfterRegistration: (EventReservationStatusAfterRegistration | null)
+    /** The number of seconds before registration session expires, default is 15 minutes */
+    sessionDuration: (Scalars['Float'] | null)
+    /** If true, a new session will be allowed after the previous one has expired */
+    allowForNewSessionAfterTimeout: (Scalars['Boolean'] | null)
+    /** If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL */
+    seatAssignmentMode: (SeatAssignmentMode | null)
+    /** Allow to reserve more tickets than group members */
+    allowForMoreTicketsThanGroupMembers: (Scalars['Boolean'] | null)
+    /** Waitlist settings of the time slots */
+    waitlist: (EventWaitlistConfiguration | null)
+    /** Self-service cancel and move settings */
+    selfService: (EventSelfServiceConfiguration | null)
+    __typename: 'EventConfiguration'
+}
+
+export type EventReservationStatusAfterPayment = 'PRESENCE_CONFIRMATION_PENDING' | 'REGISTERED' | 'CONFIRMED'
+
+export type EventReservationStatusAfterRegistration = 'NONE' | 'REQUIRES_ADMIN_APPROVAL' | 'PENDING'
+
+export type SeatAssignmentMode = 'NONE' | 'REQUIRED' | 'OPTIONAL'
+
+
+/** Represents an event within the platform */
+export interface Event {
+    /** Unique identifier of the event */
+    id: Scalars['ID']
+    /** Display title of the event */
+    title: Scalars['String']
+    /** Detailed description of the event */
+    description: Scalars['String']
+    /** Timestamp when the event was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the event was last updated */
+    updatedAt: Scalars['DateTime']
+    /** Scheduled start date and time of the event */
+    startAt: (Scalars['DateTime'] | null)
+    /** Scheduled end date and time of the event */
+    endAt: (Scalars['DateTime'] | null)
+    /** Date and time when registrations open */
+    startRegistrationsAt: (Scalars['DateTime'] | null)
+    /** Date and time when registrations close */
+    endRegistrationsAt: (Scalars['DateTime'] | null)
+    /** Date and time when the event becomes publicly visible */
+    visibleAt: (Scalars['DateTime'] | null)
+    /** Event configuration including group, ticketing, and registration settings */
+    configuration: (EventConfiguration | null)
+    /** Identifier of the venue where the event takes place */
+    eventVenueId: (Scalars['ID'] | null)
+    /** Identifier of the organization that owns this event */
+    organizationId: Scalars['ID']
+    /** Identifier of the account that created this event */
+    createdById: Scalars['ID']
+    /** Identifier of the tournament this event is linked to */
+    tournamentId: (Scalars['ID'] | null)
+    /** Identifier of the registration series this event belongs to */
+    registrationSeriesId: (Scalars['ID'] | null)
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
+    decryptionKey: Scalars['String']
+    /** The venue where this event is taking place */
+    venue: (EventVenue | null)
+    __typename: 'Event'
+}
+
+
+/** Base interface for all event types */
+export type EventInterface = (Event | EventWithUserReservation) & { __isUnion?: true }
+
+
+/** Event with the current authenticated user's reservation details */
+export interface EventWithUserReservation {
+    /** Unique identifier of the event */
+    id: Scalars['ID']
+    /** Display title of the event */
+    title: Scalars['String']
+    /** Detailed description of the event */
+    description: Scalars['String']
+    /** Timestamp when the event was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the event was last updated */
+    updatedAt: Scalars['DateTime']
+    /** Scheduled start date and time of the event */
+    startAt: (Scalars['DateTime'] | null)
+    /** Scheduled end date and time of the event */
+    endAt: (Scalars['DateTime'] | null)
+    /** Date and time when registrations open */
+    startRegistrationsAt: (Scalars['DateTime'] | null)
+    /** Date and time when registrations close */
+    endRegistrationsAt: (Scalars['DateTime'] | null)
+    /** Date and time when the event becomes publicly visible */
+    visibleAt: (Scalars['DateTime'] | null)
+    /** Event configuration including group, ticketing, and registration settings */
+    configuration: (EventConfiguration | null)
+    /** Identifier of the venue where the event takes place */
+    eventVenueId: (Scalars['ID'] | null)
+    /** Identifier of the organization that owns this event */
+    organizationId: Scalars['ID']
+    /** Identifier of the account that created this event */
+    createdById: Scalars['ID']
+    /** Identifier of the tournament this event is linked to */
+    tournamentId: (Scalars['ID'] | null)
+    /** Identifier of the registration series this event belongs to */
+    registrationSeriesId: (Scalars['ID'] | null)
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
+    decryptionKey: Scalars['String']
+    /** The venue where this event is taking place */
+    venue: (EventVenue | null)
+    /** The reservation of the current user for this event */
+    myReservation: (EventReservationWithTicketsAndQrCode | null)
+    __typename: 'EventWithUserReservation'
+}
+
+
+/** Paginated list of events */
+export interface Events {
+    /** List of edges containing cursor and node pairs */
+    edges: EventEdge[]
+    /** Flat list of items in the current page */
+    nodes: Event[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'Events'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface EventEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: Event
+    __typename: 'EventEdge'
+}
+
+
+/** Outcome of a calendar generation run */
+export interface EventCalendarGenerateResult {
+    /** Events of the requested days */
+    events: Event[]
+    /** Events created by this run */
+    createdEventCount: Scalars['Int']
+    /** Events that already existed */
+    existingEventCount: Scalars['Int']
+    /** Slots created by this run */
+    createdSlotCount: Scalars['Int']
+    /** Slots that already existed */
+    existingSlotCount: Scalars['Int']
+    __typename: 'EventCalendarGenerateResult'
+}
+
+
+/** Configuration for a ticket type including custom fields that attendees must fill */
+export interface EventTicketConfigurationConfiguration {
+    /** Custom fields that attendees must fill when purchasing this ticket type */
+    customFields: Property[]
+    __typename: 'EventTicketConfigurationConfiguration'
+}
+
+
+/** A ticket type configuration for an event, defining pricing, availability, and custom fields */
+export interface EventTicketConfiguration {
+    /** Unique identifier of the ticket configuration */
+    id: Scalars['ID']
+    /** Display name of the ticket type */
+    name: Scalars['String']
+    /** Description of what this ticket type includes */
+    description: Scalars['String']
+    /** Timestamp when the ticket configuration was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the ticket configuration was last updated */
+    updatedAt: Scalars['DateTime']
+    /** Price of the ticket in the smallest currency unit (e.g., cents) */
+    price: Scalars['Float']
+    /** Currency code for the ticket price */
+    currency: ShopCurrencies
+    /** Maximum number of tickets available for this configuration */
+    maxCount: Scalars['Float']
+    /** Current number of tickets that have been sold or reserved */
+    currentCount: Scalars['Float']
+    /** Whether this ticket type is currently available for purchase */
+    buyable: Scalars['Boolean']
+    /** Identifier of the event this ticket configuration belongs to */
+    eventId: Scalars['ID']
+    /** Identifier of the venue seat type associated with this ticket */
+    seatTypeId: (Scalars['ID'] | null)
+    /** Additional configuration including custom fields for this ticket type */
+    configuration: (EventTicketConfigurationConfiguration | null)
+    /** Start of the time slot sold by this ticket configuration */
+    startsAt: (Scalars['DateTime'] | null)
+    /** End of the time slot sold by this ticket configuration */
+    endsAt: (Scalars['DateTime'] | null)
+    /** State of the time slot set by the organizer */
+    state: EventSlotState
+    /** Reason shown for a closed or blocked slot */
+    stateReason: (Scalars['String'] | null)
+    /** Tournament linked to this slot, overriding the tournament of the event */
+    tournamentId: (Scalars['ID'] | null)
+    /** Seats still available, never negative */
+    freeCount: Scalars['Int']
+    /** State of the slot at the time of the request, PAST once started */
+    effectiveState: EventSlotEffectiveState
+    __typename: 'EventTicketConfiguration'
+}
+
+export type ShopCurrencies = 'USD' | 'EUR' | 'GBP'
+
+export type EventSlotState = 'OPEN' | 'CLOSED' | 'BLOCKED'
+
+export type EventSlotEffectiveState = 'OPEN' | 'CLOSED' | 'BLOCKED' | 'PAST'
 
 
 /** Configuration settings for a venue seat type */
@@ -4061,6 +4827,8 @@ export interface EventVenue {
     configuration: EventVenueConfiguration
     /** Identifier of the organization that owns this venue */
     organizationId: Scalars['ID']
+    /** IANA timezone of the venue, such as Europe/Paris */
+    timezone: Scalars['String']
     __typename: 'EventVenue'
 }
 
@@ -4089,46 +4857,184 @@ export interface EventVenueEdge {
 }
 
 
-/** Configuration for a ticket type including custom fields that attendees must fill */
-export interface EventTicketConfigurationConfiguration {
-    /** Custom fields that attendees must fill when purchasing this ticket type */
-    customFields: Property[]
-    __typename: 'EventTicketConfigurationConfiguration'
-}
-
-
-/** A ticket type configuration for an event, defining pricing, availability, and custom fields */
-export interface EventTicketConfiguration {
-    /** Unique identifier of the ticket configuration */
+/** A player waiting for seats on a time slot */
+export interface EventWaitlistEntry {
+    /** Unique identifier of the entry */
     id: Scalars['ID']
-    /** Display name of the ticket type */
-    name: Scalars['String']
-    /** Description of what this ticket type includes */
-    description: Scalars['String']
-    /** Timestamp when the ticket configuration was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the ticket configuration was last updated */
-    updatedAt: Scalars['DateTime']
-    /** Price of the ticket in the smallest currency unit (e.g., cents) */
-    price: Scalars['Float']
-    /** Currency code for the ticket price */
-    currency: ShopCurrencies
-    /** Maximum number of tickets available for this configuration */
-    maxCount: Scalars['Float']
-    /** Current number of tickets that have been sold or reserved */
-    currentCount: Scalars['Float']
-    /** Whether this ticket type is currently available for purchase */
-    buyable: Scalars['Boolean']
-    /** Identifier of the event this ticket configuration belongs to */
+    /** Event of the slot */
     eventId: Scalars['ID']
-    /** Identifier of the venue seat type associated with this ticket */
-    seatTypeId: (Scalars['ID'] | null)
-    /** Additional configuration including custom fields for this ticket type */
-    configuration: (EventTicketConfigurationConfiguration | null)
-    __typename: 'EventTicketConfiguration'
+    /** Ticket configuration (slot) waited for */
+    ticketConfigurationId: Scalars['ID']
+    /** Player who joined the waitlist */
+    playerId: Scalars['ID']
+    /** Number of seats requested */
+    quantity: Scalars['Int']
+    /** Current status of the entry */
+    status: EventWaitlistEntryStatus
+    /** Why the entry left the waitlist */
+    endedReason: (EventWaitlistEndReason | null)
+    /** Position among the waiting entries of the slot, 1 being next */
+    position: (Scalars['Int'] | null)
+    /** Reservation holding the offered seats */
+    offerReservationId: (Scalars['ID'] | null)
+    /** Expiry of the current offer */
+    offerExpiresAt: (Scalars['DateTime'] | null)
+    /** Timestamp when the entry was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the entry was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'EventWaitlistEntry'
 }
 
-export type ShopCurrencies = 'USD' | 'EUR' | 'GBP'
+export type EventWaitlistEntryStatus = 'WAITING' | 'OFFERED' | 'ACCEPTED' | 'EXPIRED' | 'LEFT'
+
+export type EventWaitlistEndReason = 'LEFT' | 'REMOVED' | 'REPLACED' | 'REGISTERED_ELSEWHERE' | 'ALREADY_REGISTERED' | 'OFFER_EXPIRED' | 'SLOT_CLOSED'
+
+
+/** Paginated list of waitlist entries */
+export interface EventWaitlistEntries {
+    /** List of edges containing cursor and node pairs */
+    edges: EventWaitlistEntryEdge[]
+    /** Flat list of items in the current page */
+    nodes: EventWaitlistEntry[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'EventWaitlistEntries'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface EventWaitlistEntryEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: EventWaitlistEntry
+    __typename: 'EventWaitlistEntryEdge'
+}
+
+
+/** Guest identity attached to an ownerless player profile of the organization */
+export interface GuestProfile {
+    /** ID of the guest player profile */
+    playerId: Scalars['ID']
+    /** The guest player profile */
+    player: Player
+    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
+    email: (Scalars['String'] | null)
+    /** First name, same visibility as email */
+    firstName: (Scalars['String'] | null)
+    /** Last name, same visibility as email */
+    lastName: (Scalars['String'] | null)
+    /** How the guest was created */
+    origin: GuestOrigin
+    /** Players acting as guardians of this guest */
+    guardianPlayerIds: Scalars['ID'][]
+    /** Guests this player is the guardian of */
+    wardPlayerIds: Scalars['ID'][]
+    /** Creation date */
+    createdAt: Scalars['DateTime']
+    __typename: 'GuestProfile'
+}
+
+export type GuestOrigin = 'ENTRY' | 'INVITED' | 'GUARDIAN' | 'ADMIN'
+
+
+/** Magic link a guest session was opened from */
+export interface GuestLinkContext {
+    id: Scalars['ID']
+    /** Purpose set by the link creator */
+    purpose: Scalars['String']
+    /** JSON payload set by the link creator */
+    data: Scalars['String']
+    expiresAt: Scalars['DateTime']
+    __typename: 'GuestLinkContext'
+}
+
+
+/** A guest session; send its token in the x-guest-session header */
+export interface GuestSession {
+    /** Session token, returned only when the session opens */
+    token: Scalars['String']
+    /** Guest player the session belongs to */
+    playerId: Scalars['ID']
+    origin: GuestSessionOrigin
+    expiresAt: Scalars['DateTime']
+    link: (GuestLinkContext | null)
+    __typename: 'GuestSession'
+}
+
+export type GuestSessionOrigin = 'ENTRY' | 'LINK'
+
+
+/** The current guest session */
+export interface GuestMe {
+    /** Player that owns the session */
+    sessionPlayerId: Scalars['ID']
+    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
+    actingPlayerId: Scalars['ID']
+    origin: GuestSessionOrigin
+    expiresAt: Scalars['DateTime']
+    link: (GuestLinkContext | null)
+    profile: GuestProfile
+    wards: GuestProfile[]
+    __typename: 'GuestMe'
+}
+
+
+/** Read-only view of a magic link; reading it never consumes a use */
+export interface GuestLinkView {
+    status: GuestLinkStatus
+    /** Null when INVALID */
+    purpose: (Scalars['String'] | null)
+    /** Null when INVALID */
+    expiresAt: (Scalars['DateTime'] | null)
+    /** Guest first name, only when VALID */
+    firstName: (Scalars['String'] | null)
+    /** Link payload, only when VALID */
+    data: (Scalars['String'] | null)
+    __typename: 'GuestLinkView'
+}
+
+export type GuestLinkStatus = 'VALID' | 'EXPIRED' | 'REVOKED' | 'EXHAUSTED' | 'INVALID'
+
+
+/** A new magic link; the token is returned only once */
+export interface GuestLinkCreated {
+    id: Scalars['ID']
+    token: Scalars['String']
+    expiresAt: Scalars['DateTime']
+    __typename: 'GuestLinkCreated'
+}
+
+export interface GuestProfileCreated {
+    profile: GuestProfile
+    /** False when an addressable guest with the same e-mail existed */
+    created: Scalars['Boolean']
+    __typename: 'GuestProfileCreated'
+}
+
+
+/** A guardian allowed to act for a guest ward */
+export interface GuestGuardianLink {
+    id: Scalars['ID']
+    guardianPlayerId: Scalars['ID']
+    wardPlayerId: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    __typename: 'GuestGuardianLink'
+}
+
+
+/** Guest settings of the organization */
+export interface GuestConfiguration {
+    selfEntry: GuestSelfEntryMode
+    sessionTtlMinutes: Scalars['Int']
+    maxWardsPerGuardian: Scalars['Int']
+    __typename: 'GuestConfiguration'
+}
+
+export type GuestSelfEntryMode = 'DISABLED' | 'TRUSTED_PARAMS'
 
 
 /** Represents a virtual item that can be assigned to players */
@@ -4443,218 +5349,6 @@ export interface SimulationActorContext {
 }
 
 
-/** A published app listing in the marketplace */
-export interface MarketplaceApp {
-    /** Unique identifier of the marketplace app */
-    id: Scalars['ID']
-    /** ID of the underlying organization app */
-    organizationAppId: Scalars['ID']
-    /** Current publication status of the app */
-    status: MarketplaceAppStatus
-    /** App manifest describing capabilities and configuration */
-    manifest: AppManifestModel
-    /** Display name of the marketplace app */
-    name: Scalars['String']
-    /** Full description of the app */
-    description: Scalars['String']
-    /** Short summary displayed on app cards */
-    shortDescription: Scalars['String']
-    /** URL of the app icon image */
-    icon: (Scalars['String'] | null)
-    /** URLs of app screenshot images */
-    screenshots: Scalars['String'][]
-    /** Category tags for filtering and discovery */
-    categories: Scalars['String'][]
-    /** Current semantic version of the app */
-    version: Scalars['String']
-    /** URL to the app privacy policy */
-    privacyPolicyUrl: (Scalars['String'] | null)
-    /** URL to the app support page */
-    supportUrl: (Scalars['String'] | null)
-    /** URL to the app website */
-    websiteUrl: (Scalars['String'] | null)
-    /** Timestamp when the app was first published */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the app listing was last updated */
-    updatedAt: Scalars['DateTime']
-    /** Reviews for this marketplace app */
-    reviews: MarketplaceAppReviews
-    /** Aggregated stats for this marketplace app */
-    stats: MarketplaceAppStats
-    /** Current organization installation of this app, if any */
-    installation: (MarketplaceAppInstallation | null)
-    /** Pricing information for this marketplace app */
-    pricing: (MarketplaceAppPricing | null)
-    __typename: 'MarketplaceApp'
-}
-
-
-/** Status of a marketplace app listing */
-export type MarketplaceAppStatus = 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED'
-
-
-/** Paginated list of marketplace apps */
-export interface MarketplaceApps {
-    /** List of edges containing cursor and node pairs */
-    edges: MarketplaceAppEdge[]
-    /** Flat list of items in the current page */
-    nodes: MarketplaceApp[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'MarketplaceApps'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface MarketplaceAppEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: MarketplaceApp
-    __typename: 'MarketplaceAppEdge'
-}
-
-
-/** A user review and rating for a marketplace app */
-export interface MarketplaceAppReview {
-    /** Unique identifier of the review */
-    id: Scalars['ID']
-    /** ID of the marketplace app being reviewed */
-    marketplaceAppId: Scalars['ID']
-    /** ID of the organization that submitted the review */
-    organizationId: Scalars['ID']
-    /** ID of the account that authored the review */
-    accountId: Scalars['ID']
-    /** Star rating from 1 to 5 */
-    rating: Scalars['Int']
-    /** Review title */
-    title: Scalars['String']
-    /** Review body text */
-    body: Scalars['String']
-    /** Timestamp when the review was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the review was last updated */
-    updatedAt: Scalars['DateTime']
-    __typename: 'MarketplaceAppReview'
-}
-
-
-/** Paginated list of marketplace app reviews */
-export interface MarketplaceAppReviews {
-    /** List of edges containing cursor and node pairs */
-    edges: MarketplaceAppReviewEdge[]
-    /** Flat list of items in the current page */
-    nodes: MarketplaceAppReview[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'MarketplaceAppReviews'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface MarketplaceAppReviewEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: MarketplaceAppReview
-    __typename: 'MarketplaceAppReviewEdge'
-}
-
-
-/** A marketplace app installation within an organization */
-export interface MarketplaceAppInstallation {
-    /** Unique identifier of the installation */
-    id: Scalars['ID']
-    /** ID of the installed marketplace app */
-    marketplaceAppId: Scalars['ID']
-    /** ID of the organization where the app is installed */
-    organizationId: Scalars['ID']
-    /** ID of the account that performed the installation */
-    installedById: Scalars['ID']
-    /** Current status of the installation */
-    status: MarketplaceInstallationStatus
-    /** Permissions granted to this app by the organization (OrganizationPermission IDs) */
-    grantedPermissions: Scalars['String'][]
-    /** Timestamp when the app was installed */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the installation was last updated */
-    updatedAt: Scalars['DateTime']
-    /** The marketplace app for this installation */
-    marketplaceApp: MarketplaceApp
-    __typename: 'MarketplaceAppInstallation'
-}
-
-
-/** Status of a marketplace app installation */
-export type MarketplaceInstallationStatus = 'ACTIVE' | 'SUSPENDED' | 'UNINSTALLED'
-
-
-/** Paginated list of marketplace app installations */
-export interface MarketplaceAppInstallations {
-    /** List of edges containing cursor and node pairs */
-    edges: MarketplaceAppInstallationEdge[]
-    /** Flat list of items in the current page */
-    nodes: MarketplaceAppInstallation[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'MarketplaceAppInstallations'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface MarketplaceAppInstallationEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: MarketplaceAppInstallation
-    __typename: 'MarketplaceAppInstallationEdge'
-}
-
-
-/** Aggregated statistics for a marketplace app */
-export interface MarketplaceAppStats {
-    /** Total number of active installations across all organizations */
-    totalInstallations: Scalars['Int']
-    /** Average star rating from all reviews */
-    averageRating: (Scalars['Float'] | null)
-    /** Total number of reviews submitted for this app */
-    totalReviews: Scalars['Int']
-    __typename: 'MarketplaceAppStats'
-}
-
-
-/** Pricing configuration for a marketplace app */
-export interface MarketplaceAppPricing {
-    /** Unique identifier of the pricing record */
-    id: Scalars['ID']
-    /** ID of the marketplace app this pricing applies to */
-    marketplaceAppId: Scalars['ID']
-    /** Pricing model type (e.g. one-time, subscription, free) */
-    type: MarketplacePricingType
-    /** Price amount in the smallest currency unit (e.g. cents) */
-    priceAmountCents: Scalars['Int']
-    /** ISO 4217 currency code */
-    currency: Scalars['String']
-    /** Number of free trial days for subscription pricing */
-    trialDays: Scalars['Int']
-    /** Timestamp when the pricing was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the pricing was last updated */
-    updatedAt: Scalars['DateTime']
-    __typename: 'MarketplaceAppPricing'
-}
-
-
-/** Pricing model for a marketplace app */
-export type MarketplacePricingType = 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
-
-
 /** A single configuration property for a platform module */
 export interface ModuleConfigProp {
     /** Configuration property key */
@@ -4734,6 +5428,17 @@ export interface EntityMetafield {
 }
 
 
+/** Terms refused in moderated player text */
+export interface OrganizationModeration {
+    /** Refused as whole words */
+    blockedWords: Scalars['String'][]
+    /** Refused anywhere inside the text */
+    blockedSubstrings: Scalars['String'][]
+    updatedAt: (Scalars['DateTime'] | null)
+    __typename: 'OrganizationModeration'
+}
+
+
 /** A typed metadata entry attached to an organization object */
 export interface ObjectMetadata {
     /** Key name for this metadata entry */
@@ -4761,7 +5466,7 @@ export type MetadataVisibility = 'PUBLIC' | 'PRIVATE'
 
 
 /** Prisma model types that support metadata and custom fields */
-export type ObjectType = 'Account' | 'ClanGroup' | 'ClanMember' | 'Clan' | 'Configuration' | 'LeaderboardSeasonBucketScore' | 'LeaderboardSeasonBucket' | 'LeaderboardSeason' | 'Leaderboard' | 'OrganizationGroup' | 'OrganizationMember' | 'OrganizationApp' | 'Organization' | 'EmailConfiguration' | 'EmailTemplate' | 'OrganizationIdentityProvider' | 'IdentityProvider' | 'PlayerProfile' | 'SkillRating' | 'PlayerSkillRating' | 'TeamMember' | 'Team' | 'TournamentStepGroupRoundGameMatchScores' | 'TournamentStepGroupRoundGameMatch' | 'TournamentStepGroupRoundGameTeamScore' | 'TournamentStepGroupRoundGame' | 'GameLink' | 'TournamentStepGroupRoundTeamScore' | 'TournamentStepGroupRound' | 'TournamentStepGroupTeamScore' | 'TournamentStepGroup' | 'TournamentStepTeamScore' | 'TournamentStep' | 'TournamentTeamMember' | 'TournamentTeam' | 'TournamentTeamScore' | 'Tournament' | 'TournamentAdmin' | 'TournamentFeature' | 'EventVenueSeat' | 'EventVenueSeatType' | 'EventVenue' | 'EventSeatStatus' | 'EventTicketConfiguration' | 'EventReservationTicket' | 'EventReservation' | 'Event' | 'UserGroupConfiguration' | 'UserGroup' | 'UserGroupMember' | 'SubscriptionItem' | 'PlatformTemplate' | 'Platform' | 'PlatformCdnFile' | 'PlatformModuleConfig' | 'Webhook' | 'Payments' | 'Currency' | 'PlayerCurrency' | 'ItemCategory' | 'Item' | 'PlayerItem' | 'Shop' | 'ShopCategory' | 'PlayerShopProductPurshase' | 'ShopProductItem' | 'ShopProduct' | 'StepRuleSet' | 'RuleSetVersion' | 'StepRuleSetValidationJob' | 'StepRuleSetValidationInvariant' | 'StepRuleSetValidationError' | 'StepRuleSetValidationWarning' | 'StepRuleSetValidationRuleFire' | 'StepRuleSetValidationEvent' | 'ScoringRuleSet' | 'TiebreakerRule' | 'AdvancementRule' | 'CrossStepRule' | 'StructureTemplate' | 'GroupTemplate' | 'RoundTemplate' | 'GameTemplate' | 'PresetScript' | 'AppWebhook' | 'AppRelease' | 'MarketplaceApp' | 'MarketplaceAppPricing' | 'MarketplaceAppRelease' | 'MarketplaceAppReview' | 'MarketplaceAppInstallation' | 'JournalEntry'
+export type ObjectType = 'Account' | 'ClanGroup' | 'ClanMember' | 'Clan' | 'Configuration' | 'LeaderboardSeasonBucketScore' | 'LeaderboardSeasonBucket' | 'LeaderboardSeason' | 'Leaderboard' | 'OrganizationGroup' | 'OrganizationMember' | 'OrganizationApp' | 'Organization' | 'EmailConfiguration' | 'EmailTemplate' | 'OrganizationIdentityProvider' | 'IdentityProvider' | 'PlayerProfile' | 'SkillRating' | 'PlayerSkillRating' | 'TeamMember' | 'Team' | 'TournamentStepGroupRoundGameMatchScores' | 'TournamentStepGroupRoundGameMatch' | 'TournamentStepGroupRoundGameTeamScore' | 'TournamentStepGroupRoundGame' | 'GameLink' | 'TournamentStepGroupRoundTeamScore' | 'TournamentStepGroupRound' | 'TournamentStepGroupTeamScore' | 'TournamentStepGroup' | 'TournamentStepTeamScore' | 'TournamentStep' | 'TournamentTeamMember' | 'TournamentTeam' | 'TournamentTeamScore' | 'Tournament' | 'TournamentAdmin' | 'TournamentFeature' | 'EventVenueSeat' | 'EventVenueSeatType' | 'EventVenue' | 'EventSeatStatus' | 'EventTicketConfiguration' | 'EventReservationTicket' | 'EventReservation' | 'Event' | 'UserGroupConfiguration' | 'UserGroup' | 'UserGroupMember' | 'SubscriptionItem' | 'PlatformTemplate' | 'Platform' | 'PlatformCdnFile' | 'PlatformModuleConfig' | 'Webhook' | 'Payments' | 'Currency' | 'PlayerCurrency' | 'ItemCategory' | 'Item' | 'PlayerItem' | 'Shop' | 'ShopCategory' | 'PlayerShopProductPurshase' | 'ShopProductItem' | 'ShopProduct' | 'StepRuleSet' | 'RuleSetVersion' | 'StepRuleSetValidationJob' | 'StepRuleSetValidationInvariant' | 'StepRuleSetValidationError' | 'StepRuleSetValidationWarning' | 'StepRuleSetValidationRuleFire' | 'StepRuleSetValidationEvent' | 'ScoringRuleSet' | 'TiebreakerRule' | 'AdvancementRule' | 'CrossStepRule' | 'StructureTemplate' | 'GroupTemplate' | 'RoundTemplate' | 'GameTemplate' | 'PresetScript' | 'AppWebhook' | 'AppRelease' | 'MarketplaceApp' | 'MarketplaceAppPricing' | 'MarketplaceAppRelease' | 'MarketplaceAppReview' | 'MarketplaceAppInstallation' | 'JournalEntry' | 'MarketplaceAppReleaseFile' | 'PermissionDefinition' | 'AppEmailDelivery' | 'GuestProfile' | 'GuestGuardianLink' | 'GuestLink' | 'GuestSession' | 'GuestConfiguration' | 'OrganizationModeration' | 'RegistrationSeries' | 'EventWaitlistEntry' | 'LeaderboardFeed' | 'LeaderboardFeedEntry'
 
 
 /** Metadata entries grouped by object ID for batch queries */
@@ -4818,6 +5523,8 @@ export interface CustomFieldDefinitionModel {
     createdAt: Scalars['DateTime']
     /** Timestamp when the definition was last updated */
     updatedAt: Scalars['DateTime']
+    /** Whether values are checked against the organization moderation lists */
+    moderated: Scalars['Boolean']
     __typename: 'CustomFieldDefinitionModel'
 }
 
@@ -5333,7 +6040,7 @@ export interface LimitOverride {
     __typename: 'LimitOverride'
 }
 
-export type OrganizationLimitsType = 'REGISTERED_USERS' | 'ORGANIZATION_GROUPS' | 'ORGANIZATION_MEMBERS' | 'CUSTOM_FIELDS' | 'TOURNAMENT_STEPS' | 'TOURNAMENT_STEP_GROUPS' | 'TOURNAMENT_TEAMS_REGISTERED' | 'TOURNAMENT_TEAM_SIZE' | 'TOURNAMENT_REGISTRATION_RULES' | 'WEBHOOKS' | 'ANONYMOUS_PLAYER_PROFILES' | 'WHITE_LABEL' | 'LEADERBOARDS' | 'LEADERBOARD_ENTRIES' | 'LEADERBOARD_BUCKETS' | 'LEADERBOARD_SEASONS' | 'SKILL_RATINGS' | 'PLATFORMS' | 'PLATFORM_TEMPLATES' | 'ORGANIZATION_STORAGE_SIZE' | 'PLATFORM_CUSTOM_DOMAINS' | 'CUSTOM_IDENTITY_PROVIDERS' | 'APPS' | 'ATTACHED_APPS' | 'EVENTS_MAX_TICKETS_TYPES' | 'EVENTS_MAX_TICKETS' | 'EVENTS_MAX_GROUP_SIZE' | 'EVENTS_MAX_REGISTRATION_RULES' | 'EVENT_VENUES' | 'EVENT_VENUE_MAX_SEAT_TYPES' | 'EVENT_VENUE_MAX_SEATS' | 'EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS' | 'CURRENCIES' | 'ITEM_CATEGORIES' | 'ITEMS' | 'SHOPS' | 'SHOP_CATEGORIES' | 'SHOP_PRODUCTS' | 'MARKETPLACE_PUBLISHED_APPS' | 'MARKETPLACE_INSTALLATIONS'
+export type OrganizationLimitsType = 'REGISTERED_USERS' | 'ORGANIZATION_GROUPS' | 'ORGANIZATION_MEMBERS' | 'CUSTOM_FIELDS' | 'TOURNAMENT_STEPS' | 'TOURNAMENT_STEP_GROUPS' | 'TOURNAMENT_TEAMS_REGISTERED' | 'TOURNAMENT_TEAM_SIZE' | 'TOURNAMENT_REGISTRATION_RULES' | 'WEBHOOKS' | 'ANONYMOUS_PLAYER_PROFILES' | 'WHITE_LABEL' | 'LEADERBOARDS' | 'LEADERBOARD_ENTRIES' | 'LEADERBOARD_BUCKETS' | 'LEADERBOARD_SEASONS' | 'SKILL_RATINGS' | 'PLATFORMS' | 'PLATFORM_TEMPLATES' | 'ORGANIZATION_STORAGE_SIZE' | 'PLATFORM_CUSTOM_DOMAINS' | 'CUSTOM_IDENTITY_PROVIDERS' | 'APPS' | 'ATTACHED_APPS' | 'EVENTS_MAX_TICKETS_TYPES' | 'EVENTS_MAX_TICKETS' | 'EVENTS_MAX_GROUP_SIZE' | 'EVENTS_MAX_REGISTRATION_RULES' | 'EVENT_VENUES' | 'EVENT_VENUE_MAX_SEAT_TYPES' | 'EVENT_VENUE_MAX_SEATS' | 'EVENTS_MAX_TICKET_CONFIGURATION_CUSTOM_FIELDS' | 'CURRENCIES' | 'ITEM_CATEGORIES' | 'ITEMS' | 'SHOPS' | 'SHOP_CATEGORIES' | 'SHOP_PRODUCTS' | 'MARKETPLACE_PUBLISHED_APPS' | 'MARKETPLACE_INSTALLATIONS' | 'APP_FUNCTION_INVOCATIONS' | 'APP_FUNCTION_CONCURRENCY' | 'APP_TIMERS_PENDING' | 'APP_EMAILS' | 'APP_FUNCTIONS' | 'APP_CRONS' | 'REGISTRATION_SERIES' | 'EVENTS_MAX_WAITLIST_ENTRIES'
 
 
 /** A purchasable subscription item that provides limit overrides to an organization */
@@ -5598,6 +6305,12 @@ export interface Query {
     eventVenueSeats: EventVenueSeats
     /** Retrieve a paginated list of seat types for a specific venue */
     eventVenueSeatTypes: EventVenueSeatTypes
+    /** Time slots matching the filter, ordered by start time */
+    eventSlots: EventTicketConfiguration[]
+    /** Waitlist entries of the caller's player */
+    myWaitlistEntries: EventWaitlistEntry[]
+    /** Waitlist entries of an event, in queue order */
+    eventWaitlistEntries: EventWaitlistEntries
     /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
     organizationPaymentCollectionConfiguration: (OrganizationPaymentCollectionConfiguration | null)
     /** Retrieve paginated members of specified user groups */
@@ -5654,6 +6367,26 @@ export interface Query {
     customFieldValues: CustomFieldWithValueModel[]
     /** Get custom field values for multiple objects of the same type in a single query */
     customFieldValuesBatch: CustomFieldValuesBatchResultModel[]
+    appInstallationPublicConfig: AppConfigEntry[]
+    appInstallationConfig: AppConfigEntry[]
+    appFunctionRead: AppFunctionResult
+    permissionDefinitions: PermissionDefinitionDto[]
+    hasPermissions: Scalars['Boolean'][]
+    /** Retrieve a registration series by ID */
+    registrationSeries: RegistrationSeries
+    /** Paginated list of the registration series of the organization */
+    registrationSeriesList: RegistrationSeriesPage
+    /** The caller's registrations that count against the series limits */
+    myActiveRegistrations: RegistrationSeriesEntry[]
+    /** A player's registrations that count against the series limits */
+    registrationSeriesPlayerEntries: RegistrationSeriesEntry[]
+    /** The current guest session */
+    guestMe: GuestMe
+    guestConfiguration: GuestConfiguration
+    /** Read a magic link without consuming it */
+    guestLinkResolve: GuestLinkView
+    /** Banned words and substrings applied to nicknames and team names of the current organization. */
+    organizationModeration: OrganizationModeration
     __typename: 'Query'
 }
 
@@ -5970,6 +6703,18 @@ export interface Mutation {
     eventVenueSeatTypeUpdate: EventVenueSeatType
     /** Delete a seat type from a venue */
     eventVenueSeatTypeDelete: EventVenueSeatType
+    /** Create the missing events and time slots of the given days; existing ones are left untouched */
+    eventCalendarGenerate: EventCalendarGenerateResult
+    /** Join the waitlist of a full time slot */
+    eventWaitlistJoin: EventWaitlistEntry
+    /** Leave one of the caller's waitlist entries */
+    eventWaitlistLeave: EventWaitlistEntry
+    /** Remove an entry from a waitlist */
+    eventWaitlistRemoveEntry: EventWaitlistEntry
+    /** Move a validated free reservation to other time slots, on the same or another event */
+    eventReservationChangeTickets: EventReservation
+    /** Release unassigned tickets of a validated reservation; at least one ticket must remain */
+    eventReservationReleaseTickets: EventReservation
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount: Scalars['String']
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
@@ -6062,6 +6807,44 @@ export interface Mutation {
     reorderCustomFieldDefinitions: CustomFieldDefinitionModel[]
     /** Set custom field values on an object */
     setCustomFieldValues: CustomFieldWithValueModel[]
+    appInstallationPin: MarketplaceAppInstallation
+    appFunctionsSetEnabled: MarketplaceAppInstallation
+    appInstallationConfigSet: AppConfigEntry[]
+    appFunctionCall: AppFunctionResult
+    customPermissionCreate: PermissionDefinitionDto
+    customPermissionUpdate: PermissionDefinitionDto
+    customPermissionDelete: Scalars['Boolean']
+    /** Create a registration series */
+    registrationSeriesCreate: RegistrationSeries
+    /** Update a registration series */
+    registrationSeriesUpdate: RegistrationSeries
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete: Scalars['Boolean']
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign: Scalars['Boolean']
+    /** Create a guest ward; the session player becomes its guardian */
+    guestWardCreate: GuestProfile
+    /** Unlink a ward; deletes it when created by its guardian and no other guardian remains */
+    guestWardRemove: Scalars['Boolean']
+    /** Create a guest, or return the existing addressable guest with the same e-mail */
+    guestProfileCreate: GuestProfileCreated
+    guestProfileUpdate: GuestProfile
+    guestGuardianLinkCreate: GuestGuardianLink
+    guestGuardianLinkDelete: Scalars['Boolean']
+    guestConfigurationUpdate: GuestConfiguration
+    /** Consume one use of a magic link and open a guest session */
+    guestLinkExchange: GuestSession
+    /** Revoke the current guest session */
+    guestSessionEnd: Scalars['Boolean']
+    guestLinkCreate: GuestLinkCreated
+    /** Number of links revoked */
+    guestLinkRevoke: Scalars['Int']
+    /** Number of sessions revoked */
+    guestSessionsRevoke: Scalars['Int']
+    /** Open a guest session from trusted entry parameters; needs selfEntry TRUSTED_PARAMS */
+    guestEnter: GuestSession
+    /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
+    organizationModerationUpdate: OrganizationModeration
     __typename: 'Mutation'
 }
 
@@ -6102,6 +6885,11 @@ export interface JournalPayloadGenqlSelection{
     on_RuleEngineEffectSetMetadataPayload?: RuleEngineEffectSetMetadataPayloadGenqlSelection
     on_RuleEngineGenerationScriptRanPayload?: RuleEngineGenerationScriptRanPayloadGenqlSelection
     on_RuleEngineManualOverridePayload?: RuleEngineManualOverridePayloadGenqlSelection
+    on_LeaderboardFeedReconcileFailedPayload?: LeaderboardFeedReconcileFailedPayloadGenqlSelection
+    on_TournamentOpenPoolMatchCorrectedPayload?: TournamentOpenPoolMatchCorrectedPayloadGenqlSelection
+    on_TournamentOpenPoolMatchCancelledPayload?: TournamentOpenPoolMatchCancelledPayloadGenqlSelection
+    on_TournamentOpenPoolClosedPayload?: TournamentOpenPoolClosedPayloadGenqlSelection
+    on_TournamentOpenPoolReopenedPayload?: TournamentOpenPoolReopenedPayloadGenqlSelection
     on_TournamentsStepResetPayload?: TournamentsStepResetPayloadGenqlSelection
     on_TournamentsStepGeneratedPayload?: TournamentsStepGeneratedPayloadGenqlSelection
     __typename?: boolean | number
@@ -6735,6 +7523,8 @@ export interface TournamentGenqlSelection{
     tournamentSeriesId?: boolean | number
     /** Date and time from which the tournament is visible in public listings */
     visibleAt?: boolean | number
+    /** ID of the registration series this tournament belongs to */
+    registrationSeriesId?: boolean | number
     /** Teams registered to this tournament */
     teams?: (TournamentTeamsGenqlSelection & { __args: {page: PageInfo, status?: (TournamentTeamStatus | null)} })
     /** Steps registered for this tournament */
@@ -6923,6 +7713,8 @@ export interface PlayerGenqlSelection{
     owner?: AccountGenqlSelection
     /** The custom fields configured for this player profile */
     customFields?: (PropertyConfigWithValueGenqlSelection & { __args?: {properties?: (Scalars['String'][] | null)} })
+    /** Guest identity; null when the caller cannot see the guest's data */
+    guest?: GuestProfileGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -6975,6 +7767,777 @@ export interface AccountGenqlSelection{
 export interface IdentityLinkUrlGenqlSelection{
     /** The redirect URL for identity provider linking */
     url?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AppFunctionErrorGenqlSelection{
+    kind?: boolean | number
+    code?: boolean | number
+    platformCode?: boolean | number
+    message?: boolean | number
+    field?: boolean | number
+    details?: boolean | number
+    retryAfterSeconds?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AppFunctionResultGenqlSelection{
+    executionId?: boolean | number
+    status?: boolean | number
+    payload?: boolean | number
+    error?: AppFunctionErrorGenqlSelection
+    replayed?: boolean | number
+    cached?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AppConfigEntryGenqlSelection{
+    key?: boolean | number
+    type?: boolean | number
+    label?: boolean | number
+    description?: boolean | number
+    value?: boolean | number
+    defaultValue?: boolean | number
+    public?: boolean | number
+    required?: boolean | number
+    options?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PermissionDefinitionDtoGenqlSelection{
+    id?: boolean | number
+    owner?: boolean | number
+    description?: boolean | number
+    resources?: boolean | number
+    appSlug?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A selectable option for a frontend module prop of type "select" */
+export interface FrontendModulePropOptionModelGenqlSelection{
+    /** Display label for this option */
+    label?: boolean | number
+    /** Value for this option */
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Schema definition for a single prop of a frontend module */
+export interface FrontendModulePropSchemaModelGenqlSelection{
+    /** Property key/name */
+    key?: boolean | number
+    /** Data type of this prop */
+    type?: boolean | number
+    /** Display label for this prop */
+    label?: boolean | number
+    /** Description of what this prop controls */
+    description?: boolean | number
+    /** Whether this prop is required */
+    required?: boolean | number
+    /** Default value for this prop (serialized as string) */
+    defaultValue?: boolean | number
+    /** Available options for select-type props */
+    options?: FrontendModulePropOptionModelGenqlSelection
+    /** Route parameter name for route-param type props */
+    param?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An event that a frontend module can emit */
+export interface FrontendModuleEventModelGenqlSelection{
+    /** Unique event name identifier */
+    name?: boolean | number
+    /** Description of when this event is emitted */
+    description?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A frontend micro-frontend module registered by a marketplace app */
+export interface FrontendModuleModelGenqlSelection{
+    /** Unique name identifier for this module */
+    name?: boolean | number
+    /** Human-readable display name for this module */
+    displayName?: boolean | number
+    /** Description of what this module provides */
+    description?: boolean | number
+    /** Named export from the bundle to use as the module entry point */
+    exportName?: boolean | number
+    /** Semantic version of this module */
+    version?: boolean | number
+    /** Schema defining the props this module accepts */
+    propsSchema?: FrontendModulePropSchemaModelGenqlSelection
+    /** Events this module can emit */
+    events?: FrontendModuleEventModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Size constraints for an extension point iframe */
+export interface ExtensionPointSizeModelGenqlSelection{
+    /** Maximum width in pixels for the extension point */
+    maxWidth?: boolean | number
+    /** Maximum height in pixels for the extension point */
+    maxHeight?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A UI extension point where an app renders content within the platform */
+export interface ExtensionPointModelGenqlSelection{
+    /** Location type where this extension point is rendered */
+    type?: boolean | number
+    /** Display label for the extension point tab or widget */
+    label?: boolean | number
+    /** URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview") */
+    activePages?: boolean | number
+    /** Optional size constraints for the extension point iframe */
+    size?: ExtensionPointSizeModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A typed field of a function input, output or audit type */
+export interface AppFieldDeclModelGenqlSelection{
+    name?: boolean | number
+    type?: boolean | number
+    required?: boolean | number
+    options?: boolean | number
+    fields?: AppFieldDeclModelGenqlSelection
+    items?: AppFieldDeclModelGenqlSelection
+    maxLength?: boolean | number
+    min?: boolean | number
+    max?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A configuration key declared by an app */
+export interface AppConfigDeclModelGenqlSelection{
+    key?: boolean | number
+    type?: boolean | number
+    label?: boolean | number
+    description?: boolean | number
+    required?: boolean | number
+    defaultValue?: boolean | number
+    options?: boolean | number
+    min?: boolean | number
+    max?: boolean | number
+    pattern?: boolean | number
+    /** Readable without authentication */
+    public?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A permission defined by an app */
+export interface AppCustomPermissionDeclModelGenqlSelection{
+    name?: boolean | number
+    description?: boolean | number
+    resources?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A storage collection declared by an app */
+export interface AppStorageCollectionDeclModelGenqlSelection{
+    name?: boolean | number
+    ttlSeconds?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Storage declared by an app */
+export interface AppStorageDeclModelGenqlSelection{
+    collections?: AppStorageCollectionDeclModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A GraphQL operation file shipped by an app */
+export interface AppOperationDeclModelGenqlSelection{
+    name?: boolean | number
+    file?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An e-mail template shipped by an app */
+export interface AppEmailTemplateDeclModelGenqlSelection{
+    key?: boolean | number
+    subject?: boolean | number
+    file?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An audit entry type written by an app */
+export interface AppAuditTypeDeclModelGenqlSelection{
+    type?: boolean | number
+    fields?: AppFieldDeclModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** What runs a function; only the fields of its type are set */
+export interface AppFunctionTriggerModelGenqlSelection{
+    type?: boolean | number
+    readOnly?: boolean | number
+    cacheSeconds?: boolean | number
+    hookPoint?: boolean | number
+    onError?: boolean | number
+    timeoutMs?: boolean | number
+    events?: boolean | number
+    selfTrigger?: boolean | number
+    cron?: boolean | number
+    timezone?: boolean | number
+    lifecycle?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A variable passed to a preload operation */
+export interface AppFunctionPreloadVarModelGenqlSelection{
+    name?: boolean | number
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An operation run before a function starts */
+export interface AppFunctionPreloadDeclModelGenqlSelection{
+    name?: boolean | number
+    op?: boolean | number
+    vars?: AppFunctionPreloadVarModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A permission the caller must hold */
+export interface AppFunctionRequirementDeclModelGenqlSelection{
+    permission?: boolean | number
+    resource?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A server function shipped by an app */
+export interface AppFunctionDeclModelGenqlSelection{
+    name?: boolean | number
+    file?: boolean | number
+    trigger?: AppFunctionTriggerModelGenqlSelection
+    invoker?: boolean | number
+    runAs?: boolean | number
+    input?: AppFieldDeclModelGenqlSelection
+    output?: AppFieldDeclModelGenqlSelection
+    preload?: AppFunctionPreloadDeclModelGenqlSelection
+    requires?: AppFunctionRequirementDeclModelGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** The manifest describing a marketplace app capabilities and configuration */
+export interface AppManifestModelGenqlSelection{
+    /** Manifest schema version */
+    version?: boolean | number
+    /** Permissions requested by this app (OrganizationPermission IDs) */
+    permissions?: boolean | number
+    /** UI extensions registered by this app */
+    extensions?: ExtensionPointModelGenqlSelection
+    /** URL to receive webhook events when app is installed */
+    webhookUrl?: boolean | number
+    /** Webhook event types this app subscribes to */
+    webhookEvents?: boolean | number
+    /** Metafield namespaces this app is allowed to use */
+    metafieldNamespaces?: boolean | number
+    /** Frontend micro-frontend modules registered by this app */
+    frontendModules?: FrontendModuleModelGenqlSelection
+    /** S3 CDN path for the extension bundle (injected on publish) */
+    extensionCdnPath?: boolean | number
+    /** S3 CDN path for the module bundle (injected on publish) */
+    moduleCdnPath?: boolean | number
+    config?: AppConfigDeclModelGenqlSelection
+    customPermissions?: AppCustomPermissionDeclModelGenqlSelection
+    storage?: AppStorageDeclModelGenqlSelection
+    operations?: AppOperationDeclModelGenqlSelection
+    emailTemplates?: AppEmailTemplateDeclModelGenqlSelection
+    auditTypes?: AppAuditTypeDeclModelGenqlSelection
+    functions?: AppFunctionDeclModelGenqlSelection
+    /** Open functions that check their caller in code instead of declaring requires */
+    codeAuthorized?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** DNS TXT record required for SSL certificate validation of a custom domain */
+export interface CustomDomainSslValidationRecordGenqlSelection{
+    /** Name of the TXT DNS record to create for validation */
+    txt_name?: boolean | number
+    /** Value of the TXT DNS record to create for validation */
+    txt_value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An error encountered during SSL certificate validation for a custom domain */
+export interface CustomDomainSslValidationErrorGenqlSelection{
+    /** Human-readable error message describing the validation failure */
+    message?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** SSL certificate status and validation details for a custom domain */
+export interface CustomDomainSslGenqlSelection{
+    /** Current status of the SSL certificate validation process */
+    status?: boolean | number
+    /** List of validation errors encountered during SSL provisioning */
+    validation_errors?: CustomDomainSslValidationErrorGenqlSelection
+    /** DNS records required for SSL certificate validation */
+    validation_records?: CustomDomainSslValidationRecordGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** DNS record required to verify ownership of a custom domain */
+export interface CustomDomainOwnershipVerificationGenqlSelection{
+    /** Name of the DNS record to create for ownership verification */
+    name?: boolean | number
+    /** Value of the DNS record to create for ownership verification */
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Custom domain registration data from Cloudflare, including SSL and ownership verification status */
+export interface CustomDomainDataGenqlSelection{
+    /** The hostname of the custom domain */
+    hostname?: boolean | number
+    /** Ownership verification DNS record details */
+    ownership_verification?: CustomDomainOwnershipVerificationGenqlSelection
+    /** SSL certificate status and validation information */
+    ssl?: CustomDomainSslGenqlSelection
+    /** Current provisioning status of the custom domain */
+    status?: boolean | number
+    /** List of verification error messages, if any */
+    verification_errors?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Page-specific configuration for a CDN file, defining the URL path it serves */
+export interface PlatformCdnFilePageConfigGenqlSelection{
+    /** The URL path pattern this page responds to (e.g. /events/:id) */
+    path?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Configuration options for a CDN file */
+export interface PlatformCdnFileConfigsGenqlSelection{
+    /** Page-specific configuration, required for PAGE type files */
+    pageConfig?: PlatformCdnFilePageConfigGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A file stored on the platform CDN, such as a page template, component, text asset, or image */
+export interface PlatformCdnFileGenqlSelection{
+    /** Unique identifier of the CDN file */
+    id?: boolean | number
+    /** The platform this file belongs to, if associated with a platform */
+    platformId?: boolean | number
+    /** The platform template this file belongs to, if associated with a template */
+    platformTemplateId?: boolean | number
+    /** The file name including path segments */
+    name?: boolean | number
+    /** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
+    type?: boolean | number
+    /** When this file was last updated */
+    updatedAt?: boolean | number
+    /** When this file was created */
+    createdAt?: boolean | number
+    /** File configuration options such as page routing config */
+    config?: PlatformCdnFileConfigsGenqlSelection
+    /** File size in bytes */
+    size?: boolean | number
+    /** The CDN path for the published production version of this file */
+    prodCdnPath?: boolean | number
+    /** The CDN path for the development version of this file, visible only to authorized editors */
+    devCdnPath?: boolean | number
+    /** The text contents of the file, if applicable */
+    contents?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A key-value pair representing a field in a presigned upload form */
+export interface PresignedUrlFieldGenqlSelection{
+    /** The form field name */
+    key?: boolean | number
+    /** The form field value */
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A presigned URL with form fields for uploading a file directly to S3 */
+export interface PresignedUrlGenqlSelection{
+    /** Form fields required for the presigned POST upload */
+    fields?: PresignedUrlFieldGenqlSelection
+    /** The S3 endpoint URL to POST the file upload to */
+    url?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A server file shipped with a release */
+export interface AppReleaseFileGenqlSelection{
+    kind?: boolean | number
+    name?: boolean | number
+    sha256?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Result of a single automated review check */
+export interface AppReviewCheckGenqlSelection{
+    /** Name identifier of the check (e.g. manifest_valid, urls_https) */
+    name?: boolean | number
+    /** Whether this check passed */
+    passed?: boolean | number
+    /** Details or error message for this check */
+    details?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Result of the automated app review process */
+export interface AppReviewResultGenqlSelection{
+    /** Whether all review checks passed */
+    passed?: boolean | number
+    /** Individual check results */
+    checks?: AppReviewCheckGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A versioned release of a marketplace app */
+export interface MarketplaceAppReleaseGenqlSelection{
+    /** Unique identifier of the release */
+    id?: boolean | number
+    /** ID of the marketplace app */
+    marketplaceAppId?: boolean | number
+    /** Semantic version string */
+    version?: boolean | number
+    /** Current review status of the release */
+    status?: boolean | number
+    /** App manifest for this release */
+    manifest?: AppManifestModelGenqlSelection
+    /** S3 key for the extension bundle */
+    extensionBundleKey?: boolean | number
+    /** S3 key for the module bundle */
+    moduleBundleKey?: boolean | number
+    /** Release notes describing changes */
+    releaseNotes?: boolean | number
+    /** Automated review result details */
+    reviewResult?: AppReviewResultGenqlSelection
+    /** When the release was reviewed */
+    reviewedAt?: boolean | number
+    /** When the release was created */
+    createdAt?: boolean | number
+    /** Server files shipped with the release */
+    files?: AppReleaseFileGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A release with presigned URLs for bundle upload */
+export interface AppReleaseWithUploadUrlsGenqlSelection{
+    /** The created release */
+    release?: MarketplaceAppReleaseGenqlSelection
+    /** Presigned POST data for extension bundle upload */
+    extensionUploadUrl?: PresignedUrlGenqlSelection
+    /** Presigned POST data for module bundle upload */
+    moduleUploadUrl?: PresignedUrlGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Bundle validation error details */
+export interface AppBundleValidationErrorGenqlSelection{
+    /** Whether validation passed */
+    valid?: boolean | number
+    /** List of validation errors */
+    errors?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A published app listing in the marketplace */
+export interface MarketplaceAppGenqlSelection{
+    /** Unique identifier of the marketplace app */
+    id?: boolean | number
+    /** ID of the underlying organization app */
+    organizationAppId?: boolean | number
+    /** Current publication status of the app */
+    status?: boolean | number
+    /** App manifest describing capabilities and configuration */
+    manifest?: AppManifestModelGenqlSelection
+    /** Display name of the marketplace app */
+    name?: boolean | number
+    /** Full description of the app */
+    description?: boolean | number
+    /** Short summary displayed on app cards */
+    shortDescription?: boolean | number
+    /** URL of the app icon image */
+    icon?: boolean | number
+    /** URLs of app screenshot images */
+    screenshots?: boolean | number
+    /** Category tags for filtering and discovery */
+    categories?: boolean | number
+    /** Current semantic version of the app */
+    version?: boolean | number
+    /** URL to the app privacy policy */
+    privacyPolicyUrl?: boolean | number
+    /** URL to the app support page */
+    supportUrl?: boolean | number
+    /** URL to the app website */
+    websiteUrl?: boolean | number
+    /** Timestamp when the app was first published */
+    createdAt?: boolean | number
+    /** Timestamp when the app listing was last updated */
+    updatedAt?: boolean | number
+    /** Unique slug that addresses the app in function calls */
+    slug?: boolean | number
+    /** Listing visibility of the app */
+    visibility?: boolean | number
+    /** Organizations allowed to install a private app */
+    allowedOrganizationIds?: boolean | number
+    /** Reviews for this marketplace app */
+    reviews?: (MarketplaceAppReviewsGenqlSelection & { __args?: {page?: (PageInfo | null)} })
+    /** Aggregated stats for this marketplace app */
+    stats?: MarketplaceAppStatsGenqlSelection
+    /** Current organization installation of this app, if any */
+    installation?: MarketplaceAppInstallationGenqlSelection
+    /** Pricing information for this marketplace app */
+    pricing?: MarketplaceAppPricingGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of marketplace apps */
+export interface MarketplaceAppsGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: MarketplaceAppEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: MarketplaceAppGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface MarketplaceAppEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: MarketplaceAppGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A user review and rating for a marketplace app */
+export interface MarketplaceAppReviewGenqlSelection{
+    /** Unique identifier of the review */
+    id?: boolean | number
+    /** ID of the marketplace app being reviewed */
+    marketplaceAppId?: boolean | number
+    /** ID of the organization that submitted the review */
+    organizationId?: boolean | number
+    /** ID of the account that authored the review */
+    accountId?: boolean | number
+    /** Star rating from 1 to 5 */
+    rating?: boolean | number
+    /** Review title */
+    title?: boolean | number
+    /** Review body text */
+    body?: boolean | number
+    /** Timestamp when the review was created */
+    createdAt?: boolean | number
+    /** Timestamp when the review was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of marketplace app reviews */
+export interface MarketplaceAppReviewsGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: MarketplaceAppReviewEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: MarketplaceAppReviewGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface MarketplaceAppReviewEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: MarketplaceAppReviewGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A marketplace app installation within an organization */
+export interface MarketplaceAppInstallationGenqlSelection{
+    /** Unique identifier of the installation */
+    id?: boolean | number
+    /** ID of the installed marketplace app */
+    marketplaceAppId?: boolean | number
+    /** ID of the organization where the app is installed */
+    organizationId?: boolean | number
+    /** ID of the account that performed the installation */
+    installedById?: boolean | number
+    /** Current status of the installation */
+    status?: boolean | number
+    /** Permissions granted to this app by the organization (OrganizationPermission IDs) */
+    grantedPermissions?: boolean | number
+    /** Timestamp when the app was installed */
+    createdAt?: boolean | number
+    /** Timestamp when the installation was last updated */
+    updatedAt?: boolean | number
+    /** Release pinned by this installation */
+    release?: MarketplaceAppReleaseGenqlSelection
+    /** Version of the installation config */
+    configVersion?: boolean | number
+    /** Whether the app functions can run */
+    functionsEnabled?: boolean | number
+    /** Functions disabled one by one */
+    disabledFunctions?: boolean | number
+    /** The marketplace app for this installation */
+    marketplaceApp?: MarketplaceAppGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of marketplace app installations */
+export interface MarketplaceAppInstallationsGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: MarketplaceAppInstallationEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: MarketplaceAppInstallationGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface MarketplaceAppInstallationEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: MarketplaceAppInstallationGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Aggregated statistics for a marketplace app */
+export interface MarketplaceAppStatsGenqlSelection{
+    /** Total number of active installations across all organizations */
+    totalInstallations?: boolean | number
+    /** Average star rating from all reviews */
+    averageRating?: boolean | number
+    /** Total number of reviews submitted for this app */
+    totalReviews?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Pricing configuration for a marketplace app */
+export interface MarketplaceAppPricingGenqlSelection{
+    /** Unique identifier of the pricing record */
+    id?: boolean | number
+    /** ID of the marketplace app this pricing applies to */
+    marketplaceAppId?: boolean | number
+    /** Pricing model type (e.g. one-time, subscription, free) */
+    type?: boolean | number
+    /** Price amount in the smallest currency unit (e.g. cents) */
+    priceAmountCents?: boolean | number
+    /** ISO 4217 currency code */
+    currency?: boolean | number
+    /** Number of free trial days for subscription pricing */
+    trialDays?: boolean | number
+    /** Timestamp when the pricing was created */
+    createdAt?: boolean | number
+    /** Timestamp when the pricing was last updated */
+    updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -7203,67 +8766,6 @@ export interface LeaderboardSeasonBucketEdgeGenqlSelection{
 }
 
 
-/** DNS TXT record required for SSL certificate validation of a custom domain */
-export interface CustomDomainSslValidationRecordGenqlSelection{
-    /** Name of the TXT DNS record to create for validation */
-    txt_name?: boolean | number
-    /** Value of the TXT DNS record to create for validation */
-    txt_value?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An error encountered during SSL certificate validation for a custom domain */
-export interface CustomDomainSslValidationErrorGenqlSelection{
-    /** Human-readable error message describing the validation failure */
-    message?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** SSL certificate status and validation details for a custom domain */
-export interface CustomDomainSslGenqlSelection{
-    /** Current status of the SSL certificate validation process */
-    status?: boolean | number
-    /** List of validation errors encountered during SSL provisioning */
-    validation_errors?: CustomDomainSslValidationErrorGenqlSelection
-    /** DNS records required for SSL certificate validation */
-    validation_records?: CustomDomainSslValidationRecordGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** DNS record required to verify ownership of a custom domain */
-export interface CustomDomainOwnershipVerificationGenqlSelection{
-    /** Name of the DNS record to create for ownership verification */
-    name?: boolean | number
-    /** Value of the DNS record to create for ownership verification */
-    value?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Custom domain registration data from Cloudflare, including SSL and ownership verification status */
-export interface CustomDomainDataGenqlSelection{
-    /** The hostname of the custom domain */
-    hostname?: boolean | number
-    /** Ownership verification DNS record details */
-    ownership_verification?: CustomDomainOwnershipVerificationGenqlSelection
-    /** SSL certificate status and validation information */
-    ssl?: CustomDomainSslGenqlSelection
-    /** Current provisioning status of the custom domain */
-    status?: boolean | number
-    /** List of verification error messages, if any */
-    verification_errors?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
 /** An email template associated with a trigger event */
 export interface EmailTemplateGenqlSelection{
     /** Unique identifier of the email template */
@@ -7342,271 +8844,6 @@ export interface PublicIdentityProviderGenqlSelection{
     createdAt?: boolean | number
     /** The date and time the identity provider was last updated */
     updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A selectable option for a frontend module prop of type "select" */
-export interface FrontendModulePropOptionModelGenqlSelection{
-    /** Display label for this option */
-    label?: boolean | number
-    /** Value for this option */
-    value?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Schema definition for a single prop of a frontend module */
-export interface FrontendModulePropSchemaModelGenqlSelection{
-    /** Property key/name */
-    key?: boolean | number
-    /** Data type of this prop */
-    type?: boolean | number
-    /** Display label for this prop */
-    label?: boolean | number
-    /** Description of what this prop controls */
-    description?: boolean | number
-    /** Whether this prop is required */
-    required?: boolean | number
-    /** Default value for this prop (serialized as string) */
-    defaultValue?: boolean | number
-    /** Available options for select-type props */
-    options?: FrontendModulePropOptionModelGenqlSelection
-    /** Route parameter name for route-param type props */
-    param?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An event that a frontend module can emit */
-export interface FrontendModuleEventModelGenqlSelection{
-    /** Unique event name identifier */
-    name?: boolean | number
-    /** Description of when this event is emitted */
-    description?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A frontend micro-frontend module registered by a marketplace app */
-export interface FrontendModuleModelGenqlSelection{
-    /** Unique name identifier for this module */
-    name?: boolean | number
-    /** Human-readable display name for this module */
-    displayName?: boolean | number
-    /** Description of what this module provides */
-    description?: boolean | number
-    /** Named export from the bundle to use as the module entry point */
-    exportName?: boolean | number
-    /** Semantic version of this module */
-    version?: boolean | number
-    /** Schema defining the props this module accepts */
-    propsSchema?: FrontendModulePropSchemaModelGenqlSelection
-    /** Events this module can emit */
-    events?: FrontendModuleEventModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Size constraints for an extension point iframe */
-export interface ExtensionPointSizeModelGenqlSelection{
-    /** Maximum width in pixels for the extension point */
-    maxWidth?: boolean | number
-    /** Maximum height in pixels for the extension point */
-    maxHeight?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A UI extension point where an app renders content within the platform */
-export interface ExtensionPointModelGenqlSelection{
-    /** Location type where this extension point is rendered */
-    type?: boolean | number
-    /** Display label for the extension point tab or widget */
-    label?: boolean | number
-    /** URL patterns where this extension is active (e.g. "/tournaments/:tournamentId/overview") */
-    activePages?: boolean | number
-    /** Optional size constraints for the extension point iframe */
-    size?: ExtensionPointSizeModelGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** The manifest describing a marketplace app capabilities and configuration */
-export interface AppManifestModelGenqlSelection{
-    /** Manifest schema version */
-    version?: boolean | number
-    /** Permissions requested by this app (OrganizationPermission IDs) */
-    permissions?: boolean | number
-    /** UI extensions registered by this app */
-    extensions?: ExtensionPointModelGenqlSelection
-    /** URL to receive webhook events when app is installed */
-    webhookUrl?: boolean | number
-    /** Webhook event types this app subscribes to */
-    webhookEvents?: boolean | number
-    /** Metafield namespaces this app is allowed to use */
-    metafieldNamespaces?: boolean | number
-    /** Frontend micro-frontend modules registered by this app */
-    frontendModules?: FrontendModuleModelGenqlSelection
-    /** S3 CDN path for the extension bundle (injected on publish) */
-    extensionCdnPath?: boolean | number
-    /** S3 CDN path for the module bundle (injected on publish) */
-    moduleCdnPath?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Page-specific configuration for a CDN file, defining the URL path it serves */
-export interface PlatformCdnFilePageConfigGenqlSelection{
-    /** The URL path pattern this page responds to (e.g. /events/:id) */
-    path?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Configuration options for a CDN file */
-export interface PlatformCdnFileConfigsGenqlSelection{
-    /** Page-specific configuration, required for PAGE type files */
-    pageConfig?: PlatformCdnFilePageConfigGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A file stored on the platform CDN, such as a page template, component, text asset, or image */
-export interface PlatformCdnFileGenqlSelection{
-    /** Unique identifier of the CDN file */
-    id?: boolean | number
-    /** The platform this file belongs to, if associated with a platform */
-    platformId?: boolean | number
-    /** The platform template this file belongs to, if associated with a template */
-    platformTemplateId?: boolean | number
-    /** The file name including path segments */
-    name?: boolean | number
-    /** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
-    type?: boolean | number
-    /** When this file was last updated */
-    updatedAt?: boolean | number
-    /** When this file was created */
-    createdAt?: boolean | number
-    /** File configuration options such as page routing config */
-    config?: PlatformCdnFileConfigsGenqlSelection
-    /** File size in bytes */
-    size?: boolean | number
-    /** The CDN path for the published production version of this file */
-    prodCdnPath?: boolean | number
-    /** The CDN path for the development version of this file, visible only to authorized editors */
-    devCdnPath?: boolean | number
-    /** The text contents of the file, if applicable */
-    contents?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A key-value pair representing a field in a presigned upload form */
-export interface PresignedUrlFieldGenqlSelection{
-    /** The form field name */
-    key?: boolean | number
-    /** The form field value */
-    value?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A presigned URL with form fields for uploading a file directly to S3 */
-export interface PresignedUrlGenqlSelection{
-    /** Form fields required for the presigned POST upload */
-    fields?: PresignedUrlFieldGenqlSelection
-    /** The S3 endpoint URL to POST the file upload to */
-    url?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Result of a single automated review check */
-export interface AppReviewCheckGenqlSelection{
-    /** Name identifier of the check (e.g. manifest_valid, urls_https) */
-    name?: boolean | number
-    /** Whether this check passed */
-    passed?: boolean | number
-    /** Details or error message for this check */
-    details?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Result of the automated app review process */
-export interface AppReviewResultGenqlSelection{
-    /** Whether all review checks passed */
-    passed?: boolean | number
-    /** Individual check results */
-    checks?: AppReviewCheckGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A versioned release of a marketplace app */
-export interface MarketplaceAppReleaseGenqlSelection{
-    /** Unique identifier of the release */
-    id?: boolean | number
-    /** ID of the marketplace app */
-    marketplaceAppId?: boolean | number
-    /** Semantic version string */
-    version?: boolean | number
-    /** Current review status of the release */
-    status?: boolean | number
-    /** App manifest for this release */
-    manifest?: AppManifestModelGenqlSelection
-    /** S3 key for the extension bundle */
-    extensionBundleKey?: boolean | number
-    /** S3 key for the module bundle */
-    moduleBundleKey?: boolean | number
-    /** Release notes describing changes */
-    releaseNotes?: boolean | number
-    /** Automated review result details */
-    reviewResult?: AppReviewResultGenqlSelection
-    /** When the release was reviewed */
-    reviewedAt?: boolean | number
-    /** When the release was created */
-    createdAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A release with presigned URLs for bundle upload */
-export interface AppReleaseWithUploadUrlsGenqlSelection{
-    /** The created release */
-    release?: MarketplaceAppReleaseGenqlSelection
-    /** Presigned POST data for extension bundle upload */
-    extensionUploadUrl?: PresignedUrlGenqlSelection
-    /** Presigned POST data for module bundle upload */
-    moduleUploadUrl?: PresignedUrlGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Bundle validation error details */
-export interface AppBundleValidationErrorGenqlSelection{
-    /** Whether validation passed */
-    valid?: boolean | number
-    /** List of validation errors */
-    errors?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -8235,6 +9472,114 @@ export interface RuleEngineManualOverridePayloadGenqlSelection{
 }
 
 
+/** Journal payload emitted when a leaderboard feed fails to reconcile one of its sources. */
+export interface LeaderboardFeedReconcileFailedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the leaderboard feed. */
+    feedId?: boolean | number
+    /** Key of the source that failed to reconcile. */
+    sourceKey?: boolean | number
+    /** Message of the reconcile error. */
+    errorMessage?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** One team score row of an open pool match. */
+export interface OpenPoolJournalScoreRowGenqlSelection{
+    /** ID of the tournament team. */
+    tournamentTeamId?: boolean | number
+    /** Score of the team in the match. */
+    score?: boolean | number
+    /** Whether the team won the match. */
+    isWinner?: boolean | number
+    /** Whether the team forfeited the match. */
+    isForfeited?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff correct the scores of an open pool match. */
+export interface TournamentOpenPoolMatchCorrectedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the open pool step. */
+    stepId?: boolean | number
+    /** ID of the step group. */
+    groupId?: boolean | number
+    /** ID of the corrected match. */
+    matchId?: boolean | number
+    /** ID of the game holding the match. */
+    gameId?: boolean | number
+    /** Score rows before the correction. */
+    previousScores?: OpenPoolJournalScoreRowGenqlSelection
+    /** Score rows after the correction. */
+    scores?: OpenPoolJournalScoreRowGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff cancel an open pool match. */
+export interface TournamentOpenPoolMatchCancelledPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the open pool step. */
+    stepId?: boolean | number
+    /** ID of the step group. */
+    groupId?: boolean | number
+    /** ID of the cancelled match. */
+    matchId?: boolean | number
+    /** ID of the deleted game. */
+    gameId?: boolean | number
+    /** Score rows before the cancellation. */
+    previousScores?: OpenPoolJournalScoreRowGenqlSelection
+    /** Score rows left after the cancellation. */
+    scores?: OpenPoolJournalScoreRowGenqlSelection
+    /** Whether the match had ended when it was cancelled. */
+    wasEnded?: boolean | number
+    /** Reason given by the staff member. */
+    cancelReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff close an open pool step. */
+export interface TournamentOpenPoolClosedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the closed step. */
+    stepId?: boolean | number
+    /** Number of unfinished matches cancelled by the close. */
+    cancelledMatchCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff reopen an open pool step. */
+export interface TournamentOpenPoolReopenedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the reopened step. */
+    stepId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** Counters describing the downstream impact of a tournament step reset. */
 export interface TournamentsStepResetCascadeInfoGenqlSelection{
     /** Number of downstream tournament steps affected by the reset cascade. */
@@ -8430,6 +9775,8 @@ export interface TournamentTeamGenqlSelection{
     updatedAt?: boolean | number
     /** List of members belonging to this team */
     members?: TournamentTeamMemberDtoGenqlSelection
+    /** ID of the event reservation this team was created from */
+    eventReservationId?: boolean | number
     /** Custom fields configured for this tournament team with their values and visibility rules */
     customFields?: (PropertyConfigWithValueGenqlSelection & { __args?: {properties?: (Scalars['String'][] | null)} })
     /** The tournament this team is registered to */
@@ -9564,6 +10911,78 @@ export interface PlayerCurrencyEdgeGenqlSelection{
 }
 
 
+/** A group of events and tournaments sharing one limit of active registrations per player */
+export interface RegistrationSeriesGenqlSelection{
+    /** Unique identifier of the series */
+    id?: boolean | number
+    /** Display name of the series */
+    name?: boolean | number
+    /** Active registrations a player may hold in the series */
+    maxActiveRegistrations?: boolean | number
+    /** Active waitlist entries a player may hold in the series */
+    maxActiveWaitlistEntries?: boolean | number
+    /** Whether a registered player may also join a waitlist */
+    allowWaitlistWhileRegistered?: boolean | number
+    /** Whether registering ends the player's waitlist entries */
+    leaveWaitlistsOnRegistration?: boolean | number
+    /** When a registration stops counting as active */
+    releasePolicy?: boolean | number
+    /** Timestamp when the series was created */
+    createdAt?: boolean | number
+    /** Timestamp when the series was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of registration series */
+export interface RegistrationSeriesPageGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: RegistrationSeriesEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: RegistrationSeriesGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface RegistrationSeriesEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: RegistrationSeriesGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A reservation, waitlist entry or tournament team counted against a series limit */
+export interface RegistrationSeriesEntryGenqlSelection{
+    /** Kind of entry */
+    kind?: boolean | number
+    /** Status of the underlying reservation, entry or team */
+    status?: boolean | number
+    /** Whether the player manages the reservation or team */
+    isManager?: boolean | number
+    eventId?: boolean | number
+    ticketConfigurationId?: boolean | number
+    reservationId?: boolean | number
+    waitlistEntryId?: boolean | number
+    tournamentId?: boolean | number
+    tournamentTeamId?: boolean | number
+    startsAt?: boolean | number
+    endsAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** Configuration defining size constraints for a user group */
 export interface UserGroupConfigurationGenqlSelection{
     /** Maximum number of accepted members allowed in the group */
@@ -9749,178 +11168,6 @@ export interface EventVenueSeatEdgeGenqlSelection{
 }
 
 
-/** Configuration settings for an event including registration, ticketing, and seating options */
-export interface EventConfigurationGenqlSelection{
-    /** Custom fields that are defined on each teams */
-    customFields?: PropertyGenqlSelection
-    /** Configuration of the group */
-    groupConfiguration?: UserGroupConfigurationGenqlSelection
-    /** Maximum number of tickets per reservation */
-    maxTicketsPerReservation?: boolean | number
-    /** Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet */
-    reservationStatusAfterPayment?: boolean | number
-    /** Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started. */
-    reservationStatusAfterRegistration?: boolean | number
-    /** The number of seconds before registration session expires, default is 15 minutes */
-    sessionDuration?: boolean | number
-    /** If true, a new session will be allowed after the previous one has expired */
-    allowForNewSessionAfterTimeout?: boolean | number
-    /** If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL */
-    seatAssignmentMode?: boolean | number
-    /** Allow to reserve more tickets than group members */
-    allowForMoreTicketsThanGroupMembers?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Represents an event within the platform */
-export interface EventGenqlSelection{
-    /** Unique identifier of the event */
-    id?: boolean | number
-    /** Display title of the event */
-    title?: boolean | number
-    /** Detailed description of the event */
-    description?: boolean | number
-    /** Timestamp when the event was created */
-    createdAt?: boolean | number
-    /** Timestamp when the event was last updated */
-    updatedAt?: boolean | number
-    /** Scheduled start date and time of the event */
-    startAt?: boolean | number
-    /** Scheduled end date and time of the event */
-    endAt?: boolean | number
-    /** Date and time when registrations open */
-    startRegistrationsAt?: boolean | number
-    /** Date and time when registrations close */
-    endRegistrationsAt?: boolean | number
-    /** Date and time when the event becomes publicly visible */
-    visibleAt?: boolean | number
-    /** Event configuration including group, ticketing, and registration settings */
-    configuration?: EventConfigurationGenqlSelection
-    /** Identifier of the venue where the event takes place */
-    eventVenueId?: boolean | number
-    /** Identifier of the organization that owns this event */
-    organizationId?: boolean | number
-    /** Identifier of the account that created this event */
-    createdById?: boolean | number
-    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
-    decryptionKey?: boolean | number
-    /** The venue where this event is taking place */
-    venue?: EventVenueGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Base interface for all event types */
-export interface EventInterfaceGenqlSelection{
-    /** Unique identifier of the event */
-    id?: boolean | number
-    /** Display title of the event */
-    title?: boolean | number
-    /** Detailed description of the event */
-    description?: boolean | number
-    /** Timestamp when the event was created */
-    createdAt?: boolean | number
-    /** Timestamp when the event was last updated */
-    updatedAt?: boolean | number
-    /** Scheduled start date and time of the event */
-    startAt?: boolean | number
-    /** Scheduled end date and time of the event */
-    endAt?: boolean | number
-    /** Date and time when registrations open */
-    startRegistrationsAt?: boolean | number
-    /** Date and time when registrations close */
-    endRegistrationsAt?: boolean | number
-    /** Date and time when the event becomes publicly visible */
-    visibleAt?: boolean | number
-    /** Event configuration including group, ticketing, and registration settings */
-    configuration?: EventConfigurationGenqlSelection
-    /** Identifier of the venue where the event takes place */
-    eventVenueId?: boolean | number
-    /** Identifier of the organization that owns this event */
-    organizationId?: boolean | number
-    /** Identifier of the account that created this event */
-    createdById?: boolean | number
-    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
-    decryptionKey?: boolean | number
-    /** The venue where this event is taking place */
-    venue?: EventVenueGenqlSelection
-    on_Event?: EventGenqlSelection
-    on_EventWithUserReservation?: EventWithUserReservationGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Event with the current authenticated user's reservation details */
-export interface EventWithUserReservationGenqlSelection{
-    /** Unique identifier of the event */
-    id?: boolean | number
-    /** Display title of the event */
-    title?: boolean | number
-    /** Detailed description of the event */
-    description?: boolean | number
-    /** Timestamp when the event was created */
-    createdAt?: boolean | number
-    /** Timestamp when the event was last updated */
-    updatedAt?: boolean | number
-    /** Scheduled start date and time of the event */
-    startAt?: boolean | number
-    /** Scheduled end date and time of the event */
-    endAt?: boolean | number
-    /** Date and time when registrations open */
-    startRegistrationsAt?: boolean | number
-    /** Date and time when registrations close */
-    endRegistrationsAt?: boolean | number
-    /** Date and time when the event becomes publicly visible */
-    visibleAt?: boolean | number
-    /** Event configuration including group, ticketing, and registration settings */
-    configuration?: EventConfigurationGenqlSelection
-    /** Identifier of the venue where the event takes place */
-    eventVenueId?: boolean | number
-    /** Identifier of the organization that owns this event */
-    organizationId?: boolean | number
-    /** Identifier of the account that created this event */
-    createdById?: boolean | number
-    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
-    decryptionKey?: boolean | number
-    /** The venue where this event is taking place */
-    venue?: EventVenueGenqlSelection
-    /** The reservation of the current user for this event */
-    myReservation?: EventReservationWithTicketsAndQrCodeGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of events */
-export interface EventsGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: EventEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: EventGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface EventEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: EventGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
 /** Configuration of a reservation ticket including custom field values */
 export interface EventReservationTicketConfigurationGenqlSelection{
     /** Custom fields with their configured properties and filled values */
@@ -10000,6 +11247,10 @@ export interface EventReservationGenqlSelection{
     tickets?: EventReservationTicketGenqlSelection
     /** Current validation status of the associated user group */
     groupStatus?: boolean | number
+    /** Identifier of the reservation this one replaced */
+    replacesReservationId?: boolean | number
+    /** Tournament teams created from this reservation */
+    tournamentTeamIds?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10025,6 +11276,8 @@ export interface EventReservationWithTicketsAndQrCodeGenqlSelection{
     groupId?: boolean | number
     /** Current validation status of the associated user group */
     groupStatus?: boolean | number
+    /** Identifier of the reservation this one replaced */
+    replacesReservationId?: boolean | number
     /** List of tickets with QR codes for this reservation */
     tickets?: EventReservationTicketWithQrCodeGenqlSelection
     __typename?: boolean | number
@@ -10076,6 +11329,8 @@ export interface OmitObjectTypeGenqlSelection{
     groupId?: boolean | number
     /** Current validation status of the associated user group */
     groupStatus?: boolean | number
+    /** Identifier of the reservation this one replaced */
+    replacesReservationId?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10140,6 +11395,297 @@ export interface EventSeatEdgeGenqlSelection{
     cursor?: boolean | number
     /** The item at this edge */
     node?: EventSeatGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Waitlist settings of the time slots of an event */
+export interface EventWaitlistConfigurationGenqlSelection{
+    /** Whether players may join the waitlist of a full slot */
+    enabled?: boolean | number
+    /** Seconds an offer holds the seats, default is 86400 */
+    offerDurationSeconds?: boolean | number
+    /** Seconds an offer holds the seats when made on the day of the slot, in the venue timezone */
+    sameDayOfferDurationSeconds?: boolean | number
+    /** Maximum seats one entry may request, default is maxTicketsPerReservation */
+    maxQuantity?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** What a reservation manager may change after validation */
+export interface EventSelfServiceConfigurationGenqlSelection{
+    /** Manager may cancel a validated free reservation */
+    allowCancel?: boolean | number
+    /** Manager may move a validated free reservation */
+    allowChange?: boolean | number
+    /** Self-service closes this many seconds before the earliest slot start of the reservation, default is 0 */
+    cutoffSeconds?: boolean | number
+    /** Allowed targets of a move, default is SAME_EVENT */
+    changeScope?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Configuration settings for an event including registration, ticketing, and seating options */
+export interface EventConfigurationGenqlSelection{
+    /** Custom fields that are defined on each teams */
+    customFields?: PropertyGenqlSelection
+    /** Configuration of the group */
+    groupConfiguration?: UserGroupConfigurationGenqlSelection
+    /** Maximum number of tickets per reservation */
+    maxTicketsPerReservation?: boolean | number
+    /** Status of the reservation after payment validation, REGISTERED is the default state, CONFIRMED means that the registration has been validated by an admin, PRESENCE_CONFIRMATION_PENDING means that the registration is validated but the presence of the users is not confirmed yet */
+    reservationStatusAfterPayment?: boolean | number
+    /** Status of the reservation after registration, PENDING is the default state meaning that the session is started, REQUIRES_ADMIN_APPROVAL means that the registration is pending to be validated by an admin. After validation, a session will be started. */
+    reservationStatusAfterRegistration?: boolean | number
+    /** The number of seconds before registration session expires, default is 15 minutes */
+    sessionDuration?: boolean | number
+    /** If true, a new session will be allowed after the previous one has expired */
+    allowForNewSessionAfterTimeout?: boolean | number
+    /** If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL */
+    seatAssignmentMode?: boolean | number
+    /** Allow to reserve more tickets than group members */
+    allowForMoreTicketsThanGroupMembers?: boolean | number
+    /** Waitlist settings of the time slots */
+    waitlist?: EventWaitlistConfigurationGenqlSelection
+    /** Self-service cancel and move settings */
+    selfService?: EventSelfServiceConfigurationGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Represents an event within the platform */
+export interface EventGenqlSelection{
+    /** Unique identifier of the event */
+    id?: boolean | number
+    /** Display title of the event */
+    title?: boolean | number
+    /** Detailed description of the event */
+    description?: boolean | number
+    /** Timestamp when the event was created */
+    createdAt?: boolean | number
+    /** Timestamp when the event was last updated */
+    updatedAt?: boolean | number
+    /** Scheduled start date and time of the event */
+    startAt?: boolean | number
+    /** Scheduled end date and time of the event */
+    endAt?: boolean | number
+    /** Date and time when registrations open */
+    startRegistrationsAt?: boolean | number
+    /** Date and time when registrations close */
+    endRegistrationsAt?: boolean | number
+    /** Date and time when the event becomes publicly visible */
+    visibleAt?: boolean | number
+    /** Event configuration including group, ticketing, and registration settings */
+    configuration?: EventConfigurationGenqlSelection
+    /** Identifier of the venue where the event takes place */
+    eventVenueId?: boolean | number
+    /** Identifier of the organization that owns this event */
+    organizationId?: boolean | number
+    /** Identifier of the account that created this event */
+    createdById?: boolean | number
+    /** Identifier of the tournament this event is linked to */
+    tournamentId?: boolean | number
+    /** Identifier of the registration series this event belongs to */
+    registrationSeriesId?: boolean | number
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
+    decryptionKey?: boolean | number
+    /** The venue where this event is taking place */
+    venue?: EventVenueGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Base interface for all event types */
+export interface EventInterfaceGenqlSelection{
+    /** Unique identifier of the event */
+    id?: boolean | number
+    /** Display title of the event */
+    title?: boolean | number
+    /** Detailed description of the event */
+    description?: boolean | number
+    /** Timestamp when the event was created */
+    createdAt?: boolean | number
+    /** Timestamp when the event was last updated */
+    updatedAt?: boolean | number
+    /** Scheduled start date and time of the event */
+    startAt?: boolean | number
+    /** Scheduled end date and time of the event */
+    endAt?: boolean | number
+    /** Date and time when registrations open */
+    startRegistrationsAt?: boolean | number
+    /** Date and time when registrations close */
+    endRegistrationsAt?: boolean | number
+    /** Date and time when the event becomes publicly visible */
+    visibleAt?: boolean | number
+    /** Event configuration including group, ticketing, and registration settings */
+    configuration?: EventConfigurationGenqlSelection
+    /** Identifier of the venue where the event takes place */
+    eventVenueId?: boolean | number
+    /** Identifier of the organization that owns this event */
+    organizationId?: boolean | number
+    /** Identifier of the account that created this event */
+    createdById?: boolean | number
+    /** Identifier of the tournament this event is linked to */
+    tournamentId?: boolean | number
+    /** Identifier of the registration series this event belongs to */
+    registrationSeriesId?: boolean | number
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
+    decryptionKey?: boolean | number
+    /** The venue where this event is taking place */
+    venue?: EventVenueGenqlSelection
+    on_Event?: EventGenqlSelection
+    on_EventWithUserReservation?: EventWithUserReservationGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Event with the current authenticated user's reservation details */
+export interface EventWithUserReservationGenqlSelection{
+    /** Unique identifier of the event */
+    id?: boolean | number
+    /** Display title of the event */
+    title?: boolean | number
+    /** Detailed description of the event */
+    description?: boolean | number
+    /** Timestamp when the event was created */
+    createdAt?: boolean | number
+    /** Timestamp when the event was last updated */
+    updatedAt?: boolean | number
+    /** Scheduled start date and time of the event */
+    startAt?: boolean | number
+    /** Scheduled end date and time of the event */
+    endAt?: boolean | number
+    /** Date and time when registrations open */
+    startRegistrationsAt?: boolean | number
+    /** Date and time when registrations close */
+    endRegistrationsAt?: boolean | number
+    /** Date and time when the event becomes publicly visible */
+    visibleAt?: boolean | number
+    /** Event configuration including group, ticketing, and registration settings */
+    configuration?: EventConfigurationGenqlSelection
+    /** Identifier of the venue where the event takes place */
+    eventVenueId?: boolean | number
+    /** Identifier of the organization that owns this event */
+    organizationId?: boolean | number
+    /** Identifier of the account that created this event */
+    createdById?: boolean | number
+    /** Identifier of the tournament this event is linked to */
+    tournamentId?: boolean | number
+    /** Identifier of the registration series this event belongs to */
+    registrationSeriesId?: boolean | number
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
+    decryptionKey?: boolean | number
+    /** The venue where this event is taking place */
+    venue?: EventVenueGenqlSelection
+    /** The reservation of the current user for this event */
+    myReservation?: EventReservationWithTicketsAndQrCodeGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of events */
+export interface EventsGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: EventEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: EventGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface EventEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: EventGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Outcome of a calendar generation run */
+export interface EventCalendarGenerateResultGenqlSelection{
+    /** Events of the requested days */
+    events?: EventGenqlSelection
+    /** Events created by this run */
+    createdEventCount?: boolean | number
+    /** Events that already existed */
+    existingEventCount?: boolean | number
+    /** Slots created by this run */
+    createdSlotCount?: boolean | number
+    /** Slots that already existed */
+    existingSlotCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Configuration for a ticket type including custom fields that attendees must fill */
+export interface EventTicketConfigurationConfigurationGenqlSelection{
+    /** Custom fields that attendees must fill when purchasing this ticket type */
+    customFields?: PropertyGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A ticket type configuration for an event, defining pricing, availability, and custom fields */
+export interface EventTicketConfigurationGenqlSelection{
+    /** Unique identifier of the ticket configuration */
+    id?: boolean | number
+    /** Display name of the ticket type */
+    name?: boolean | number
+    /** Description of what this ticket type includes */
+    description?: boolean | number
+    /** Timestamp when the ticket configuration was created */
+    createdAt?: boolean | number
+    /** Timestamp when the ticket configuration was last updated */
+    updatedAt?: boolean | number
+    /** Price of the ticket in the smallest currency unit (e.g., cents) */
+    price?: boolean | number
+    /** Currency code for the ticket price */
+    currency?: boolean | number
+    /** Maximum number of tickets available for this configuration */
+    maxCount?: boolean | number
+    /** Current number of tickets that have been sold or reserved */
+    currentCount?: boolean | number
+    /** Whether this ticket type is currently available for purchase */
+    buyable?: boolean | number
+    /** Identifier of the event this ticket configuration belongs to */
+    eventId?: boolean | number
+    /** Identifier of the venue seat type associated with this ticket */
+    seatTypeId?: boolean | number
+    /** Additional configuration including custom fields for this ticket type */
+    configuration?: EventTicketConfigurationConfigurationGenqlSelection
+    /** Start of the time slot sold by this ticket configuration */
+    startsAt?: boolean | number
+    /** End of the time slot sold by this ticket configuration */
+    endsAt?: boolean | number
+    /** State of the time slot set by the organizer */
+    state?: boolean | number
+    /** Reason shown for a closed or blocked slot */
+    stateReason?: boolean | number
+    /** Tournament linked to this slot, overriding the tournament of the event */
+    tournamentId?: boolean | number
+    /** Seats still available, never negative */
+    freeCount?: boolean | number
+    /** State of the slot at the time of the request, PAST once started */
+    effectiveState?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10236,6 +11782,8 @@ export interface EventVenueGenqlSelection{
     configuration?: EventVenueConfigurationGenqlSelection
     /** Identifier of the organization that owns this venue */
     organizationId?: boolean | number
+    /** IANA timezone of the venue, such as Europe/Paris */
+    timezone?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10267,43 +11815,181 @@ export interface EventVenueEdgeGenqlSelection{
 }
 
 
-/** Configuration for a ticket type including custom fields that attendees must fill */
-export interface EventTicketConfigurationConfigurationGenqlSelection{
-    /** Custom fields that attendees must fill when purchasing this ticket type */
-    customFields?: PropertyGenqlSelection
+/** A player waiting for seats on a time slot */
+export interface EventWaitlistEntryGenqlSelection{
+    /** Unique identifier of the entry */
+    id?: boolean | number
+    /** Event of the slot */
+    eventId?: boolean | number
+    /** Ticket configuration (slot) waited for */
+    ticketConfigurationId?: boolean | number
+    /** Player who joined the waitlist */
+    playerId?: boolean | number
+    /** Number of seats requested */
+    quantity?: boolean | number
+    /** Current status of the entry */
+    status?: boolean | number
+    /** Why the entry left the waitlist */
+    endedReason?: boolean | number
+    /** Position among the waiting entries of the slot, 1 being next */
+    position?: boolean | number
+    /** Reservation holding the offered seats */
+    offerReservationId?: boolean | number
+    /** Expiry of the current offer */
+    offerExpiresAt?: boolean | number
+    /** Timestamp when the entry was created */
+    createdAt?: boolean | number
+    /** Timestamp when the entry was last updated */
+    updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** A ticket type configuration for an event, defining pricing, availability, and custom fields */
-export interface EventTicketConfigurationGenqlSelection{
-    /** Unique identifier of the ticket configuration */
-    id?: boolean | number
-    /** Display name of the ticket type */
-    name?: boolean | number
-    /** Description of what this ticket type includes */
-    description?: boolean | number
-    /** Timestamp when the ticket configuration was created */
+/** Paginated list of waitlist entries */
+export interface EventWaitlistEntriesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: EventWaitlistEntryEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: EventWaitlistEntryGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface EventWaitlistEntryEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: EventWaitlistEntryGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Guest identity attached to an ownerless player profile of the organization */
+export interface GuestProfileGenqlSelection{
+    /** ID of the guest player profile */
+    playerId?: boolean | number
+    /** The guest player profile */
+    player?: PlayerGenqlSelection
+    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
+    email?: boolean | number
+    /** First name, same visibility as email */
+    firstName?: boolean | number
+    /** Last name, same visibility as email */
+    lastName?: boolean | number
+    /** How the guest was created */
+    origin?: boolean | number
+    /** Players acting as guardians of this guest */
+    guardianPlayerIds?: boolean | number
+    /** Guests this player is the guardian of */
+    wardPlayerIds?: boolean | number
+    /** Creation date */
     createdAt?: boolean | number
-    /** Timestamp when the ticket configuration was last updated */
-    updatedAt?: boolean | number
-    /** Price of the ticket in the smallest currency unit (e.g., cents) */
-    price?: boolean | number
-    /** Currency code for the ticket price */
-    currency?: boolean | number
-    /** Maximum number of tickets available for this configuration */
-    maxCount?: boolean | number
-    /** Current number of tickets that have been sold or reserved */
-    currentCount?: boolean | number
-    /** Whether this ticket type is currently available for purchase */
-    buyable?: boolean | number
-    /** Identifier of the event this ticket configuration belongs to */
-    eventId?: boolean | number
-    /** Identifier of the venue seat type associated with this ticket */
-    seatTypeId?: boolean | number
-    /** Additional configuration including custom fields for this ticket type */
-    configuration?: EventTicketConfigurationConfigurationGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Magic link a guest session was opened from */
+export interface GuestLinkContextGenqlSelection{
+    id?: boolean | number
+    /** Purpose set by the link creator */
+    purpose?: boolean | number
+    /** JSON payload set by the link creator */
+    data?: boolean | number
+    expiresAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A guest session; send its token in the x-guest-session header */
+export interface GuestSessionGenqlSelection{
+    /** Session token, returned only when the session opens */
+    token?: boolean | number
+    /** Guest player the session belongs to */
+    playerId?: boolean | number
+    origin?: boolean | number
+    expiresAt?: boolean | number
+    link?: GuestLinkContextGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** The current guest session */
+export interface GuestMeGenqlSelection{
+    /** Player that owns the session */
+    sessionPlayerId?: boolean | number
+    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
+    actingPlayerId?: boolean | number
+    origin?: boolean | number
+    expiresAt?: boolean | number
+    link?: GuestLinkContextGenqlSelection
+    profile?: GuestProfileGenqlSelection
+    wards?: GuestProfileGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Read-only view of a magic link; reading it never consumes a use */
+export interface GuestLinkViewGenqlSelection{
+    status?: boolean | number
+    /** Null when INVALID */
+    purpose?: boolean | number
+    /** Null when INVALID */
+    expiresAt?: boolean | number
+    /** Guest first name, only when VALID */
+    firstName?: boolean | number
+    /** Link payload, only when VALID */
+    data?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A new magic link; the token is returned only once */
+export interface GuestLinkCreatedGenqlSelection{
+    id?: boolean | number
+    token?: boolean | number
+    expiresAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface GuestProfileCreatedGenqlSelection{
+    profile?: GuestProfileGenqlSelection
+    /** False when an addressable guest with the same e-mail existed */
+    created?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A guardian allowed to act for a guest ward */
+export interface GuestGuardianLinkGenqlSelection{
+    id?: boolean | number
+    guardianPlayerId?: boolean | number
+    wardPlayerId?: boolean | number
+    createdAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Guest settings of the organization */
+export interface GuestConfigurationGenqlSelection{
+    selfEntry?: boolean | number
+    sessionTtlMinutes?: boolean | number
+    maxWardsPerGuardian?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10630,217 +12316,6 @@ export interface SimulationActorContextGenqlSelection{
 }
 
 
-/** A published app listing in the marketplace */
-export interface MarketplaceAppGenqlSelection{
-    /** Unique identifier of the marketplace app */
-    id?: boolean | number
-    /** ID of the underlying organization app */
-    organizationAppId?: boolean | number
-    /** Current publication status of the app */
-    status?: boolean | number
-    /** App manifest describing capabilities and configuration */
-    manifest?: AppManifestModelGenqlSelection
-    /** Display name of the marketplace app */
-    name?: boolean | number
-    /** Full description of the app */
-    description?: boolean | number
-    /** Short summary displayed on app cards */
-    shortDescription?: boolean | number
-    /** URL of the app icon image */
-    icon?: boolean | number
-    /** URLs of app screenshot images */
-    screenshots?: boolean | number
-    /** Category tags for filtering and discovery */
-    categories?: boolean | number
-    /** Current semantic version of the app */
-    version?: boolean | number
-    /** URL to the app privacy policy */
-    privacyPolicyUrl?: boolean | number
-    /** URL to the app support page */
-    supportUrl?: boolean | number
-    /** URL to the app website */
-    websiteUrl?: boolean | number
-    /** Timestamp when the app was first published */
-    createdAt?: boolean | number
-    /** Timestamp when the app listing was last updated */
-    updatedAt?: boolean | number
-    /** Reviews for this marketplace app */
-    reviews?: (MarketplaceAppReviewsGenqlSelection & { __args?: {page?: (PageInfo | null)} })
-    /** Aggregated stats for this marketplace app */
-    stats?: MarketplaceAppStatsGenqlSelection
-    /** Current organization installation of this app, if any */
-    installation?: MarketplaceAppInstallationGenqlSelection
-    /** Pricing information for this marketplace app */
-    pricing?: MarketplaceAppPricingGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of marketplace apps */
-export interface MarketplaceAppsGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: MarketplaceAppEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: MarketplaceAppGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface MarketplaceAppEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: MarketplaceAppGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A user review and rating for a marketplace app */
-export interface MarketplaceAppReviewGenqlSelection{
-    /** Unique identifier of the review */
-    id?: boolean | number
-    /** ID of the marketplace app being reviewed */
-    marketplaceAppId?: boolean | number
-    /** ID of the organization that submitted the review */
-    organizationId?: boolean | number
-    /** ID of the account that authored the review */
-    accountId?: boolean | number
-    /** Star rating from 1 to 5 */
-    rating?: boolean | number
-    /** Review title */
-    title?: boolean | number
-    /** Review body text */
-    body?: boolean | number
-    /** Timestamp when the review was created */
-    createdAt?: boolean | number
-    /** Timestamp when the review was last updated */
-    updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of marketplace app reviews */
-export interface MarketplaceAppReviewsGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: MarketplaceAppReviewEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: MarketplaceAppReviewGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface MarketplaceAppReviewEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: MarketplaceAppReviewGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A marketplace app installation within an organization */
-export interface MarketplaceAppInstallationGenqlSelection{
-    /** Unique identifier of the installation */
-    id?: boolean | number
-    /** ID of the installed marketplace app */
-    marketplaceAppId?: boolean | number
-    /** ID of the organization where the app is installed */
-    organizationId?: boolean | number
-    /** ID of the account that performed the installation */
-    installedById?: boolean | number
-    /** Current status of the installation */
-    status?: boolean | number
-    /** Permissions granted to this app by the organization (OrganizationPermission IDs) */
-    grantedPermissions?: boolean | number
-    /** Timestamp when the app was installed */
-    createdAt?: boolean | number
-    /** Timestamp when the installation was last updated */
-    updatedAt?: boolean | number
-    /** The marketplace app for this installation */
-    marketplaceApp?: MarketplaceAppGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of marketplace app installations */
-export interface MarketplaceAppInstallationsGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: MarketplaceAppInstallationEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: MarketplaceAppInstallationGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface MarketplaceAppInstallationEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: MarketplaceAppInstallationGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Aggregated statistics for a marketplace app */
-export interface MarketplaceAppStatsGenqlSelection{
-    /** Total number of active installations across all organizations */
-    totalInstallations?: boolean | number
-    /** Average star rating from all reviews */
-    averageRating?: boolean | number
-    /** Total number of reviews submitted for this app */
-    totalReviews?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Pricing configuration for a marketplace app */
-export interface MarketplaceAppPricingGenqlSelection{
-    /** Unique identifier of the pricing record */
-    id?: boolean | number
-    /** ID of the marketplace app this pricing applies to */
-    marketplaceAppId?: boolean | number
-    /** Pricing model type (e.g. one-time, subscription, free) */
-    type?: boolean | number
-    /** Price amount in the smallest currency unit (e.g. cents) */
-    priceAmountCents?: boolean | number
-    /** ISO 4217 currency code */
-    currency?: boolean | number
-    /** Number of free trial days for subscription pricing */
-    trialDays?: boolean | number
-    /** Timestamp when the pricing was created */
-    createdAt?: boolean | number
-    /** Timestamp when the pricing was last updated */
-    updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
 /** A single configuration property for a platform module */
 export interface ModuleConfigPropGenqlSelection{
     /** Configuration property key */
@@ -10919,6 +12394,18 @@ export interface EntityMetafieldGenqlSelection{
     /** Timestamp when the metafield was created */
     createdAt?: boolean | number
     /** Timestamp when the metafield was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Terms refused in moderated player text */
+export interface OrganizationModerationGenqlSelection{
+    /** Refused as whole words */
+    blockedWords?: boolean | number
+    /** Refused anywhere inside the text */
+    blockedSubstrings?: boolean | number
     updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -11004,6 +12491,8 @@ export interface CustomFieldDefinitionModelGenqlSelection{
     createdAt?: boolean | number
     /** Timestamp when the definition was last updated */
     updatedAt?: boolean | number
+    /** Whether values are checked against the organization moderation lists */
+    moderated?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -11888,6 +13377,26 @@ svgUrl?: (Scalars['String'] | null),
 /** Position of the seat on the venue map */
 position: PositionInput}
 
+export interface EventWaitlistConfigurationInput {
+/** Whether players may join the waitlist of a full slot */
+enabled: Scalars['Boolean'],
+/** Seconds an offer holds the seats, default is 86400 */
+offerDurationSeconds?: (Scalars['Int'] | null),
+/** Seconds an offer holds the seats when made on the day of the slot, in the venue timezone */
+sameDayOfferDurationSeconds?: (Scalars['Int'] | null),
+/** Maximum seats one entry may request, default is maxTicketsPerReservation */
+maxQuantity?: (Scalars['Int'] | null)}
+
+export interface EventSelfServiceConfigurationInput {
+/** Manager may cancel a validated free reservation */
+allowCancel: Scalars['Boolean'],
+/** Manager may move a validated free reservation */
+allowChange: Scalars['Boolean'],
+/** Self-service closes this many seconds before the earliest slot start of the reservation, default is 0 */
+cutoffSeconds?: (Scalars['Int'] | null),
+/** Allowed targets of a move, default is SAME_EVENT */
+changeScope?: (EventReservationChangeScope | null)}
+
 
 /** Input for event configuration settings */
 export interface EventConfigurationInput {
@@ -11908,7 +13417,17 @@ allowForNewSessionAfterTimeout?: (Scalars['Boolean'] | null),
 /** If set, the seat assignment will be required for the reservation, NONE means that there is no seat assignment, REQUIRED means that the seat assignment is required, OPTIONAL means that the seat assignment is optional, default is OPTIONAL */
 seatAssignmentMode?: (SeatAssignmentMode | null),
 /** Allow to reserve more tickets than group members */
-allowForMoreTicketsThanGroupMembers?: (Scalars['Boolean'] | null)}
+allowForMoreTicketsThanGroupMembers?: (Scalars['Boolean'] | null),
+/** Waitlist settings of the time slots */
+waitlist?: (EventWaitlistConfigurationInput | null),
+/** Self-service cancel and move settings */
+selfService?: (EventSelfServiceConfigurationInput | null)}
+
+
+/** Input for ticket configuration settings */
+export interface EventTicketConfigurationConfigurationInput {
+/** Custom fields that attendees must fill when purchasing this ticket type */
+customFields: PropertyInput[]}
 
 
 /** Input for venue seat type configuration settings */
@@ -11921,12 +13440,6 @@ nonce?: (Scalars['String'] | null)}
 export interface EventVenueConfigurationInput {
 /** URL or S3 key of the venue image */
 imageUrl?: (Scalars['String'] | null)}
-
-
-/** Input for ticket configuration settings */
-export interface EventTicketConfigurationConfigurationInput {
-/** Custom fields that attendees must fill when purchasing this ticket type */
-customFields: PropertyInput[]}
 
 
 /** Input for platform configuration settings */
@@ -12193,6 +13706,12 @@ export interface QueryGenqlSelection{
     eventVenueSeats?: (EventVenueSeatsGenqlSelection & { __args: {venueId: Scalars['ID'], page: PageInfo, seatTypeId?: (Scalars['ID'] | null)} })
     /** Retrieve a paginated list of seat types for a specific venue */
     eventVenueSeatTypes?: (EventVenueSeatTypesGenqlSelection & { __args: {venueId: Scalars['ID'], page: PageInfo} })
+    /** Time slots matching the filter, ordered by start time */
+    eventSlots?: (EventTicketConfigurationGenqlSelection & { __args: {filter: EventSlotsFilter} })
+    /** Waitlist entries of the caller's player */
+    myWaitlistEntries?: (EventWaitlistEntryGenqlSelection & { __args?: {eventIds?: (Scalars['ID'][] | null), activeOnly?: (Scalars['Boolean'] | null)} })
+    /** Waitlist entries of an event, in queue order */
+    eventWaitlistEntries?: (EventWaitlistEntriesGenqlSelection & { __args: {eventId: Scalars['ID'], ticketConfigurationId?: (Scalars['ID'] | null), statuses?: (EventWaitlistEntryStatus[] | null), page: PageInfo} })
     /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
     organizationPaymentCollectionConfiguration?: OrganizationPaymentCollectionConfigurationGenqlSelection
     /** Retrieve paginated members of specified user groups */
@@ -12249,6 +13768,26 @@ export interface QueryGenqlSelection{
     customFieldValues?: (CustomFieldWithValueModelGenqlSelection & { __args: {objectType: ObjectType, objectId: Scalars['ID']} })
     /** Get custom field values for multiple objects of the same type in a single query */
     customFieldValuesBatch?: (CustomFieldValuesBatchResultModelGenqlSelection & { __args: {objectType: ObjectType, objectIds: Scalars['ID'][]} })
+    appInstallationPublicConfig?: (AppConfigEntryGenqlSelection & { __args: {appSlug: Scalars['String']} })
+    appInstallationConfig?: (AppConfigEntryGenqlSelection & { __args: {appSlug: Scalars['String']} })
+    appFunctionRead?: (AppFunctionResultGenqlSelection & { __args: {input: AppFunctionCallInput} })
+    permissionDefinitions?: PermissionDefinitionDtoGenqlSelection
+    hasPermissions?: { __args: {checks: PermissionCheckInput[]} }
+    /** Retrieve a registration series by ID */
+    registrationSeries?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Paginated list of the registration series of the organization */
+    registrationSeriesList?: (RegistrationSeriesPageGenqlSelection & { __args: {page: PageInfo} })
+    /** The caller's registrations that count against the series limits */
+    myActiveRegistrations?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID']} })
+    /** A player's registrations that count against the series limits */
+    registrationSeriesPlayerEntries?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID'], playerId: Scalars['ID']} })
+    /** The current guest session */
+    guestMe?: GuestMeGenqlSelection
+    guestConfiguration?: GuestConfigurationGenqlSelection
+    /** Read a magic link without consuming it */
+    guestLinkResolve?: (GuestLinkViewGenqlSelection & { __args: {token: Scalars['String']} })
+    /** Banned words and substrings applied to nicknames and team names of the current organization. */
+    organizationModeration?: OrganizationModerationGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -12495,6 +14034,20 @@ playerId: Scalars['ID'],
 memberStatus?: (UserGroupMemberStatus | null)}
 
 
+/** Filter for time slots; at least one criterion is required and at most 1000 slots are returned */
+export interface EventSlotsFilter {
+/** Restrict to these events */
+eventIds?: (Scalars['ID'][] | null),
+/** Restrict to events held in these venues */
+venueIds?: (Scalars['ID'][] | null),
+/** Slots starting at or after this time */
+from?: (Scalars['DateTime'] | null),
+/** Slots starting before this time */
+to?: (Scalars['DateTime'] | null),
+/** Keep only open, buyable slots that have not started and still have free seats */
+onlyReservable?: (Scalars['Boolean'] | null)}
+
+
 /** Query input for filtering user groups by their IDs */
 export interface UserGroupsQueryInput {
 /** List of user group IDs to retrieve */
@@ -12603,6 +14156,10 @@ export interface EntityMetafieldsFilterInput {
 namespace?: (Scalars['String'] | null),
 /** Filter by the app ID that owns the metafields */
 appId?: (Scalars['ID'] | null)}
+
+export interface AppFunctionCallInput {appSlug: Scalars['String'],function: Scalars['String'],payload?: (Scalars['String'] | null),idempotencyKey?: (Scalars['String'] | null)}
+
+export interface PermissionCheckInput {permission: Scalars['String'],resource?: (Scalars['String'] | null)}
 
 export interface MutationGenqlSelection{
     /** Deletes an account by ID from the current organization */
@@ -12895,6 +14452,18 @@ export interface MutationGenqlSelection{
     eventVenueSeatTypeUpdate?: (EventVenueSeatTypeGenqlSelection & { __args: {id: Scalars['ID'], input: EventVenueSeatTypeUpdateInput} })
     /** Delete a seat type from a venue */
     eventVenueSeatTypeDelete?: (EventVenueSeatTypeGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Create the missing events and time slots of the given days; existing ones are left untouched */
+    eventCalendarGenerate?: (EventCalendarGenerateResultGenqlSelection & { __args: {input: EventCalendarGenerateInput} })
+    /** Join the waitlist of a full time slot */
+    eventWaitlistJoin?: (EventWaitlistEntryGenqlSelection & { __args: {ticketConfigurationId: Scalars['ID'], quantity: Scalars['Int'], replaceEntryId?: (Scalars['ID'] | null)} })
+    /** Leave one of the caller's waitlist entries */
+    eventWaitlistLeave?: (EventWaitlistEntryGenqlSelection & { __args: {entryId: Scalars['ID']} })
+    /** Remove an entry from a waitlist */
+    eventWaitlistRemoveEntry?: (EventWaitlistEntryGenqlSelection & { __args: {entryId: Scalars['ID']} })
+    /** Move a validated free reservation to other time slots, on the same or another event */
+    eventReservationChangeTickets?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], input: EventReservationChangeTicketsInput} })
+    /** Release unassigned tickets of a validated reservation; at least one ticket must remain */
+    eventReservationReleaseTickets?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], reservationTicketIds: Scalars['ID'][]} })
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount?: boolean | number
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
@@ -12989,6 +14558,44 @@ export interface MutationGenqlSelection{
     reorderCustomFieldDefinitions?: (CustomFieldDefinitionModelGenqlSelection & { __args: {objectType: ObjectType, orderedIds: Scalars['ID'][]} })
     /** Set custom field values on an object */
     setCustomFieldValues?: (CustomFieldWithValueModelGenqlSelection & { __args: {input: SetCustomFieldValuesInput} })
+    appInstallationPin?: (MarketplaceAppInstallationGenqlSelection & { __args: {input: AppInstallationPinInput} })
+    appFunctionsSetEnabled?: (MarketplaceAppInstallationGenqlSelection & { __args: {appSlug: Scalars['String'], function?: (Scalars['String'] | null), enabled: Scalars['Boolean']} })
+    appInstallationConfigSet?: (AppConfigEntryGenqlSelection & { __args: {appSlug: Scalars['String'], values: AppConfigValueInput[]} })
+    appFunctionCall?: (AppFunctionResultGenqlSelection & { __args: {input: AppFunctionCallInput} })
+    customPermissionCreate?: (PermissionDefinitionDtoGenqlSelection & { __args: {input: CustomPermissionInput} })
+    customPermissionUpdate?: (PermissionDefinitionDtoGenqlSelection & { __args: {id: Scalars['String'], input: CustomPermissionUpdateInput} })
+    customPermissionDelete?: { __args: {id: Scalars['String']} }
+    /** Create a registration series */
+    registrationSeriesCreate?: (RegistrationSeriesGenqlSelection & { __args: {input: RegistrationSeriesCreateInput} })
+    /** Update a registration series */
+    registrationSeriesUpdate?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID'], input: RegistrationSeriesUpdateInput} })
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete?: { __args: {id: Scalars['ID']} }
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign?: { __args: {seriesId?: (Scalars['ID'] | null), eventIds?: (Scalars['ID'][] | null), tournamentIds?: (Scalars['ID'][] | null)} } | boolean | number
+    /** Create a guest ward; the session player becomes its guardian */
+    guestWardCreate?: (GuestProfileGenqlSelection & { __args: {input: GuestWardCreateInput} })
+    /** Unlink a ward; deletes it when created by its guardian and no other guardian remains */
+    guestWardRemove?: { __args: {wardPlayerId: Scalars['ID']} }
+    /** Create a guest, or return the existing addressable guest with the same e-mail */
+    guestProfileCreate?: (GuestProfileCreatedGenqlSelection & { __args: {input: GuestProfileCreateInput} })
+    guestProfileUpdate?: (GuestProfileGenqlSelection & { __args: {playerId: Scalars['ID'], input: GuestProfileUpdateInput} })
+    guestGuardianLinkCreate?: (GuestGuardianLinkGenqlSelection & { __args: {guardianPlayerId: Scalars['ID'], wardPlayerId: Scalars['ID']} })
+    guestGuardianLinkDelete?: { __args: {id: Scalars['ID']} }
+    guestConfigurationUpdate?: (GuestConfigurationGenqlSelection & { __args: {input: GuestConfigurationInput} })
+    /** Consume one use of a magic link and open a guest session */
+    guestLinkExchange?: (GuestSessionGenqlSelection & { __args: {token: Scalars['String']} })
+    /** Revoke the current guest session */
+    guestSessionEnd?: boolean | number
+    guestLinkCreate?: (GuestLinkCreatedGenqlSelection & { __args: {input: GuestLinkCreateInput} })
+    /** Number of links revoked */
+    guestLinkRevoke?: { __args: {input: GuestLinkRevokeInput} }
+    /** Number of sessions revoked */
+    guestSessionsRevoke?: { __args: {playerId: Scalars['ID']} }
+    /** Open a guest session from trusted entry parameters; needs selfEntry TRUSTED_PARAMS */
+    guestEnter?: (GuestSessionGenqlSelection & { __args: {input: GuestEnterInput} })
+    /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
+    organizationModerationUpdate?: (OrganizationModerationGenqlSelection & { __args: {input: OrganizationModerationInput} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -13275,7 +14882,9 @@ webhookEvents?: WebhookEventType[],
 /** Metafield namespaces this app is allowed to use */
 metafieldNamespaces?: Scalars['String'][],
 /** Frontend micro-frontend modules registered by this app */
-frontendModules?: FrontendModuleInput[]}
+frontendModules?: FrontendModuleInput[],config?: (AppConfigDeclInput[] | null),customPermissions?: (AppCustomPermissionDeclInput[] | null),storage?: (AppStorageDeclInput | null),operations?: (AppOperationDeclInput[] | null),emailTemplates?: (AppEmailTemplateDeclInput[] | null),auditTypes?: (AppAuditTypeDeclInput[] | null),functions?: (AppFunctionDeclInput[] | null),
+/** Open functions that check their caller in code instead of declaring requires */
+codeAuthorized?: (Scalars['String'][] | null)}
 
 
 /** Input for defining a UI extension point in an app manifest */
@@ -13350,6 +14959,66 @@ export interface FrontendModuleEventInput {
 name: Scalars['String'],
 /** Description of when this event is emitted */
 description?: (Scalars['String'] | null)}
+
+
+/** A configuration key declared by an app */
+export interface AppConfigDeclInput {key: Scalars['String'],type: AppConfigType,label: Scalars['String'],description?: (Scalars['String'] | null),required?: (Scalars['Boolean'] | null),defaultValue?: (Scalars['String'] | null),options?: (Scalars['String'][] | null),min?: (Scalars['Float'] | null),max?: (Scalars['Float'] | null),pattern?: (Scalars['String'] | null),
+/** Readable without authentication */
+public?: (Scalars['Boolean'] | null)}
+
+
+/** A permission defined by an app */
+export interface AppCustomPermissionDeclInput {name: Scalars['String'],description: Scalars['String'],resources?: (Scalars['String'][] | null)}
+
+
+/** Storage declared by an app */
+export interface AppStorageDeclInput {collections: AppStorageCollectionDeclInput[]}
+
+
+/** A storage collection declared by an app */
+export interface AppStorageCollectionDeclInput {name: Scalars['String'],ttlSeconds?: (Scalars['Int'] | null)}
+
+
+/** A GraphQL operation file shipped by an app */
+export interface AppOperationDeclInput {name: Scalars['String'],file: Scalars['String']}
+
+
+/** An e-mail template shipped by an app */
+export interface AppEmailTemplateDeclInput {key: Scalars['String'],subject: Scalars['String'],file: Scalars['String']}
+
+
+/** An audit entry type written by an app */
+export interface AppAuditTypeDeclInput {type: Scalars['String'],fields: AppFieldDeclInput[]}
+
+
+/** A typed field of a function input, output or audit type; OBJECT uses fields, LIST uses items */
+export interface AppFieldDeclInput {name: Scalars['String'],type: AppFieldType,required?: (Scalars['Boolean'] | null),options?: (Scalars['String'][] | null),fields?: (AppFieldDeclInput[] | null),items?: (AppFieldDeclInput | null),maxLength?: (Scalars['Int'] | null),min?: (Scalars['Float'] | null),max?: (Scalars['Float'] | null)}
+
+
+/** A server function shipped by an app */
+export interface AppFunctionDeclInput {name: Scalars['String'],file: Scalars['String'],trigger: AppFunctionTriggerInput,invoker?: (AppFunctionInvokerKind[] | null),runAs?: (AppFunctionRunAs | null),input?: (AppFieldDeclInput[] | null),output?: (AppFieldDeclInput[] | null),preload?: (AppFunctionPreloadDeclInput[] | null),requires?: (AppFunctionRequirementDeclInput[] | null)}
+
+
+/** What runs a function. CALL: readOnly, cacheSeconds. HOOK: hookPoint, onError, timeoutMs. EVENT: events, selfTrigger. CRON: cron, timezone. LIFECYCLE: lifecycle */
+export interface AppFunctionTriggerInput {type: AppFunctionTriggerType,readOnly?: (Scalars['Boolean'] | null),cacheSeconds?: (Scalars['Int'] | null),hookPoint?: (AppHookPoint | null),onError?: (AppHookErrorPolicy | null),timeoutMs?: (Scalars['Int'] | null),events?: (WebhookEventType[] | null),selfTrigger?: (Scalars['Boolean'] | null),cron?: (Scalars['String'] | null),timezone?: (Scalars['String'] | null),lifecycle?: (AppLifecycleTransition[] | null)}
+
+
+/** An operation run before a function starts */
+export interface AppFunctionPreloadDeclInput {name: Scalars['String'],
+/** Name of a declared operation */
+op: Scalars['String'],vars?: (AppFunctionPreloadVarInput[] | null)}
+
+
+/** A variable passed to a preload operation */
+export interface AppFunctionPreloadVarInput {name: Scalars['String'],
+/** Template using $input, $config, $data.<earlier preload> or $caller */
+value: Scalars['String']}
+
+
+/** A permission the caller must hold */
+export interface AppFunctionRequirementDeclInput {permission: Scalars['String'],
+/** Template using $input, $config, $data.<earlier preload> or $caller */
+resource?: (Scalars['String'] | null)}
 
 
 /** Input for creating a new app release */
@@ -14079,7 +15748,9 @@ visibleAt?: (Scalars['DateTime'] | null),
 /** Event configuration including group, ticketing, and registration settings */
 configuration?: (EventConfigurationInput | null),
 /** Identifier of the venue where the event takes place */
-eventVenueId?: (Scalars['ID'] | null)}
+eventVenueId?: (Scalars['ID'] | null),
+/** Identifier of the tournament this event is linked to */
+tournamentId?: (Scalars['ID'] | null)}
 
 
 /** Input for updating an existing event with partial fields */
@@ -14101,7 +15772,9 @@ visibleAt?: (Scalars['DateTime'] | null),
 /** Event configuration including group, ticketing, and registration settings */
 configuration?: (EventConfigurationInput | null),
 /** Identifier of the venue where the event takes place */
-eventVenueId?: (Scalars['ID'] | null)}
+eventVenueId?: (Scalars['ID'] | null),
+/** Identifier of the tournament this event is linked to */
+tournamentId?: (Scalars['ID'] | null)}
 
 
 /** Input for creating a new ticket configuration for an event */
@@ -14123,7 +15796,17 @@ eventId: Scalars['ID'],
 /** Identifier of the venue seat type associated with this ticket */
 seatTypeId?: (Scalars['ID'] | null),
 /** Additional configuration including custom fields for this ticket type */
-configuration?: (EventTicketConfigurationConfigurationInput | null)}
+configuration?: (EventTicketConfigurationConfigurationInput | null),
+/** Start of the time slot sold by this ticket configuration */
+startsAt?: (Scalars['DateTime'] | null),
+/** End of the time slot sold by this ticket configuration */
+endsAt?: (Scalars['DateTime'] | null),
+/** Reason shown for a closed or blocked slot */
+stateReason?: (Scalars['String'] | null),
+/** Tournament linked to this slot, overriding the tournament of the event */
+tournamentId?: (Scalars['ID'] | null),
+/** State of the time slot, default is OPEN */
+state?: (EventSlotState | null)}
 
 
 /** Input for updating an existing ticket configuration with partial fields */
@@ -14143,7 +15826,17 @@ buyable?: (Scalars['Boolean'] | null),
 /** Identifier of the venue seat type associated with this ticket */
 seatTypeId?: (Scalars['ID'] | null),
 /** Additional configuration including custom fields for this ticket type */
-configuration?: (EventTicketConfigurationConfigurationInput | null)}
+configuration?: (EventTicketConfigurationConfigurationInput | null),
+/** Start of the time slot sold by this ticket configuration */
+startsAt?: (Scalars['DateTime'] | null),
+/** End of the time slot sold by this ticket configuration */
+endsAt?: (Scalars['DateTime'] | null),
+/** Reason shown for a closed or blocked slot */
+stateReason?: (Scalars['String'] | null),
+/** Tournament linked to this slot, overriding the tournament of the event */
+tournamentId?: (Scalars['ID'] | null),
+/** State of the time slot, default is OPEN */
+state?: (EventSlotState | null)}
 
 
 /** Input containing the list of ticket registrations for a reservation session */
@@ -14207,7 +15900,9 @@ state: Scalars['String'],
 /** Country where the venue is located */
 country: Scalars['String'],
 /** Postal or ZIP code of the venue */
-postalCode: Scalars['String']}
+postalCode: Scalars['String'],
+/** IANA timezone of the venue, default is UTC */
+timezone?: (Scalars['String'] | null)}
 
 
 /** Input for updating an existing event venue with partial fields */
@@ -14225,7 +15920,9 @@ state?: (Scalars['String'] | null),
 /** Country where the venue is located */
 country?: (Scalars['String'] | null),
 /** Postal or ZIP code of the venue */
-postalCode?: (Scalars['String'] | null)}
+postalCode?: (Scalars['String'] | null),
+/** IANA timezone of the venue, default is UTC */
+timezone?: (Scalars['String'] | null)}
 
 
 /** Batch input for creating, updating, and deleting venue seats in a single operation */
@@ -14278,6 +15975,76 @@ name?: (Scalars['String'] | null),
 description?: (Scalars['String'] | null),
 /** Configuration settings for this seat type */
 configuration?: (EventVenueSeatTypeConfigurationInput | null)}
+
+
+/** Idempotent generation of one event per day and venue with its time slots */
+export interface EventCalendarGenerateInput {
+/** Days to generate */
+days: EventCalendarDayInput[],
+/** Slot template shared by every day */
+slots: EventCalendarSlotTemplateInput,
+/** Event template shared by every day */
+event: EventCalendarEventTemplateInput,
+/** Registration series assigned to every generated event */
+registrationSeriesId?: (Scalars['ID'] | null)}
+
+
+/** One day to generate in one venue */
+export interface EventCalendarDayInput {
+/** Venue of the day */
+venueId: Scalars['ID'],
+/** Local date of the day (YYYY-MM-DD) */
+date: Scalars['String'],
+/** Tournament linked to the event of the day */
+tournamentId?: (Scalars['ID'] | null),
+/** Slot template overriding the shared one for this day */
+slots?: (EventCalendarSlotTemplateInput | null)}
+
+
+/** Template of the time slots generated for one day */
+export interface EventCalendarSlotTemplateInput {
+/** Local start time of the first slot (HH:mm) */
+firstStartTime: Scalars['String'],
+/** Local start time of the last slot (HH:mm) */
+lastStartTime: Scalars['String'],
+/** Minutes between two slot starts */
+intervalMinutes: Scalars['Int'],
+/** Duration of each slot in minutes */
+durationMinutes: Scalars['Int'],
+/** Seats per slot */
+maxCount: Scalars['Int'],
+/** Price of a seat in the smallest currency unit */
+price: Scalars['Int'],
+/** Currency code of the price */
+currency: Scalars['String'],
+/** Slot name pattern; {start} is replaced by the local start time */
+namePattern?: (Scalars['String'] | null),
+/** Description of each slot */
+description?: (Scalars['String'] | null)}
+
+
+/** Template of the event created for each day */
+export interface EventCalendarEventTemplateInput {
+/** Title pattern of each event */
+titlePattern: Scalars['String'],
+/** Description of each event */
+description: Scalars['String'],
+/** Configuration applied to each event */
+configuration?: (EventConfigurationInput | null),
+/** Date and time when registrations open */
+startRegistrationsAt?: (Scalars['DateTime'] | null),
+/** Date and time when registrations close */
+endRegistrationsAt?: (Scalars['DateTime'] | null),
+/** Date and time when the events become publicly visible */
+visibleAt?: (Scalars['DateTime'] | null)}
+
+
+/** New tickets of a reservation, on the same or another event */
+export interface EventReservationChangeTicketsInput {
+/** Event to move the reservation to; the current event when omitted */
+targetEventId?: (Scalars['ID'] | null),
+/** Tickets replacing the current ones */
+tickets: EventReservationRegisterTicketInput[]}
 
 
 /** Input for creating a new shop */
@@ -14553,7 +16320,13 @@ privacyPolicyUrl?: (Scalars['String'] | null),
 /** Support URL */
 supportUrl?: (Scalars['String'] | null),
 /** Website URL */
-websiteUrl?: (Scalars['String'] | null)}
+websiteUrl?: (Scalars['String'] | null),
+/** Unique app slug */
+slug?: (Scalars['String'] | null),
+/** Listing visibility */
+visibility?: (MarketplaceAppVisibility | null),
+/** Organizations allowed to install a private app */
+allowedOrganizationIds?: (Scalars['ID'][] | null)}
 
 
 /** Input for updating an existing marketplace app listing */
@@ -14579,7 +16352,13 @@ privacyPolicyUrl?: (Scalars['String'] | null),
 /** Support URL */
 supportUrl?: (Scalars['String'] | null),
 /** Website URL */
-websiteUrl?: (Scalars['String'] | null)}
+websiteUrl?: (Scalars['String'] | null),
+/** Unique app slug */
+slug?: (Scalars['String'] | null),
+/** Listing visibility */
+visibility?: (MarketplaceAppVisibility | null),
+/** Organizations allowed to install a private app */
+allowedOrganizationIds?: (Scalars['ID'][] | null)}
 
 
 /** Input for installing a marketplace app into an organization */
@@ -14641,7 +16420,13 @@ hasModuleBundle: Scalars['Boolean'],
 /** Estimated extension bundle size in bytes for presigned URL */
 extensionBundleSize?: (Scalars['Int'] | null),
 /** Estimated module bundle size in bytes for presigned URL */
-moduleBundleSize?: (Scalars['Int'] | null)}
+moduleBundleSize?: (Scalars['Int'] | null),
+/** Functions, operations and e-mail templates */
+files?: (AppReleaseFileInput[] | null)}
+
+
+/** A server file shipped with a release */
+export interface AppReleaseFileInput {kind: AppReleaseFileKind,name: Scalars['String'],content: Scalars['String']}
 
 
 /** Input for setting module configuration on a platform */
@@ -14759,7 +16544,9 @@ options?: (CustomFieldOptionInput[] | null),
 /** Default value applied when no value is provided */
 defaultValue?: (Scalars['String'] | null),
 /** Optional regex pattern the value must match */
-validationRegex?: (Scalars['String'] | null)}
+validationRegex?: (Scalars['String'] | null),
+/** Whether values are checked against the organization moderation lists */
+moderated?: (Scalars['Boolean'] | null)}
 
 
 /** A label/value option for SELECT or MULTI_SELECT custom fields */
@@ -14791,7 +16578,9 @@ options?: (CustomFieldOptionInput[] | null),
 /** Updated default value */
 defaultValue?: (Scalars['String'] | null),
 /** Updated regex validation pattern */
-validationRegex?: (Scalars['String'] | null)}
+validationRegex?: (Scalars['String'] | null),
+/** Whether values are checked against the organization moderation lists */
+moderated?: (Scalars['Boolean'] | null)}
 
 
 /** Input for setting custom field values on an object */
@@ -14813,6 +16602,48 @@ key: Scalars['String'],
 /** Value to set for this field */
 value: Scalars['String']}
 
+export interface AppInstallationPinInput {appSlug: Scalars['String'],version: Scalars['String'],grantedPermissions?: (Scalars['String'][] | null)}
+
+export interface AppConfigValueInput {key: Scalars['String'],value?: (Scalars['String'] | null)}
+
+export interface CustomPermissionInput {name: Scalars['String'],description: Scalars['String'],resources?: (Scalars['String'][] | null)}
+
+export interface CustomPermissionUpdateInput {description?: (Scalars['String'] | null),resources?: (Scalars['String'][] | null)}
+
+
+/** Input for creating a registration series */
+export interface RegistrationSeriesCreateInput {
+/** Display name of the series */
+name: Scalars['String'],maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
+
+
+/** Input for updating a registration series */
+export interface RegistrationSeriesUpdateInput {name?: (Scalars['String'] | null),maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
+
+export interface GuestWardCreateInput {firstName: Scalars['String'],lastName?: (Scalars['String'] | null)}
+
+export interface GuestProfileCreateInput {email?: (Scalars['EmailAddress'] | null),firstName?: (Scalars['String'] | null),lastName?: (Scalars['String'] | null),
+/** INVITED or ADMIN only */
+origin?: GuestOrigin,guardianPlayerId?: (Scalars['ID'] | null)}
+
+export interface GuestProfileUpdateInput {email?: (Scalars['EmailAddress'] | null),
+/** Removes the contact e-mail */
+clearEmail?: (Scalars['Boolean'] | null),firstName?: (Scalars['String'] | null),lastName?: (Scalars['String'] | null)}
+
+export interface GuestConfigurationInput {selfEntry?: (GuestSelfEntryMode | null),sessionTtlMinutes?: (Scalars['Int'] | null),maxWardsPerGuardian?: (Scalars['Int'] | null)}
+
+export interface GuestLinkCreateInput {playerId: Scalars['ID'],purpose: Scalars['String'],expiresAt: Scalars['DateTime'],maxUses?: (Scalars['PositiveInt'] | null),
+/** JSON payload */
+data?: (Scalars['String'] | null),revokePrevious?: Scalars['Boolean']}
+
+
+/** id, or playerId with an optional purpose */
+export interface GuestLinkRevokeInput {id?: (Scalars['ID'] | null),playerId?: (Scalars['ID'] | null),purpose?: (Scalars['String'] | null)}
+
+export interface GuestEnterInput {email: Scalars['EmailAddress'],firstName: Scalars['String'],lastName: Scalars['String']}
+
+export interface OrganizationModerationInput {blockedWords: Scalars['String'][],blockedSubstrings: Scalars['String'][]}
+
 export interface SubscriptionGenqlSelection{
     /** Subscribe to progress updates for a validation job. Emits the updated ValidationJobModel whenever the job state changes. */
     validationProgress?: (ValidationJobModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
@@ -14827,7 +16658,7 @@ export interface SubscriptionGenqlSelection{
 }
 
 
-    const JournalPayload_possibleTypes: string[] = ['RuleEngineAdvancementRuleFiredPayload','RuleEngineCrossStepTransferredPayload','RuleEngineEffectAdvancePayload','RuleEngineEffectCreateGroupPayload','RuleEngineEffectEliminatePayload','RuleEngineEffectEmitSeedingPinPayload','RuleEngineEffectEndStepPayload','RuleEngineEffectSetMetadataPayload','RuleEngineGenerationScriptRanPayload','RuleEngineManualOverridePayload','TournamentsStepResetPayload','TournamentsStepGeneratedPayload']
+    const JournalPayload_possibleTypes: string[] = ['RuleEngineAdvancementRuleFiredPayload','RuleEngineCrossStepTransferredPayload','RuleEngineEffectAdvancePayload','RuleEngineEffectCreateGroupPayload','RuleEngineEffectEliminatePayload','RuleEngineEffectEmitSeedingPinPayload','RuleEngineEffectEndStepPayload','RuleEngineEffectSetMetadataPayload','RuleEngineGenerationScriptRanPayload','RuleEngineManualOverridePayload','LeaderboardFeedReconcileFailedPayload','TournamentOpenPoolMatchCorrectedPayload','TournamentOpenPoolMatchCancelledPayload','TournamentOpenPoolClosedPayload','TournamentOpenPoolReopenedPayload','TournamentsStepResetPayload','TournamentsStepGeneratedPayload']
     export const isJournalPayload = (obj?: { __typename?: any } | null): obj is JournalPayload => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isJournalPayload"')
       return JournalPayload_possibleTypes.includes(obj.__typename)
@@ -15267,6 +17098,414 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const AppFunctionError_possibleTypes: string[] = ['AppFunctionError']
+    export const isAppFunctionError = (obj?: { __typename?: any } | null): obj is AppFunctionError => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionError"')
+      return AppFunctionError_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionResult_possibleTypes: string[] = ['AppFunctionResult']
+    export const isAppFunctionResult = (obj?: { __typename?: any } | null): obj is AppFunctionResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionResult"')
+      return AppFunctionResult_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppConfigEntry_possibleTypes: string[] = ['AppConfigEntry']
+    export const isAppConfigEntry = (obj?: { __typename?: any } | null): obj is AppConfigEntry => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppConfigEntry"')
+      return AppConfigEntry_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PermissionDefinitionDto_possibleTypes: string[] = ['PermissionDefinitionDto']
+    export const isPermissionDefinitionDto = (obj?: { __typename?: any } | null): obj is PermissionDefinitionDto => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPermissionDefinitionDto"')
+      return PermissionDefinitionDto_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const FrontendModulePropOptionModel_possibleTypes: string[] = ['FrontendModulePropOptionModel']
+    export const isFrontendModulePropOptionModel = (obj?: { __typename?: any } | null): obj is FrontendModulePropOptionModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModulePropOptionModel"')
+      return FrontendModulePropOptionModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const FrontendModulePropSchemaModel_possibleTypes: string[] = ['FrontendModulePropSchemaModel']
+    export const isFrontendModulePropSchemaModel = (obj?: { __typename?: any } | null): obj is FrontendModulePropSchemaModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModulePropSchemaModel"')
+      return FrontendModulePropSchemaModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const FrontendModuleEventModel_possibleTypes: string[] = ['FrontendModuleEventModel']
+    export const isFrontendModuleEventModel = (obj?: { __typename?: any } | null): obj is FrontendModuleEventModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModuleEventModel"')
+      return FrontendModuleEventModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const FrontendModuleModel_possibleTypes: string[] = ['FrontendModuleModel']
+    export const isFrontendModuleModel = (obj?: { __typename?: any } | null): obj is FrontendModuleModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModuleModel"')
+      return FrontendModuleModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ExtensionPointSizeModel_possibleTypes: string[] = ['ExtensionPointSizeModel']
+    export const isExtensionPointSizeModel = (obj?: { __typename?: any } | null): obj is ExtensionPointSizeModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isExtensionPointSizeModel"')
+      return ExtensionPointSizeModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ExtensionPointModel_possibleTypes: string[] = ['ExtensionPointModel']
+    export const isExtensionPointModel = (obj?: { __typename?: any } | null): obj is ExtensionPointModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isExtensionPointModel"')
+      return ExtensionPointModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFieldDeclModel_possibleTypes: string[] = ['AppFieldDeclModel']
+    export const isAppFieldDeclModel = (obj?: { __typename?: any } | null): obj is AppFieldDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFieldDeclModel"')
+      return AppFieldDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppConfigDeclModel_possibleTypes: string[] = ['AppConfigDeclModel']
+    export const isAppConfigDeclModel = (obj?: { __typename?: any } | null): obj is AppConfigDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppConfigDeclModel"')
+      return AppConfigDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppCustomPermissionDeclModel_possibleTypes: string[] = ['AppCustomPermissionDeclModel']
+    export const isAppCustomPermissionDeclModel = (obj?: { __typename?: any } | null): obj is AppCustomPermissionDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppCustomPermissionDeclModel"')
+      return AppCustomPermissionDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppStorageCollectionDeclModel_possibleTypes: string[] = ['AppStorageCollectionDeclModel']
+    export const isAppStorageCollectionDeclModel = (obj?: { __typename?: any } | null): obj is AppStorageCollectionDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppStorageCollectionDeclModel"')
+      return AppStorageCollectionDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppStorageDeclModel_possibleTypes: string[] = ['AppStorageDeclModel']
+    export const isAppStorageDeclModel = (obj?: { __typename?: any } | null): obj is AppStorageDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppStorageDeclModel"')
+      return AppStorageDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppOperationDeclModel_possibleTypes: string[] = ['AppOperationDeclModel']
+    export const isAppOperationDeclModel = (obj?: { __typename?: any } | null): obj is AppOperationDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppOperationDeclModel"')
+      return AppOperationDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppEmailTemplateDeclModel_possibleTypes: string[] = ['AppEmailTemplateDeclModel']
+    export const isAppEmailTemplateDeclModel = (obj?: { __typename?: any } | null): obj is AppEmailTemplateDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppEmailTemplateDeclModel"')
+      return AppEmailTemplateDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppAuditTypeDeclModel_possibleTypes: string[] = ['AppAuditTypeDeclModel']
+    export const isAppAuditTypeDeclModel = (obj?: { __typename?: any } | null): obj is AppAuditTypeDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppAuditTypeDeclModel"')
+      return AppAuditTypeDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionTriggerModel_possibleTypes: string[] = ['AppFunctionTriggerModel']
+    export const isAppFunctionTriggerModel = (obj?: { __typename?: any } | null): obj is AppFunctionTriggerModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionTriggerModel"')
+      return AppFunctionTriggerModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionPreloadVarModel_possibleTypes: string[] = ['AppFunctionPreloadVarModel']
+    export const isAppFunctionPreloadVarModel = (obj?: { __typename?: any } | null): obj is AppFunctionPreloadVarModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionPreloadVarModel"')
+      return AppFunctionPreloadVarModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionPreloadDeclModel_possibleTypes: string[] = ['AppFunctionPreloadDeclModel']
+    export const isAppFunctionPreloadDeclModel = (obj?: { __typename?: any } | null): obj is AppFunctionPreloadDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionPreloadDeclModel"')
+      return AppFunctionPreloadDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionRequirementDeclModel_possibleTypes: string[] = ['AppFunctionRequirementDeclModel']
+    export const isAppFunctionRequirementDeclModel = (obj?: { __typename?: any } | null): obj is AppFunctionRequirementDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionRequirementDeclModel"')
+      return AppFunctionRequirementDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionDeclModel_possibleTypes: string[] = ['AppFunctionDeclModel']
+    export const isAppFunctionDeclModel = (obj?: { __typename?: any } | null): obj is AppFunctionDeclModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionDeclModel"')
+      return AppFunctionDeclModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppManifestModel_possibleTypes: string[] = ['AppManifestModel']
+    export const isAppManifestModel = (obj?: { __typename?: any } | null): obj is AppManifestModel => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppManifestModel"')
+      return AppManifestModel_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CustomDomainSslValidationRecord_possibleTypes: string[] = ['CustomDomainSslValidationRecord']
+    export const isCustomDomainSslValidationRecord = (obj?: { __typename?: any } | null): obj is CustomDomainSslValidationRecord => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainSslValidationRecord"')
+      return CustomDomainSslValidationRecord_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CustomDomainSslValidationError_possibleTypes: string[] = ['CustomDomainSslValidationError']
+    export const isCustomDomainSslValidationError = (obj?: { __typename?: any } | null): obj is CustomDomainSslValidationError => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainSslValidationError"')
+      return CustomDomainSslValidationError_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CustomDomainSsl_possibleTypes: string[] = ['CustomDomainSsl']
+    export const isCustomDomainSsl = (obj?: { __typename?: any } | null): obj is CustomDomainSsl => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainSsl"')
+      return CustomDomainSsl_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CustomDomainOwnershipVerification_possibleTypes: string[] = ['CustomDomainOwnershipVerification']
+    export const isCustomDomainOwnershipVerification = (obj?: { __typename?: any } | null): obj is CustomDomainOwnershipVerification => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainOwnershipVerification"')
+      return CustomDomainOwnershipVerification_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CustomDomainData_possibleTypes: string[] = ['CustomDomainData']
+    export const isCustomDomainData = (obj?: { __typename?: any } | null): obj is CustomDomainData => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainData"')
+      return CustomDomainData_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlatformCdnFilePageConfig_possibleTypes: string[] = ['PlatformCdnFilePageConfig']
+    export const isPlatformCdnFilePageConfig = (obj?: { __typename?: any } | null): obj is PlatformCdnFilePageConfig => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlatformCdnFilePageConfig"')
+      return PlatformCdnFilePageConfig_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlatformCdnFileConfigs_possibleTypes: string[] = ['PlatformCdnFileConfigs']
+    export const isPlatformCdnFileConfigs = (obj?: { __typename?: any } | null): obj is PlatformCdnFileConfigs => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlatformCdnFileConfigs"')
+      return PlatformCdnFileConfigs_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlatformCdnFile_possibleTypes: string[] = ['PlatformCdnFile']
+    export const isPlatformCdnFile = (obj?: { __typename?: any } | null): obj is PlatformCdnFile => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlatformCdnFile"')
+      return PlatformCdnFile_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PresignedUrlField_possibleTypes: string[] = ['PresignedUrlField']
+    export const isPresignedUrlField = (obj?: { __typename?: any } | null): obj is PresignedUrlField => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPresignedUrlField"')
+      return PresignedUrlField_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PresignedUrl_possibleTypes: string[] = ['PresignedUrl']
+    export const isPresignedUrl = (obj?: { __typename?: any } | null): obj is PresignedUrl => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPresignedUrl"')
+      return PresignedUrl_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppReleaseFile_possibleTypes: string[] = ['AppReleaseFile']
+    export const isAppReleaseFile = (obj?: { __typename?: any } | null): obj is AppReleaseFile => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppReleaseFile"')
+      return AppReleaseFile_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppReviewCheck_possibleTypes: string[] = ['AppReviewCheck']
+    export const isAppReviewCheck = (obj?: { __typename?: any } | null): obj is AppReviewCheck => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppReviewCheck"')
+      return AppReviewCheck_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppReviewResult_possibleTypes: string[] = ['AppReviewResult']
+    export const isAppReviewResult = (obj?: { __typename?: any } | null): obj is AppReviewResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppReviewResult"')
+      return AppReviewResult_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppRelease_possibleTypes: string[] = ['MarketplaceAppRelease']
+    export const isMarketplaceAppRelease = (obj?: { __typename?: any } | null): obj is MarketplaceAppRelease => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppRelease"')
+      return MarketplaceAppRelease_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppReleaseWithUploadUrls_possibleTypes: string[] = ['AppReleaseWithUploadUrls']
+    export const isAppReleaseWithUploadUrls = (obj?: { __typename?: any } | null): obj is AppReleaseWithUploadUrls => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppReleaseWithUploadUrls"')
+      return AppReleaseWithUploadUrls_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppBundleValidationError_possibleTypes: string[] = ['AppBundleValidationError']
+    export const isAppBundleValidationError = (obj?: { __typename?: any } | null): obj is AppBundleValidationError => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppBundleValidationError"')
+      return AppBundleValidationError_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceApp_possibleTypes: string[] = ['MarketplaceApp']
+    export const isMarketplaceApp = (obj?: { __typename?: any } | null): obj is MarketplaceApp => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceApp"')
+      return MarketplaceApp_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceApps_possibleTypes: string[] = ['MarketplaceApps']
+    export const isMarketplaceApps = (obj?: { __typename?: any } | null): obj is MarketplaceApps => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceApps"')
+      return MarketplaceApps_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppEdge_possibleTypes: string[] = ['MarketplaceAppEdge']
+    export const isMarketplaceAppEdge = (obj?: { __typename?: any } | null): obj is MarketplaceAppEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppEdge"')
+      return MarketplaceAppEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppReview_possibleTypes: string[] = ['MarketplaceAppReview']
+    export const isMarketplaceAppReview = (obj?: { __typename?: any } | null): obj is MarketplaceAppReview => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppReview"')
+      return MarketplaceAppReview_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppReviews_possibleTypes: string[] = ['MarketplaceAppReviews']
+    export const isMarketplaceAppReviews = (obj?: { __typename?: any } | null): obj is MarketplaceAppReviews => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppReviews"')
+      return MarketplaceAppReviews_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppReviewEdge_possibleTypes: string[] = ['MarketplaceAppReviewEdge']
+    export const isMarketplaceAppReviewEdge = (obj?: { __typename?: any } | null): obj is MarketplaceAppReviewEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppReviewEdge"')
+      return MarketplaceAppReviewEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppInstallation_possibleTypes: string[] = ['MarketplaceAppInstallation']
+    export const isMarketplaceAppInstallation = (obj?: { __typename?: any } | null): obj is MarketplaceAppInstallation => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppInstallation"')
+      return MarketplaceAppInstallation_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppInstallations_possibleTypes: string[] = ['MarketplaceAppInstallations']
+    export const isMarketplaceAppInstallations = (obj?: { __typename?: any } | null): obj is MarketplaceAppInstallations => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppInstallations"')
+      return MarketplaceAppInstallations_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppInstallationEdge_possibleTypes: string[] = ['MarketplaceAppInstallationEdge']
+    export const isMarketplaceAppInstallationEdge = (obj?: { __typename?: any } | null): obj is MarketplaceAppInstallationEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppInstallationEdge"')
+      return MarketplaceAppInstallationEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppStats_possibleTypes: string[] = ['MarketplaceAppStats']
+    export const isMarketplaceAppStats = (obj?: { __typename?: any } | null): obj is MarketplaceAppStats => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppStats"')
+      return MarketplaceAppStats_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const MarketplaceAppPricing_possibleTypes: string[] = ['MarketplaceAppPricing']
+    export const isMarketplaceAppPricing = (obj?: { __typename?: any } | null): obj is MarketplaceAppPricing => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppPricing"')
+      return MarketplaceAppPricing_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Configuration_possibleTypes: string[] = ['Configuration']
     export const isConfiguration = (obj?: { __typename?: any } | null): obj is Configuration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isConfiguration"')
@@ -15379,46 +17618,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const CustomDomainSslValidationRecord_possibleTypes: string[] = ['CustomDomainSslValidationRecord']
-    export const isCustomDomainSslValidationRecord = (obj?: { __typename?: any } | null): obj is CustomDomainSslValidationRecord => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainSslValidationRecord"')
-      return CustomDomainSslValidationRecord_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CustomDomainSslValidationError_possibleTypes: string[] = ['CustomDomainSslValidationError']
-    export const isCustomDomainSslValidationError = (obj?: { __typename?: any } | null): obj is CustomDomainSslValidationError => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainSslValidationError"')
-      return CustomDomainSslValidationError_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CustomDomainSsl_possibleTypes: string[] = ['CustomDomainSsl']
-    export const isCustomDomainSsl = (obj?: { __typename?: any } | null): obj is CustomDomainSsl => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainSsl"')
-      return CustomDomainSsl_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CustomDomainOwnershipVerification_possibleTypes: string[] = ['CustomDomainOwnershipVerification']
-    export const isCustomDomainOwnershipVerification = (obj?: { __typename?: any } | null): obj is CustomDomainOwnershipVerification => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainOwnershipVerification"')
-      return CustomDomainOwnershipVerification_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CustomDomainData_possibleTypes: string[] = ['CustomDomainData']
-    export const isCustomDomainData = (obj?: { __typename?: any } | null): obj is CustomDomainData => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCustomDomainData"')
-      return CustomDomainData_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const EmailTemplate_possibleTypes: string[] = ['EmailTemplate']
     export const isEmailTemplate = (obj?: { __typename?: any } | null): obj is EmailTemplate => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEmailTemplate"')
@@ -15455,142 +17654,6 @@ export interface SubscriptionGenqlSelection{
     export const isPublicIdentityProvider = (obj?: { __typename?: any } | null): obj is PublicIdentityProvider => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicIdentityProvider"')
       return PublicIdentityProvider_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const FrontendModulePropOptionModel_possibleTypes: string[] = ['FrontendModulePropOptionModel']
-    export const isFrontendModulePropOptionModel = (obj?: { __typename?: any } | null): obj is FrontendModulePropOptionModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModulePropOptionModel"')
-      return FrontendModulePropOptionModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const FrontendModulePropSchemaModel_possibleTypes: string[] = ['FrontendModulePropSchemaModel']
-    export const isFrontendModulePropSchemaModel = (obj?: { __typename?: any } | null): obj is FrontendModulePropSchemaModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModulePropSchemaModel"')
-      return FrontendModulePropSchemaModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const FrontendModuleEventModel_possibleTypes: string[] = ['FrontendModuleEventModel']
-    export const isFrontendModuleEventModel = (obj?: { __typename?: any } | null): obj is FrontendModuleEventModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModuleEventModel"')
-      return FrontendModuleEventModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const FrontendModuleModel_possibleTypes: string[] = ['FrontendModuleModel']
-    export const isFrontendModuleModel = (obj?: { __typename?: any } | null): obj is FrontendModuleModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isFrontendModuleModel"')
-      return FrontendModuleModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const ExtensionPointSizeModel_possibleTypes: string[] = ['ExtensionPointSizeModel']
-    export const isExtensionPointSizeModel = (obj?: { __typename?: any } | null): obj is ExtensionPointSizeModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isExtensionPointSizeModel"')
-      return ExtensionPointSizeModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const ExtensionPointModel_possibleTypes: string[] = ['ExtensionPointModel']
-    export const isExtensionPointModel = (obj?: { __typename?: any } | null): obj is ExtensionPointModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isExtensionPointModel"')
-      return ExtensionPointModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AppManifestModel_possibleTypes: string[] = ['AppManifestModel']
-    export const isAppManifestModel = (obj?: { __typename?: any } | null): obj is AppManifestModel => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAppManifestModel"')
-      return AppManifestModel_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlatformCdnFilePageConfig_possibleTypes: string[] = ['PlatformCdnFilePageConfig']
-    export const isPlatformCdnFilePageConfig = (obj?: { __typename?: any } | null): obj is PlatformCdnFilePageConfig => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlatformCdnFilePageConfig"')
-      return PlatformCdnFilePageConfig_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlatformCdnFileConfigs_possibleTypes: string[] = ['PlatformCdnFileConfigs']
-    export const isPlatformCdnFileConfigs = (obj?: { __typename?: any } | null): obj is PlatformCdnFileConfigs => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlatformCdnFileConfigs"')
-      return PlatformCdnFileConfigs_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlatformCdnFile_possibleTypes: string[] = ['PlatformCdnFile']
-    export const isPlatformCdnFile = (obj?: { __typename?: any } | null): obj is PlatformCdnFile => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlatformCdnFile"')
-      return PlatformCdnFile_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PresignedUrlField_possibleTypes: string[] = ['PresignedUrlField']
-    export const isPresignedUrlField = (obj?: { __typename?: any } | null): obj is PresignedUrlField => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPresignedUrlField"')
-      return PresignedUrlField_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PresignedUrl_possibleTypes: string[] = ['PresignedUrl']
-    export const isPresignedUrl = (obj?: { __typename?: any } | null): obj is PresignedUrl => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPresignedUrl"')
-      return PresignedUrl_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AppReviewCheck_possibleTypes: string[] = ['AppReviewCheck']
-    export const isAppReviewCheck = (obj?: { __typename?: any } | null): obj is AppReviewCheck => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAppReviewCheck"')
-      return AppReviewCheck_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AppReviewResult_possibleTypes: string[] = ['AppReviewResult']
-    export const isAppReviewResult = (obj?: { __typename?: any } | null): obj is AppReviewResult => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAppReviewResult"')
-      return AppReviewResult_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppRelease_possibleTypes: string[] = ['MarketplaceAppRelease']
-    export const isMarketplaceAppRelease = (obj?: { __typename?: any } | null): obj is MarketplaceAppRelease => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppRelease"')
-      return MarketplaceAppRelease_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AppReleaseWithUploadUrls_possibleTypes: string[] = ['AppReleaseWithUploadUrls']
-    export const isAppReleaseWithUploadUrls = (obj?: { __typename?: any } | null): obj is AppReleaseWithUploadUrls => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAppReleaseWithUploadUrls"')
-      return AppReleaseWithUploadUrls_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AppBundleValidationError_possibleTypes: string[] = ['AppBundleValidationError']
-    export const isAppBundleValidationError = (obj?: { __typename?: any } | null): obj is AppBundleValidationError => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAppBundleValidationError"')
-      return AppBundleValidationError_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -15831,6 +17894,54 @@ export interface SubscriptionGenqlSelection{
     export const isRuleEngineManualOverridePayload = (obj?: { __typename?: any } | null): obj is RuleEngineManualOverridePayload => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineManualOverridePayload"')
       return RuleEngineManualOverridePayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const LeaderboardFeedReconcileFailedPayload_possibleTypes: string[] = ['LeaderboardFeedReconcileFailedPayload']
+    export const isLeaderboardFeedReconcileFailedPayload = (obj?: { __typename?: any } | null): obj is LeaderboardFeedReconcileFailedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeedReconcileFailedPayload"')
+      return LeaderboardFeedReconcileFailedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolJournalScoreRow_possibleTypes: string[] = ['OpenPoolJournalScoreRow']
+    export const isOpenPoolJournalScoreRow = (obj?: { __typename?: any } | null): obj is OpenPoolJournalScoreRow => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolJournalScoreRow"')
+      return OpenPoolJournalScoreRow_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolMatchCorrectedPayload_possibleTypes: string[] = ['TournamentOpenPoolMatchCorrectedPayload']
+    export const isTournamentOpenPoolMatchCorrectedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolMatchCorrectedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolMatchCorrectedPayload"')
+      return TournamentOpenPoolMatchCorrectedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolMatchCancelledPayload_possibleTypes: string[] = ['TournamentOpenPoolMatchCancelledPayload']
+    export const isTournamentOpenPoolMatchCancelledPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolMatchCancelledPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolMatchCancelledPayload"')
+      return TournamentOpenPoolMatchCancelledPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolClosedPayload_possibleTypes: string[] = ['TournamentOpenPoolClosedPayload']
+    export const isTournamentOpenPoolClosedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolClosedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolClosedPayload"')
+      return TournamentOpenPoolClosedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolReopenedPayload_possibleTypes: string[] = ['TournamentOpenPoolReopenedPayload']
+    export const isTournamentOpenPoolReopenedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolReopenedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolReopenedPayload"')
+      return TournamentOpenPoolReopenedPayload_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -16419,6 +18530,38 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const RegistrationSeries_possibleTypes: string[] = ['RegistrationSeries']
+    export const isRegistrationSeries = (obj?: { __typename?: any } | null): obj is RegistrationSeries => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeries"')
+      return RegistrationSeries_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RegistrationSeriesPage_possibleTypes: string[] = ['RegistrationSeriesPage']
+    export const isRegistrationSeriesPage = (obj?: { __typename?: any } | null): obj is RegistrationSeriesPage => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesPage"')
+      return RegistrationSeriesPage_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RegistrationSeriesEdge_possibleTypes: string[] = ['RegistrationSeriesEdge']
+    export const isRegistrationSeriesEdge = (obj?: { __typename?: any } | null): obj is RegistrationSeriesEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesEdge"')
+      return RegistrationSeriesEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RegistrationSeriesEntry_possibleTypes: string[] = ['RegistrationSeriesEntry']
+    export const isRegistrationSeriesEntry = (obj?: { __typename?: any } | null): obj is RegistrationSeriesEntry => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesEntry"')
+      return RegistrationSeriesEntry_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const UserGroupConfiguration_possibleTypes: string[] = ['UserGroupConfiguration']
     export const isUserGroupConfiguration = (obj?: { __typename?: any } | null): obj is UserGroupConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isUserGroupConfiguration"')
@@ -16523,54 +18666,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const EventConfiguration_possibleTypes: string[] = ['EventConfiguration']
-    export const isEventConfiguration = (obj?: { __typename?: any } | null): obj is EventConfiguration => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEventConfiguration"')
-      return EventConfiguration_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const Event_possibleTypes: string[] = ['Event']
-    export const isEvent = (obj?: { __typename?: any } | null): obj is Event => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEvent"')
-      return Event_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const EventInterface_possibleTypes: string[] = ['Event','EventWithUserReservation']
-    export const isEventInterface = (obj?: { __typename?: any } | null): obj is EventInterface => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEventInterface"')
-      return EventInterface_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const EventWithUserReservation_possibleTypes: string[] = ['EventWithUserReservation']
-    export const isEventWithUserReservation = (obj?: { __typename?: any } | null): obj is EventWithUserReservation => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEventWithUserReservation"')
-      return EventWithUserReservation_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const Events_possibleTypes: string[] = ['Events']
-    export const isEvents = (obj?: { __typename?: any } | null): obj is Events => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEvents"')
-      return Events_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const EventEdge_possibleTypes: string[] = ['EventEdge']
-    export const isEventEdge = (obj?: { __typename?: any } | null): obj is EventEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEventEdge"')
-      return EventEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const EventReservationTicketConfiguration_possibleTypes: string[] = ['EventReservationTicketConfiguration']
     export const isEventReservationTicketConfiguration = (obj?: { __typename?: any } | null): obj is EventReservationTicketConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventReservationTicketConfiguration"')
@@ -16667,6 +18762,94 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const EventWaitlistConfiguration_possibleTypes: string[] = ['EventWaitlistConfiguration']
+    export const isEventWaitlistConfiguration = (obj?: { __typename?: any } | null): obj is EventWaitlistConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventWaitlistConfiguration"')
+      return EventWaitlistConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventSelfServiceConfiguration_possibleTypes: string[] = ['EventSelfServiceConfiguration']
+    export const isEventSelfServiceConfiguration = (obj?: { __typename?: any } | null): obj is EventSelfServiceConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventSelfServiceConfiguration"')
+      return EventSelfServiceConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventConfiguration_possibleTypes: string[] = ['EventConfiguration']
+    export const isEventConfiguration = (obj?: { __typename?: any } | null): obj is EventConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventConfiguration"')
+      return EventConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Event_possibleTypes: string[] = ['Event']
+    export const isEvent = (obj?: { __typename?: any } | null): obj is Event => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEvent"')
+      return Event_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventInterface_possibleTypes: string[] = ['Event','EventWithUserReservation']
+    export const isEventInterface = (obj?: { __typename?: any } | null): obj is EventInterface => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventInterface"')
+      return EventInterface_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventWithUserReservation_possibleTypes: string[] = ['EventWithUserReservation']
+    export const isEventWithUserReservation = (obj?: { __typename?: any } | null): obj is EventWithUserReservation => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventWithUserReservation"')
+      return EventWithUserReservation_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Events_possibleTypes: string[] = ['Events']
+    export const isEvents = (obj?: { __typename?: any } | null): obj is Events => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEvents"')
+      return Events_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventEdge_possibleTypes: string[] = ['EventEdge']
+    export const isEventEdge = (obj?: { __typename?: any } | null): obj is EventEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventEdge"')
+      return EventEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventCalendarGenerateResult_possibleTypes: string[] = ['EventCalendarGenerateResult']
+    export const isEventCalendarGenerateResult = (obj?: { __typename?: any } | null): obj is EventCalendarGenerateResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventCalendarGenerateResult"')
+      return EventCalendarGenerateResult_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventTicketConfigurationConfiguration_possibleTypes: string[] = ['EventTicketConfigurationConfiguration']
+    export const isEventTicketConfigurationConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfigurationConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfigurationConfiguration"')
+      return EventTicketConfigurationConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventTicketConfiguration_possibleTypes: string[] = ['EventTicketConfiguration']
+    export const isEventTicketConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfiguration"')
+      return EventTicketConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const EventVenueSeatTypeConfiguration_possibleTypes: string[] = ['EventVenueSeatTypeConfiguration']
     export const isEventVenueSeatTypeConfiguration = (obj?: { __typename?: any } | null): obj is EventVenueSeatTypeConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventVenueSeatTypeConfiguration"')
@@ -16731,18 +18914,98 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const EventTicketConfigurationConfiguration_possibleTypes: string[] = ['EventTicketConfigurationConfiguration']
-    export const isEventTicketConfigurationConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfigurationConfiguration => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfigurationConfiguration"')
-      return EventTicketConfigurationConfiguration_possibleTypes.includes(obj.__typename)
+    const EventWaitlistEntry_possibleTypes: string[] = ['EventWaitlistEntry']
+    export const isEventWaitlistEntry = (obj?: { __typename?: any } | null): obj is EventWaitlistEntry => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventWaitlistEntry"')
+      return EventWaitlistEntry_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const EventTicketConfiguration_possibleTypes: string[] = ['EventTicketConfiguration']
-    export const isEventTicketConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfiguration => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfiguration"')
-      return EventTicketConfiguration_possibleTypes.includes(obj.__typename)
+    const EventWaitlistEntries_possibleTypes: string[] = ['EventWaitlistEntries']
+    export const isEventWaitlistEntries = (obj?: { __typename?: any } | null): obj is EventWaitlistEntries => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventWaitlistEntries"')
+      return EventWaitlistEntries_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventWaitlistEntryEdge_possibleTypes: string[] = ['EventWaitlistEntryEdge']
+    export const isEventWaitlistEntryEdge = (obj?: { __typename?: any } | null): obj is EventWaitlistEntryEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventWaitlistEntryEdge"')
+      return EventWaitlistEntryEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestProfile_possibleTypes: string[] = ['GuestProfile']
+    export const isGuestProfile = (obj?: { __typename?: any } | null): obj is GuestProfile => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfile"')
+      return GuestProfile_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkContext_possibleTypes: string[] = ['GuestLinkContext']
+    export const isGuestLinkContext = (obj?: { __typename?: any } | null): obj is GuestLinkContext => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkContext"')
+      return GuestLinkContext_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestSession_possibleTypes: string[] = ['GuestSession']
+    export const isGuestSession = (obj?: { __typename?: any } | null): obj is GuestSession => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestSession"')
+      return GuestSession_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestMe_possibleTypes: string[] = ['GuestMe']
+    export const isGuestMe = (obj?: { __typename?: any } | null): obj is GuestMe => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestMe"')
+      return GuestMe_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkView_possibleTypes: string[] = ['GuestLinkView']
+    export const isGuestLinkView = (obj?: { __typename?: any } | null): obj is GuestLinkView => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkView"')
+      return GuestLinkView_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkCreated_possibleTypes: string[] = ['GuestLinkCreated']
+    export const isGuestLinkCreated = (obj?: { __typename?: any } | null): obj is GuestLinkCreated => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkCreated"')
+      return GuestLinkCreated_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestProfileCreated_possibleTypes: string[] = ['GuestProfileCreated']
+    export const isGuestProfileCreated = (obj?: { __typename?: any } | null): obj is GuestProfileCreated => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfileCreated"')
+      return GuestProfileCreated_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestGuardianLink_possibleTypes: string[] = ['GuestGuardianLink']
+    export const isGuestGuardianLink = (obj?: { __typename?: any } | null): obj is GuestGuardianLink => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestGuardianLink"')
+      return GuestGuardianLink_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestConfiguration_possibleTypes: string[] = ['GuestConfiguration']
+    export const isGuestConfiguration = (obj?: { __typename?: any } | null): obj is GuestConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestConfiguration"')
+      return GuestConfiguration_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -16915,94 +19178,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const MarketplaceApp_possibleTypes: string[] = ['MarketplaceApp']
-    export const isMarketplaceApp = (obj?: { __typename?: any } | null): obj is MarketplaceApp => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceApp"')
-      return MarketplaceApp_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceApps_possibleTypes: string[] = ['MarketplaceApps']
-    export const isMarketplaceApps = (obj?: { __typename?: any } | null): obj is MarketplaceApps => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceApps"')
-      return MarketplaceApps_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppEdge_possibleTypes: string[] = ['MarketplaceAppEdge']
-    export const isMarketplaceAppEdge = (obj?: { __typename?: any } | null): obj is MarketplaceAppEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppEdge"')
-      return MarketplaceAppEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppReview_possibleTypes: string[] = ['MarketplaceAppReview']
-    export const isMarketplaceAppReview = (obj?: { __typename?: any } | null): obj is MarketplaceAppReview => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppReview"')
-      return MarketplaceAppReview_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppReviews_possibleTypes: string[] = ['MarketplaceAppReviews']
-    export const isMarketplaceAppReviews = (obj?: { __typename?: any } | null): obj is MarketplaceAppReviews => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppReviews"')
-      return MarketplaceAppReviews_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppReviewEdge_possibleTypes: string[] = ['MarketplaceAppReviewEdge']
-    export const isMarketplaceAppReviewEdge = (obj?: { __typename?: any } | null): obj is MarketplaceAppReviewEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppReviewEdge"')
-      return MarketplaceAppReviewEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppInstallation_possibleTypes: string[] = ['MarketplaceAppInstallation']
-    export const isMarketplaceAppInstallation = (obj?: { __typename?: any } | null): obj is MarketplaceAppInstallation => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppInstallation"')
-      return MarketplaceAppInstallation_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppInstallations_possibleTypes: string[] = ['MarketplaceAppInstallations']
-    export const isMarketplaceAppInstallations = (obj?: { __typename?: any } | null): obj is MarketplaceAppInstallations => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppInstallations"')
-      return MarketplaceAppInstallations_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppInstallationEdge_possibleTypes: string[] = ['MarketplaceAppInstallationEdge']
-    export const isMarketplaceAppInstallationEdge = (obj?: { __typename?: any } | null): obj is MarketplaceAppInstallationEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppInstallationEdge"')
-      return MarketplaceAppInstallationEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppStats_possibleTypes: string[] = ['MarketplaceAppStats']
-    export const isMarketplaceAppStats = (obj?: { __typename?: any } | null): obj is MarketplaceAppStats => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppStats"')
-      return MarketplaceAppStats_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const MarketplaceAppPricing_possibleTypes: string[] = ['MarketplaceAppPricing']
-    export const isMarketplaceAppPricing = (obj?: { __typename?: any } | null): obj is MarketplaceAppPricing => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppPricing"')
-      return MarketplaceAppPricing_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const ModuleConfigProp_possibleTypes: string[] = ['ModuleConfigProp']
     export const isModuleConfigProp = (obj?: { __typename?: any } | null): obj is ModuleConfigProp => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isModuleConfigProp"')
@@ -17039,6 +19214,14 @@ export interface SubscriptionGenqlSelection{
     export const isEntityMetafield = (obj?: { __typename?: any } | null): obj is EntityMetafield => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEntityMetafield"')
       return EntityMetafield_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OrganizationModeration_possibleTypes: string[] = ['OrganizationModeration']
+    export const isOrganizationModeration = (obj?: { __typename?: any } | null): obj is OrganizationModeration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOrganizationModeration"')
+      return OrganizationModeration_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -17544,6 +19727,9 @@ export const enumWebhookEventType = {
    TOURNAMENT_TEAM_MEMBER_UPDATED: 'TOURNAMENT_TEAM_MEMBER_UPDATED' as const,
    TOURNAMENT_MATCH_SCORE_UPDATED: 'TOURNAMENT_MATCH_SCORE_UPDATED' as const,
    TOURNAMENT_MATCH_STATUS_UPDATED: 'TOURNAMENT_MATCH_STATUS_UPDATED' as const,
+   TOURNAMENT_MATCH_CREATED: 'TOURNAMENT_MATCH_CREATED' as const,
+   TOURNAMENT_MATCH_CORRECTED: 'TOURNAMENT_MATCH_CORRECTED' as const,
+   TOURNAMENT_MATCH_CANCELLED: 'TOURNAMENT_MATCH_CANCELLED' as const,
    ORGANIZATION_MEMBER_ADDED: 'ORGANIZATION_MEMBER_ADDED' as const,
    ORGANIZATION_MEMBER_REMOVED: 'ORGANIZATION_MEMBER_REMOVED' as const,
    EVENT_CREATED: 'EVENT_CREATED' as const,
@@ -17553,11 +19739,19 @@ export const enumWebhookEventType = {
    EVENT_RESERVATION_CANCELLED: 'EVENT_RESERVATION_CANCELLED' as const,
    EVENT_RESERVATION_STATUS_UPDATED: 'EVENT_RESERVATION_STATUS_UPDATED' as const,
    EVENT_RESERVATION_PRESENCE_CONFIRMED: 'EVENT_RESERVATION_PRESENCE_CONFIRMED' as const,
+   EVENT_RESERVATION_VALIDATED: 'EVENT_RESERVATION_VALIDATED' as const,
+   EVENT_RESERVATION_SESSION_EXPIRED: 'EVENT_RESERVATION_SESSION_EXPIRED' as const,
+   EVENT_RESERVATION_TICKETS_CHANGED: 'EVENT_RESERVATION_TICKETS_CHANGED' as const,
+   EVENT_RESERVATION_TICKETS_RELEASED: 'EVENT_RESERVATION_TICKETS_RELEASED' as const,
+   EVENT_WAITLIST_JOINED: 'EVENT_WAITLIST_JOINED' as const,
+   EVENT_WAITLIST_OFFERED: 'EVENT_WAITLIST_OFFERED' as const,
+   EVENT_WAITLIST_ENDED: 'EVENT_WAITLIST_ENDED' as const,
    SHOP_PURCHASE_COMPLETED: 'SHOP_PURCHASE_COMPLETED' as const,
    SHOP_PURCHASE_FAILED: 'SHOP_PURCHASE_FAILED' as const,
    SHOP_PRODUCT_CREATED: 'SHOP_PRODUCT_CREATED' as const,
    PLAYER_CURRENCY_UPDATED: 'PLAYER_CURRENCY_UPDATED' as const,
    PLAYER_ITEM_UPDATED: 'PLAYER_ITEM_UPDATED' as const,
+   PLAYER_ITEMS_TRANSFERRED: 'PLAYER_ITEMS_TRANSFERRED' as const,
    CURRENCY_CREATED: 'CURRENCY_CREATED' as const,
    ITEM_CREATED: 'ITEM_CREATED' as const,
    LEADERBOARD_SCORE_REGISTERED: 'LEADERBOARD_SCORE_REGISTERED' as const,
@@ -17600,8 +19794,116 @@ export const enumLimitScope = {
    RESOURCE: 'RESOURCE' as const
 }
 
-export const enumLeaderboardScoreCalculationType = {
-   SCORE: 'SCORE' as const
+export const enumAppFunctionErrorKind = {
+   PLATFORM: 'PLATFORM' as const,
+   APP: 'APP' as const
+}
+
+export const enumAppFunctionPlatformErrorCode = {
+   NOT_FOUND: 'NOT_FOUND' as const,
+   NOT_CONFIGURED: 'NOT_CONFIGURED' as const,
+   DISABLED: 'DISABLED' as const,
+   INVOKER_NOT_ALLOWED: 'INVOKER_NOT_ALLOWED' as const,
+   INPUT_INVALID: 'INPUT_INVALID' as const,
+   FORBIDDEN: 'FORBIDDEN' as const,
+   QUOTA_EXCEEDED: 'QUOTA_EXCEEDED' as const,
+   UNAVAILABLE: 'UNAVAILABLE' as const,
+   IDEMPOTENCY_IN_PROGRESS: 'IDEMPOTENCY_IN_PROGRESS' as const,
+   CAUSATION_DEPTH_EXCEEDED: 'CAUSATION_DEPTH_EXCEEDED' as const,
+   LIMIT_EXCEEDED: 'LIMIT_EXCEEDED' as const,
+   TIMEOUT: 'TIMEOUT' as const,
+   SCRIPT_ERROR: 'SCRIPT_ERROR' as const,
+   OUTPUT_TOO_LARGE: 'OUTPUT_TOO_LARGE' as const
+}
+
+export const enumAppFunctionStatus = {
+   SUCCEEDED: 'SUCCEEDED' as const,
+   FAILED: 'FAILED' as const
+}
+
+export const enumAppConfigType = {
+   STRING: 'STRING' as const,
+   TEXT: 'TEXT' as const,
+   NUMBER: 'NUMBER' as const,
+   INTEGER: 'INTEGER' as const,
+   BOOLEAN: 'BOOLEAN' as const,
+   SELECT: 'SELECT' as const,
+   DURATION: 'DURATION' as const,
+   TIME: 'TIME' as const,
+   DATE: 'DATE' as const,
+   TIMEZONE: 'TIMEZONE' as const,
+   STRING_LIST: 'STRING_LIST' as const
+}
+
+export const enumPermissionDefinitionOwner = {
+   ORGANIZATION: 'ORGANIZATION' as const,
+   APP: 'APP' as const
+}
+
+export const enumFrontendModulePropType = {
+   STRING: 'STRING' as const,
+   NUMBER: 'NUMBER' as const,
+   BOOLEAN: 'BOOLEAN' as const,
+   SELECT: 'SELECT' as const,
+   ROUTE_PARAM: 'ROUTE_PARAM' as const
+}
+
+export const enumExtensionPointType = {
+   TAB: 'TAB' as const,
+   DASHBOARD_WIDGET: 'DASHBOARD_WIDGET' as const,
+   ADMIN_NAVIGATION: 'ADMIN_NAVIGATION' as const
+}
+
+export const enumAppFieldType = {
+   STRING: 'STRING' as const,
+   TEXT: 'TEXT' as const,
+   NUMBER: 'NUMBER' as const,
+   INTEGER: 'INTEGER' as const,
+   BOOLEAN: 'BOOLEAN' as const,
+   ID: 'ID' as const,
+   EMAIL: 'EMAIL' as const,
+   DATE: 'DATE' as const,
+   DATETIME: 'DATETIME' as const,
+   ENUM: 'ENUM' as const,
+   OBJECT: 'OBJECT' as const,
+   LIST: 'LIST' as const
+}
+
+export const enumAppFunctionTriggerType = {
+   CALL: 'CALL' as const,
+   HOOK: 'HOOK' as const,
+   EVENT: 'EVENT' as const,
+   TIMER: 'TIMER' as const,
+   CRON: 'CRON' as const,
+   LIFECYCLE: 'LIFECYCLE' as const
+}
+
+export const enumAppHookPoint = {
+   EVENT_RESERVATION_VALIDATE: 'EVENT_RESERVATION_VALIDATE' as const
+}
+
+export const enumAppHookErrorPolicy = {
+   DENY: 'DENY' as const,
+   ALLOW: 'ALLOW' as const
+}
+
+export const enumAppLifecycleTransition = {
+   INSTALL: 'INSTALL' as const,
+   UPGRADE: 'UPGRADE' as const,
+   UNINSTALL: 'UNINSTALL' as const,
+   CONFIG_UPDATED: 'CONFIG_UPDATED' as const
+}
+
+export const enumAppFunctionInvokerKind = {
+   ANONYMOUS: 'ANONYMOUS' as const,
+   PLAYER: 'PLAYER' as const,
+   GUEST: 'GUEST' as const,
+   MEMBER: 'MEMBER' as const
+}
+
+export const enumAppFunctionRunAs = {
+   APP: 'APP' as const,
+   INVOKER: 'INVOKER' as const
 }
 
 export const enumCustomDomainValidationStatus = {
@@ -17647,26 +19949,6 @@ export const enumCustomDomainStatus = {
    blocked: 'blocked' as const
 }
 
-export const enumIdentityProviderAvailability = {
-   PUBLIC: 'PUBLIC' as const,
-   PREVIEW: 'PREVIEW' as const,
-   PRIVATE: 'PRIVATE' as const
-}
-
-export const enumFrontendModulePropType = {
-   STRING: 'STRING' as const,
-   NUMBER: 'NUMBER' as const,
-   BOOLEAN: 'BOOLEAN' as const,
-   SELECT: 'SELECT' as const,
-   ROUTE_PARAM: 'ROUTE_PARAM' as const
-}
-
-export const enumExtensionPointType = {
-   TAB: 'TAB' as const,
-   DASHBOARD_WIDGET: 'DASHBOARD_WIDGET' as const,
-   ADMIN_NAVIGATION: 'ADMIN_NAVIGATION' as const
-}
-
 export const enumPlatformCdnFileType = {
    PAGE: 'PAGE' as const,
    COMPONENT: 'COMPONENT' as const,
@@ -17674,10 +19956,51 @@ export const enumPlatformCdnFileType = {
    IMAGE: 'IMAGE' as const
 }
 
+export const enumAppReleaseFileKind = {
+   FUNCTION: 'FUNCTION' as const,
+   OPERATION: 'OPERATION' as const,
+   EMAIL_TEMPLATE: 'EMAIL_TEMPLATE' as const
+}
+
 export const enumMarketplaceAppReleaseStatus = {
    PENDING_REVIEW: 'PENDING_REVIEW' as const,
    APPROVED: 'APPROVED' as const,
    REJECTED: 'REJECTED' as const
+}
+
+export const enumMarketplaceAppStatus = {
+   DRAFT: 'DRAFT' as const,
+   IN_REVIEW: 'IN_REVIEW' as const,
+   PUBLISHED: 'PUBLISHED' as const,
+   REJECTED: 'REJECTED' as const,
+   SUSPENDED: 'SUSPENDED' as const
+}
+
+export const enumMarketplaceAppVisibility = {
+   PUBLIC: 'PUBLIC' as const,
+   PRIVATE: 'PRIVATE' as const
+}
+
+export const enumMarketplaceInstallationStatus = {
+   ACTIVE: 'ACTIVE' as const,
+   SUSPENDED: 'SUSPENDED' as const,
+   UNINSTALLED: 'UNINSTALLED' as const
+}
+
+export const enumMarketplacePricingType = {
+   FREE: 'FREE' as const,
+   ONE_TIME: 'ONE_TIME' as const,
+   SUBSCRIPTION: 'SUBSCRIPTION' as const
+}
+
+export const enumLeaderboardScoreCalculationType = {
+   SCORE: 'SCORE' as const
+}
+
+export const enumIdentityProviderAvailability = {
+   PUBLIC: 'PUBLIC' as const,
+   PREVIEW: 'PREVIEW' as const,
+   PRIVATE: 'PRIVATE' as const
 }
 
 export const enumAppReleaseStatus = {
@@ -18098,6 +20421,18 @@ export const enumValidationStatus = {
    STEP_ENDED: 'STEP_ENDED' as const
 }
 
+export const enumRegistrationSeriesReleasePolicy = {
+   SLOT_START: 'SLOT_START' as const,
+   SLOT_END: 'SLOT_END' as const,
+   NEVER: 'NEVER' as const
+}
+
+export const enumRegistrationSeriesEntryKind = {
+   EVENT_RESERVATION: 'EVENT_RESERVATION' as const,
+   WAITLIST_ENTRY: 'WAITLIST_ENTRY' as const,
+   TOURNAMENT_TEAM: 'TOURNAMENT_TEAM' as const
+}
+
 export const enumUserGroupMemberStatus = {
    PENDING: 'PENDING' as const,
    ACCEPTED: 'ACCEPTED' as const,
@@ -18107,24 +20442,6 @@ export const enumUserGroupMemberStatus = {
 export const enumUserGroupStatus = {
    VALID: 'VALID' as const,
    INVALID: 'INVALID' as const
-}
-
-export const enumEventReservationStatusAfterPayment = {
-   PRESENCE_CONFIRMATION_PENDING: 'PRESENCE_CONFIRMATION_PENDING' as const,
-   REGISTERED: 'REGISTERED' as const,
-   CONFIRMED: 'CONFIRMED' as const
-}
-
-export const enumEventReservationStatusAfterRegistration = {
-   NONE: 'NONE' as const,
-   REQUIRES_ADMIN_APPROVAL: 'REQUIRES_ADMIN_APPROVAL' as const,
-   PENDING: 'PENDING' as const
-}
-
-export const enumSeatAssignmentMode = {
-   NONE: 'NONE' as const,
-   REQUIRED: 'REQUIRED' as const,
-   OPTIONAL: 'OPTIONAL' as const
 }
 
 export const enumEventReservationStatus = {
@@ -18148,10 +20465,90 @@ export const enumEventSeatStatus = {
    SOLD: 'SOLD' as const
 }
 
+export const enumEventReservationChangeScope = {
+   SAME_EVENT: 'SAME_EVENT' as const,
+   SAME_VENUE: 'SAME_VENUE' as const,
+   SAME_SERIES: 'SAME_SERIES' as const
+}
+
+export const enumEventReservationStatusAfterPayment = {
+   PRESENCE_CONFIRMATION_PENDING: 'PRESENCE_CONFIRMATION_PENDING' as const,
+   REGISTERED: 'REGISTERED' as const,
+   CONFIRMED: 'CONFIRMED' as const
+}
+
+export const enumEventReservationStatusAfterRegistration = {
+   NONE: 'NONE' as const,
+   REQUIRES_ADMIN_APPROVAL: 'REQUIRES_ADMIN_APPROVAL' as const,
+   PENDING: 'PENDING' as const
+}
+
+export const enumSeatAssignmentMode = {
+   NONE: 'NONE' as const,
+   REQUIRED: 'REQUIRED' as const,
+   OPTIONAL: 'OPTIONAL' as const
+}
+
 export const enumShopCurrencies = {
    USD: 'USD' as const,
    EUR: 'EUR' as const,
    GBP: 'GBP' as const
+}
+
+export const enumEventSlotState = {
+   OPEN: 'OPEN' as const,
+   CLOSED: 'CLOSED' as const,
+   BLOCKED: 'BLOCKED' as const
+}
+
+export const enumEventSlotEffectiveState = {
+   OPEN: 'OPEN' as const,
+   CLOSED: 'CLOSED' as const,
+   BLOCKED: 'BLOCKED' as const,
+   PAST: 'PAST' as const
+}
+
+export const enumEventWaitlistEntryStatus = {
+   WAITING: 'WAITING' as const,
+   OFFERED: 'OFFERED' as const,
+   ACCEPTED: 'ACCEPTED' as const,
+   EXPIRED: 'EXPIRED' as const,
+   LEFT: 'LEFT' as const
+}
+
+export const enumEventWaitlistEndReason = {
+   LEFT: 'LEFT' as const,
+   REMOVED: 'REMOVED' as const,
+   REPLACED: 'REPLACED' as const,
+   REGISTERED_ELSEWHERE: 'REGISTERED_ELSEWHERE' as const,
+   ALREADY_REGISTERED: 'ALREADY_REGISTERED' as const,
+   OFFER_EXPIRED: 'OFFER_EXPIRED' as const,
+   SLOT_CLOSED: 'SLOT_CLOSED' as const
+}
+
+export const enumGuestOrigin = {
+   ENTRY: 'ENTRY' as const,
+   INVITED: 'INVITED' as const,
+   GUARDIAN: 'GUARDIAN' as const,
+   ADMIN: 'ADMIN' as const
+}
+
+export const enumGuestSessionOrigin = {
+   ENTRY: 'ENTRY' as const,
+   LINK: 'LINK' as const
+}
+
+export const enumGuestLinkStatus = {
+   VALID: 'VALID' as const,
+   EXPIRED: 'EXPIRED' as const,
+   REVOKED: 'REVOKED' as const,
+   EXHAUSTED: 'EXHAUSTED' as const,
+   INVALID: 'INVALID' as const
+}
+
+export const enumGuestSelfEntryMode = {
+   DISABLED: 'DISABLED' as const,
+   TRUSTED_PARAMS: 'TRUSTED_PARAMS' as const
 }
 
 export const enumJournalActorType = {
@@ -18176,26 +20573,6 @@ export const enumJournalSeverity = {
    INFO: 'INFO' as const,
    WARNING: 'WARNING' as const,
    ERROR: 'ERROR' as const
-}
-
-export const enumMarketplaceAppStatus = {
-   DRAFT: 'DRAFT' as const,
-   IN_REVIEW: 'IN_REVIEW' as const,
-   PUBLISHED: 'PUBLISHED' as const,
-   REJECTED: 'REJECTED' as const,
-   SUSPENDED: 'SUSPENDED' as const
-}
-
-export const enumMarketplaceInstallationStatus = {
-   ACTIVE: 'ACTIVE' as const,
-   SUSPENDED: 'SUSPENDED' as const,
-   UNINSTALLED: 'UNINSTALLED' as const
-}
-
-export const enumMarketplacePricingType = {
-   FREE: 'FREE' as const,
-   ONE_TIME: 'ONE_TIME' as const,
-   SUBSCRIPTION: 'SUBSCRIPTION' as const
 }
 
 export const enumMetadataType = {
@@ -18302,7 +20679,20 @@ export const enumObjectType = {
    MarketplaceAppRelease: 'MarketplaceAppRelease' as const,
    MarketplaceAppReview: 'MarketplaceAppReview' as const,
    MarketplaceAppInstallation: 'MarketplaceAppInstallation' as const,
-   JournalEntry: 'JournalEntry' as const
+   JournalEntry: 'JournalEntry' as const,
+   MarketplaceAppReleaseFile: 'MarketplaceAppReleaseFile' as const,
+   PermissionDefinition: 'PermissionDefinition' as const,
+   AppEmailDelivery: 'AppEmailDelivery' as const,
+   GuestProfile: 'GuestProfile' as const,
+   GuestGuardianLink: 'GuestGuardianLink' as const,
+   GuestLink: 'GuestLink' as const,
+   GuestSession: 'GuestSession' as const,
+   GuestConfiguration: 'GuestConfiguration' as const,
+   OrganizationModeration: 'OrganizationModeration' as const,
+   RegistrationSeries: 'RegistrationSeries' as const,
+   EventWaitlistEntry: 'EventWaitlistEntry' as const,
+   LeaderboardFeed: 'LeaderboardFeed' as const,
+   LeaderboardFeedEntry: 'LeaderboardFeedEntry' as const
 }
 
 export const enumCustomFieldType = {
@@ -18372,7 +20762,15 @@ export const enumOrganizationLimitsType = {
    SHOP_CATEGORIES: 'SHOP_CATEGORIES' as const,
    SHOP_PRODUCTS: 'SHOP_PRODUCTS' as const,
    MARKETPLACE_PUBLISHED_APPS: 'MARKETPLACE_PUBLISHED_APPS' as const,
-   MARKETPLACE_INSTALLATIONS: 'MARKETPLACE_INSTALLATIONS' as const
+   MARKETPLACE_INSTALLATIONS: 'MARKETPLACE_INSTALLATIONS' as const,
+   APP_FUNCTION_INVOCATIONS: 'APP_FUNCTION_INVOCATIONS' as const,
+   APP_FUNCTION_CONCURRENCY: 'APP_FUNCTION_CONCURRENCY' as const,
+   APP_TIMERS_PENDING: 'APP_TIMERS_PENDING' as const,
+   APP_EMAILS: 'APP_EMAILS' as const,
+   APP_FUNCTIONS: 'APP_FUNCTIONS' as const,
+   APP_CRONS: 'APP_CRONS' as const,
+   REGISTRATION_SERIES: 'REGISTRATION_SERIES' as const,
+   EVENTS_MAX_WAITLIST_ENTRIES: 'EVENTS_MAX_WAITLIST_ENTRIES' as const
 }
 
 export const enumTournamentsQueryOrderBy = {
