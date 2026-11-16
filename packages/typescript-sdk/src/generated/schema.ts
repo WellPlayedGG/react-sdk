@@ -1635,6 +1635,128 @@ export interface MarketplaceAppPricing {
 export type MarketplacePricingType = 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
 
 
+/** Guest identity attached to an ownerless player profile of the organization */
+export interface GuestProfile {
+    /** ID of the guest player profile */
+    playerId: Scalars['ID']
+    /** The guest player profile */
+    player: Player
+    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
+    email: (Scalars['String'] | null)
+    /** First name, same visibility as email */
+    firstName: (Scalars['String'] | null)
+    /** Last name, same visibility as email */
+    lastName: (Scalars['String'] | null)
+    /** How the guest was created */
+    origin: GuestOrigin
+    /** Players acting as guardians of this guest */
+    guardianPlayerIds: Scalars['ID'][]
+    /** Guests this player is the guardian of */
+    wardPlayerIds: Scalars['ID'][]
+    /** Creation date */
+    createdAt: Scalars['DateTime']
+    __typename: 'GuestProfile'
+}
+
+export type GuestOrigin = 'ENTRY' | 'INVITED' | 'GUARDIAN' | 'ADMIN'
+
+
+/** Magic link a guest session was opened from */
+export interface GuestLinkContext {
+    id: Scalars['ID']
+    /** Purpose set by the link creator */
+    purpose: Scalars['String']
+    /** JSON payload set by the link creator */
+    data: Scalars['String']
+    expiresAt: Scalars['DateTime']
+    __typename: 'GuestLinkContext'
+}
+
+
+/** A guest session; send its token in the x-guest-session header */
+export interface GuestSession {
+    /** Session token, returned only when the session opens */
+    token: Scalars['String']
+    /** Guest player the session belongs to */
+    playerId: Scalars['ID']
+    origin: GuestSessionOrigin
+    expiresAt: Scalars['DateTime']
+    link: (GuestLinkContext | null)
+    __typename: 'GuestSession'
+}
+
+export type GuestSessionOrigin = 'ENTRY' | 'LINK'
+
+
+/** The current guest session */
+export interface GuestMe {
+    /** Player that owns the session */
+    sessionPlayerId: Scalars['ID']
+    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
+    actingPlayerId: Scalars['ID']
+    origin: GuestSessionOrigin
+    expiresAt: Scalars['DateTime']
+    link: (GuestLinkContext | null)
+    profile: GuestProfile
+    wards: GuestProfile[]
+    __typename: 'GuestMe'
+}
+
+
+/** Read-only view of a magic link; reading it never consumes a use */
+export interface GuestLinkView {
+    status: GuestLinkStatus
+    /** Null when INVALID */
+    purpose: (Scalars['String'] | null)
+    /** Null when INVALID */
+    expiresAt: (Scalars['DateTime'] | null)
+    /** Guest first name, only when VALID */
+    firstName: (Scalars['String'] | null)
+    /** Link payload, only when VALID */
+    data: (Scalars['String'] | null)
+    __typename: 'GuestLinkView'
+}
+
+export type GuestLinkStatus = 'VALID' | 'EXPIRED' | 'REVOKED' | 'EXHAUSTED' | 'INVALID'
+
+
+/** A new magic link; the token is returned only once */
+export interface GuestLinkCreated {
+    id: Scalars['ID']
+    token: Scalars['String']
+    expiresAt: Scalars['DateTime']
+    __typename: 'GuestLinkCreated'
+}
+
+export interface GuestProfileCreated {
+    profile: GuestProfile
+    /** False when an addressable guest with the same e-mail existed */
+    created: Scalars['Boolean']
+    __typename: 'GuestProfileCreated'
+}
+
+
+/** A guardian allowed to act for a guest ward */
+export interface GuestGuardianLink {
+    id: Scalars['ID']
+    guardianPlayerId: Scalars['ID']
+    wardPlayerId: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    __typename: 'GuestGuardianLink'
+}
+
+
+/** Guest settings of the organization */
+export interface GuestConfiguration {
+    selfEntry: GuestSelfEntryMode
+    sessionTtlMinutes: Scalars['Int']
+    maxWardsPerGuardian: Scalars['Int']
+    __typename: 'GuestConfiguration'
+}
+
+export type GuestSelfEntryMode = 'DISABLED' | 'TRUSTED_PARAMS'
+
+
 /** A reusable configuration preset for tournaments or steps */
 export interface Configuration {
     /** Unique identifier of the configuration */
@@ -4087,12 +4209,16 @@ export interface RegistrationSeriesEntry {
 export type RegistrationSeriesEntryKind = 'EVENT_RESERVATION' | 'WAITLIST_ENTRY' | 'TOURNAMENT_TEAM'
 
 
-/** Configuration defining size constraints for a user group */
+/** Configuration defining size and name length constraints for a user group */
 export interface UserGroupConfiguration {
     /** Maximum number of accepted members allowed in the group */
     maxSize: Scalars['Int']
     /** Minimum number of accepted members required for the group to be valid */
     minSize: Scalars['Int']
+    /** Minimum length of the group name, from 1 to 100 (default 1) */
+    nameMinLength: (Scalars['Int'] | null)
+    /** Maximum length of the group name, from 1 to 100 (default 100) */
+    nameMaxLength: (Scalars['Int'] | null)
     __typename: 'UserGroupConfiguration'
 }
 
@@ -4133,6 +4259,8 @@ export interface UserGroup {
     status: UserGroupStatus
     /** Whether the group is locked and cannot be modified */
     locked: Scalars['Boolean']
+    /** Display name of the group, chosen by its manager */
+    name: (Scalars['String'] | null)
     __typename: 'UserGroup'
 }
 
@@ -4913,128 +5041,6 @@ export interface EventWaitlistEntryEdge {
     node: EventWaitlistEntry
     __typename: 'EventWaitlistEntryEdge'
 }
-
-
-/** Guest identity attached to an ownerless player profile of the organization */
-export interface GuestProfile {
-    /** ID of the guest player profile */
-    playerId: Scalars['ID']
-    /** The guest player profile */
-    player: Player
-    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
-    email: (Scalars['String'] | null)
-    /** First name, same visibility as email */
-    firstName: (Scalars['String'] | null)
-    /** Last name, same visibility as email */
-    lastName: (Scalars['String'] | null)
-    /** How the guest was created */
-    origin: GuestOrigin
-    /** Players acting as guardians of this guest */
-    guardianPlayerIds: Scalars['ID'][]
-    /** Guests this player is the guardian of */
-    wardPlayerIds: Scalars['ID'][]
-    /** Creation date */
-    createdAt: Scalars['DateTime']
-    __typename: 'GuestProfile'
-}
-
-export type GuestOrigin = 'ENTRY' | 'INVITED' | 'GUARDIAN' | 'ADMIN'
-
-
-/** Magic link a guest session was opened from */
-export interface GuestLinkContext {
-    id: Scalars['ID']
-    /** Purpose set by the link creator */
-    purpose: Scalars['String']
-    /** JSON payload set by the link creator */
-    data: Scalars['String']
-    expiresAt: Scalars['DateTime']
-    __typename: 'GuestLinkContext'
-}
-
-
-/** A guest session; send its token in the x-guest-session header */
-export interface GuestSession {
-    /** Session token, returned only when the session opens */
-    token: Scalars['String']
-    /** Guest player the session belongs to */
-    playerId: Scalars['ID']
-    origin: GuestSessionOrigin
-    expiresAt: Scalars['DateTime']
-    link: (GuestLinkContext | null)
-    __typename: 'GuestSession'
-}
-
-export type GuestSessionOrigin = 'ENTRY' | 'LINK'
-
-
-/** The current guest session */
-export interface GuestMe {
-    /** Player that owns the session */
-    sessionPlayerId: Scalars['ID']
-    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
-    actingPlayerId: Scalars['ID']
-    origin: GuestSessionOrigin
-    expiresAt: Scalars['DateTime']
-    link: (GuestLinkContext | null)
-    profile: GuestProfile
-    wards: GuestProfile[]
-    __typename: 'GuestMe'
-}
-
-
-/** Read-only view of a magic link; reading it never consumes a use */
-export interface GuestLinkView {
-    status: GuestLinkStatus
-    /** Null when INVALID */
-    purpose: (Scalars['String'] | null)
-    /** Null when INVALID */
-    expiresAt: (Scalars['DateTime'] | null)
-    /** Guest first name, only when VALID */
-    firstName: (Scalars['String'] | null)
-    /** Link payload, only when VALID */
-    data: (Scalars['String'] | null)
-    __typename: 'GuestLinkView'
-}
-
-export type GuestLinkStatus = 'VALID' | 'EXPIRED' | 'REVOKED' | 'EXHAUSTED' | 'INVALID'
-
-
-/** A new magic link; the token is returned only once */
-export interface GuestLinkCreated {
-    id: Scalars['ID']
-    token: Scalars['String']
-    expiresAt: Scalars['DateTime']
-    __typename: 'GuestLinkCreated'
-}
-
-export interface GuestProfileCreated {
-    profile: GuestProfile
-    /** False when an addressable guest with the same e-mail existed */
-    created: Scalars['Boolean']
-    __typename: 'GuestProfileCreated'
-}
-
-
-/** A guardian allowed to act for a guest ward */
-export interface GuestGuardianLink {
-    id: Scalars['ID']
-    guardianPlayerId: Scalars['ID']
-    wardPlayerId: Scalars['ID']
-    createdAt: Scalars['DateTime']
-    __typename: 'GuestGuardianLink'
-}
-
-
-/** Guest settings of the organization */
-export interface GuestConfiguration {
-    selfEntry: GuestSelfEntryMode
-    sessionTtlMinutes: Scalars['Int']
-    maxWardsPerGuardian: Scalars['Int']
-    __typename: 'GuestConfiguration'
-}
-
-export type GuestSelfEntryMode = 'DISABLED' | 'TRUSTED_PARAMS'
 
 
 /** Represents a virtual item that can be assigned to players */
@@ -6367,6 +6373,11 @@ export interface Query {
     customFieldValues: CustomFieldWithValueModel[]
     /** Get custom field values for multiple objects of the same type in a single query */
     customFieldValuesBatch: CustomFieldValuesBatchResultModel[]
+    /** The current guest session */
+    guestMe: GuestMe
+    guestConfiguration: GuestConfiguration
+    /** Read a magic link without consuming it */
+    guestLinkResolve: GuestLinkView
     appInstallationPublicConfig: AppConfigEntry[]
     appInstallationConfig: AppConfigEntry[]
     appFunctionRead: AppFunctionResult
@@ -6380,11 +6391,6 @@ export interface Query {
     myActiveRegistrations: RegistrationSeriesEntry[]
     /** A player's registrations that count against the series limits */
     registrationSeriesPlayerEntries: RegistrationSeriesEntry[]
-    /** The current guest session */
-    guestMe: GuestMe
-    guestConfiguration: GuestConfiguration
-    /** Read a magic link without consuming it */
-    guestLinkResolve: GuestLinkView
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration: OrganizationModeration
     __typename: 'Query'
@@ -6719,9 +6725,11 @@ export interface Mutation {
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount: Scalars['String']
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite: UserGroupMember
+    /** Rename a user group, or clear its name with null. Allowed to the group manager and to a caller holding organization:user-groups:manage on the group. */
+    userGroupUpdateName: UserGroup
     /** Accept or decline a pending user group invitation */
     userGroupUpdateInvite: UserGroupMember
-    /** Remove a player from a user group or cancel a pending invitation */
+    /** Remove a player from a user group or cancel a pending invitation. A caller holding organization:user-groups:manage on the group removes any member but the manager, also from a locked group. */
     userGroupDeleteInvite: UserGroupMember
     /** Create a new shop in the current organization */
     shopCreate: Shop
@@ -6809,19 +6817,6 @@ export interface Mutation {
     setCustomFieldValues: CustomFieldWithValueModel[]
     appInstallationPin: MarketplaceAppInstallation
     appFunctionsSetEnabled: MarketplaceAppInstallation
-    appInstallationConfigSet: AppConfigEntry[]
-    appFunctionCall: AppFunctionResult
-    customPermissionCreate: PermissionDefinitionDto
-    customPermissionUpdate: PermissionDefinitionDto
-    customPermissionDelete: Scalars['Boolean']
-    /** Create a registration series */
-    registrationSeriesCreate: RegistrationSeries
-    /** Update a registration series */
-    registrationSeriesUpdate: RegistrationSeries
-    /** Delete a registration series; its events and tournaments leave the series */
-    registrationSeriesDelete: Scalars['Boolean']
-    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
-    registrationSeriesAssign: Scalars['Boolean']
     /** Create a guest ward; the session player becomes its guardian */
     guestWardCreate: GuestProfile
     /** Unlink a ward; deletes it when created by its guardian and no other guardian remains */
@@ -6843,6 +6838,19 @@ export interface Mutation {
     guestSessionsRevoke: Scalars['Int']
     /** Open a guest session from trusted entry parameters; needs selfEntry TRUSTED_PARAMS */
     guestEnter: GuestSession
+    appInstallationConfigSet: AppConfigEntry[]
+    appFunctionCall: AppFunctionResult
+    customPermissionCreate: PermissionDefinitionDto
+    customPermissionUpdate: PermissionDefinitionDto
+    customPermissionDelete: Scalars['Boolean']
+    /** Create a registration series */
+    registrationSeriesCreate: RegistrationSeries
+    /** Update a registration series */
+    registrationSeriesUpdate: RegistrationSeries
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete: Scalars['Boolean']
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign: Scalars['Boolean']
     /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
     organizationModerationUpdate: OrganizationModeration
     __typename: 'Mutation'
@@ -8538,6 +8546,129 @@ export interface MarketplaceAppPricingGenqlSelection{
     createdAt?: boolean | number
     /** Timestamp when the pricing was last updated */
     updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Guest identity attached to an ownerless player profile of the organization */
+export interface GuestProfileGenqlSelection{
+    /** ID of the guest player profile */
+    playerId?: boolean | number
+    /** The guest player profile */
+    player?: PlayerGenqlSelection
+    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
+    email?: boolean | number
+    /** First name, same visibility as email */
+    firstName?: boolean | number
+    /** Last name, same visibility as email */
+    lastName?: boolean | number
+    /** How the guest was created */
+    origin?: boolean | number
+    /** Players acting as guardians of this guest */
+    guardianPlayerIds?: boolean | number
+    /** Guests this player is the guardian of */
+    wardPlayerIds?: boolean | number
+    /** Creation date */
+    createdAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Magic link a guest session was opened from */
+export interface GuestLinkContextGenqlSelection{
+    id?: boolean | number
+    /** Purpose set by the link creator */
+    purpose?: boolean | number
+    /** JSON payload set by the link creator */
+    data?: boolean | number
+    expiresAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A guest session; send its token in the x-guest-session header */
+export interface GuestSessionGenqlSelection{
+    /** Session token, returned only when the session opens */
+    token?: boolean | number
+    /** Guest player the session belongs to */
+    playerId?: boolean | number
+    origin?: boolean | number
+    expiresAt?: boolean | number
+    link?: GuestLinkContextGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** The current guest session */
+export interface GuestMeGenqlSelection{
+    /** Player that owns the session */
+    sessionPlayerId?: boolean | number
+    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
+    actingPlayerId?: boolean | number
+    origin?: boolean | number
+    expiresAt?: boolean | number
+    link?: GuestLinkContextGenqlSelection
+    profile?: GuestProfileGenqlSelection
+    wards?: GuestProfileGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Read-only view of a magic link; reading it never consumes a use */
+export interface GuestLinkViewGenqlSelection{
+    status?: boolean | number
+    /** Null when INVALID */
+    purpose?: boolean | number
+    /** Null when INVALID */
+    expiresAt?: boolean | number
+    /** Guest first name, only when VALID */
+    firstName?: boolean | number
+    /** Link payload, only when VALID */
+    data?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A new magic link; the token is returned only once */
+export interface GuestLinkCreatedGenqlSelection{
+    id?: boolean | number
+    token?: boolean | number
+    expiresAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface GuestProfileCreatedGenqlSelection{
+    profile?: GuestProfileGenqlSelection
+    /** False when an addressable guest with the same e-mail existed */
+    created?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A guardian allowed to act for a guest ward */
+export interface GuestGuardianLinkGenqlSelection{
+    id?: boolean | number
+    guardianPlayerId?: boolean | number
+    wardPlayerId?: boolean | number
+    createdAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Guest settings of the organization */
+export interface GuestConfigurationGenqlSelection{
+    selfEntry?: boolean | number
+    sessionTtlMinutes?: boolean | number
+    maxWardsPerGuardian?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -10983,12 +11114,16 @@ export interface RegistrationSeriesEntryGenqlSelection{
 }
 
 
-/** Configuration defining size constraints for a user group */
+/** Configuration defining size and name length constraints for a user group */
 export interface UserGroupConfigurationGenqlSelection{
     /** Maximum number of accepted members allowed in the group */
     maxSize?: boolean | number
     /** Minimum number of accepted members required for the group to be valid */
     minSize?: boolean | number
+    /** Minimum length of the group name, from 1 to 100 (default 1) */
+    nameMinLength?: boolean | number
+    /** Maximum length of the group name, from 1 to 100 (default 100) */
+    nameMaxLength?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -11029,6 +11164,8 @@ export interface UserGroupGenqlSelection{
     status?: boolean | number
     /** Whether the group is locked and cannot be modified */
     locked?: boolean | number
+    /** Display name of the group, chosen by its manager */
+    name?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -11867,129 +12004,6 @@ export interface EventWaitlistEntryEdgeGenqlSelection{
     cursor?: boolean | number
     /** The item at this edge */
     node?: EventWaitlistEntryGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Guest identity attached to an ownerless player profile of the organization */
-export interface GuestProfileGenqlSelection{
-    /** ID of the guest player profile */
-    playerId?: boolean | number
-    /** The guest player profile */
-    player?: PlayerGenqlSelection
-    /** Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view */
-    email?: boolean | number
-    /** First name, same visibility as email */
-    firstName?: boolean | number
-    /** Last name, same visibility as email */
-    lastName?: boolean | number
-    /** How the guest was created */
-    origin?: boolean | number
-    /** Players acting as guardians of this guest */
-    guardianPlayerIds?: boolean | number
-    /** Guests this player is the guardian of */
-    wardPlayerIds?: boolean | number
-    /** Creation date */
-    createdAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Magic link a guest session was opened from */
-export interface GuestLinkContextGenqlSelection{
-    id?: boolean | number
-    /** Purpose set by the link creator */
-    purpose?: boolean | number
-    /** JSON payload set by the link creator */
-    data?: boolean | number
-    expiresAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A guest session; send its token in the x-guest-session header */
-export interface GuestSessionGenqlSelection{
-    /** Session token, returned only when the session opens */
-    token?: boolean | number
-    /** Guest player the session belongs to */
-    playerId?: boolean | number
-    origin?: boolean | number
-    expiresAt?: boolean | number
-    link?: GuestLinkContextGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** The current guest session */
-export interface GuestMeGenqlSelection{
-    /** Player that owns the session */
-    sessionPlayerId?: boolean | number
-    /** Player the request acts as: the session player, or a ward through x-acting-player-id */
-    actingPlayerId?: boolean | number
-    origin?: boolean | number
-    expiresAt?: boolean | number
-    link?: GuestLinkContextGenqlSelection
-    profile?: GuestProfileGenqlSelection
-    wards?: GuestProfileGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Read-only view of a magic link; reading it never consumes a use */
-export interface GuestLinkViewGenqlSelection{
-    status?: boolean | number
-    /** Null when INVALID */
-    purpose?: boolean | number
-    /** Null when INVALID */
-    expiresAt?: boolean | number
-    /** Guest first name, only when VALID */
-    firstName?: boolean | number
-    /** Link payload, only when VALID */
-    data?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A new magic link; the token is returned only once */
-export interface GuestLinkCreatedGenqlSelection{
-    id?: boolean | number
-    token?: boolean | number
-    expiresAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface GuestProfileCreatedGenqlSelection{
-    profile?: GuestProfileGenqlSelection
-    /** False when an addressable guest with the same e-mail existed */
-    created?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A guardian allowed to act for a guest ward */
-export interface GuestGuardianLinkGenqlSelection{
-    id?: boolean | number
-    guardianPlayerId?: boolean | number
-    wardPlayerId?: boolean | number
-    createdAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Guest settings of the organization */
-export interface GuestConfigurationGenqlSelection{
-    selfEntry?: boolean | number
-    sessionTtlMinutes?: boolean | number
-    maxWardsPerGuardian?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -13357,7 +13371,11 @@ export interface UserGroupConfigurationInput {
 /** Maximum number of accepted members allowed in the group */
 maxSize: Scalars['Int'],
 /** Minimum number of accepted members required for the group to be valid */
-minSize: Scalars['Int']}
+minSize: Scalars['Int'],
+/** Minimum length of the group name, from 1 to 100 (default 1) */
+nameMinLength?: (Scalars['Int'] | null),
+/** Maximum length of the group name, from 1 to 100 (default 100) */
+nameMaxLength?: (Scalars['Int'] | null)}
 
 
 /** Input for a 2D coordinate position */
@@ -13768,6 +13786,11 @@ export interface QueryGenqlSelection{
     customFieldValues?: (CustomFieldWithValueModelGenqlSelection & { __args: {objectType: ObjectType, objectId: Scalars['ID']} })
     /** Get custom field values for multiple objects of the same type in a single query */
     customFieldValuesBatch?: (CustomFieldValuesBatchResultModelGenqlSelection & { __args: {objectType: ObjectType, objectIds: Scalars['ID'][]} })
+    /** The current guest session */
+    guestMe?: GuestMeGenqlSelection
+    guestConfiguration?: GuestConfigurationGenqlSelection
+    /** Read a magic link without consuming it */
+    guestLinkResolve?: (GuestLinkViewGenqlSelection & { __args: {token: Scalars['String']} })
     appInstallationPublicConfig?: (AppConfigEntryGenqlSelection & { __args: {appSlug: Scalars['String']} })
     appInstallationConfig?: (AppConfigEntryGenqlSelection & { __args: {appSlug: Scalars['String']} })
     appFunctionRead?: (AppFunctionResultGenqlSelection & { __args: {input: AppFunctionCallInput} })
@@ -13781,11 +13804,6 @@ export interface QueryGenqlSelection{
     myActiveRegistrations?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID']} })
     /** A player's registrations that count against the series limits */
     registrationSeriesPlayerEntries?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID'], playerId: Scalars['ID']} })
-    /** The current guest session */
-    guestMe?: GuestMeGenqlSelection
-    guestConfiguration?: GuestConfigurationGenqlSelection
-    /** Read a magic link without consuming it */
-    guestLinkResolve?: (GuestLinkViewGenqlSelection & { __args: {token: Scalars['String']} })
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration?: OrganizationModerationGenqlSelection
     __typename?: boolean | number
@@ -14468,9 +14486,11 @@ export interface MutationGenqlSelection{
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount?: boolean | number
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], playerId: Scalars['ID']} })
+    /** Rename a user group, or clear its name with null. Allowed to the group manager and to a caller holding organization:user-groups:manage on the group. */
+    userGroupUpdateName?: (UserGroupGenqlSelection & { __args: {groupId: Scalars['ID'], name?: (Scalars['String'] | null)} })
     /** Accept or decline a pending user group invitation */
     userGroupUpdateInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], status: UserGroupMemberStatus} })
-    /** Remove a player from a user group or cancel a pending invitation */
+    /** Remove a player from a user group or cancel a pending invitation. A caller holding organization:user-groups:manage on the group removes any member but the manager, also from a locked group. */
     userGroupDeleteInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], 
     /** Used by manager of the group to delete the invite of a player */
     playerId?: (Scalars['ID'] | null)} })
@@ -14560,19 +14580,6 @@ export interface MutationGenqlSelection{
     setCustomFieldValues?: (CustomFieldWithValueModelGenqlSelection & { __args: {input: SetCustomFieldValuesInput} })
     appInstallationPin?: (MarketplaceAppInstallationGenqlSelection & { __args: {input: AppInstallationPinInput} })
     appFunctionsSetEnabled?: (MarketplaceAppInstallationGenqlSelection & { __args: {appSlug: Scalars['String'], function?: (Scalars['String'] | null), enabled: Scalars['Boolean']} })
-    appInstallationConfigSet?: (AppConfigEntryGenqlSelection & { __args: {appSlug: Scalars['String'], values: AppConfigValueInput[]} })
-    appFunctionCall?: (AppFunctionResultGenqlSelection & { __args: {input: AppFunctionCallInput} })
-    customPermissionCreate?: (PermissionDefinitionDtoGenqlSelection & { __args: {input: CustomPermissionInput} })
-    customPermissionUpdate?: (PermissionDefinitionDtoGenqlSelection & { __args: {id: Scalars['String'], input: CustomPermissionUpdateInput} })
-    customPermissionDelete?: { __args: {id: Scalars['String']} }
-    /** Create a registration series */
-    registrationSeriesCreate?: (RegistrationSeriesGenqlSelection & { __args: {input: RegistrationSeriesCreateInput} })
-    /** Update a registration series */
-    registrationSeriesUpdate?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID'], input: RegistrationSeriesUpdateInput} })
-    /** Delete a registration series; its events and tournaments leave the series */
-    registrationSeriesDelete?: { __args: {id: Scalars['ID']} }
-    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
-    registrationSeriesAssign?: { __args: {seriesId?: (Scalars['ID'] | null), eventIds?: (Scalars['ID'][] | null), tournamentIds?: (Scalars['ID'][] | null)} } | boolean | number
     /** Create a guest ward; the session player becomes its guardian */
     guestWardCreate?: (GuestProfileGenqlSelection & { __args: {input: GuestWardCreateInput} })
     /** Unlink a ward; deletes it when created by its guardian and no other guardian remains */
@@ -14594,6 +14601,19 @@ export interface MutationGenqlSelection{
     guestSessionsRevoke?: { __args: {playerId: Scalars['ID']} }
     /** Open a guest session from trusted entry parameters; needs selfEntry TRUSTED_PARAMS */
     guestEnter?: (GuestSessionGenqlSelection & { __args: {input: GuestEnterInput} })
+    appInstallationConfigSet?: (AppConfigEntryGenqlSelection & { __args: {appSlug: Scalars['String'], values: AppConfigValueInput[]} })
+    appFunctionCall?: (AppFunctionResultGenqlSelection & { __args: {input: AppFunctionCallInput} })
+    customPermissionCreate?: (PermissionDefinitionDtoGenqlSelection & { __args: {input: CustomPermissionInput} })
+    customPermissionUpdate?: (PermissionDefinitionDtoGenqlSelection & { __args: {id: Scalars['String'], input: CustomPermissionUpdateInput} })
+    customPermissionDelete?: { __args: {id: Scalars['String']} }
+    /** Create a registration series */
+    registrationSeriesCreate?: (RegistrationSeriesGenqlSelection & { __args: {input: RegistrationSeriesCreateInput} })
+    /** Update a registration series */
+    registrationSeriesUpdate?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID'], input: RegistrationSeriesUpdateInput} })
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete?: { __args: {id: Scalars['ID']} }
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign?: { __args: {seriesId?: (Scalars['ID'] | null), eventIds?: (Scalars['ID'][] | null), tournamentIds?: (Scalars['ID'][] | null)} } | boolean | number
     /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
     organizationModerationUpdate?: (OrganizationModerationGenqlSelection & { __args: {input: OrganizationModerationInput} })
     __typename?: boolean | number
@@ -16604,22 +16624,6 @@ value: Scalars['String']}
 
 export interface AppInstallationPinInput {appSlug: Scalars['String'],version: Scalars['String'],grantedPermissions?: (Scalars['String'][] | null)}
 
-export interface AppConfigValueInput {key: Scalars['String'],value?: (Scalars['String'] | null)}
-
-export interface CustomPermissionInput {name: Scalars['String'],description: Scalars['String'],resources?: (Scalars['String'][] | null)}
-
-export interface CustomPermissionUpdateInput {description?: (Scalars['String'] | null),resources?: (Scalars['String'][] | null)}
-
-
-/** Input for creating a registration series */
-export interface RegistrationSeriesCreateInput {
-/** Display name of the series */
-name: Scalars['String'],maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
-
-
-/** Input for updating a registration series */
-export interface RegistrationSeriesUpdateInput {name?: (Scalars['String'] | null),maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
-
 export interface GuestWardCreateInput {firstName: Scalars['String'],lastName?: (Scalars['String'] | null)}
 
 export interface GuestProfileCreateInput {email?: (Scalars['EmailAddress'] | null),firstName?: (Scalars['String'] | null),lastName?: (Scalars['String'] | null),
@@ -16641,6 +16645,22 @@ data?: (Scalars['String'] | null),revokePrevious?: Scalars['Boolean']}
 export interface GuestLinkRevokeInput {id?: (Scalars['ID'] | null),playerId?: (Scalars['ID'] | null),purpose?: (Scalars['String'] | null)}
 
 export interface GuestEnterInput {email: Scalars['EmailAddress'],firstName: Scalars['String'],lastName: Scalars['String']}
+
+export interface AppConfigValueInput {key: Scalars['String'],value?: (Scalars['String'] | null)}
+
+export interface CustomPermissionInput {name: Scalars['String'],description: Scalars['String'],resources?: (Scalars['String'][] | null)}
+
+export interface CustomPermissionUpdateInput {description?: (Scalars['String'] | null),resources?: (Scalars['String'][] | null)}
+
+
+/** Input for creating a registration series */
+export interface RegistrationSeriesCreateInput {
+/** Display name of the series */
+name: Scalars['String'],maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
+
+
+/** Input for updating a registration series */
+export interface RegistrationSeriesUpdateInput {name?: (Scalars['String'] | null),maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
 
 export interface OrganizationModerationInput {blockedWords: Scalars['String'][],blockedSubstrings: Scalars['String'][]}
 
@@ -17502,6 +17522,78 @@ export interface SubscriptionGenqlSelection{
     export const isMarketplaceAppPricing = (obj?: { __typename?: any } | null): obj is MarketplaceAppPricing => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppPricing"')
       return MarketplaceAppPricing_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestProfile_possibleTypes: string[] = ['GuestProfile']
+    export const isGuestProfile = (obj?: { __typename?: any } | null): obj is GuestProfile => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfile"')
+      return GuestProfile_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkContext_possibleTypes: string[] = ['GuestLinkContext']
+    export const isGuestLinkContext = (obj?: { __typename?: any } | null): obj is GuestLinkContext => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkContext"')
+      return GuestLinkContext_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestSession_possibleTypes: string[] = ['GuestSession']
+    export const isGuestSession = (obj?: { __typename?: any } | null): obj is GuestSession => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestSession"')
+      return GuestSession_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestMe_possibleTypes: string[] = ['GuestMe']
+    export const isGuestMe = (obj?: { __typename?: any } | null): obj is GuestMe => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestMe"')
+      return GuestMe_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkView_possibleTypes: string[] = ['GuestLinkView']
+    export const isGuestLinkView = (obj?: { __typename?: any } | null): obj is GuestLinkView => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkView"')
+      return GuestLinkView_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestLinkCreated_possibleTypes: string[] = ['GuestLinkCreated']
+    export const isGuestLinkCreated = (obj?: { __typename?: any } | null): obj is GuestLinkCreated => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkCreated"')
+      return GuestLinkCreated_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestProfileCreated_possibleTypes: string[] = ['GuestProfileCreated']
+    export const isGuestProfileCreated = (obj?: { __typename?: any } | null): obj is GuestProfileCreated => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfileCreated"')
+      return GuestProfileCreated_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestGuardianLink_possibleTypes: string[] = ['GuestGuardianLink']
+    export const isGuestGuardianLink = (obj?: { __typename?: any } | null): obj is GuestGuardianLink => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestGuardianLink"')
+      return GuestGuardianLink_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const GuestConfiguration_possibleTypes: string[] = ['GuestConfiguration']
+    export const isGuestConfiguration = (obj?: { __typename?: any } | null): obj is GuestConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestConfiguration"')
+      return GuestConfiguration_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -18938,78 +19030,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const GuestProfile_possibleTypes: string[] = ['GuestProfile']
-    export const isGuestProfile = (obj?: { __typename?: any } | null): obj is GuestProfile => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfile"')
-      return GuestProfile_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestLinkContext_possibleTypes: string[] = ['GuestLinkContext']
-    export const isGuestLinkContext = (obj?: { __typename?: any } | null): obj is GuestLinkContext => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkContext"')
-      return GuestLinkContext_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestSession_possibleTypes: string[] = ['GuestSession']
-    export const isGuestSession = (obj?: { __typename?: any } | null): obj is GuestSession => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestSession"')
-      return GuestSession_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestMe_possibleTypes: string[] = ['GuestMe']
-    export const isGuestMe = (obj?: { __typename?: any } | null): obj is GuestMe => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestMe"')
-      return GuestMe_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestLinkView_possibleTypes: string[] = ['GuestLinkView']
-    export const isGuestLinkView = (obj?: { __typename?: any } | null): obj is GuestLinkView => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkView"')
-      return GuestLinkView_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestLinkCreated_possibleTypes: string[] = ['GuestLinkCreated']
-    export const isGuestLinkCreated = (obj?: { __typename?: any } | null): obj is GuestLinkCreated => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestLinkCreated"')
-      return GuestLinkCreated_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestProfileCreated_possibleTypes: string[] = ['GuestProfileCreated']
-    export const isGuestProfileCreated = (obj?: { __typename?: any } | null): obj is GuestProfileCreated => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestProfileCreated"')
-      return GuestProfileCreated_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestGuardianLink_possibleTypes: string[] = ['GuestGuardianLink']
-    export const isGuestGuardianLink = (obj?: { __typename?: any } | null): obj is GuestGuardianLink => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestGuardianLink"')
-      return GuestGuardianLink_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const GuestConfiguration_possibleTypes: string[] = ['GuestConfiguration']
-    export const isGuestConfiguration = (obj?: { __typename?: any } | null): obj is GuestConfiguration => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGuestConfiguration"')
-      return GuestConfiguration_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const Item_possibleTypes: string[] = ['Item']
     export const isItem = (obj?: { __typename?: any } | null): obj is Item => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isItem"')
@@ -19993,6 +20013,31 @@ export const enumMarketplacePricingType = {
    SUBSCRIPTION: 'SUBSCRIPTION' as const
 }
 
+export const enumGuestOrigin = {
+   ENTRY: 'ENTRY' as const,
+   INVITED: 'INVITED' as const,
+   GUARDIAN: 'GUARDIAN' as const,
+   ADMIN: 'ADMIN' as const
+}
+
+export const enumGuestSessionOrigin = {
+   ENTRY: 'ENTRY' as const,
+   LINK: 'LINK' as const
+}
+
+export const enumGuestLinkStatus = {
+   VALID: 'VALID' as const,
+   EXPIRED: 'EXPIRED' as const,
+   REVOKED: 'REVOKED' as const,
+   EXHAUSTED: 'EXHAUSTED' as const,
+   INVALID: 'INVALID' as const
+}
+
+export const enumGuestSelfEntryMode = {
+   DISABLED: 'DISABLED' as const,
+   TRUSTED_PARAMS: 'TRUSTED_PARAMS' as const
+}
+
 export const enumLeaderboardScoreCalculationType = {
    SCORE: 'SCORE' as const
 }
@@ -20524,31 +20569,6 @@ export const enumEventWaitlistEndReason = {
    ALREADY_REGISTERED: 'ALREADY_REGISTERED' as const,
    OFFER_EXPIRED: 'OFFER_EXPIRED' as const,
    SLOT_CLOSED: 'SLOT_CLOSED' as const
-}
-
-export const enumGuestOrigin = {
-   ENTRY: 'ENTRY' as const,
-   INVITED: 'INVITED' as const,
-   GUARDIAN: 'GUARDIAN' as const,
-   ADMIN: 'ADMIN' as const
-}
-
-export const enumGuestSessionOrigin = {
-   ENTRY: 'ENTRY' as const,
-   LINK: 'LINK' as const
-}
-
-export const enumGuestLinkStatus = {
-   VALID: 'VALID' as const,
-   EXPIRED: 'EXPIRED' as const,
-   REVOKED: 'REVOKED' as const,
-   EXHAUSTED: 'EXHAUSTED' as const,
-   INVALID: 'INVALID' as const
-}
-
-export const enumGuestSelfEntryMode = {
-   DISABLED: 'DISABLED' as const,
-   TRUSTED_PARAMS: 'TRUSTED_PARAMS' as const
 }
 
 export const enumJournalActorType = {
