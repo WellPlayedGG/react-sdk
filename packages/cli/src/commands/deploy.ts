@@ -37,10 +37,39 @@ const RELEASE_STATUS_QUERY = `
       id
       version
       status
-      reviewResult
+      reviewResult {
+        passed
+        checks {
+          name
+          passed
+          details
+        }
+      }
+    }
+    marketplaceApp(id: $marketplaceAppId) {
+      status
     }
   }
 `;
+
+type MarketplaceAppReleaseStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+type MarketplaceAppStatus = 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED';
+
+interface ReleaseStatusResult {
+  appReleases: Array<{
+    id: string;
+    version: string;
+    status: MarketplaceAppReleaseStatus;
+    reviewResult: {
+      passed: boolean;
+      checks: Array<{ name: string; passed: boolean; details: string | null }>;
+    } | null;
+  }>;
+  marketplaceApp: { status: MarketplaceAppStatus };
+}
+
+const LOCKED_LISTING_STATUSES: ReadonlyArray<MarketplaceAppStatus> = ['SUSPENDED', 'REJECTED'];
 
 export const deployCommand = new Command('deploy')
   .description('Build and deploy your app to the WellPlayed Marketplace')
@@ -173,16 +202,7 @@ export const deployCommand = new Command('deploy')
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         await sleep(5000);
 
-        interface ReleasesResult {
-          appReleases: Array<{
-            id: string;
-            version: string;
-            status: string;
-            reviewResult: Record<string, unknown>;
-          }>;
-        }
-
-        const statusResult = await graphqlRequest<ReleasesResult>(
+        const statusResult = await graphqlRequest<ReleaseStatusResult>(
           RELEASE_STATUS_QUERY,
           { marketplaceAppId: options.appId },
         );
@@ -194,6 +214,12 @@ export const deployCommand = new Command('deploy')
         if (!currentRelease) break;
 
         if (currentRelease.status === 'APPROVED') {
+          const listingStatus = statusResult.marketplaceApp.status;
+          if (LOCKED_LISTING_STATUSES.includes(listingStatus)) {
+            throw new Error(
+              `App v${config.version} passed review, but its marketplace listing is ${listingStatus}, so nothing was published.`,
+            );
+          }
           log.success(`App v${config.version} published successfully!`);
           return;
         }
