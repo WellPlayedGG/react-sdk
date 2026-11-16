@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi } from 'vitest';
 
 const apiClientMock = vi.hoisted(() => ({ graphqlRequest: vi.fn() }));
@@ -56,5 +57,21 @@ describe('wellplayed pin --grant', () => {
       },
       { organizationId: 'my-org' },
     );
+  });
+});
+
+describe('wellplayed --version', () => {
+  it('prints the version of the cli package.json', async () => {
+    const { version }: { version: string } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
+    const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('exit');
+    });
+    process.argv = ['node', 'wellplayed', '--version'];
+
+    await expect(import('../src/index')).rejects.toThrow('exit');
+
+    expect(write).toHaveBeenCalledWith(`${version}\n`);
+    vi.restoreAllMocks();
   });
 });
