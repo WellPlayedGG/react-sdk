@@ -18,7 +18,7 @@ export type Scalars = {
 
 
 /** Payload of a journal entry. Resolved to a concrete @ObjectType per entry type. */
-export type JournalPayload = (RuleEngineAdvancementRuleFiredPayload | RuleEngineCrossStepTransferredPayload | RuleEngineEffectAdvancePayload | RuleEngineEffectCreateGroupPayload | RuleEngineEffectEliminatePayload | RuleEngineEffectEmitSeedingPinPayload | RuleEngineEffectEndStepPayload | RuleEngineEffectSetMetadataPayload | RuleEngineGenerationScriptRanPayload | RuleEngineManualOverridePayload | LeaderboardFeedReconcileFailedPayload | TournamentOpenPoolMatchCorrectedPayload | TournamentOpenPoolMatchCancelledPayload | TournamentOpenPoolClosedPayload | TournamentOpenPoolReopenedPayload | TournamentsStepResetPayload | TournamentsStepGeneratedPayload) & { __isUnion?: true }
+export type JournalPayload = (AppFunctionExecutedPayload | AppFunctionLogPayload | AppFunctionDeadLetterPayload | AppAuditPayload | AppConfigUpdatedPayload | AppInstallationPinnedPayload | AppQuotaWarningPayload | RuleEngineAdvancementRuleFiredPayload | RuleEngineCrossStepTransferredPayload | RuleEngineEffectAdvancePayload | RuleEngineEffectCreateGroupPayload | RuleEngineEffectEliminatePayload | RuleEngineEffectEmitSeedingPinPayload | RuleEngineEffectEndStepPayload | RuleEngineEffectSetMetadataPayload | RuleEngineGenerationScriptRanPayload | RuleEngineManualOverridePayload | LeaderboardFeedReconcileFailedPayload | TournamentOpenPoolMatchCorrectedPayload | TournamentOpenPoolMatchCancelledPayload | TournamentOpenPoolClosedPayload | TournamentOpenPoolReopenedPayload | TournamentsStepResetPayload | TournamentsStepGeneratedPayload) & { __isUnion?: true }
 
 
 /** Actor-context payload, resolved to a concrete @ObjectType per actor type. */
@@ -1067,6 +1067,176 @@ export interface GuestConfiguration {
 }
 
 export type GuestSelfEntryMode = 'DISABLED' | 'TRUSTED_PARAMS'
+
+
+/** Error that ended an app function execution. */
+export interface AppFunctionJournalError {
+    /** PLATFORM or APP. */
+    kind: Scalars['String']
+    /** Error code. */
+    code: Scalars['String']
+    /** Error message. */
+    message: Scalars['String']
+    /** Dotted path of the field the error is about. */
+    field: (Scalars['String'] | null)
+    __typename: 'AppFunctionJournalError'
+}
+
+
+/** Journal payload written once per app function execution. */
+export interface AppFunctionExecutedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the app installation. */
+    installationId: Scalars['ID']
+    /** Name of the function. */
+    functionName: Scalars['String']
+    /** ID of the execution. */
+    executionId: Scalars['String']
+    /** Trigger type: CALL, HOOK, EVENT, TIMER, CRON or LIFECYCLE. */
+    trigger: Scalars['String']
+    /** Kind of caller: ANONYMOUS, PLAYER, GUEST, MEMBER or SYSTEM. */
+    callerKind: Scalars['String']
+    /** Account ID of the caller, or its player ID without an account. */
+    callerId: (Scalars['String'] | null)
+    /** SUCCEEDED or FAILED. */
+    status: Scalars['String']
+    /** Wall-clock duration in milliseconds. */
+    durationMs: Scalars['Int']
+    /** Lua instructions executed. */
+    instructions: Scalars['Float']
+    /** Number of wp.op calls. */
+    opCalls: Scalars['Int']
+    /** Number of e-mails queued. */
+    emails: Scalars['Int']
+    /** Number of timers scheduled. */
+    timers: Scalars['Int']
+    /** Error of a failed execution. */
+    error: (AppFunctionJournalError | null)
+    __typename: 'AppFunctionExecutedPayload'
+}
+
+
+/** Journal payload of one wp.log line, child of its execution. */
+export interface AppFunctionLogPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** DEBUG, INFO, WARN or ERROR. */
+    level: Scalars['String']
+    /** Masked log message. */
+    message: Scalars['String']
+    /** Masked log fields as a JSON string. */
+    fields: (Scalars['String'] | null)
+    /** ISO 8601 time of the line. */
+    at: Scalars['String']
+    __typename: 'AppFunctionLogPayload'
+}
+
+
+/** Journal payload of an async app function job that ran out of retries. */
+export interface AppFunctionDeadLetterPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the app installation. */
+    installationId: Scalars['ID']
+    /** Name of the function. */
+    functionName: Scalars['String']
+    /** Trigger type of the job. */
+    trigger: Scalars['String']
+    /** Queue of the job. */
+    queue: Scalars['String']
+    /** ID of the job. */
+    jobId: Scalars['String']
+    /** Attempts made. */
+    attempts: Scalars['Int']
+    /** Input of the job as a JSON string. */
+    input: Scalars['String']
+    /** Last error. */
+    error: AppFunctionJournalError
+    __typename: 'AppFunctionDeadLetterPayload'
+}
+
+
+/** Journal payload of an app audit entry written with wp.audit.log. */
+export interface AppAuditPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Slug of the app. */
+    appSlug: Scalars['String']
+    /** ID of the app installation. */
+    installationId: Scalars['ID']
+    /** Audit type declared in the app manifest. */
+    auditType: Scalars['String']
+    /** Audit data as a JSON string. */
+    data: Scalars['String']
+    /** ID of the execution that wrote the entry. */
+    executionId: Scalars['String']
+    /** IP address of the caller. */
+    ip: (Scalars['String'] | null)
+    /** User agent of the caller. */
+    userAgent: (Scalars['String'] | null)
+    /** Kind of caller. */
+    callerKind: Scalars['String']
+    /** Account ID of the caller, or its player ID without an account. */
+    callerId: (Scalars['String'] | null)
+    __typename: 'AppAuditPayload'
+}
+
+
+/** One installation config key changed. */
+export interface AppConfigChange {
+    /** Config key. */
+    key: Scalars['String']
+    /** Value before the change. */
+    previous: (Scalars['String'] | null)
+    /** Value after the change. */
+    value: (Scalars['String'] | null)
+    __typename: 'AppConfigChange'
+}
+
+
+/** Journal payload written when an installation config changes. */
+export interface AppConfigUpdatedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the app installation. */
+    installationId: Scalars['ID']
+    /** Config version after the change. */
+    version: Scalars['Int']
+    /** Changed keys. */
+    changes: AppConfigChange[]
+    __typename: 'AppConfigUpdatedPayload'
+}
+
+
+/** Journal payload written when an installation is pinned to a release. */
+export interface AppInstallationPinnedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the app installation. */
+    installationId: Scalars['ID']
+    /** Release version before the pin. */
+    fromVersion: (Scalars['String'] | null)
+    /** Release version after the pin. */
+    toVersion: Scalars['String']
+    /** Permissions granted by the pin. */
+    addedPermissions: Scalars['String'][]
+    __typename: 'AppInstallationPinnedPayload'
+}
+
+
+/** Journal payload written once a day when an app function limit passes 80 %. */
+export interface AppQuotaWarningPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Limit name. */
+    limit: Scalars['String']
+    /** Current usage. */
+    usage: Scalars['Float']
+    /** Maximum allowed. */
+    max: Scalars['Float']
+    __typename: 'AppQuotaWarningPayload'
+}
 
 export interface PermissionDefinitionDto {
     id: Scalars['String']
@@ -4659,6 +4829,8 @@ export interface EventReservation {
     groupStatus: UserGroupStatus
     /** Identifier of the reservation this one replaced */
     replacesReservationId: (Scalars['ID'] | null)
+    /** Name of the team of this reservation */
+    groupName: (Scalars['String'] | null)
     /** Tournament teams created from this reservation */
     tournamentTeamIds: Scalars['ID'][]
     __typename: 'EventReservation'
@@ -4689,6 +4861,8 @@ export interface EventReservationWithTicketsAndQrCode {
     groupStatus: UserGroupStatus
     /** Identifier of the reservation this one replaced */
     replacesReservationId: (Scalars['ID'] | null)
+    /** Name of the team of this reservation */
+    groupName: (Scalars['String'] | null)
     /** List of tickets with QR codes for this reservation */
     tickets: EventReservationTicketWithQrCode[]
     __typename: 'EventReservationWithTicketsAndQrCode'
@@ -4739,6 +4913,8 @@ export interface OmitObjectType {
     groupStatus: UserGroupStatus
     /** Identifier of the reservation this one replaced */
     replacesReservationId: (Scalars['ID'] | null)
+    /** Name of the team of this reservation */
+    groupName: (Scalars['String'] | null)
     __typename: 'OmitObjectType'
 }
 
@@ -7127,6 +7303,13 @@ export interface Subscription {
 export interface JournalPayloadGenqlSelection{
     /** GraphQL __typename of the concrete payload class. */
     _typename?: boolean | number
+    on_AppFunctionExecutedPayload?: AppFunctionExecutedPayloadGenqlSelection
+    on_AppFunctionLogPayload?: AppFunctionLogPayloadGenqlSelection
+    on_AppFunctionDeadLetterPayload?: AppFunctionDeadLetterPayloadGenqlSelection
+    on_AppAuditPayload?: AppAuditPayloadGenqlSelection
+    on_AppConfigUpdatedPayload?: AppConfigUpdatedPayloadGenqlSelection
+    on_AppInstallationPinnedPayload?: AppInstallationPinnedPayloadGenqlSelection
+    on_AppQuotaWarningPayload?: AppQuotaWarningPayloadGenqlSelection
     on_RuleEngineAdvancementRuleFiredPayload?: RuleEngineAdvancementRuleFiredPayloadGenqlSelection
     on_RuleEngineCrossStepTransferredPayload?: RuleEngineCrossStepTransferredPayloadGenqlSelection
     on_RuleEngineEffectAdvancePayload?: RuleEngineEffectAdvancePayloadGenqlSelection
@@ -8230,6 +8413,185 @@ export interface GuestConfigurationGenqlSelection{
     selfEntry?: boolean | number
     sessionTtlMinutes?: boolean | number
     maxWardsPerGuardian?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Error that ended an app function execution. */
+export interface AppFunctionJournalErrorGenqlSelection{
+    /** PLATFORM or APP. */
+    kind?: boolean | number
+    /** Error code. */
+    code?: boolean | number
+    /** Error message. */
+    message?: boolean | number
+    /** Dotted path of the field the error is about. */
+    field?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload written once per app function execution. */
+export interface AppFunctionExecutedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the app installation. */
+    installationId?: boolean | number
+    /** Name of the function. */
+    functionName?: boolean | number
+    /** ID of the execution. */
+    executionId?: boolean | number
+    /** Trigger type: CALL, HOOK, EVENT, TIMER, CRON or LIFECYCLE. */
+    trigger?: boolean | number
+    /** Kind of caller: ANONYMOUS, PLAYER, GUEST, MEMBER or SYSTEM. */
+    callerKind?: boolean | number
+    /** Account ID of the caller, or its player ID without an account. */
+    callerId?: boolean | number
+    /** SUCCEEDED or FAILED. */
+    status?: boolean | number
+    /** Wall-clock duration in milliseconds. */
+    durationMs?: boolean | number
+    /** Lua instructions executed. */
+    instructions?: boolean | number
+    /** Number of wp.op calls. */
+    opCalls?: boolean | number
+    /** Number of e-mails queued. */
+    emails?: boolean | number
+    /** Number of timers scheduled. */
+    timers?: boolean | number
+    /** Error of a failed execution. */
+    error?: AppFunctionJournalErrorGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload of one wp.log line, child of its execution. */
+export interface AppFunctionLogPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** DEBUG, INFO, WARN or ERROR. */
+    level?: boolean | number
+    /** Masked log message. */
+    message?: boolean | number
+    /** Masked log fields as a JSON string. */
+    fields?: boolean | number
+    /** ISO 8601 time of the line. */
+    at?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload of an async app function job that ran out of retries. */
+export interface AppFunctionDeadLetterPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the app installation. */
+    installationId?: boolean | number
+    /** Name of the function. */
+    functionName?: boolean | number
+    /** Trigger type of the job. */
+    trigger?: boolean | number
+    /** Queue of the job. */
+    queue?: boolean | number
+    /** ID of the job. */
+    jobId?: boolean | number
+    /** Attempts made. */
+    attempts?: boolean | number
+    /** Input of the job as a JSON string. */
+    input?: boolean | number
+    /** Last error. */
+    error?: AppFunctionJournalErrorGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload of an app audit entry written with wp.audit.log. */
+export interface AppAuditPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Slug of the app. */
+    appSlug?: boolean | number
+    /** ID of the app installation. */
+    installationId?: boolean | number
+    /** Audit type declared in the app manifest. */
+    auditType?: boolean | number
+    /** Audit data as a JSON string. */
+    data?: boolean | number
+    /** ID of the execution that wrote the entry. */
+    executionId?: boolean | number
+    /** IP address of the caller. */
+    ip?: boolean | number
+    /** User agent of the caller. */
+    userAgent?: boolean | number
+    /** Kind of caller. */
+    callerKind?: boolean | number
+    /** Account ID of the caller, or its player ID without an account. */
+    callerId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** One installation config key changed. */
+export interface AppConfigChangeGenqlSelection{
+    /** Config key. */
+    key?: boolean | number
+    /** Value before the change. */
+    previous?: boolean | number
+    /** Value after the change. */
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload written when an installation config changes. */
+export interface AppConfigUpdatedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the app installation. */
+    installationId?: boolean | number
+    /** Config version after the change. */
+    version?: boolean | number
+    /** Changed keys. */
+    changes?: AppConfigChangeGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload written when an installation is pinned to a release. */
+export interface AppInstallationPinnedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the app installation. */
+    installationId?: boolean | number
+    /** Release version before the pin. */
+    fromVersion?: boolean | number
+    /** Release version after the pin. */
+    toVersion?: boolean | number
+    /** Permissions granted by the pin. */
+    addedPermissions?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload written once a day when an app function limit passes 80 %. */
+export interface AppQuotaWarningPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Limit name. */
+    limit?: boolean | number
+    /** Current usage. */
+    usage?: boolean | number
+    /** Maximum allowed. */
+    max?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -11830,6 +12192,8 @@ export interface EventReservationGenqlSelection{
     groupStatus?: boolean | number
     /** Identifier of the reservation this one replaced */
     replacesReservationId?: boolean | number
+    /** Name of the team of this reservation */
+    groupName?: boolean | number
     /** Tournament teams created from this reservation */
     tournamentTeamIds?: boolean | number
     __typename?: boolean | number
@@ -11859,6 +12223,8 @@ export interface EventReservationWithTicketsAndQrCodeGenqlSelection{
     groupStatus?: boolean | number
     /** Identifier of the reservation this one replaced */
     replacesReservationId?: boolean | number
+    /** Name of the team of this reservation */
+    groupName?: boolean | number
     /** List of tickets with QR codes for this reservation */
     tickets?: EventReservationTicketWithQrCodeGenqlSelection
     __typename?: boolean | number
@@ -11912,6 +12278,8 @@ export interface OmitObjectTypeGenqlSelection{
     groupStatus?: boolean | number
     /** Identifier of the reservation this one replaced */
     replacesReservationId?: boolean | number
+    /** Name of the team of this reservation */
+    groupName?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -14491,7 +14859,17 @@ status?: EventsQueryStatus,
 /** Show not visible events, only usable if the user has the correct permission */
 showNotVisible?: (Scalars['Boolean'] | null),
 /** Filter events by specific players and their statuses */
-filterByPlayers?: (EventsQueryPlayerIdWithTeamStatusInput[] | null)}
+filterByPlayers?: (EventsQueryPlayerIdWithTeamStatusInput[] | null),
+/** Filter events held in these venues */
+venueIds?: (Scalars['ID'][] | null),
+/** Keep events that end after this time */
+from?: (Scalars['DateTime'] | null),
+/** Keep events that start before this time */
+to?: (Scalars['DateTime'] | null),
+/** Filter events linked to this tournament */
+tournamentId?: (Scalars['ID'] | null),
+/** Filter events assigned to this registration series */
+registrationSeriesId?: (Scalars['ID'] | null)}
 
 
 /** Filter input combining a player ID with optional reservation and member statuses */
@@ -14955,11 +15333,15 @@ export interface MutationGenqlSelection{
     /** Validate a reservation and initiate the Stripe payment session */
     eventReservationValidateAndPay?: (EventReservationValidateAndPayGenqlSelection & { __args: {eventId: Scalars['ID'], options: EventReservationValidateAndPayInput, ticketConfigurations?: (EventReservationTicketConfigurationInput[] | null)} })
     /** Create a new event reservation for events that require admin approval or have no-session registration flow */
-    eventReservationCreate?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID']} })
+    eventReservationCreate?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID'], 
+    /** Name of the team, checked against the group name rules */
+    groupName?: (Scalars['String'] | null)} })
     /** Add, release, or update tickets within an active reservation session */
     eventReservationUpdateTickets?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], input: EventReservationUpdateTicketsInput} })
     /** Start a new registration session for an event, reserving tickets and creating a time-limited session */
-    eventReservationStartRegistrationSession?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID'], input: EventReservationRegisterTicketsInput} })
+    eventReservationStartRegistrationSession?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID'], input: EventReservationRegisterTicketsInput, 
+    /** Validated reservation of the caller that this session replaces once validated */
+    replaceReservationId?: (Scalars['ID'] | null)} })
     /** Cancel an event reservation, releasing all tickets and deleting the associated group */
     eventReservationCancel?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID']} })
     /** Request a presigned URL to upload a new image for an event venue */
@@ -16448,7 +16830,9 @@ state?: (EventSlotState | null)}
 /** Input containing the list of ticket registrations for a reservation session */
 export interface EventReservationRegisterTicketsInput {
 /** List of ticket configurations and quantities to reserve */
-tickets: EventReservationRegisterTicketInput[]}
+tickets: EventReservationRegisterTicketInput[],
+/** Name of the team, checked against the group name rules */
+groupName?: (Scalars['String'] | null)}
 
 
 /** Input for registering tickets of a specific configuration in a reservation */
@@ -17282,7 +17666,7 @@ export interface SubscriptionGenqlSelection{
 }
 
 
-    const JournalPayload_possibleTypes: string[] = ['RuleEngineAdvancementRuleFiredPayload','RuleEngineCrossStepTransferredPayload','RuleEngineEffectAdvancePayload','RuleEngineEffectCreateGroupPayload','RuleEngineEffectEliminatePayload','RuleEngineEffectEmitSeedingPinPayload','RuleEngineEffectEndStepPayload','RuleEngineEffectSetMetadataPayload','RuleEngineGenerationScriptRanPayload','RuleEngineManualOverridePayload','LeaderboardFeedReconcileFailedPayload','TournamentOpenPoolMatchCorrectedPayload','TournamentOpenPoolMatchCancelledPayload','TournamentOpenPoolClosedPayload','TournamentOpenPoolReopenedPayload','TournamentsStepResetPayload','TournamentsStepGeneratedPayload']
+    const JournalPayload_possibleTypes: string[] = ['AppFunctionExecutedPayload','AppFunctionLogPayload','AppFunctionDeadLetterPayload','AppAuditPayload','AppConfigUpdatedPayload','AppInstallationPinnedPayload','AppQuotaWarningPayload','RuleEngineAdvancementRuleFiredPayload','RuleEngineCrossStepTransferredPayload','RuleEngineEffectAdvancePayload','RuleEngineEffectCreateGroupPayload','RuleEngineEffectEliminatePayload','RuleEngineEffectEmitSeedingPinPayload','RuleEngineEffectEndStepPayload','RuleEngineEffectSetMetadataPayload','RuleEngineGenerationScriptRanPayload','RuleEngineManualOverridePayload','LeaderboardFeedReconcileFailedPayload','TournamentOpenPoolMatchCorrectedPayload','TournamentOpenPoolMatchCancelledPayload','TournamentOpenPoolClosedPayload','TournamentOpenPoolReopenedPayload','TournamentsStepResetPayload','TournamentsStepGeneratedPayload']
     export const isJournalPayload = (obj?: { __typename?: any } | null): obj is JournalPayload => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isJournalPayload"')
       return JournalPayload_possibleTypes.includes(obj.__typename)
@@ -17838,6 +18222,78 @@ export interface SubscriptionGenqlSelection{
     export const isGuestConfiguration = (obj?: { __typename?: any } | null): obj is GuestConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isGuestConfiguration"')
       return GuestConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionJournalError_possibleTypes: string[] = ['AppFunctionJournalError']
+    export const isAppFunctionJournalError = (obj?: { __typename?: any } | null): obj is AppFunctionJournalError => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionJournalError"')
+      return AppFunctionJournalError_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionExecutedPayload_possibleTypes: string[] = ['AppFunctionExecutedPayload']
+    export const isAppFunctionExecutedPayload = (obj?: { __typename?: any } | null): obj is AppFunctionExecutedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionExecutedPayload"')
+      return AppFunctionExecutedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionLogPayload_possibleTypes: string[] = ['AppFunctionLogPayload']
+    export const isAppFunctionLogPayload = (obj?: { __typename?: any } | null): obj is AppFunctionLogPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionLogPayload"')
+      return AppFunctionLogPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppFunctionDeadLetterPayload_possibleTypes: string[] = ['AppFunctionDeadLetterPayload']
+    export const isAppFunctionDeadLetterPayload = (obj?: { __typename?: any } | null): obj is AppFunctionDeadLetterPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppFunctionDeadLetterPayload"')
+      return AppFunctionDeadLetterPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppAuditPayload_possibleTypes: string[] = ['AppAuditPayload']
+    export const isAppAuditPayload = (obj?: { __typename?: any } | null): obj is AppAuditPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppAuditPayload"')
+      return AppAuditPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppConfigChange_possibleTypes: string[] = ['AppConfigChange']
+    export const isAppConfigChange = (obj?: { __typename?: any } | null): obj is AppConfigChange => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppConfigChange"')
+      return AppConfigChange_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppConfigUpdatedPayload_possibleTypes: string[] = ['AppConfigUpdatedPayload']
+    export const isAppConfigUpdatedPayload = (obj?: { __typename?: any } | null): obj is AppConfigUpdatedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppConfigUpdatedPayload"')
+      return AppConfigUpdatedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppInstallationPinnedPayload_possibleTypes: string[] = ['AppInstallationPinnedPayload']
+    export const isAppInstallationPinnedPayload = (obj?: { __typename?: any } | null): obj is AppInstallationPinnedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppInstallationPinnedPayload"')
+      return AppInstallationPinnedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppQuotaWarningPayload_possibleTypes: string[] = ['AppQuotaWarningPayload']
+    export const isAppQuotaWarningPayload = (obj?: { __typename?: any } | null): obj is AppQuotaWarningPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppQuotaWarningPayload"')
+      return AppQuotaWarningPayload_possibleTypes.includes(obj.__typename)
     }
     
 

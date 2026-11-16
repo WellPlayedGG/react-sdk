@@ -45,6 +45,18 @@ client.query({
 
 This client is a Apollo GraphQL client that can be used as is or with the Apollo Provider if you wish to use it with React.
 
+`headers` adds headers to every HTTP request and `persistCache: false` keeps the Apollo cache out of `localStorage`. A guest client (a player without a WellPlayed account) sends its guest session token and no `token`, since the API refuses `x-guest-session` next to an `Authorization` header:
+
+```tsx
+const guestClient = createWellPlayedClient({
+	organizationId: "organizationIdHere",
+	persistCache: false,
+	headers: () => ({ "x-guest-session": guestSessionToken }),
+});
+```
+
+Call `client.dispose()` when you drop a client, to close its websocket.
+
 A fully typed client is also available through the following method:
 ```tsx
 import { createTypedClient } from '@wellplayed.gg/typescript-sdk';

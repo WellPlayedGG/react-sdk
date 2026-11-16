@@ -39,7 +39,10 @@ Run `wellplayed logout` to revoke the refresh token at Hydra and clear local cre
 | `wellplayed logout` | Revoke + clear credentials |
 | `wellplayed dev` | Start a local Vite dev server for your app |
 | `wellplayed graphql [query]` | Run a GraphQL operation against the WellPlayed API (see below) |
-| `wellplayed deploy --app-id <id>` | Build, upload, and submit a release to the Marketplace |
+| `wellplayed deploy --org <shortId> --app-id <id>` | Build, upload, and submit a release to the Marketplace; a manifest 1.1 `wellplayed.json` uploads server files instead (see [App server functions](#app-server-functions-manifest-11)) |
+| `wellplayed install --app-id <id> --org <shortId> [--grant <permissions...> \| --grant all]` | Install a marketplace app in an organization |
+| `wellplayed pin <version> --app <slug> --org <shortId> [--grant <permissions...>]` | Pin an installation to an approved release |
+| `wellplayed config set KEY=VALUE... --app <slug> --org <shortId>` | Set configuration values of an installed app |
 | `wellplayed install-skills` | Copy bundled SDK skills into `<project>/.claude/skills/` |
 | `wellplayed upgrade` | Upgrade installed `@well-played.gg/*` packages and refresh skills / `.mcp.json` / `CLAUDE.md` (use `--latest` for cross-major bumps; `--rewrite-claude-md` / `--rewrite-mcp-json` for non-interactive overwrites; `-y` to skip prompts) |
 
@@ -71,6 +74,8 @@ Modeled on `gh api graphql`. Use it for: ad-hoc API exploration, writing scripts
 |------|----------|
 | `-o, --org <shortId>` | Sets the `organization-id` header. **Required for any operation that isn't decorated `@WithoutOrganization` on the backend.** Validated to match `[A-Za-z0-9_-]+`. |
 | `-H, --header "Key: value"` | Adds an extra HTTP header. Repeatable. `Authorization` and `Content-Type` are reserved. CR/LF and non-ASCII are rejected. |
+
+The CLI always sends your login token as `Authorization`, so it cannot make guest calls: the API refuses `x-guest-session` next to another credential with `BAD_REQUEST`. See [Guests](#guests-magic-links-and-guardians).
 
 ### Output
 
@@ -142,7 +147,7 @@ cd my-app
 npm install
 wellplayed dev                         # local Vite dev server
 wellplayed graphql ...                 # check things while you build
-wellplayed deploy --app-id <appId>     # ship to the Marketplace
+wellplayed deploy --org my-org --app-id <appId>  # ship to the Marketplace
 ```
 
 ## Troubleshooting
@@ -155,6 +160,8 @@ wellplayed deploy --app-id <appId>     # ship to the Marketplace
 | `Forbidden key "__proto__" in variable path` | `-F __proto__.x=1` or similar | Pick a different key |
 | `Field "x" looks like a JSON literal but failed to parse` | Mistyped JSON in `-F`, e.g. `-F input={key:1}` (missing quotes) | Quote keys, or use `--raw-field` to keep as a string |
 | `Invalid --org "..."` | Org id contains spaces, slashes, CR/LF | Use the short id; query `myOrganizations` to find it |
+| `required option '-o, --org <shortId>' not specified` on `deploy` | `deploy` now always needs the owning organization | Add `--org <shortId>` |
+| `BAD_REQUEST` with `-H "x-guest-session: ..."` | The CLI also sends `Authorization` | Make guest calls from code (see Guests) |
 
 ## Journal — debugging runtime events
 
@@ -724,6 +731,1167 @@ await updateReservationStatus({
   },
 });
 ```
+
+## App server functions (manifest 1.1)
+
+A marketplace app whose `wellplayed.json` says `"version": "1.1"` ships server functions written in Lua. WellPlayed runs them inside each organization that installs the app: called by a client (`CALL`), vetoing a platform action (`HOOK`), reacting to webhook events (`EVENT`), firing later (`TIMER`), on a schedule (`CRON`) or on install, upgrade, uninstall and config change (`LIFECYCLE`). A 1.1 release carries only server files (functions, operations, e-mail templates), no front bundle.
+
+### `wellplayed.json` and project files
+
+| Key | Required | Notes |
+|---|---|---|
+| `version` | yes | `"1.1"`; any other value takes the 1.0 bundle deploy path |
+| `releaseVersion` | yes | Version of the release to create; unique per app |
+| `slug` | yes | `^[a-z][a-z0-9-]{1,49}$`, unique across the marketplace; clients address functions by it |
+| `name`, `description` | first publish | Listing name and description |
+| `visibility`, `allowedOrganizations` | no | `PUBLIC` (default) or `PRIVATE`; organization short ids that may install a `PRIVATE` app (max 100) |
+| `permissions` | yes | Catalogue permission ids the installation asks for (at least one) |
+| `config`, `customPermissions`, `storage`, `operations`, `emailTemplates`, `auditTypes`, `functions`, `codeAuthorized` | no | 1.1 blocks below; refused in a 1.0 manifest |
+
+```json
+{
+  "version": "1.1", "releaseVersion": "1.0.0", "slug": "my-notes",
+  "name": "Notes", "description": "Players leave short notes on events.",
+  "visibility": "PRIVATE", "allowedOrganizations": ["<partnerOrgShortId>"],
+  "permissions": ["organization:emails:send"],
+  "config": [{ "key": "MAX_NOTES", "type": "INTEGER", "label": "Notes per player", "defaultValue": "3", "min": 1, "max": 20 },
+             { "key": "WELCOME_TEXT", "type": "STRING", "label": "Welcome text", "public": true }],
+  "customPermissions": [{ "name": "notes.read", "description": "Read every note" }],
+  "storage": { "collections": [{ "name": "notes", "ttlSeconds": 2592000 }] },
+  "operations": [{ "name": "GetEvent", "file": "operations/get-event.graphql" }],
+  "emailTemplates": [{ "key": "NOTE_ADDED", "subject": "Note saved for {{event_title}}", "file": "emails/note-added.html" }],
+  "auditTypes": [{ "type": "note.added", "fields": [{ "name": "eventId", "type": "ID", "required": true }, { "name": "length", "type": "INTEGER" }] }],
+  "functions": [
+    { "name": "addNote", "file": "functions/add-note.lua", "trigger": { "type": "CALL" }, "invoker": ["PLAYER", "GUEST"],
+      "input": [{ "name": "eventId", "type": "ID", "required": true }, { "name": "text", "type": "STRING", "required": true, "maxLength": 280 }],
+      "preload": [{ "name": "lookup", "op": "GetEvent", "vars": [{ "name": "id", "value": "$input.eventId" }] }] },
+    { "name": "listNotes", "file": "functions/list-notes.lua", "trigger": { "type": "CALL", "readOnly": true, "cacheSeconds": 30 },
+      "input": [{ "name": "eventId", "type": "ID", "required": true }], "requires": [{ "permission": "app:my-notes:notes.read" }] },
+    { "name": "purgeDrafts", "file": "functions/purge-drafts.lua", "trigger": { "type": "CRON", "cron": "0 3 * * *", "timezone": "Europe/Paris" } }
+  ], "codeAuthorized": ["addNote"]
+}
+```
+
+`operations/get-event.graphql` holds exactly one operation (no subscription), validated against the live schema at review:
+
+```graphql
+query GetEvent($id: ID!) { event(id: $id) { id title } }
+```
+
+`functions/add-note.lua` returns one function. `addNote` is open to players and guests with no `requires`, so it is listed in `codeAuthorized`: it only ever writes under the caller's own `playerId`.
+
+```lua
+return function(ctx, input)
+  local playerId = ctx.caller.playerId
+  local event = ctx.data.lookup.event
+  local prefix = input.eventId .. ":" .. playerId
+  local counter, err = wp.store.incr("notes", prefix .. ":count", 1, { max = ctx.config.MAX_NOTES })
+  if not counter then
+    wp.error("TOO_MANY_NOTES", "Note limit reached", { field = "text", details = { max = ctx.config.MAX_NOTES, reason = err.code } })
+  end
+  wp.store.put("notes", prefix .. ":" .. counter.value, { text = input.text, at = wp.time.now() }, { subject = { type = "PLAYER", id = playerId } })
+  wp.audit.log("note.added", { eventId = input.eventId, length = #input.text })
+  wp.email.send({ template = "NOTE_ADDED", to = { playerId = playerId }, vars = { event_title = event.title } })
+  return { count = counter.value, eventTitle = event.title }
+end
+```
+
+### Manifest blocks
+
+| Block (cap) | Entry | Rules |
+|---|---|---|
+| `config` (100) | `key` `^[A-Z][A-Z0-9_]{0,63}$`, `type`, `label`, `description`, `required`, `defaultValue` (string), `options` (`SELECT`), `min`/`max`, `pattern` (regex on the raw value), `public` | `public: true` keys are readable by anyone; a `required` key with no value fails every run with `NOT_CONFIGURED` |
+| `customPermissions` (50) | `name` `^[a-z][a-z0-9._-]{0,63}$`, `description`, `resources` (10 patterns) | Become `app:{slug}:{name}` in each organization when a release is pinned; dropped names lose their grants |
+| `storage.collections` (20) | `name` `^[a-z][a-z0-9_-]{0,49}$`, `ttlSeconds` (60 to 31 536 000) | Every collection used by `wp.store` must be declared; `ttlSeconds` is the default record TTL |
+| `operations` (200) | `name`, `file` | Only declared operations run through `preload` and `wp.op` |
+| `emailTemplates` (50) | `key` `^[A-Za-z0-9_]{1,50}$`, `subject` (300), `file` (HTML) | Placeholders `{{name}}` with `name` matching `[a-z_][a-z0-9_]*`; body values are HTML-escaped, subject values are not |
+| `auditTypes` (50) | `type` `^[a-z][a-z0-9._-]{0,63}$`, `fields` (30) | `wp.audit.log` data must use exactly these fields |
+| `functions` (100) | see below | |
+| `codeAuthorized` (100) | function names | Open functions that check their caller in Lua |
+
+Field declarations (`input`, `output`, audit `fields`): `name` (`^[a-zA-Z][a-zA-Z0-9_]{0,63}$`), `type` (`STRING` `TEXT` `NUMBER` `INTEGER` `BOOLEAN` `ID` `EMAIL` `DATE` `DATETIME` `ENUM` `OBJECT` `LIST`), `required`, `options` (`ENUM`), `fields` (`OBJECT`, 50), `items` (`LIST`), `maxLength`, `min`/`max` (value, or item count for `LIST`). Undeclared input keys are dropped; `output` is documentation only.
+
+| Function key | Default | Notes |
+|---|---|---|
+| `name`, `file`, `trigger` | | `trigger.type` picks the keys below |
+| `invoker` | `["MEMBER"]` | `ANONYMOUS`, `PLAYER`, `GUEST`, `MEMBER`; used by `CALL`, ignored by `HOOK` |
+| `runAs` | `APP` | `APP`: preloads and `wp.op` use the installation's granted permissions plus its `app:` permissions. `INVOKER`: the caller's permissions, capped by those grants. `HOOK` must stay `APP` |
+| `input`, `output` | `[]` | Up to 50 field declarations each |
+| `preload` | `[]` | Up to 5 `{ name, op, vars: [{ name, value }] }`, run before the function; results land in `ctx.data.<name>` |
+| `requires` | `[]` | Up to 5 `{ permission, resource }`, checked on the caller before the run (`FORBIDDEN`); the organization owner always passes |
+
+| `trigger.type` | Keys | Runs when |
+|---|---|---|
+| `CALL` | `readOnly` (false), `cacheSeconds` 0-300 (needs `readOnly`) | `appFunctionCall` or `appFunctionRead` |
+| `HOOK` | `hookPoint: EVENT_RESERVATION_VALIDATE`, `onError: DENY \| ALLOW`, `timeoutMs` 100-2000 (1000) | A reservation session opens or a reservation is validated |
+| `EVENT` | `events` (1-20 `WebhookEventType`), `selfTrigger` (false) | A matching event in the organization; with `selfTrigger: false`, events caused by this installation are skipped |
+| `TIMER` | none | `wp.timers.schedule` fires it |
+| `CRON` | `cron`, `timezone` (IANA) | Every run at least 300 s apart; at most 10 `CRON` functions per release |
+| `LIFECYCLE` | `lifecycle`: `INSTALL`, `UPGRADE`, `UNINSTALL`, `CONFIG_UPDATED` | First pinned release, another release pinned, uninstall, config change |
+
+Template references in `preload[].vars[].value` and `requires[].resource`: `$input.<path>`, `$config.<KEY>`, `$caller.<kind|accountId|playerId|guest...>`, `$data.<earlier preload>.<path>`. A value that is a single reference keeps its JSON type; inside text write `organization:event:{$input.eventId}`. A reference that resolves to nothing fails the run with `INPUT_INVALID`.
+
+The automated review rejects a release with one `reviewResult.checks` entry per issue (`name` = code, `details` = JSON pointer and message): `DUPLICATE_NAME`, `UNKNOWN_OPERATION` (preload or literal `wp.op("...")`), `UNKNOWN_COLLECTION` (literal `wp.store.*("...")`), `CACHE_NEEDS_READ_ONLY`, `HOOK_RUN_AS_INVOKER`, `INVALID_CRON`, `CRON_TOO_FREQUENT`, `TOO_MANY_CRONS`, `INVALID_TIMEZONE`, `UNKNOWN_PERMISSION` (`requires` must name a catalogue id, `app:{slug}:{declared name}` or `custom:*`), `FOREIGN_APP_PERMISSION`, `INVALID_TEMPLATE_REF`, `MISSING_FILE`, `FILE_KIND_MISMATCH`, `OPERATION_INVALID`, `READ_ONLY_MUTATION`, `LUA_SYNTAX`, `CHUNK_TOO_LARGE` (1 MiB per function file), `RELEASE_FILES_TOO_LARGE` (4 MB in total), and `OPEN_FUNCTION`: a `CALL` function with `runAs: APP`, open to `MEMBER`, `PLAYER` or `GUEST`, with no `requires`, no `wp.auth.require` in its source and absent from `codeAuthorized`.
+
+### Lua runtime
+
+`function(ctx, input)` returns a JSON-compatible value (at most 256 KB; an empty table becomes `{}`), sent to the caller as the `payload` string. A `HOOK` returns `{ allow = true }` or `{ allow = false, reason = "<CODE>" }`. `input` is the validated payload (`CALL`), the webhook payload (`EVENT`), the scheduled payload (`TIMER`), the hook payload (`HOOK`), or `{}` (`CRON`, `LIFECYCLE`).
+
+| `ctx` field | Content |
+|---|---|
+| `executionId`, `correlationId`, `causationDepth` | Ids of this run and of the chain it belongs to |
+| `org.id`; `app.slug`, `app.installationId`, `app.releaseVersion` | Where it runs |
+| `trigger` | `type`, `name`, plus `hookPoint`, `event { type, messageId }`, `timer { key, scheduledFor, firedAt }`, `cron { scheduledFor, firedAt }` or `lifecycle { transition, previousReleaseVersion, changedKeys }` |
+| `caller` | `kind` (`ANONYMOUS`, `PLAYER`, `GUEST`, `MEMBER`, or `SYSTEM` outside `CALL`), `classes`, `accountId`, `playerId`, `guest { sessionId, sessionPlayerId, origin, link { id, purpose, data, expiresAt } }`. A guardian acting for a ward: `playerId` is the ward, `guest.sessionPlayerId` the guardian |
+| `request` | `{ ip, userAgent }` on `CALL`, otherwise nil |
+| `config` | Values by key: `DURATION` in seconds, `NUMBER`/`INTEGER` numbers, `BOOLEAN` booleans, `STRING_LIST` arrays, the rest strings |
+| `data` | Preload results by name (the operation's `data`) |
+
+| Call | Returns | Rules |
+|---|---|---|
+| `wp.op(name, vars, { as = "APP" \| "INVOKER" })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code |
+| `wp.store.get(col, key)` | `{ value, version, expiresAt }` or nil | Key `^[A-Za-z0-9:._@-]{1,200}$` |
+| `wp.store.put(col, key, value, { ifAbsent, ttlSeconds, subject = { type = "PLAYER", id } })` | `{ version }` or `nil, err` | Value at most 16 KB; `ALREADY_EXISTS` with `ifAbsent` |
+| `wp.store.cas(col, key, expectedVersion, patch, { ttlSeconds })` | `{ version, value }` or `nil, err` | Shallow merge; `VERSION_CONFLICT`, `NOT_FOUND` |
+| `wp.store.incr(col, key, by, { min, max, ttlSeconds })` | `{ value, version }` or `nil, err` | Starts at 0; `OUT_OF_RANGE` |
+| `wp.store.del(col, key)`, `wp.store.list(col, prefix, { after, limit })` | boolean, `{ items, nextCursor }` | `list` orders by key, `limit` at most 100 |
+| `wp.lock.acquire(key, ttlMs, { waitMs })`, `wp.lock.release(token)` | token or `nil, err`, boolean | `LOCKED` after `waitMs` (at most 2000); every lock is released when the run ends |
+| `wp.timers.schedule({ fn, key, at \| delaySeconds, payload })`, `wp.timers.cancel(key)` | `{ key, runAt }`, `true` | `fn` is a `TIMER` function; key `^[A-Za-z0-9:._-]{1,150}$`; at most 180 days ahead; the same key replaces the timer |
+| `wp.email.send({ template, to = { playerId }, cc, vars, attachTicketQr })` | `{ deliveryId }` | The installation must hold `organization:emails:send`; `vars` are strings; `attachTicketQr = "<ticketId>"` adds the ticket QR as inline image `cid:ticket`; a ward without an address goes to its guardian; no address at all is skipped |
+| `wp.auth.check(permission, resource)`, `wp.auth.require(...)` | boolean, nothing | Caller's own permissions, never the app's; `require` ends the run with `FORBIDDEN` |
+| `wp.audit.log(type, data, { subject = { type, id } })` | `true` | Declared `auditTypes` only, data at most 4 KB; IP and user agent are stamped |
+| `wp.log.debug/info/warn/error(message, fields)` | nothing | Lines past the budget are dropped |
+| `wp.crypto.hmac(data)`, `.sha256(data)`, `.randomId()` | hex, hex, UUID | `hmac` uses a per-installation key no one can read |
+| `wp.time.now()`, `.at(date, "HH:MM", tz)`, `.add(iso, s)`, `.diff(a, b)`, `.parts(iso, tz)` | ISO strings, seconds, `{ year, month, day, hour, minute, weekday, date, time }` | `weekday` 1 is Monday |
+| `wp.json.encode(value)`, `wp.json.decode(text)` | string, value | At most 256 KB |
+| `wp.error(code, message, { field, details })` | does not return | Ends the run with `kind: APP`; `code` `^[A-Z][A-Z0-9_]{0,63}$`, `field` a dotted path, `details` a table |
+
+`HOOK` and `readOnly` `CALL` functions only get `wp.op` (queries), `wp.store.get/list`, `wp.auth`, `wp.log`, `wp.time`, `wp.json`, `wp.crypto` and `wp.error`; the other modules are nil there. Globals are limited to `assert error ipairs next pairs select tonumber tostring type setmetatable getmetatable` and the `string`, `table`, `math`, `utf8` libraries: no `io`, `os`, `require`, `load`, `pcall`, `coroutine` or `debug`. `wp.*` cannot be called from a `table.sort` comparator, a `gsub` callback or `tostring`.
+
+| Budget per run | `CALL` | `HOOK` | `EVENT`, `TIMER`, `CRON`, `LIFECYCLE` |
+|---|---|---|---|
+| Wall clock | 5 s | `timeoutMs` | 30 s |
+| Lua instructions / memory | 5 M / 16 MiB | 1 M / 16 MiB | 20 M / 32 MiB |
+| `wp.*` calls / `wp.op` calls | 1 000 / 50 | 200 / 10 | 4 000 / 200 |
+| E-mails / timers | 10 / 20 | 0 / 0 | 500 / 200 |
+| Log lines (2 KB each) | 50 | 10 | 200 |
+| Event chain depth | - | - | stops at 3 (`CAUSATION_DEPTH_EXCEEDED`) |
+
+Preloaded data is capped at 2 MB. Recoverable `wp.*` failures return `nil, err` with `err = { code, message, path }`: `VERSION_CONFLICT`, `ALREADY_EXISTS`, `NOT_FOUND`, `OUT_OF_RANGE`, `LOCKED`, `INVALID_ARGUMENT`, `FORBIDDEN`, or the GraphQL code for `wp.op`. A bad argument or an undeclared operation, collection or template ends the run with `SCRIPT_ERROR`.
+
+Failed async runs: `EVENT` retries up to 10 times with exponential backoff (a `wp.error` is retried too; `NOT_FOUND`, `NOT_CONFIGURED`, `DISABLED`, `INPUT_INVALID`, `FORBIDDEN`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED` and `OUTPUT_TOO_LARGE` are not), `CRON` and `LIFECYCLE` up to 5 times, `TIMER` never. A run that gives up is journaled as `app.function.dead_letter`. An event fans out to at most 10 functions per installation.
+
+### Deploy, install, pin, configure (CLI)
+
+| Command | What it does |
+|---|---|
+| `wellplayed deploy --org my-org --dry-run` | Lists every function, operation and template file with its size; calls nothing. Each `file` is a path inside the project directory and must exist |
+| `wellplayed deploy --org my-org --organization-app-id <organizationAppId>` | First release: `publishMarketplaceApp` (slug, visibility, allowed organizations, name, description, manifest), then `appCreateRelease` with the files, `appFinalizeRelease`, and a 5-minute wait on the review that prints failed checks |
+| `wellplayed deploy --org my-org --app-id <marketplaceAppId>` | Later releases: `updateMarketplaceApp` (slug, visibility, allowed organizations), then the same release steps; bump `releaseVersion` first |
+| `wellplayed install --app-id <marketplaceAppId> --org partner-org --grant all` (or `--grant p1 p2`) | `installMarketplaceApp`; pins the listing's current version and fires `LIFECYCLE INSTALL`. `all` grants every permission of the listing manifest; a grant outside `permissions` fails with `MARKETPLACE_INVALID_MANIFEST` |
+| `wellplayed pin 1.1.0 --app my-notes --org partner-org --grant organization:emails:send` | `appInstallationPin` to any `APPROVED` version, fires `UPGRADE` (`INSTALL` if nothing was pinned). Approving a release never re-pins existing installations. `--grant` replaces the whole grant list, so name every permission to keep |
+| `wellplayed config set MAX_NOTES=5 "WELCOME_TEXT=Leave a note" --app my-notes --org partner-org` | `appInstallationConfigSet`; the value is everything after the first `=`. Resetting a key to its default needs `value: null` through `wellplayed graphql` |
+
+Find ids with `marketplaceApps(filter: { ownedByMe: true }) { nodes { id slug version status } }` and `organizationApps(page: { first: 20 }) { nodes { id name } }`.
+
+### Calling functions
+
+| Caller (request) | Classes matched against `invoker` |
+|---|---|
+| No token and no guest session | `ANONYMOUS` |
+| Account that is a member (or owner) of the organization | `MEMBER`, plus `PLAYER` if it has a player profile there |
+| Account with a player profile, not a member | `PLAYER` |
+| `x-guest-session` header (with optional `x-acting-player-id`) | `GUEST` |
+
+`appFunctionCall(input: AppFunctionCallInput!)` (mutation) runs any `CALL` function; `appFunctionRead` (query) runs `readOnly` ones only (others answer `NOT_FOUND`). Both are public and accept guests; the `organization-id` header is required. `input.payload` is a JSON string (omitted means `{}`); the result `payload` is a JSON string, null on failure. Function errors never arrive as GraphQL errors: check `status` (`SUCCEEDED` | `FAILED`) and `error`. `idempotencyKey` (`appFunctionCall` only): a success is kept 24 h per function, caller and key and returned again with `replayed: true`; a failure frees the key; a duplicate sent while the first runs gets `IDEMPOTENCY_IN_PROGRESS`. `cacheSeconds` (`appFunctionRead` only): a success is cached per function, caller and payload and returned with `cached: true`.
+
+| `error.kind` | `code` | Meaning |
+|---|---|---|
+| `APP` | From `wp.error` | `field` and `details` (JSON string) as the function set them; `platformCode` is null |
+| `PLATFORM` | Same as `platformCode` | `NOT_FOUND` (app not installed, no pinned release, unknown or non-`CALL` function), `NOT_CONFIGURED` (`field` = config key), `DISABLED`, `INVOKER_NOT_ALLOWED`, `INPUT_INVALID` (`field` = input path), `FORBIDDEN`, `QUOTA_EXCEEDED` and `UNAVAILABLE` (both may set `retryAfterSeconds`), `IDEMPOTENCY_IN_PROGRESS`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED`, `TIMEOUT`, `SCRIPT_ERROR`, `OUTPUT_TOO_LARGE` |
+
+In a component, a `readOnly` function such as `listNotes` goes through `useQuery` on `appFunctionRead` with the same input and fields (`cached: true` marks a cached answer). `apiClient` from `useWellPlayed()` calls as the signed-in account; inside `WellPlayedGuestProvider` the same `apiClient` sends `x-guest-session` (and `x-acting-player-id` after `actAs`), so the function sees a `GUEST` caller. Keep one `idempotencyKey` per submission, reuse it on retry and mint a new one after a success. The SDK client defaults `useQuery` to `errorPolicy: "ignore"`, which drops GraphQL errors (`error` stays undefined); pass `errorPolicy: "all"` wherever the screen must show `error.graphQLErrors[0].extensions.code`. Mutations already return their errors. The component also reads the public config:
+
+```tsx
+import { useState } from "react";
+import { useMutation, useQuery } from "@apollo/client";
+import { graphql } from "@well-played.gg/typescript-sdk";
+import { useWellPlayed } from "@well-played.gg/react-sdk";
+
+const PublicConfig = graphql(`query PublicConfig($appSlug: String!) {
+  appInstallationPublicConfig(appSlug: $appSlug) { key value defaultValue } }`);
+const AddNote = graphql(`mutation AddNote($input: AppFunctionCallInput!) {
+  appFunctionCall(input: $input) { status payload error { kind code platformCode message field retryAfterSeconds } } }`);
+
+export function AddNoteForm({ eventId }: { eventId: string }) {
+  const { apiClient } = useWellPlayed();
+  const { data: config } = useQuery(PublicConfig, { client: apiClient, variables: { appSlug: "my-notes" } });
+  const [addNote, { loading }] = useMutation(AddNote, { client: apiClient });
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [text, setText] = useState("");
+  const [message, setMessage] = useState<string>();
+  const welcome = config?.appInstallationPublicConfig.find((entry) => entry.key === "WELCOME_TEXT");
+  const submit = async (): Promise<void> => {
+    const payload = JSON.stringify({ eventId, text });
+    const { data } = await addNote({ variables: { input: { appSlug: "my-notes", function: "addNote", payload, idempotencyKey } } });
+    const result = data?.appFunctionCall;
+    if (result?.status === "SUCCEEDED") {
+      const output: { count: number; eventTitle: string } = JSON.parse(result.payload ?? "{}");
+      setMessage(`${output.count} notes on ${output.eventTitle}`);
+      setIdempotencyKey(crypto.randomUUID());
+    } else if (result?.error?.kind === "APP" && result.error.code === "TOO_MANY_NOTES") {
+      setMessage("Note limit reached");
+    } else {
+      setMessage(result?.error?.message);
+    }
+  };
+  return (
+    <form onSubmit={(event) => { event.preventDefault(); void submit(); }}>
+      <p>{welcome?.value ?? welcome?.defaultValue}</p>
+      <input aria-label="Note" value={text} maxLength={280} onChange={(event) => setText(event.target.value)} />
+      <button disabled={loading}>Add note</button>
+      {message && <p role="status">{message}</p>}
+    </form>
+  );
+}
+```
+
+### Configuration
+
+| Operation | Access | Notes |
+|---|---|---|
+| `appInstallationPublicConfig(appSlug)` | Public, guests allowed | `public: true` keys only; `[]` when the app is not installed |
+| `appInstallationConfig(appSlug)` | `organization:apps:config:view` | Every key |
+| `appInstallationConfigSet(appSlug, values: [{ key, value }])` | `organization:apps:config:update` | All or nothing; `value: null` resets to the default; returns every entry |
+
+`AppConfigEntry.value` is the stored raw string (null when unset); show `value ?? defaultValue`. Raw formats: `BOOLEAN` `true`/`false`, `SELECT` one of `options`, `DURATION` seconds or `1d2h30m15s`, `TIME` `HH:MM`, `DATE` `YYYY-MM-DD`, `TIMEZONE` IANA, `STRING_LIST` comma-separated; `min`/`max` and `pattern` apply. A change bumps `MarketplaceAppInstallation.configVersion`, writes `app.config.updated` and fires `LIFECYCLE CONFIG_UPDATED` with `changedKeys`.
+
+```bash
+wellplayed graphql --org partner-org -F 'values=[{"key":"MAX_NOTES","value":null}]' \
+  'mutation($values: [AppConfigValueInput!]!) { appInstallationConfigSet(appSlug: "my-notes", values: $values) { key value defaultValue } }'
+```
+
+### Installations, permissions, listing
+
+| Operation | Access | Notes |
+|---|---|---|
+| `appFunctionsSetEnabled(appSlug, function, enabled)` | `organization:apps:functions:manage` | `function: null` switches the whole app (`functionsEnabled`), a name toggles one (`disabledFunctions`); disabled calls answer `DISABLED`, disabled hooks and crons do not run |
+| `MarketplaceAppInstallation.release`, `configVersion`, `functionsEnabled`, `disabledFunctions` | Existing installation reads | `release.files` lists `{ kind, name, sha256 }` |
+| `permissionDefinitions` | Any member | `app:{slug}:{name}` (owner `APP`, with `appSlug`) and `custom:{name}` (owner `ORGANIZATION`) ids of the organization |
+| `customPermissionCreate(input: { name, description, resources })`, `customPermissionUpdate(id, input)`, `customPermissionDelete(id)` | `organization:permissions:custom:manage` | Creates `custom:{name}`; delete also strips it from groups, members and attached apps |
+| `hasPermissions(checks: [{ permission, resource }])` | Public | At most 100 checks; anonymous callers and guests get `false` everywhere |
+| `PublishMarketplaceAppInput` / `UpdateMarketplaceAppInput` `slug`, `visibility`, `allowedOrganizationIds`; `MarketplaceApp.slug`, `visibility`, `allowedOrganizationIds` | Existing listing rules | A `PRIVATE` app is listed and installable only by its owner and the allowed organizations; `allowedOrganizationIds` reads null for anyone but the owner |
+
+Grant `app:` and `custom:` ids to groups or members like catalogue permissions. Config, functions and pin checks use the resource `organization:marketplace:app:{marketplaceAppId}`; pinning needs `organization:marketplace:install`, and the caller must hold every permission it newly grants.
+
+### Hook `EVENT_RESERVATION_VALIDATE`
+
+`input` = `{ hookPoint = "event.reservation.validate", phase = "START_SESSION" | "VALIDATE", eventId, reservationId, groupId, playerIds, tickets = { { ticketConfigurationId, count } } }`; `ctx.trigger.hookPoint` carries the same string. Every enabled hook of every installation runs in parallel; one `{ allow = false, reason }` makes the platform mutation fail with `APP_HOOK_DENIED` (`extensions.reason`, `extensions.appSlug`). A hook that errors or times out denies with reason `unavailable` under `onError: DENY` and is ignored under `ALLOW`.
+
+### Limits
+
+| Limit | Scope | Default | Max | When reached |
+|---|---|---|---|---|
+| `APP_FUNCTION_INVOCATIONS` | Organization, per UTC day | 10 000 | 1 000 000 | `QUOTA_EXCEEDED` |
+| `APP_FUNCTION_CONCURRENCY` | Organization | 10 | 100 | `QUOTA_EXCEEDED` |
+| `APP_EMAILS` | Organization, per day | 5 000 | 200 000 | Sends wait and retry for 24 h, then fail |
+| `APP_TIMERS_PENDING` | Organization | 50 000 | 1 000 000 | New schedules are dropped |
+| `APP_FUNCTIONS`, `APP_CRONS` | Release | 100, 10 | 100, 50 | The manifest itself refuses more than 100 functions and 10 crons |
+
+### Executions and audit in the journal
+
+`journalEntries` (`organization:journal:view`), primary resource type `MARKETPLACE_APP_INSTALLATION`: `app.function.executed` (`AppFunctionExecutedPayload`, one per run), `app.function.log` (`AppFunctionLogPayload`, child of its run), `app.function.dead_letter`, `app.audit` (`AppAuditPayload { appSlug auditType data ip userAgent callerKind callerId }`, written only when the run succeeds; filter with `types: ["app.audit"]`), `app.config.updated`, `app.installation.pinned`, `app.quota.warning`.
+
+```bash
+wellplayed graphql --org partner-org <<'GQL'
+query AppRuns {
+  journalEntries(page: { first: 20 }, filters: { typePrefix: "app.function.", rootOnly: true }) { nodes { id type createdAt
+    payload { ... on AppFunctionExecutedPayload { functionName trigger callerKind status durationMs error { kind code message field } } } } }
+}
+GQL
+```
+
+### GraphQL errors and pitfalls
+
+`APP_SLUG_TAKEN`, `APP_SLUG_REQUIRED` (functions declared, no slug), `MARKETPLACE_APP_NOT_FOUND` (private app outside its organizations, or slug not installed), `APP_RELEASE_FILES_TOO_LARGE`, `APP_RELEASE_NOT_APPROVED`, `APP_PIN_CONSENT_REQUIRED` (`extensions.addedPermissions`: pin again with `--grant`), `MARKETPLACE_INSTALLATION_NOT_FOUND`, `APP_CONFIG_INVALID` (`extensions.key`), `CONFLICT` (concurrent config change, retry), `APP_HOOK_DENIED`, `PERMISSION_DEFINITION_CONFLICT`, `INVALID_PERMISSION` (unknown or app-owned id), `BAD_REQUEST` (over 100 checks, undeclared function name, duplicate release file).
+
+- A failed run (including `wp.error`) drops its queued e-mails, timers and audit entries, but `wp.store` writes and `wp.op` mutations already made stay: check first, write last, or use `cas`.
+- `EVENT` functions get retried, so make them idempotent (store markers with `ifAbsent`).
+- `payload` is a string: `JSON.stringify` it in code, `--raw-field` it in the CLI (`-F` parses a `{...}` literal into an object).
+
+## Guests, magic links and guardians
+
+A guest is a player profile of the organization with no WellPlayed account. It authenticates with a guest session token in the `x-guest-session` header instead of an OAuth bearer token. Guests come from self entry (`guestEnter`), from staff or apps (`guestProfileCreate`), or from another guest as a ward (`guestWardCreate`). Every guest counts against the organization limit `ANONYMOUS_PLAYER_PROFILES` (read it with `organizationLimits(limits: [ANONYMOUS_PLAYER_PROFILES])`; a full limit returns `LIMIT_REACHED`), and every new guest fires the `PLAYER_CREATED` webhook.
+
+### Permissions
+
+| Permission | Resource pattern | Grants |
+|---|---|---|
+| `organization:guests:view` | `organization:player:{player_id}:guest` | Read `email`, `firstName`, `lastName` of a guest |
+| `organization:guests:manage` | `organization:player:{player_id}:guest` | `guestProfileCreate` (whole pattern only), `guestProfileUpdate`, `guestGuardianLinkCreate` / `guestGuardianLinkDelete` (resource = the ward), `guestSessionsRevoke` |
+| `organization:guests:links:create` | `organization:player:{player_id}:guest:link` | `guestLinkCreate`, `guestLinkRevoke` (revoking by `id` needs the whole pattern) |
+| `organization:guests:configure` | none | `guestConfiguration`, `guestConfigurationUpdate` |
+| `organization:moderation:manage` | none | `organizationModeration`, `organizationModerationUpdate` |
+| `organization:moderation:check` | none | `moderationCheck` (tests texts without reading the lists) |
+
+A link token opens a session as that guest, so treat `organization:guests:links:create` like a credential-issuing right: grant it to the backend or staff that send links, not to players.
+
+### Configuration
+
+| `GuestConfiguration` field | Default | Accepted | Effect |
+|---|---|---|---|
+| `selfEntry: GuestSelfEntryMode!` | `DISABLED` | `DISABLED`, `TRUSTED_PARAMS` | `TRUSTED_PARAMS` opens `guestEnter` |
+| `sessionTtlMinutes: Int!` | `120` | 5 to 1440 | Lifetime of each new session |
+| `maxWardsPerGuardian: Int!` | `3` | 0 to 10 | Cap checked by `guestWardCreate` |
+
+`guestConfigurationUpdate` changes only the fields you pass; out-of-range values return `BAD_REQUEST`. A new TTL applies to sessions opened afterwards.
+
+```bash
+wellplayed graphql --org my-org -F input.selfEntry=TRUSTED_PARAMS -F input.sessionTtlMinutes=240 \
+  'mutation($input: GuestConfigurationInput!) {
+    guestConfigurationUpdate(input: $input) { selfEntry sessionTtlMinutes maxWardsPerGuardian }
+  }'
+```
+
+### Guest headers and what a guest may call
+
+| Header | Value | Rules |
+|---|---|---|
+| `organization-id` | Organization short id | Required, as for every organization call |
+| `x-guest-session` | `wpgs_...` token from `guestEnter` or `guestLinkExchange` | Never together with `authorization`, `x-module-token` or `x-function-token`: `BAD_REQUEST` |
+| `x-acting-player-id` | Player id of a ward | Needs `x-guest-session` (`BAD_REQUEST` otherwise) and a guardian link from the session player to that ward (`GUEST_NOT_GUARDIAN`); a malformed id is `BAD_REQUEST` |
+
+| Operation called with `x-guest-session` | Result |
+|---|---|
+| Guest-enabled (list below) | Session checked (`GUEST_SESSION_INVALID` when unknown, expired or revoked); runs as the acting player with the permissions of the organization's CONNECTED group |
+| Other public operations (`guestEnter`, `guestLinkResolve`, `guestLinkExchange`, ...) | Session ignored; runs as an anonymous caller |
+| Anything else | `GUEST_NOT_ALLOWED` |
+
+Guest-enabled operations: `guestMe`, `guestSessionEnd`, `guestWardCreate`, `guestWardRemove`, `userGroupUpdateName`, `event` (with `myReservation`), `eventSlots`, `eventReservationsMyReservations`, `eventReservationStartRegistrationSession`, `eventReservationUpdateTickets`, `eventReservationChangeTickets`, `eventReservationReleaseTickets`, `eventReservationValidateAndPay`, `eventReservationConfirmPresence`, `eventReservationCancel`, `eventWaitlistJoin`, `eventWaitlistLeave`, `myWaitlistEntries`, `myActiveRegistrations`, `customFieldValues`, `customFieldValuesBatch`, `setCustomFieldValues`, `appFunctionRead`, `appFunctionCall`, `appInstallationPublicConfig`. For custom fields a guest owns its own `PlayerProfile` and its `TournamentTeamMember` / `UserGroupMember` rows, so it can write their `ALWAYS` and first-time `ONE_TIME` fields.
+
+### Self entry: `guestEnter`
+
+`guestEnter(input: { email, firstName, lastName })` is public: it needs only `organization-id`, and `selfEntry` must be `TRUSTED_PARAMS` (else `GUEST_SELF_ENTRY_DISABLED`). Values are trimmed; names take 1 to 100 characters, the e-mail up to 320 (`BAD_REQUEST`).
+
+- The e-mail is matched case-insensitively against every guest that has one (self-entered, invited or admin-created). On a match, the same guest is reused, its first and last name are overwritten with the new values, and a new session opens; earlier sessions stay valid.
+- No match creates a guest with `origin: ENTRY` (`LIMIT_REACHED` when `ANONYMOUS_PLAYER_PROFILES` is full).
+- There is no e-mail verification: anyone who calls `guestEnter` with an e-mail gets a session for that guest. Enable `TRUSTED_PARAMS` only when the entry values come from a source that already identified the person (for example a host page that passes them in the URL of an embedded app), never from a free-text form.
+
+```bash
+wellplayed graphql --org my-org \
+  -F input.email=jane@example.com -F input.firstName=Jane -F input.lastName=Doe \
+  'mutation($input: GuestEnterInput!) { guestEnter(input: $input) { token playerId origin expiresAt } }'
+```
+
+In the app, `useGuestSession().enter` runs it inside `WellPlayedGuestProvider` (see below):
+
+```tsx
+import { type PropsWithChildren, useEffect } from "react";
+import { useGuestSession } from "@well-played.gg/react-sdk";
+
+export function EntryGate({ children }: PropsWithChildren) {
+  const { status, errorCode, enter } = useGuestSession();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const [email, firstName, lastName] = ["email", "firstName", "lastName"].map((key) => params.get(key));
+    if (status === "none" && email && firstName && lastName) void enter({ email, firstName, lastName });
+  }, [status, enter]);
+  if (status === "active") return children;
+  if (status === "error") return <p>Cannot open a session ({errorCode}).</p>;
+  return <p>Loading...</p>;
+}
+```
+
+### Sessions
+
+`GuestSession` returns `token` (only here, never again), `playerId`, `origin` (`ENTRY` or `LINK`), `expiresAt` and `link` (`GuestLinkContext`, set for `LINK`).
+
+- `expiresAt` is the open time plus `sessionTtlMinutes`, capped by the link's `expiresAt` for a `LINK` session. Requests do not extend it: on `GUEST_SESSION_INVALID`, open a new session.
+- `guestMe` returns `sessionPlayerId`, `actingPlayerId`, `origin`, `expiresAt`, `link`, `profile` and `wards`, contact fields included. Called without a guest session it returns `GUEST_SESSION_INVALID`.
+- `guestSessionEnd` revokes the current session (`true`); without a guest session it returns `false`.
+- `guestSessionsRevoke(playerId)` (staff) revokes every live session of a guest and returns the count.
+- Revoking a link (`guestLinkRevoke`, or `revokePrevious` on a new link) also ends the sessions opened from it.
+- Sessions and links are deleted 30 days after they expire; a purged link token resolves as `INVALID`.
+
+`wellplayed graphql` always sends your login token as `authorization`, so `-H "x-guest-session: <token>"` is refused with `BAD_REQUEST`. Use the CLI for the public calls (`guestEnter`, `guestLinkResolve`, `guestLinkExchange`) and staff operations; in the app, guest calls go through `WellPlayedGuestProvider`.
+
+### React: `WellPlayedGuestProvider` and `useGuestSession()`
+
+Mount `WellPlayedGuestProvider` as the root of the guest pages, next to the `WellPlayedProvider` tree from `create-app`, not inside it: it creates its own client without a token and provides its own `useWellPlayed()` context, so inside it `apiClient` sends `x-guest-session` and `x-acting-player-id` for you.
+
+```tsx
+import { WellPlayedGuestProvider, WellPlayedProvider } from "@well-played.gg/react-sdk";
+
+const root = location.pathname.startsWith("/join") ? (
+  <WellPlayedGuestProvider organizationId={organizationId} storage="session">
+    <GuestApp />
+  </WellPlayedGuestProvider>
+) : (
+  <WellPlayedProvider organizationId={organizationId} wpAppConfig={wpAppConfig}>
+    <App />
+  </WellPlayedProvider>
+);
+```
+
+| Prop | Default | Effect |
+|---|---|---|
+| `organizationId` | required | Organization short id |
+| `storage` | `"session"` | `"session"` keeps the token in `sessionStorage` (`wp-guest-session:<organizationId>`) and restores it on reload through `guestMe`; `"memory"` loses it on reload |
+| `apiBaseUrl`, `clientConfig` | - | As on `WellPlayedProvider`, without `token`, `headers` and `persistCache` |
+
+| `useGuestSession()` member | Behaviour |
+|---|---|
+| `status` | `"none"`, `"opening"`, `"active"` or `"error"` |
+| `session` | `{ playerId, origin, expiresAt, link? }` of the open session |
+| `actingPlayerId` | Ward chosen with `actAs`, else the session player |
+| `errorCode` | `extensions.code` of the last failure (`GUEST_SELF_ENTRY_DISABLED`, `GUEST_LINK_INVALID`, `GUEST_SESSION_INVALID`, ...), or `NETWORK_ERROR` / `UNKNOWN_ERROR` |
+| `enter(input)` | Runs `guestEnter`; on failure `status` becomes `"error"` |
+| `resolveLink(token)` | Runs `guestLinkResolve`; returns `{ status, purpose?, expiresAt?, firstName?, data? }`; throws when the query itself fails |
+| `exchangeLink(token)` | Runs `guestLinkExchange`; on failure `status` becomes `"error"` (the hook does not expose `extensions.status`: resolve first) |
+| `actAs(wardPlayerId)` | Sets `x-acting-player-id`; `actAs(null)` goes back to the session player |
+| `end()` | Runs `guestSessionEnd` and forgets the token |
+
+When any call returns `GUEST_SESSION_INVALID`, the provider re-runs the last `enter` input or `exchangeLink` token once (a link retry spends another use), then falls back to `status: "none"` with `errorCode`. After a reload it has no input to replay. Guest headers ride on HTTP operations only; the SDK's websocket link does not send them.
+
+### Magic links
+
+1. Staff or your backend calls `guestLinkCreate`, which returns `{ id, token, expiresAt }`. The token is returned once; keep the `id` to revoke later.
+2. Your app builds the URL (for example `https://app.example.com/join?token=<token>`) and sends it. The API neither builds link URLs nor sends them.
+3. The landing page calls `guestLinkResolve(token)` (public, never consumes) to pick the screen, then `guestLinkExchange(token)` (public, consumes one use) when the user acts. The new session has `origin: LINK` and `link { id purpose data expiresAt }`.
+
+| `GuestLinkCreateInput` field | Rule (`BAD_REQUEST` otherwise) |
+|---|---|
+| `playerId: ID!` | A guest of the organization |
+| `purpose: String!` | `^[a-z0-9][a-z0-9._-]{0,63}$`, e.g. `team-invite` |
+| `expiresAt: DateTime!` | In the future, at most 90 days ahead |
+| `maxUses: PositiveInt` | Omitted = unlimited; each exchange uses one |
+| `data: String` | JSON string, at most 4096 bytes, default `{}`; returned by resolve (`VALID` only), by the exchange and by `guestMe.link` |
+| `revokePrevious: Boolean! = false` | `true` revokes the guest's live links with the same `purpose` (and their sessions) first |
+
+| `GuestLinkStatus` | Meaning | `purpose`, `expiresAt` | `firstName`, `data` |
+|---|---|---|---|
+| `VALID` | Usable | Set | Set |
+| `REVOKED` | Revoked (checked first) | Set | `null` |
+| `EXPIRED` | Past `expiresAt` | Set | `null` |
+| `EXHAUSTED` | `maxUses` reached | Set | `null` |
+| `INVALID` | Unknown token or another organization | `null` | `null` |
+
+`guestLinkExchange` on an unusable link returns `GUEST_LINK_INVALID` with `extensions.status` set to `EXPIRED`, `REVOKED`, `EXHAUSTED` or `INVALID`. `guestLinkRevoke(input)` takes `{ id }`, or `{ playerId, purpose }` (no `purpose` = every link of that guest), returns the number revoked, and needs `id` or `playerId` (`BAD_REQUEST`).
+
+```bash
+wellplayed graphql --org my-org \
+  -F input.playerId=<guestPlayerId> -F input.purpose=team-invite \
+  -F input.expiresAt=2027-01-31T23:00:00Z -F input.maxUses=1 -F input.revokePrevious=true \
+  --raw-field 'input.data={"reservationId":"<reservationId>"}' \
+  'mutation($input: GuestLinkCreateInput!) { guestLinkCreate(input: $input) { id token expiresAt } }'
+```
+
+Landing page, inside `WellPlayedGuestProvider`:
+
+```tsx
+import { useEffect, useState } from "react";
+import { type GuestLinkResolution, useGuestSession } from "@well-played.gg/react-sdk";
+
+export function JoinPage({ token }: { token: string }) {
+  const { status, errorCode, resolveLink, exchangeLink } = useGuestSession();
+  const [link, setLink] = useState<GuestLinkResolution>();
+  useEffect(() => {
+    resolveLink(token).then(setLink, () => setLink({ status: "INVALID" }));
+  }, [token, resolveLink]);
+
+  if (status === "active") return <GuestHome />;
+  if (!link) return <p>Loading...</p>;
+  if (link.status !== "VALID") return <p>This link is {link.status.toLowerCase()}.</p>;
+  return (
+    <>
+      <p>Hello {link.firstName}</p>
+      <button disabled={status === "opening"} onClick={() => void exchangeLink(token)}>Continue</button>
+      {errorCode && <p role="alert">{errorCode}</p>}
+    </>
+  );
+}
+```
+
+### Guardians and wards
+
+- `guestWardCreate(input: { firstName, lastName })` (guest session) creates a guest with `origin: GUARDIAN` and no e-mail, and makes the session player its guardian. When the session player already has `maxWardsPerGuardian` wards (staff-created links count), it returns `GUEST_WARD_LIMIT_REACHED` with `extensions.max`.
+- `guestWardRemove(wardPlayerId)` removes the guardian link (`GUEST_NOT_GUARDIAN` when there is none). A `GUARDIAN`-origin ward left with no guardian is deleted (`PLAYER_DELETED` webhook).
+- Both act on the session player and ignore `x-acting-player-id`; without a guest session they return `GUEST_SESSION_INVALID`.
+- To act for a ward, send `x-acting-player-id: <wardPlayerId>` with the guardian's session: guest-enabled operations then run as the ward (book, confirm presence, set its custom fields), and `guestMe.actingPlayerId` shows the ward. A ward cannot act for its guardian.
+- Staff: `guestGuardianLinkCreate(guardianPlayerId, wardPlayerId)` is idempotent, accepts any player of the organization as guardian, needs a guest as ward (`GUEST_PROFILE_NOT_FOUND`), refuses a guest as its own guardian (`BAD_REQUEST`) and does not check `maxWardsPerGuardian`. `guestGuardianLinkDelete(id)` returns `false` for an unknown id and never deletes the ward.
+
+A guest page that lists the wards and switches the acting player, with `useQuery` on the guest `apiClient` (run `guestWardCreate` / `guestWardRemove` the same way with `useMutation(DOC, { client: apiClient })`):
+
+```tsx
+import { useQuery } from "@apollo/client";
+import { graphql } from "@well-played.gg/typescript-sdk";
+import { useGuestSession, useWellPlayed } from "@well-played.gg/react-sdk";
+
+const GUEST_ME = graphql(`
+  query GuestMe {
+    guestMe { sessionPlayerId profile { firstName } wards { playerId firstName } }
+  }
+`);
+
+export function GuestHome() {
+  const { apiClient } = useWellPlayed();
+  const { actingPlayerId, actAs, end } = useGuestSession();
+  const { data } = useQuery(GUEST_ME, { client: apiClient });
+  const me = data?.guestMe;
+  if (!me) return null;
+  return (
+    <>
+      <button aria-pressed={actingPlayerId === me.sessionPlayerId} onClick={() => actAs(null)}>
+        {me.profile.firstName}
+      </button>
+      {me.wards.map((ward) => (
+        <button key={ward.playerId} aria-pressed={actingPlayerId === ward.playerId} onClick={() => actAs(ward.playerId)}>
+          {ward.firstName}
+        </button>
+      ))}
+      <button onClick={() => void end()}>Sign out</button>
+    </>
+  );
+}
+```
+
+### Staff-created guests and contact data
+
+- `guestProfileCreate(input)`: `origin` is `INVITED` or `ADMIN` (default `ADMIN`; others are `BAD_REQUEST`). With an `email`, it returns the existing guest with that e-mail unchanged (`created: false`) or creates one; without an `email`, it always creates. `guardianPlayerId` also adds a guardian link (`GUEST_PROFILE_NOT_FOUND` when not a player of the organization).
+- `guestProfileUpdate(playerId, input)`: omitted fields stay; an empty name clears it; `clearEmail: true` removes the e-mail (combined with `email`: `BAD_REQUEST`); an e-mail used by another guest is `CONFLICT`; an unknown guest is `GUEST_PROFILE_NOT_FOUND`.
+- Contact rule: `GuestProfile.email`, `firstName` and `lastName` are `null` unless the caller is the guest, one of its guardians, or holds `organization:guests:view` on `organization:player:{player_id}:guest`. `Player.guest` is `null` for players who are not guests and for callers who cannot see the contact data. A caller with `manage` but not `view` gets `null` contact fields back from its own mutations.
+
+```bash
+wellplayed graphql --org my-org -F input.email=parent@example.com -F input.firstName=Sam -F input.origin=INVITED \
+  'mutation($input: GuestProfileCreateInput!) {
+    guestProfileCreate(input: $input) { created profile { playerId email origin wardPlayerIds } }
+  }'
+```
+
+### Moderation
+
+- `organizationModerationUpdate(input: { blockedWords, blockedSubstrings })` replaces both lists (pass both). Each list holds at most 5000 entries of 1 to 64 characters with at least one letter; entries equal after normalisation are merged. Violations return `BAD_REQUEST` with `extensions.field`.
+- Matching ignores case and accents, folds `0 1 3 4 5 7 @ $ !` to `o i e a s t a s i`, collapses repeated letters and joins spaced-out letters. `blockedWords` match whole words or phrases; `blockedSubstrings` match anywhere once non-letters are removed, so a short substring also blocks longer innocent words.
+- Applied to: user group names (`userGroupUpdateName`, `groupName` at booking), tournament team names (`registerTournamentTeam`, `updateTournamentTeam`), and values of custom fields whose definition has `moderated: true` (`CreateCustomFieldDefinitionInput` / `UpdateCustomFieldDefinitionInput`, read on `CustomFieldDefinitionModel.moderated`).
+- A refused text returns `CONTENT_NOT_ALLOWED` with `extensions.field` (`name` for group and team names, the custom field key otherwise). The matched term is never returned.
+- `moderationCheck(inputs: [{ key, value }])` returns `[{ key, allowed }]` in input order, for at most 20 inputs of 4096 characters (`BAD_REQUEST`). Guests cannot call it (`GUEST_NOT_ALLOWED`); a guest UI relies on `CONTENT_NOT_ALLOWED` from the write.
+
+```bash
+wellplayed graphql --org my-org -F 'input.blockedWords=["badword"]' -F 'input.blockedSubstrings=["spam"]' \
+  'mutation($input: OrganizationModerationInput!) {
+    organizationModerationUpdate(input: $input) { blockedWords blockedSubstrings updatedAt }
+  }'
+
+wellplayed graphql --org my-org -F 'inputs=[{"key":"teamName","value":"The B4dword Crew"}]' \
+  'query($inputs: [ModerationCheckInput!]!) { moderationCheck(inputs: $inputs) { key allowed } }'
+```
+
+### Group names
+
+- `UserGroup.name` is optional. `userGroupUpdateName(groupId, name)` sets it; `null` or a blank name clears it. Allowed to the group manager (guest sessions included) or to a holder of `organization:user-groups:manage` on `organization:event:{event_id}:user-group:{user_group_id}`; others get `USER_GROUP_NOT_MANAGER`. A locked group returns `USER_GROUP_LOCKED`, for staff too.
+- The trimmed name must hold between `nameMinLength` (default 1) and `nameMaxLength` (default 100) characters of the event's `groupConfiguration` (`UserGroupConfiguration`, set through `EventConfigurationInput.groupConfiguration`), else `USER_GROUP_NAME_INVALID` with `extensions.min` and `extensions.max`; then moderation applies.
+- At booking time, pass `groupName` in `EventReservationRegisterTicketsInput` (`eventReservationStartRegistrationSession`) or to `eventReservationCreate(eventId, groupName)`; read it back on `EventReservation.groupName`.
+
+### Errors
+
+| Code | Extensions | When |
+|---|---|---|
+| `GUEST_SESSION_INVALID` | - | Session unknown, expired or revoked; guest-only operation without a session |
+| `GUEST_NOT_ALLOWED` | - | Operation not open to guests |
+| `GUEST_NOT_GUARDIAN` | - | `x-acting-player-id` or `guestWardRemove` without a guardian link |
+| `GUEST_SELF_ENTRY_DISABLED` | - | `guestEnter` while `selfEntry` is `DISABLED` |
+| `GUEST_LINK_INVALID` | `status` | `guestLinkExchange` on an unusable link |
+| `GUEST_WARD_LIMIT_REACHED` | `max` | `guestWardCreate` over `maxWardsPerGuardian` |
+| `GUEST_PROFILE_NOT_FOUND` | - | Unknown guest or guardian in staff operations |
+| `LIMIT_REACHED` | - | `ANONYMOUS_PLAYER_PROFILES` full |
+| `CONFLICT` | - | E-mail already used by another guest |
+| `CONTENT_NOT_ALLOWED` | `field` | Text refused by the moderation lists |
+| `USER_GROUP_NAME_INVALID` | `min`, `max` | Group name length out of bounds |
+| `USER_GROUP_LOCKED` | - | Renaming a locked group |
+| `BAD_REQUEST` | `field` (moderation lists) | Header conflicts, input validation |
+
+### Pitfalls
+
+- Call `guestLinkExchange` only on a user action (button), never on page load: mail scanners and link previews open URLs, and each exchange spends a use of a `maxUses: 1` link.
+- Show the reason from `guestLinkResolve` or from `extensions.status`; do not treat every failure as "expired".
+- Store the session token for the tab only (session storage or memory); it is a bearer credential for the guest and its wards.
+- `guestEnter` with an existing e-mail overwrites that guest's names, including a staff-created guest's.
+- `actAs` changes the header for the next requests only; refetch the queries that depend on the acting player (`guestMe`, `eventReservationsMyReservations`, ...).
+
+## Booking: slots, waitlists and registration series
+
+Events sell time slots: each `EventTicketConfiguration` can carry a start, an end and a state, so one event per venue and day can hold many slots. On top of slots the platform adds bulk calendar generation, self-service changes of validated reservations, per-slot waitlists with automatic offers, registration series (one active registration at a time across a set of events and tournaments) and an automatic event-to-tournament link.
+
+### Time slots
+
+New fields on `EventTicketConfiguration` (also accepted by `eventTicketConfigurationCreate` / `eventTicketConfigurationUpdate`, except the two computed ones):
+
+| Field | Meaning |
+|---|---|
+| `startsAt`, `endsAt` | Slot window (`DateTime`, nullable). `endsAt` must be after `startsAt` (`BAD_REQUEST`) |
+| `state: EventSlotState!` | Set by the organizer: `OPEN` (default), `CLOSED`, `BLOCKED`. `CLOSED` and `BLOCKED` both refuse new seats and waitlist offers; the difference is yours to show |
+| `stateReason` | Text shown to players for a closed or blocked slot |
+| `tournamentId` | Tournament of this slot, overriding `Event.tournamentId` |
+| `freeCount: Int!` | Computed: `maxCount - currentCount`, never negative. Seats held by unvalidated sessions and waitlist offers are not free |
+| `effectiveState: EventSlotEffectiveState!` | Computed at request time: `state`, or `PAST` once `startsAt <= now` on an `OPEN` slot |
+
+`eventSlots(filter: EventSlotsFilter!)` lists slots ordered by `startsAt`. It is public: anonymous callers, logged-in players and guest sessions can call it (it needs `organization:event:ticket-configuration:view`, granted to the anonymous group by default). The filter needs at least one of `eventIds`, `venueIds`, `from`, `to` (`from`/`to` apply to `startsAt`, `to` exclusive); `onlyReservable: true` keeps open, buyable, not started slots with free seats. No filter, or more than 1000 matching slots, fails with `BAD_REQUEST`. Slots of events whose `visibleAt` is unset or in the future are hidden unless the caller holds `organization:events:list:not_visible`.
+
+In a player app (signed in, or inside `WellPlayedGuestProvider`, whose `apiClient` already sends the guest headers):
+
+```tsx
+import { useMutation, useQuery } from "@apollo/client";
+import { graphql } from "@well-played.gg/typescript-sdk";
+import { useWellPlayed } from "@well-played.gg/react-sdk";
+
+const DaySlots = graphql(`
+  query DaySlots($filter: EventSlotsFilter!) {
+    eventSlots(filter: $filter) { id eventId name startsAt freeCount effectiveState stateReason }
+  }
+`);
+
+export function DaySlotList({ venueId, from, to }: { venueId: string; from: string; to: string }) {
+  const { apiClient } = useWellPlayed();
+  const { data } = useQuery(DaySlots, { client: apiClient, variables: { filter: { venueIds: [venueId], from, to } } });
+  const label = (slot: NonNullable<typeof data>["eventSlots"][number]): string =>
+    slot.effectiveState !== "OPEN" ? slot.stateReason ?? slot.effectiveState : slot.freeCount > 0 ? `${slot.freeCount} left` : "full";
+  return <ul>{data?.eventSlots.map((slot) => <li key={slot.id}>{slot.name}: {label(slot)}</li>)}</ul>;
+}
+```
+
+The next examples reuse these imports.
+
+Writing slots: lowering `maxCount` under `currentCount` fails with `EVENT_TICKET_CAPACITY_BELOW_RESERVED`; a priced slot needs payment collection configured (`BAD_CONFIGURATION`; free events no longer need it). Raising `maxCount` or reopening a slot (`state` back to `OPEN`) triggers waitlist offers.
+
+Related changes: `EventVenue.timezone` (IANA name such as `Europe/Paris`, default `UTC`, set through `eventVenueCreate` / `eventVenueUpdate`, `EVENT_VENUE_INVALID_TIMEZONE` otherwise) drives calendar times and same-day offer windows. `events(query: EventsQuery)` gains `venueIds`, `from` (events ending after), `to` (events starting before), `tournamentId` and `registrationSeriesId`.
+
+### Generating a calendar
+
+`eventCalendarGenerate(input: EventCalendarGenerateInput!)` creates one event per venue and local date, and one slot per start time from `firstStartTime` to `lastStartTime` every `intervalMinutes` (venue timezone). It is idempotent: events and slots that already exist are left untouched and counted in `existingEventCount` / `existingSlotCount`, so re-running the same input is safe (to edit existing ones use `eventUpdate` / `eventTicketConfigurationUpdate`). In `titlePattern`, `{date}` becomes the local date; in `namePattern` (default `{start}`), `{start}` becomes the local start time. `days[].slots` overrides the shared template for one day; `days[].tournamentId` links that day's event; `registrationSeriesId` assigns every event. The event `startAt`/`endAt` come from the first and last slot. Caps: 64 days per call, 20 slots per day (`EVENT_CALENDAR_INVALID_TEMPLATE` also covers non-`HH:mm` times, last before first, interval or duration not positive). Each day commits on its own: on an error, days already done stay created; fix the input and run it again.
+
+```bash
+cat > calendar.json <<'JSON'
+{ "input": {
+  "registrationSeriesId": "<seriesId>",
+  "days": [{ "venueId": "<venueId>", "date": "2027-03-06", "tournamentId": "<tournamentId>" },
+           { "venueId": "<venueId>", "date": "2027-03-07" }],
+  "slots": { "firstStartTime": "10:00", "lastStartTime": "16:00", "intervalMinutes": 60,
+             "durationMinutes": 45, "maxCount": 8, "price": 0, "currency": "EUR", "namePattern": "Session {start}" },
+  "event": { "titlePattern": "Open play {date}", "description": "Drop-in sessions",
+             "visibleAt": "2027-02-01T09:00:00Z",
+             "configuration": { "maxTicketsPerReservation": 3, "allowForMoreTicketsThanGroupMembers": true } }
+} }
+JSON
+wellplayed graphql --org my-org --variables ./calendar.json \
+  'mutation($input: EventCalendarGenerateInput!) {
+    eventCalendarGenerate(input: $input) {
+      createdEventCount existingEventCount createdSlotCount existingSlotCount
+      events { id title startAt endAt }
+    }
+  }'
+```
+
+### Self-service and waitlist settings
+
+Two new blocks in `EventConfiguration` / `EventConfigurationInput`. `eventUpdate` deep-merges `configuration` into the stored one (arrays are replaced).
+
+| Key | Default | Meaning |
+|---|---|---|
+| `selfService.allowCancel` (required in input) | `false` | The manager may cancel a validated free reservation |
+| `selfService.allowChange` (required in input) | `false` | The manager may move a validated free reservation with `eventReservationChangeTickets` |
+| `selfService.cutoffSeconds` | `0` | Self-service (cancel, change, release) closes this many seconds before the earliest slot start of the reservation |
+| `selfService.changeScope` | `SAME_EVENT` | Allowed move targets: `SAME_EVENT`, `SAME_VENUE` (any event of the same venue), `SAME_SERIES` (any event of the same registration series) |
+| `waitlist.enabled` (required in input) | `false` | Players may join the waitlist of a full slot |
+| `waitlist.offerDurationSeconds` | `86400` | How long an offer holds the seats |
+| `waitlist.sameDayOfferDurationSeconds` | `offerDurationSeconds` | Offer window when the offer is made on the slot's local day (venue timezone) |
+| `waitlist.maxQuantity` | `maxTicketsPerReservation` | Most seats one entry may ask for (never more than the slot `maxCount`) |
+
+An offer never outlives the slot start.
+
+```bash
+wellplayed graphql --org my-org -F id=<eventId> \
+  -F 'input={"configuration":{"selfService":{"allowCancel":true,"allowChange":true,"cutoffSeconds":7200,"changeScope":"SAME_VENUE"},"waitlist":{"enabled":true,"offerDurationSeconds":43200,"sameDayOfferDurationSeconds":3600}}}' \
+  'mutation($id: ID!, $input: EventUpdateInput!) {
+    eventUpdate(id: $id, input: $input) { id configuration { selfService { allowChange changeScope } waitlist { enabled } } }
+  }'
+```
+
+### Changing a validated reservation
+
+| Operation | Effect |
+|---|---|
+| `eventReservationChangeTickets(reservationId, input: { targetEventId?, tickets })` | Moves a validated free reservation to other slots of the same event or of `targetEventId` (within `changeScope`). Group, teammates and untouched tickets are kept |
+| `eventReservationReleaseTickets(reservationId, reservationTicketIds)` | Releases unassigned tickets (`groupMemberId: null`) of a validated reservation; at least one ticket must remain |
+| `eventReservationCancel(reservationId)` | Unchanged for unvalidated sessions. A validated reservation can be cancelled only if free (`EVENT_RESERVATION_ALREADY_PAID` otherwise, staff included); the manager also needs `selfService.allowCancel` and must be before the cutoff |
+
+`tickets` is the complete wanted state, applied as a per-configuration delta: `quantity` is the total for that configuration (1 to 20 entries); a configuration left out is released; a configuration whose total does not change keeps its tickets as they are (same ids, assignments and QR codes); an increase reserves only the extra seats (`EVENT_TICKET_FULL`, `EVENT_SLOT_CLOSED`, `EVENT_SLOT_STARTED`); a decrease releases unassigned tickets first. Members whose tickets are released move, in order, to the tickets the same call adds; `EVENT_RESERVATION_TICKET_ASSIGNED` is raised only when fewer tickets are added than members displaced. Totals identical to the current ones return the reservation unchanged, with no webhook. This also lets a validated reservation get a seat back on its own slot. Only free reservations move (`EVENT_RESERVATION_NOT_FREE` if the reservation or a target slot is priced); moving to another event also requires that no member is already registered there and that the group still fits that event's group configuration (`USER_GROUP_INVALID`).
+
+Who may call: the reservation manager (holding `organization:event:registration:register` on the target event), or staff with `organization:event:registration:update` on `organization:event:{eventId}:registration:{reservationId}`. Staff skip `allowCancel`/`allowChange`, the cutoff and, on a change, the slot state and `buyable` checks, but not capacity, `changeScope` or the series limits.
+
+Moving one's own reservation from a player app:
+
+```tsx
+const MyReservation = graphql(`
+  query MyReservation($eventId: ID!) {
+    event(id: $eventId) { id configuration { selfService { allowChange } } myReservation { id tickets { id ticketId groupMemberId } } }
+  }
+`);
+const ChangeTickets = graphql(`
+  mutation ChangeTickets($reservationId: ID!, $input: EventReservationChangeTicketsInput!) {
+    eventReservationChangeTickets(reservationId: $reservationId, input: $input) { id eventId tickets { id ticketId groupMemberId } }
+  }
+`);
+
+export function MoveToSlot({ eventId, targetEventId, slotId }: { eventId: string; targetEventId?: string; slotId: string }) {
+  const { apiClient } = useWellPlayed();
+  const { data } = useQuery(MyReservation, { client: apiClient, variables: { eventId } });
+  const [change, { loading, error }] = useMutation(ChangeTickets, { client: apiClient, refetchQueries: ["MyReservation"] });
+  const reservation = data?.event.myReservation;
+  if (!reservation || !data?.event.configuration?.selfService?.allowChange) return null;
+  const tickets = [{ ticketConfigurationId: slotId, quantity: reservation.tickets.length, reservedSeats: [] }];
+  return (
+    <button disabled={loading} onClick={() => change({ variables: { reservationId: reservation.id, input: { targetEventId, tickets } } })}>
+      {error ? String(error.graphQLErrors[0]?.extensions?.code) : "Move to this slot"}
+    </button>
+  );
+}
+```
+
+`groupName` (team name) can now be set at creation: `eventReservationStartRegistrationSession(eventId, input: { tickets, groupName })` and `eventReservationCreate(eventId, groupName)`; it is checked against the event `groupConfiguration.nameMinLength` / `nameMaxLength` (`USER_GROUP_NAME_INVALID`) and moderation (`CONTENT_NOT_ALLOWED`), and read back as `EventReservation.groupName`.
+
+Group lock: from `eventReservationValidateAndPay` on, the reservation's group is locked. Players then get `USER_GROUP_LOCKED` when they invite, accept or decline an invite, or remove a member, so teammates must accept before validation; staff holding `organization:user-groups:manage` on `organization:event:{eventId}:user-group:{groupId}` can still add members (directly `ACCEPTED`) and remove them. A member added to a validated reservation takes an unassigned ticket (`EVENT_RESERVATION_NO_FREE_TICKET` if none, release or add one first); a member removed leaves an unassigned ticket. Renaming a group (`userGroupUpdateName`) is documented with guests.
+
+### Waitlist
+
+| Operation | Who |
+|---|---|
+| `eventWaitlistJoin(ticketConfigurationId, quantity, replaceEntryId)` | Player or guest, `organization:event:registration:register` on the event. Only when `waitlist.enabled` and the slot lacks `quantity` free seats (`EVENT_WAITLIST_SEATS_AVAILABLE` otherwise: reserve directly). `replaceEntryId` ends one of the caller's entries (reason `REPLACED`) in the same call, also on the same slot to change `quantity` |
+| `eventWaitlistLeave(entryId)` | The entry's player; an offered entry releases its seats at once |
+| `myWaitlistEntries(eventIds, activeOnly = true)` | Caller's entries; active means `WAITING` or `OFFERED` |
+| `eventWaitlistEntries(eventId, ticketConfigurationId, statuses, page)` | Staff, `organization:event:waitlist:view`, queue order |
+| `eventWaitlistRemoveEntry(entryId)` | Staff, `organization:event:waitlist:manage` (reason `REMOVED`) |
+
+| Status | Meaning |
+|---|---|
+| `WAITING` | In the queue; `position` is 1 for the next entry (null for other statuses) |
+| `OFFERED` | Seats are held for the player in reservation `offerReservationId` until `offerExpiresAt` |
+| `ACCEPTED` | The offered reservation was validated |
+| `EXPIRED` | `endedReason: OFFER_EXPIRED` (offer timed out or its reservation was cancelled) or `SLOT_CLOSED` (the slot started while waiting) |
+| `LEFT` | `endedReason`: `LEFT`, `REMOVED`, `REPLACED`, `REGISTERED_ELSEWHERE` (registered in the same series, or the series limit refused the offer), `ALREADY_REGISTERED` (already holds a reservation on the event) |
+
+Offers are automatic. A few seconds after seats free up (cancel, release, change, expired session, capacity raised, slot reopened), and from a sweep every minute, the queue of an `OPEN`, buyable, not started slot is walked in join order: every `WAITING` entry whose `quantity` fits the free seats gets an offer (larger entries are skipped, not blocking). The offer is a registration session (`PENDING` reservation of the player, with the seats reserved) whose `sessionValidUntil` equals `offerExpiresAt`. To accept, the player validates it the usual way before it expires: `eventReservationValidateAndPay(eventId, options: {})` (returns `null` for a free reservation, a payment URL otherwise). To decline, call `eventWaitlistLeave`. When the offer expires the seats go to the next entry.
+
+```tsx
+const MyWaitlist = graphql(`
+  query MyWaitlist($eventIds: [ID!]) { myWaitlistEntries(eventIds: $eventIds) { id ticketConfigurationId status position offerExpiresAt } }
+`);
+const JoinWaitlist = graphql(`
+  mutation JoinWaitlist($ticketConfigurationId: ID!, $quantity: Int!) {
+    eventWaitlistJoin(ticketConfigurationId: $ticketConfigurationId, quantity: $quantity) { id status position }
+  }
+`);
+const AcceptOffer = graphql(`
+  mutation AcceptOffer($eventId: ID!) { eventReservationValidateAndPay(eventId: $eventId, options: {}) { paymentUrl } }
+`);
+
+export function WaitlistPanel({ eventId, slotId, quantity }: { eventId: string; slotId: string; quantity: number }) {
+  const { apiClient } = useWellPlayed();
+  const { data, refetch } = useQuery(MyWaitlist, { client: apiClient, variables: { eventIds: [eventId] } });
+  const [join, joining] = useMutation(JoinWaitlist, { client: apiClient, onCompleted: () => refetch() });
+  const [accept, accepting] = useMutation(AcceptOffer, { client: apiClient, onCompleted: () => refetch() });
+  const entry = data?.myWaitlistEntries.find((e) => e.ticketConfigurationId === slotId);
+  if (entry?.status === "OFFERED" && entry.offerExpiresAt) {
+    const until = new Date(entry.offerExpiresAt).toLocaleTimeString();
+    return <button disabled={accepting.loading} onClick={() => accept({ variables: { eventId } })}>Confirm my seats before {until}</button>;
+  }
+  if (entry) return <p>Waitlist position {entry.position}</p>;
+  return <button disabled={joining.loading} onClick={() => join({ variables: { ticketConfigurationId: slotId, quantity } })}>Join the waitlist</button>;
+}
+```
+
+### Registration series
+
+A `RegistrationSeries` caps how many registrations a player holds at once across its events and tournaments. Assign them with `registrationSeriesAssign(seriesId, eventIds, tournamentIds)` (`seriesId: null` removes them from their series), or with `eventCalendarGenerate(registrationSeriesId)`. Read `Event.registrationSeriesId` / `Tournament.registrationSeriesId`. Deleting a series detaches its events and tournaments.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `maxActiveRegistrations` | `1` (min 1) | Active registrations a player may hold in the series |
+| `maxActiveWaitlistEntries` | none | Active waitlist entries (`WAITING`, `OFFERED`) a player may hold in the series |
+| `allowWaitlistWhileRegistered` | `false` | When false, a player with an active registration cannot join a waitlist of the series |
+| `leaveWaitlistsOnRegistration` | `true` | Validating a reservation ends the members' other waitlist entries in the series (`REGISTERED_ELSEWHERE`) |
+| `releasePolicy` | `SLOT_END` | When a registration stops counting: `SLOT_END` (last slot ended), `SLOT_START` (first slot started), `NEVER` |
+
+An active registration is a reservation in session or validated on an event of the series where the player is an accepted or invited member, or a tournament team (not created from a reservation) in a tournament of the series. It is checked when a session starts, a teammate is invited or accepts, a reservation moves to another event, a waitlist offer opens and a tournament team registers; refusal is `REGISTRATION_SERIES_LIMIT_REACHED`. Starting a session on another event of the series silently releases the caller's own unfinished session (not a waitlist offer) elsewhere in the series.
+
+To swap a validated reservation for one on another event, start a session with `replaceReservationId`: the old reservation does not count while the new session runs, and it is cancelled (`cancelReason: REPLACED`) when the new one is validated. If the session expires, the old one stays. The old reservation must be validated, managed by the caller (`REGISTRATION_SERIES_REPLACE_NOT_ALLOWED`) and cancellable by its manager (free, `allowCancel`, before cutoff). It shows on the new reservation as `replacesReservationId`. On the same event it fails with `EVENT_ALREADY_IN_A_REGISTRATION_FOR_THIS_EVENT`: use `eventReservationChangeTickets`.
+
+`myActiveRegistrations(seriesId)` (player or guest) and `registrationSeriesPlayerEntries(seriesId, playerId)` (staff) return what counts: `RegistrationSeriesEntry` with `kind` (`EVENT_RESERVATION`, `WAITLIST_ENTRY`, `TOURNAMENT_TEAM`), `status`, `isManager`, ids and the `startsAt`/`endsAt` window.
+
+```bash
+wellplayed graphql --org my-org -F input.name="Spring tour" -F input.maxActiveWaitlistEntries=1 \
+  'mutation($input: RegistrationSeriesCreateInput!) { registrationSeriesCreate(input: $input) { id releasePolicy } }'
+wellplayed graphql --org my-org -F seriesId=<seriesId> -F 'eventIds=["<eventId>"]' -F 'tournamentIds=["<tournamentId>"]' \
+  'mutation($seriesId: ID, $eventIds: [ID!], $tournamentIds: [ID!]) {
+    registrationSeriesAssign(seriesId: $seriesId, eventIds: $eventIds, tournamentIds: $tournamentIds)
+  }'
+```
+
+### Event-tournament link
+
+Set `tournamentId` on `eventCreate` / `eventUpdate` (needs `organization:tournament:view` on it) or on a slot. When a reservation is validated, the platform creates one `TournamentTeam` per tournament its tickets point to: name from `groupName` (or the manager's username), tag from its first 4 letters or digits, manager and accepted members from the group, `eventReservationId` set. It then keeps it in sync: reservation status maps to team status (`REGISTERED`, `CONFIRMED`, `PRESENCE_CONFIRMATION_PENDING` to `AWAITING_FOR_PRESENCE_CONFIRMATION`, `NOT_ATTENDING`), cancel withdraws the team, a move withdraws and unlinks teams of tournaments no longer targeted and creates the new ones, group member and name changes follow. The tournament team limit applies (`LIMIT_REACHED` refuses the validation). Read the link both ways with `EventReservation.tournamentTeamIds` and `TournamentTeam.eventReservationId`. Changing the tournament of an event or slot that already has validated reservations fails with `EVENT_TOURNAMENT_LINK_LOCKED`.
+
+### Permissions
+
+| Operation | Permission (resource) |
+|---|---|
+| `eventSlots` | `organization:event:ticket-configuration:view` (anonymous by default) |
+| `eventCalendarGenerate` | `organization:event:create` + `organization:event:ticket-configuration:create`, + `organization:tournament:view` per day tournament |
+| Reservation change, release, cancel | Manager: `organization:event:registration:register` (`organization:event:{eventId}`, the target event for a change); staff: `organization:event:registration:update` (`organization:event:{eventId}:registration:{reservationId}`) |
+| `eventWaitlistJoin`, `eventWaitlistLeave` | `organization:event:registration:register` (`organization:event:{eventId}`) |
+| `eventWaitlistEntries` / `eventWaitlistRemoveEntry` | `organization:event:waitlist:view` / `organization:event:waitlist:manage` (`organization:event:{eventId}:waitlist`) |
+| `registrationSeries`, `registrationSeriesList`, `registrationSeriesPlayerEntries` | `organization:registration-series:view` (`organization:registration-series:{seriesId}`) |
+| `registrationSeriesCreate/Update/Delete` | `organization:registration-series:manage` |
+| `registrationSeriesAssign` | `manage` on the series + `organization:event:update` per event + `organization:tournament:update` per tournament |
+| `myWaitlistEntries`, `myActiveRegistrations` | Caller's own player (logged in or guest) |
+
+### Limits
+
+| Limit | Default / max | Scope |
+|---|---|---|
+| `REGISTRATION_SERIES` | 1 / 50 | Series per organization (`LIMIT_REACHED`) |
+| `EVENTS_MAX_WAITLIST_ENTRIES` | 100 / 10 000 | Active entries per slot (`LIMIT_REACHED`) |
+
+`EVENTS_MAX_TICKETS_TYPES` and `EVENTS_MAX_TICKETS` also apply to generated slots.
+
+### Error codes
+
+| Code | When |
+|---|---|
+| `EVENT_SLOT_CLOSED`, `EVENT_SLOT_STARTED`, `EVENT_TICKET_FULL` | Reserving, moving to or waitlisting a `CLOSED`/`BLOCKED` slot, a started slot; not enough free seats |
+| `EVENT_TICKET_CAPACITY_BELOW_RESERVED`, `EVENT_TOURNAMENT_LINK_LOCKED` | `maxCount` below `currentCount`; tournament change with validated reservations |
+| `EVENT_CALENDAR_INVALID_TEMPLATE`, `EVENT_VENUE_INVALID_TIMEZONE` | Bad slot template, bad IANA timezone |
+| `EVENT_RESERVATION_CUTOFF_PASSED`, `EVENT_RESERVATION_CHANGE_NOT_ALLOWED` | Self-service after the cutoff; `allowCancel`/`allowChange` off or target outside `changeScope` |
+| `EVENT_RESERVATION_NOT_FREE` / `EVENT_RESERVATION_ALREADY_PAID` | Moving / cancelling a paid validated reservation |
+| `EVENT_RESERVATION_TICKET_ASSIGNED`, `EVENT_RESERVATION_NO_FREE_TICKET` | Releasing an assigned ticket or a move leaving a member without one; adding a member with no unassigned ticket |
+| `EVENT_RESERVATION_WRONG_STATUS`, `EVENT_RESERVATION_YOU_ARE_NOT_MANAGER` | Change or release on an unvalidated reservation; caller neither manager nor staff |
+| `EVENT_WAITLIST_DISABLED`, `EVENT_WAITLIST_SEATS_AVAILABLE`, `EVENT_WAITLIST_ALREADY_JOINED`, `EVENT_WAITLIST_ENTRY_NOT_FOUND` | Waitlist off; seats free; active entry on this slot; unknown or foreign entry |
+| `REGISTRATION_SERIES_LIMIT_REACHED`, `REGISTRATION_SERIES_REPLACE_NOT_ALLOWED`, `REGISTRATION_SERIES_NOT_FOUND` | Series rules above |
+| `USER_GROUP_LOCKED` | Player membership change on the group of a validated reservation |
+| `BAD_REQUEST` | `eventSlots` without filter or over 1000 rows, invalid waitlist `quantity`, slot not buyable, ticket count not matching the group |
+
+### Webhooks
+
+Reservation payloads carry `id, eventId, status, groupId, managerId, managerUsername, createdAt, updatedAt` plus:
+
+| Type | Extra fields |
+|---|---|
+| `EVENT_RESERVATION_VALIDATED` | `validatedAt` (free or paid validation) |
+| `EVENT_RESERVATION_SESSION_EXPIRED` | `waitlistEntryId` (set when the session was a waitlist offer) |
+| `EVENT_RESERVATION_TICKETS_CHANGED` | `previousEventId`, `previousTicketConfigurationIds`, `ticketConfigurationIds` |
+| `EVENT_RESERVATION_TICKETS_RELEASED` | `releasedCount`, `ticketConfigurationIds` |
+| `EVENT_RESERVATION_CANCELLED` | `cancelReason`: `MANAGER`, `STAFF` or `REPLACED` |
+| `EVENT_WAITLIST_JOINED`, `EVENT_WAITLIST_OFFERED`, `EVENT_WAITLIST_ENDED` | Entry fields: `id, eventId, ticketConfigurationId, playerId, quantity, status, endedReason, offerReservationId, offerExpiresAt, createdAt, updatedAt` |
+
+### Pitfalls
+
+- A waitlist entry for more than one seat can only be offered if the event has `allowForMoreTicketsThanGroupMembers: true` (the offer opens with the player alone in the group); otherwise it is skipped every time and stays `WAITING`.
+- `onlyReservable: true` hides full slots: don't use it on a screen that offers the waitlist.
+- An offer is a reservation on the event: `eventReservationStartRegistrationSession` on that event then fails with `EVENT_ALREADY_IN_A_REGISTRATION_FOR_THIS_EVENT`; validate the offer instead.
+- `eventReservationReleaseTickets` checks only the cutoff, not `allowCancel`/`allowChange`.
+
+## Competition: open pools, leaderboard feeds, rosters and item transfers
+
+### Open pool steps
+
+An open pool is a tournament step with no fixed bracket. Staff create a match between any eligible teams whenever they are ready (for example when a station frees up). Each ended match adds points to a live ranking, and the step only ends when staff close it. `TournamentStep.openPool` (`OpenPoolConfiguration`) is non-null on such a step and null on every other step.
+
+| `OpenPoolConfiguration` field | Meaning | Default |
+|---|---|---|
+| `teamsPerMatch` | Teams in every match (2 to 64) | 2 |
+| `bestOf` | Matches per game, odd (1 to 15) | 1 |
+| `maxMatchesPerTeam` | Games a team may play in the step; `0` = unlimited | 0 |
+| `allowRematch` | Whether the same teams may meet again | true |
+| `allowConcurrentMatches` | Whether a team may have several unfinished games at once | false |
+| `autoJoin` | Whether a tournament team joins the step on its first match | true |
+| `enforceTeamMinSize` | Whether a team needs the tournament's minimum accepted members to play | true |
+
+**Setup.** Apply the built-in preset `open-pool` (category `OTHER`) with `applyBuiltinPreset`, then run the usual lifecycle: `generateTournamentStep`, `seedTournamentStep`, `startTournamentStep`. Matches can only be created on a `STARTED` step.
+
+| `open-pool` parameter | Type | Default | Effect |
+|---|---|---|---|
+| `team_count` | INT | required | Expected team count (validator and generation cap) |
+| `pools` | INT | 1 | Number of groups ("Pool 1", ...), each with one round "Matches" and no game |
+| `teams_per_match`, `best_of`, `max_matches_per_team` | INT | 2, 1, 0 | Copied to `OpenPoolConfiguration` |
+| `allow_rematch`, `allow_concurrent_matches`, `auto_join`, `enforce_team_min_size` | BOOLEAN | true, false, true, true | Same |
+| `win_points`, `draw_points`, `loss_points`, `forfeit_points` | FLOAT | 3, 1, 0, 0 | `POINTS` scoring; tiebreakers WINS then HEAD_TO_HEAD |
+| `qualify_top` | INT | 0 | On close: the top N stay `QUALIFIED`, every other team becomes `ELIMINATED`; 0 disables the cut |
+| `declare_winner` | BOOLEAN | true | On close: rank 1 becomes `WINNER` instead of `QUALIFIED` |
+
+With this preset, seeding registers every seeded team with 0 points, the next match of a best-of series is created automatically, and a withdrawn team's pending matches are awarded to its opponents. For a follow-up bracket, apply `seeded-playoff` (category `SINGLE_ELIMINATION`) to the next step: it keeps the previous step's teams with `rank <= team_count` and seeds them in rank order (1 vs N). Parameters: `team_count` (required: 2, 4, 8 or 16), `best_of` (1), `final_best_of` (defaults to `best_of`), `third_place` (false), `promote_step_winners_to_tournament` (true).
+
+A custom preset script enables an open pool with `set_open_pool({ teams_per_match = 2, best_of = 1, max_matches_per_team = 0, allow_rematch = true, allow_concurrent_matches = false, auto_join = true, enforce_team_min_size = true })`; `simulateScript` then lists a `SET_OPEN_POOL` entry in `effectsSummary`. Applying a preset that does not call it turns the open pool off for that step.
+
+```bash
+wellplayed graphql --org my-org \
+  -F builtinPresetId=open-pool -F tournamentStepId=<stepId> \
+  --raw-field parameters='{"team_count":32,"qualify_top":8,"win_points":3}' \
+  'mutation($builtinPresetId: String!, $tournamentStepId: ID!, $parameters: String) {
+    applyBuiltinPreset(builtinPresetId: $builtinPresetId, tournamentStepId: $tournamentStepId, parameters: $parameters) { id }
+  }'
+wellplayed graphql --org my-org -F stepId=<stepId> 'mutation($stepId: ID!) { generateTournamentStep(stepId: $stepId) }'
+wellplayed graphql --org my-org -F input.stepId=<stepId> -F 'input.orderedTeamIds=["<teamA>","<teamB>","<teamC>"]' \
+  'mutation($input: SeedStepInput!) { seedTournamentStep(input: $input) { id status openPool { teamsPerMatch bestOf } } }'
+wellplayed graphql --org my-org -F stepId=<stepId> 'mutation($stepId: ID!) { startTournamentStep(stepId: $stepId) }'
+```
+
+`seedTournamentStep(input:)` still expects every team of the tournament in `orderedTeamIds`; only a step whose cross-step `QUALIFY` rule filtered the list (such as `seeded-playoff`) seeds a subset. Teams registered after seeding join through `autoJoin` or `openPoolAddTeams`.
+
+### Running matches
+
+| Operation | Step status | Permission (resource) | Does |
+|---|---|---|---|
+| `openPoolCreateMatch(input)` | `STARTED` | `organization:tournament:step:open-pool:manage` on `organization:tournament:{tournament_id}:step:{step_id}`, or tournament admin `MANAGE_SCORES` | Creates one game and its first `WAITING` match |
+| `openPoolAddTeams(stepId, teamIds, groupId)` | `SEEDED` or `STARTED` | open-pool:manage | Registers teams as `ACTIVE` with 0 points (idempotent, same eligibility check as below); returns their standings |
+| `updateMatchScores(matchId, input)` | `STARTED` | `organization:tournament:match:score:update` on the match path, or `MANAGE_SCORES` | Enters results; a match ends once no team is `WAITING` |
+| `openPoolCorrectMatch(matchId, input)` | `STARTED` | same as `updateMatchScores` | Rewrites scores of a `STARTED` or `ENDED` match, recomputes points and ranks; rules are not fired again |
+| `openPoolCancelMatch(matchId, reason)` | `STARTED` | open-pool:manage or `MANAGE_SCORES` | Deletes the whole game (every match of a best-of) in any status and recomputes the teams |
+| `openPoolClose(stepId, cancelPendingMatches: Boolean! = false)` | `STARTED` | open-pool:manage | Ranks, fires ROUND_ENDED, GROUP_ENDED and STEP_ENDED rules, step `ENDED` |
+| `openPoolReopen(stepId)` | `ENDED` | open-pool:manage | `WINNER`, `QUALIFIED` and `ELIMINATED` teams go back to `ACTIVE`, step `STARTED` |
+
+`OpenPoolCreateMatchInput`: `stepId`, `teamIds` (exactly `teamsPerMatch` distinct ids), `groupId` (required when the step has several pools), `label` (max 64 chars, e.g. a station name), `idempotencyKey` (max 64 chars; a replay with the same key on the same step returns the existing match without a second webhook). Checks run in this order:
+
+1. The step is an open pool (`OPEN_POOL_NOT_ENABLED`) and `STARTED` (`TOURNAMENT_STEP_WRONG_STATE`).
+2. Team count and distinct ids (`OPEN_POOL_WRONG_TEAM_COUNT`); unknown or missing pool (`BAD_REQUEST`).
+3. Each team belongs to the tournament, its status is not `WITHDRAWN`, `DENIED`, `NOT_VALID` or `NOT_ATTENDING`, its step row is not `WITHDRAWN` or `ELIMINATED`, and it is already in the pool unless `autoJoin` (`OPEN_POOL_TEAM_NOT_ELIGIBLE`).
+4. `enforceTeamMinSize`: accepted members >= the tournament minimum team size (`OPEN_POOL_TEAM_INCOMPLETE`).
+5. No unfinished game unless `allowConcurrentMatches` (`OPEN_POOL_TEAM_BUSY`); `maxMatchesPerTeam` (`OPEN_POOL_MAX_MATCHES_REACHED`, cancelled games do not count); a game already holding all these teams when `allowRematch` is false (`OPEN_POOL_REMATCH_NOT_ALLOWED`).
+
+A staff console creates matches from a form. The signed-in account needs open-pool:manage or `MANAGE_SCORES`; pass the pool's teams (from `openPoolStandings`, or the tournament's teams when `autoJoin` is on). The idempotency key changes only when the selection changes or a match was created, so a retried submit cannot create a second match.
+
+```tsx
+import { useState, type FormEvent } from "react";
+import { useMutation } from "@apollo/client";
+import { graphql } from "@well-played.gg/typescript-sdk";
+import { useWellPlayed } from "@well-played.gg/react-sdk";
+
+const OPEN_POOL_CREATE_MATCH = graphql(`
+  mutation OpenPoolCreateMatch($input: OpenPoolCreateMatchInput!) {
+    openPoolCreateMatch(input: $input) { id label status }
+  }
+`);
+
+export function CreateMatchForm({ stepId, teams }: { stepId: string; teams: { id: string; name: string }[] }) {
+  const { apiClient } = useWellPlayed();
+  const [teamIds, setTeamIds] = useState<string[]>([]);
+  const [label, setLabel] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [failure, setFailure] = useState<string | null>(null);
+  const [createMatch, { loading }] = useMutation(OPEN_POOL_CREATE_MATCH, {
+    client: apiClient,
+    refetchQueries: ["OpenPoolBoard"],
+    onCompleted: () => {
+      setFailure(null);
+      setTeamIds([]);
+      setIdempotencyKey(crypto.randomUUID());
+    },
+    onError: (error) => setFailure(String(error.graphQLErrors[0]?.extensions?.code ?? error.message)),
+  });
+
+  const toggle = (id: string): void => {
+    setTeamIds((current) => (current.includes(id) ? current.filter((t) => t !== id) : [...current, id]));
+    setIdempotencyKey(crypto.randomUUID());
+  };
+
+  const submit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    void createMatch({ variables: { input: { stepId, teamIds, label: label || null, idempotencyKey } } });
+  };
+
+  return (
+    <form onSubmit={submit}>
+      {teams.map((team) => (
+        <label key={team.id}>
+          <input type="checkbox" checked={teamIds.includes(team.id)} onChange={() => toggle(team.id)} />
+          {team.name}
+        </label>
+      ))}
+      <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={64} placeholder="Station" />
+      <button type="submit" disabled={loading}>Create match</button>
+      {failure && <p role="alert">{failure}</p>}
+    </form>
+  );
+}
+```
+
+Results and closing stay admin operations:
+
+```bash
+wellplayed graphql --org my-org -F matchId=<matchId> \
+  -F 'input=[{"teamId":"<teamA>","forcedScoreValue":3,"status":"WINNER"},{"teamId":"<teamB>","forcedScoreValue":1,"status":"LOSER"}]' \
+  'mutation($matchId: ID!, $input: [UpdateMatchScoreInput!]!) { updateMatchScores(matchId: $matchId, input: $input) { id status } }'
+wellplayed graphql --org my-org -F stepId=<stepId> -F cancelPendingMatches=true \
+  'mutation($stepId: ID!, $cancelPendingMatches: Boolean!) { openPoolClose(stepId: $stepId, cancelPendingMatches: $cancelPendingMatches) { id status } }'
+```
+
+Correction rules: each `UpdateMatchScoreInput` row names a team of the match (`TOURNAMENT_TEAM_NOT_FOUND` otherwise) and may set `forcedScoreValue` and `status`; omitted fields keep their value. A `WAITING` match cannot be corrected and a correction cannot finish a `STARTED` match (`TOURNAMENT_STEP_MATCH_WRONG_STATUS`: enter the result with `updateMatchScores`). A correction that would change whether the game is decided fails with `OPEN_POOL_CORRECTION_REOPENS_GAME`: cancel the match and create it again. Corrections and cancellations are refused once the step is `ENDED` (`TOURNAMENT_STEP_WRONG_STATE`); reopen it first. Unknown ids give `TOURNAMENT_STEP_NOT_FOUND` or `TOURNAMENT_STEP_MATCH_NOT_FOUND`. `openPoolClose` without `cancelPendingMatches` fails with `OPEN_POOL_PENDING_MATCHES` while a game is unfinished; with it, each pending game is cancelled with the reason `open pool closed`. `openPoolReopen` fails with `OPEN_POOL_NEXT_STEP_SEEDED` once a later step is seeded or further.
+
+### Standings and match lists
+
+Both reads are public (send only the `organization-id` header); the default Anonymous group holds `organization:tournament:step:view` and `organization:tournament:match:view`. Both fail with `OPEN_POOL_NOT_ENABLED` on a step that is not an open pool. There is no subscription: poll every 5 to 15 seconds.
+
+| Query | Returns |
+|---|---|
+| `openPoolStandings(stepId, groupId)` | `[OpenPoolStanding!]!` ordered by `rank` (nulls last), then `points` desc: `teamId`, `team`, `groupId`, `rank`, `status` (`TeamScopeStatus`), `points`, `played` (ended matches), `wins`, `losses`, `draws`, `forfeits` |
+| `openPoolMatches(stepId, filter, page)` | Newest first, 10 per page by default (max 100). `filter`: `statuses: [MatchStatus!]`, `teamId`, `groupId`. Each `OpenPoolMatch` has `id`, `gameId`, `groupId`, `label`, `order`, `status`, `teams { teamId team status score }` |
+
+Ranks are recomputed after every ended match, correction and cancellation, so standings are live. The same values appear on any step as `TournamentStep.teamScores { rank status score }` (`rank` is null until ranked).
+
+A public board works for signed-out visitors inside `<WellPlayedProvider>`:
+
+```tsx
+import { useQuery } from "@apollo/client";
+import { graphql } from "@well-played.gg/typescript-sdk";
+import { useWellPlayed } from "@well-played.gg/react-sdk";
+
+const OPEN_POOL_BOARD = graphql(`
+  query OpenPoolBoard($stepId: ID!, $filter: OpenPoolMatchesFilter) {
+    openPoolStandings(stepId: $stepId) { teamId rank points wins draws losses team { name } }
+    openPoolMatches(stepId: $stepId, filter: $filter, page: { first: 20 }) {
+      nodes { id label status teams { teamId score team { name } } }
+    }
+  }
+`);
+
+export function OpenPoolBoard({ stepId }: { stepId: string }) {
+  const { apiClient } = useWellPlayed();
+  const { data, error } = useQuery(OPEN_POOL_BOARD, {
+    client: apiClient,
+    variables: { stepId, filter: { statuses: ["WAITING", "STARTED"] } },
+    pollInterval: 10_000,
+    errorPolicy: "all",
+  });
+  if (error) return <p role="alert">{error.message}</p>;
+  if (!data) return <p>Loading</p>;
+  return (
+    <section>
+      <ol>
+        {data.openPoolStandings.map((row) => (
+          <li key={row.teamId}>
+            {row.rank ?? "-"}. {row.team.name}: {row.points} pts ({row.wins}-{row.draws}-{row.losses})
+          </li>
+        ))}
+      </ol>
+      <ul>
+        {data.openPoolMatches.nodes.map((match) => (
+          <li key={match.id}>
+            {match.label ?? "Match"}: {match.teams.map((t) => t.team.name).join(" vs ")} ({match.status})
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+```
+
+### Webhooks and journal
+
+| Webhook | Payload |
+|---|---|
+| `TOURNAMENT_MATCH_CREATED` | `id` (match), `tournamentId`, `stepId`, `groupId`, `roundId`, `gameId`, `label`, `teamIds`, `organizationId` |
+| `TOURNAMENT_MATCH_CORRECTED` | same path + `scores`, `previousScores` (rows `{ tournamentTeamId, score, isWinner, isForfeited }`), `organizationId` |
+| `TOURNAMENT_MATCH_CANCELLED` | same path + `teamIds`, `wasEnded`, `reason`, `organizationId` (also once per game cancelled by `openPoolClose`) |
+
+`TOURNAMENT_MATCH_SCORE_UPDATED` is still sent by `updateMatchScores`. Journal entry types (`journalEntries(filters: { typePrefix: "tournament.open_pool." })`): `tournament.open_pool.match_corrected` (`TournamentOpenPoolMatchCorrectedPayload`: before and after score rows), `tournament.open_pool.match_cancelled` (`TournamentOpenPoolMatchCancelledPayload`: `previousScores`, `wasEnded`, `cancelReason`), `tournament.open_pool.closed` (`cancelledMatchCount`), `tournament.open_pool.reopened`.
+
+### Tournament team rosters (staff)
+
+Staff fix rosters outside the registration window. Permission: `organization:tournament:team:members:manage` on `organization:tournament:{tournament_id}:team:{team_id}` (also on the source team when moving), or the tournament admin `MANAGE_TEAMS` right.
+
+`tournamentTeamMemberAdd(input: TournamentTeamMemberAddInput!)` adds the player as an `ACCEPTED` member; the team status does not change. An `AWAITING` invite is upgraded, and an accepted member is a no-op unless `setAsManager` changes the manager.
+
+| Input field | Default | Effect |
+|---|---|---|
+| `teamId`, `playerId` | required | Target team and player profile of the organization |
+| `moveFromOtherTeam` | false | Takes the player out of their accepted team in the same tournament in the same transaction (that team loses its manager if it was them) |
+| `removeEmptySourceTeam` | false | With `moveFromOtherTeam`: deletes the source team once empty, unless it has match results (`TOURNAMENT_TEAM_HAS_RESULTS`, nothing is changed) |
+| `setAsManager` | false | Makes the player the team manager |
+
+`tournamentTeamMemberRemove(teamId, playerId, newManagerId)` deletes the membership in any status. Removing the manager hands the role to `newManagerId` (an accepted member) or leaves the team without a manager; `newManagerId` is ignored for other members. Removing the last member keeps the team.
+
+```bash
+wellplayed graphql --org my-org \
+  -F input.teamId=<teamId> -F input.playerId=<playerId> -F input.moveFromOtherTeam=true -F input.removeEmptySourceTeam=true \
+  'mutation($input: TournamentTeamMemberAddInput!) { tournamentTeamMemberAdd(input: $input) { id managerId members { playerProfileId status } } }'
+wellplayed graphql --org my-org -F teamId=<teamId> -F playerId=<managerId> -F newManagerId=<memberId> \
+  'mutation($teamId: ID!, $playerId: ID!, $newManagerId: ID) { tournamentTeamMemberRemove(teamId: $teamId, playerId: $playerId, newManagerId: $newManagerId) { id managerId } }'
+```
+
+| Error | When |
+|---|---|
+| `TOURNAMENT_TEAM_FULL` | Accepted members already at the tournament's maximum team size |
+| `TOURNAMENT_TEAM_PLAYER_IN_OTHER_TEAM` | Player accepted in another team of the tournament and `moveFromOtherTeam` is false |
+| `TOURNAMENT_TEAM_MEMBER_NOT_FOUND` | Removed player is not a member, or `newManagerId` is not another accepted member |
+| `TOURNAMENT_TEAM_HAS_RESULTS` | Empty source team has match results |
+| `TOURNAMENT_TEAM_INVALID_STATUS` | Target team is `WITHDRAWN` or `DENIED` |
+| `TOURNAMENT_TEAM_NOT_FOUND`, `PLAYER_NOT_FOUND` | Unknown team or player in this organization |
+
+Each change sends `TOURNAMENT_TEAM_MEMBER_UPDATED` (the usual team fields plus `playerId`, `memberStatus`: `ACCEPTED` or `REMOVED`, and `byStaff: true`); a move sends `REMOVED` for the source team, then `ACCEPTED` for the target.
+
+### Leaderboard scores and seasons
+
+`leaderboardRegisterPlayerScore(input: LeaderboardRegisterPlayerScoreInput!)` needs `organization:leaderboard:register_score` on `organization:leaderboard:{leaderboard_id}`. `score` is now a `Float`.
+
+| `mode` (`LeaderboardScoreMode`) | `score` means | Rules |
+|---|---|---|
+| `REPLACE` (default) | The new total | Finite and >= 0 (`BAD_REQUEST`) |
+| `INCREMENT` | The change to apply, may be negative | Base is the current total, or the season's starting score for a new entry |
+
+`seasonId` picks the season to credit (`LEADERBOARD_SEASON_NOT_FOUND` if it is not a season of this leaderboard); without it, the season with `start <= now < end` is used (`LEADERBOARD_NO_ACTIVE_SEASON` between seasons). The entry moves to the highest bucket whose `minScore` <= the total (`LEADERBOARD_NO_BUCKET_FOUND_FOR_SCORE` if none, e.g. a negative total). A new entry counts against the `LEADERBOARD_ENTRIES` limit (`LIMIT_REACHED`). Concurrent writes for the same player are serialised, so `INCREMENT` is safe to call in parallel.
+
+```bash
+wellplayed graphql --org my-org \
+  -F input.leaderboardId=<leaderboardId> -F input.playerId=<playerId> -F input.score=-2.5 -F input.mode=INCREMENT \
+  'mutation($input: LeaderboardRegisterPlayerScoreInput!) { leaderboardRegisterPlayerScore(input: $input) { score rank leaderboardSeasonBucketId } }'
+```
+
+`LEADERBOARD_SCORE_REGISTERED` carries `leaderboardId`, `seasonId` (the season actually credited), `bucketId`, `playerProfileId`, `score` (new total) and `organizationId`; `mode` and `delta` are declared nullable, so do not rely on them. Seasons of one leaderboard can no longer overlap: `createLeaderboardSeason` and `updateLeaderboardSeason` fail with `LEADERBOARD_SEASON_OVERLAP` (a season may start exactly when the previous one ends). `leaderboardCurrentPlayerRanking` without `seasonId` reads the season with `start <= now < end`; between seasons it fails with `LEADERBOARD_SEASON_NOT_FOUND`, and `LEADERBOARD_PLAYER_RANKING_NOT_FOUND` means the player has no score in that season.
+
+### Leaderboard feeds
+
+A feed credits a player leaderboard from tournament results. Match points go to every accepted member of the team for each ended match, every match of a best-of included (`winPoints`, `lossPoints`, `drawPoints` or `forfeitPoints` by the team's result); `placementPoints[i]` goes to the members of the team ranked `i + 1` when a fed step ends (at most 64 entries). The feed remembers which players it credited, so corrections and cancellations adjust or reverse exactly those points, a reopened step takes its placement points back, and roster changes after a credit do not move points. Credits are written as increments in the pinned `seasonId`, or in the season active when the match (or step) last changed.
+
+| Operation | Permission | Notes |
+|---|---|---|
+| `leaderboardFeeds(leaderboardId, tournamentId, page)` | `organization:leaderboard:view`; signed-in callers only | Lists only feeds of leaderboards the caller can view |
+| `createLeaderboardFeed(input)` | `organization:leaderboard:update` on the leaderboard and `organization:tournament:view` on the tournament | `stepId` null = every step; credits the results already played at once |
+| `updateLeaderboardFeed(id, input)` | same | Points, `seasonId`, `enabled`; reconciles at once; `enabled: false` reverses every credited point |
+| `deleteLeaderboardFeed(id)` | same | Credited points stay; the feed's credit history is deleted |
+| `reconcileLeaderboardFeed(id)` | same | Repairs and backfills; returns `sourcesChecked`, `entriesWritten`, `pointsDelta` |
+
+```bash
+wellplayed graphql --org my-org \
+  -F input.leaderboardId=<leaderboardId> -F input.tournamentId=<tournamentId> \
+  -F input.winPoints=3 -F input.drawPoints=1 -F 'input.placementPoints=[50,30,20,10]' \
+  'mutation($input: CreateLeaderboardFeedInput!) { createLeaderboardFeed(input: $input) { id stepId seasonId enabled } }'
+wellplayed graphql --org my-org -F id=<feedId> \
+  'mutation($id: ID!) { reconcileLeaderboardFeed(id: $id) { sourcesChecked entriesWritten pointsDelta } }'
+```
+
+Errors: `LEADERBOARD_FEED_INVALID_SCOPE` (leaderboard or tournament outside the organization, step outside the tournament, season outside the leaderboard), `LEADERBOARD_FEED_NOT_FOUND`. A credit that fails (typically no season covers the match date) never fails the caller: it is journaled as `leaderboard.feed.reconcile_failed` (`LeaderboardFeedReconcileFailedPayload`: `feedId`, `sourceKey`, `errorMessage`); fix the seasons, then call `reconcileLeaderboardFeed`. Pitfalls: feed credits do not send `LEADERBOARD_SCORE_REGISTERED`, and a manual `REPLACE` on a fed leaderboard overwrites the credited points.
+
+### Player item transfers
+
+`playerItemsTransfer(input: PlayerItemsTransferInput!)` moves quantities from `fromPlayerId` to `toPlayerId`, all or nothing. `items`: 1 to 20 entries `{ itemId, quantity >= 1 }` with distinct `itemId`. Permission: `organization:player:items:update` on both `organization:player:{fromPlayerId}:item:{item_id}` and `organization:player:{toPlayerId}:item:{item_id}` for every item. The result lists the updated rows of each side (`from`, `to`); a giver row that reaches 0 is kept.
+
+```bash
+wellplayed graphql --org my-org \
+  -F input.fromPlayerId=<giverId> -F input.toPlayerId=<receiverId> -F 'input.items=[{"itemId":"<itemId>","quantity":2}]' \
+  'mutation($input: PlayerItemsTransferInput!) { playerItemsTransfer(input: $input) { from { itemId quantity } to { itemId quantity } } }'
+```
+
+Errors: `PLAYER_ITEM_INSUFFICIENT_QUANTITY` (the message names the item, the available and the requested quantity; nothing is moved), `ITEM_NOT_FOUND`, `PLAYER_NOT_FOUND`, `BAD_REQUEST` (same player on both sides or a repeated item). Webhooks: one `PLAYER_ITEM_UPDATED` per changed row, then `PLAYER_ITEMS_TRANSFERRED` (`fromPlayerId`, `toPlayerId`, `items: [{ itemId, quantity }]`, `organizationId`).
+
+`playerItemsUpdate(playerId, input)` no longer allows overdrafts: each row's new quantity is `set ?? current`, plus `add`, minus `remove`; a negative result fails the whole batch with `PLAYER_ITEM_INSUFFICIENT_QUANTITY`, and an item outside the organization fails with `ITEM_NOT_FOUND`. A row at 0 is kept.
 
 ## Related skills
 

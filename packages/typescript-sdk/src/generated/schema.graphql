@@ -1406,6 +1406,209 @@ enum GuestSelfEntryMode {
   TRUSTED_PARAMS
 }
 
+"""Error that ended an app function execution."""
+type AppFunctionJournalError {
+  """PLATFORM or APP."""
+  kind: String!
+
+  """Error code."""
+  code: String!
+
+  """Error message."""
+  message: String!
+
+  """Dotted path of the field the error is about."""
+  field: String
+}
+
+"""Journal payload written once per app function execution."""
+type AppFunctionExecutedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the app installation."""
+  installationId: ID!
+
+  """Name of the function."""
+  functionName: String!
+
+  """ID of the execution."""
+  executionId: String!
+
+  """Trigger type: CALL, HOOK, EVENT, TIMER, CRON or LIFECYCLE."""
+  trigger: String!
+
+  """Kind of caller: ANONYMOUS, PLAYER, GUEST, MEMBER or SYSTEM."""
+  callerKind: String!
+
+  """Account ID of the caller, or its player ID without an account."""
+  callerId: String
+
+  """SUCCEEDED or FAILED."""
+  status: String!
+
+  """Wall-clock duration in milliseconds."""
+  durationMs: Int!
+
+  """Lua instructions executed."""
+  instructions: Float!
+
+  """Number of wp.op calls."""
+  opCalls: Int!
+
+  """Number of e-mails queued."""
+  emails: Int!
+
+  """Number of timers scheduled."""
+  timers: Int!
+
+  """Error of a failed execution."""
+  error: AppFunctionJournalError
+}
+
+"""Journal payload of one wp.log line, child of its execution."""
+type AppFunctionLogPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """DEBUG, INFO, WARN or ERROR."""
+  level: String!
+
+  """Masked log message."""
+  message: String!
+
+  """Masked log fields as a JSON string."""
+  fields: String
+
+  """ISO 8601 time of the line."""
+  at: String!
+}
+
+"""Journal payload of an async app function job that ran out of retries."""
+type AppFunctionDeadLetterPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the app installation."""
+  installationId: ID!
+
+  """Name of the function."""
+  functionName: String!
+
+  """Trigger type of the job."""
+  trigger: String!
+
+  """Queue of the job."""
+  queue: String!
+
+  """ID of the job."""
+  jobId: String!
+
+  """Attempts made."""
+  attempts: Int!
+
+  """Input of the job as a JSON string."""
+  input: String!
+
+  """Last error."""
+  error: AppFunctionJournalError!
+}
+
+"""Journal payload of an app audit entry written with wp.audit.log."""
+type AppAuditPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Slug of the app."""
+  appSlug: String!
+
+  """ID of the app installation."""
+  installationId: ID!
+
+  """Audit type declared in the app manifest."""
+  auditType: String!
+
+  """Audit data as a JSON string."""
+  data: String!
+
+  """ID of the execution that wrote the entry."""
+  executionId: String!
+
+  """IP address of the caller."""
+  ip: String
+
+  """User agent of the caller."""
+  userAgent: String
+
+  """Kind of caller."""
+  callerKind: String!
+
+  """Account ID of the caller, or its player ID without an account."""
+  callerId: String
+}
+
+"""One installation config key changed."""
+type AppConfigChange {
+  """Config key."""
+  key: String!
+
+  """Value before the change."""
+  previous: String
+
+  """Value after the change."""
+  value: String
+}
+
+"""Journal payload written when an installation config changes."""
+type AppConfigUpdatedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the app installation."""
+  installationId: ID!
+
+  """Config version after the change."""
+  version: Int!
+
+  """Changed keys."""
+  changes: [AppConfigChange!]!
+}
+
+"""Journal payload written when an installation is pinned to a release."""
+type AppInstallationPinnedPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """ID of the app installation."""
+  installationId: ID!
+
+  """Release version before the pin."""
+  fromVersion: String
+
+  """Release version after the pin."""
+  toVersion: String!
+
+  """Permissions granted by the pin."""
+  addedPermissions: [String!]!
+}
+
+"""
+Journal payload written once a day when an app function limit passes 80 %.
+"""
+type AppQuotaWarningPayload implements JournalPayload {
+  """GraphQL __typename of the concrete payload class."""
+  _typename: String!
+
+  """Limit name."""
+  limit: String!
+
+  """Current usage."""
+  usage: Float!
+
+  """Maximum allowed."""
+  max: Float!
+}
+
 type PermissionDefinitionDto {
   id: String!
   owner: PermissionDefinitionOwner!
@@ -6113,6 +6316,9 @@ type EventReservation {
   """Identifier of the reservation this one replaced"""
   replacesReservationId: ID
 
+  """Name of the team of this reservation"""
+  groupName: String
+
   """Tournament teams created from this reservation"""
   tournamentTeamIds: [ID!]!
 }
@@ -6165,6 +6371,9 @@ type EventReservationWithTicketsAndQrCode {
 
   """Identifier of the reservation this one replaced"""
   replacesReservationId: ID
+
+  """Name of the team of this reservation"""
+  groupName: String
 
   """List of tickets with QR codes for this reservation"""
   tickets: [EventReservationTicketWithQrCode!]!
@@ -6226,6 +6435,9 @@ type OmitObjectType {
 
   """Identifier of the reservation this one replaced"""
   replacesReservationId: ID
+
+  """Name of the team of this reservation"""
+  groupName: String
 }
 
 """
@@ -9968,6 +10180,21 @@ input EventsQuery {
 
   """Filter events by specific players and their statuses"""
   filterByPlayers: [EventsQueryPlayerIdWithTeamStatusInput!]
+
+  """Filter events held in these venues"""
+  venueIds: [ID!]
+
+  """Keep events that end after this time"""
+  from: DateTime
+
+  """Keep events that start before this time"""
+  to: DateTime
+
+  """Filter events linked to this tournament"""
+  tournamentId: ID
+
+  """Filter events assigned to this registration series"""
+  registrationSeriesId: ID
 }
 
 enum EventsQueryOrderBy {
@@ -10785,7 +11012,12 @@ type Mutation {
   """
   Create a new event reservation for events that require admin approval or have no-session registration flow
   """
-  eventReservationCreate(eventId: ID!): EventReservation!
+  eventReservationCreate(
+    eventId: ID!
+
+    """Name of the team, checked against the group name rules"""
+    groupName: String
+  ): EventReservation!
 
   """Add, release, or update tickets within an active reservation session"""
   eventReservationUpdateTickets(reservationId: ID!, input: EventReservationUpdateTicketsInput!): EventReservation!
@@ -10793,7 +11025,15 @@ type Mutation {
   """
   Start a new registration session for an event, reserving tickets and creating a time-limited session
   """
-  eventReservationStartRegistrationSession(eventId: ID!, input: EventReservationRegisterTicketsInput!): EventReservation!
+  eventReservationStartRegistrationSession(
+    eventId: ID!
+    input: EventReservationRegisterTicketsInput!
+
+    """
+    Validated reservation of the caller that this session replaces once validated
+    """
+    replaceReservationId: ID
+  ): EventReservation!
 
   """
   Cancel an event reservation, releasing all tickets and deleting the associated group
@@ -12944,6 +13184,9 @@ Input containing the list of ticket registrations for a reservation session
 input EventReservationRegisterTicketsInput {
   """List of ticket configurations and quantities to reserve"""
   tickets: [EventReservationRegisterTicketInput!]!
+
+  """Name of the team, checked against the group name rules"""
+  groupName: String
 }
 
 """

@@ -48,6 +48,29 @@ You can find more usage examples in the [demo](https://github.com/WellPlayedGG/r
 * useConnectedPlayer: Retrieve current connected player profile, permissions, and identities
 * useTournamentTeams: Retrieve the list of teams for a specific tournament, depending on their status
 * useTournamentStep: Retrieve all the data needed to reconstruct a tournament step
+* useGuestSession: Open, restore and end a guest session (see below)
+
+### Guest sessions
+
+Players without a WellPlayed account play as guests. Mount the guest pages under `WellPlayedGuestProvider` instead of `WellPlayedProvider`; inside it, `useWellPlayed().apiClient` sends the `x-guest-session` and `x-acting-player-id` headers for you.
+
+```tsx
+import { WellPlayedGuestProvider, useGuestSession } from '@well-played.gg/react-sdk';
+
+const JoinPage = ({ token }: { token: string }) => {
+  const { status, errorCode, exchangeLink } = useGuestSession();
+  if (status === "active") return <GuestHome />;
+  return <button onClick={() => exchangeLink(token)}>Continue {errorCode}</button>;
+};
+
+const GuestApp = ({ token }: { token: string }) => (
+  <WellPlayedGuestProvider organizationId="replace-with-yours" storage="session">
+    <JoinPage token={token} />
+  </WellPlayedGuestProvider>
+);
+```
+
+`useGuestSession()` returns `status` (`none`, `opening`, `active`, `error`), `session`, `actingPlayerId`, `errorCode`, and the actions `enter({ email, firstName, lastName })`, `resolveLink(token)`, `exchangeLink(token)`, `actAs(wardPlayerId | null)` and `end()`. The API side (guest configuration, magic links, guardians) is described in the `wellplayed-cli` skill installed by `wellplayed install-skills`.
 
 ## License
 
