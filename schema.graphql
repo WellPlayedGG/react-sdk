@@ -2121,6 +2121,151 @@ enum MarketplacePricingType {
   SUBSCRIPTION
 }
 
+"""
+Guest identity attached to an ownerless player profile of the organization
+"""
+type GuestProfile {
+  """ID of the guest player profile"""
+  playerId: ID!
+
+  """The guest player profile"""
+  player: Player!
+
+  """
+  Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view
+  """
+  email: String
+
+  """First name, same visibility as email"""
+  firstName: String
+
+  """Last name, same visibility as email"""
+  lastName: String
+
+  """How the guest was created"""
+  origin: GuestOrigin!
+
+  """Players acting as guardians of this guest"""
+  guardianPlayerIds: [ID!]!
+
+  """Guests this player is the guardian of"""
+  wardPlayerIds: [ID!]!
+
+  """Creation date"""
+  createdAt: DateTime!
+}
+
+enum GuestOrigin {
+  ENTRY
+  INVITED
+  GUARDIAN
+  ADMIN
+}
+
+"""Magic link a guest session was opened from"""
+type GuestLinkContext {
+  id: ID!
+
+  """Purpose set by the link creator"""
+  purpose: String!
+
+  """JSON payload set by the link creator"""
+  data: String!
+  expiresAt: DateTime!
+}
+
+"""A guest session; send its token in the x-guest-session header"""
+type GuestSession {
+  """Session token, returned only when the session opens"""
+  token: String!
+
+  """Guest player the session belongs to"""
+  playerId: ID!
+  origin: GuestSessionOrigin!
+  expiresAt: DateTime!
+  link: GuestLinkContext
+}
+
+enum GuestSessionOrigin {
+  ENTRY
+  LINK
+}
+
+"""The current guest session"""
+type GuestMe {
+  """Player that owns the session"""
+  sessionPlayerId: ID!
+
+  """
+  Player the request acts as: the session player, or a ward through x-acting-player-id
+  """
+  actingPlayerId: ID!
+  origin: GuestSessionOrigin!
+  expiresAt: DateTime!
+  link: GuestLinkContext
+  profile: GuestProfile!
+  wards: [GuestProfile!]!
+}
+
+"""Read-only view of a magic link; reading it never consumes a use"""
+type GuestLinkView {
+  status: GuestLinkStatus!
+
+  """Null when INVALID"""
+  purpose: String
+
+  """Null when INVALID"""
+  expiresAt: DateTime
+
+  """Guest first name, only when VALID"""
+  firstName: String
+
+  """Link payload, only when VALID"""
+  data: String
+}
+
+enum GuestLinkStatus {
+  VALID
+  EXPIRED
+  REVOKED
+  EXHAUSTED
+  INVALID
+}
+
+"""A new magic link; the token is returned only once"""
+type GuestLinkCreated {
+  id: ID!
+  token: String!
+  expiresAt: DateTime!
+}
+
+type GuestProfileCreated {
+  profile: GuestProfile!
+
+  """False when an addressable guest with the same e-mail existed"""
+  created: Boolean!
+}
+
+"""A guardian allowed to act for a guest ward"""
+type GuestGuardianLink {
+  id: ID!
+  guardianPlayerId: ID!
+  wardPlayerId: ID!
+  createdAt: DateTime!
+}
+
+"""Guest settings of the organization"""
+type GuestConfiguration {
+  selfEntry: GuestSelfEntryMode!
+  sessionTtlMinutes: Int!
+  maxWardsPerGuardian: Int!
+}
+
+enum GuestSelfEntryMode {
+  DISABLED
+  TRUSTED_PARAMS
+}
+
 """A reusable configuration preset for tournaments or steps"""
 type Configuration {
   """Unique identifier of the configuration"""
@@ -5425,13 +5570,21 @@ enum RegistrationSeriesEntryKind {
   TOURNAMENT_TEAM
 }
 
-"""Configuration defining size constraints for a user group"""
+"""
+Configuration defining size and name length constraints for a user group
+"""
 type UserGroupConfiguration {
   """Maximum number of accepted members allowed in the group"""
   maxSize: Int!
 
   """Minimum number of accepted members required for the group to be valid"""
   minSize: Int!
+
+  """Minimum length of the group name, from 1 to 100 (default 1)"""
+  nameMinLength: Int
+
+  """Maximum length of the group name, from 1 to 100 (default 100)"""
+  nameMaxLength: Int
 }
 
 """
@@ -5489,6 +5642,9 @@ type UserGroup {
 
   """Whether the group is locked and cannot be modified"""
   locked: Boolean!
+
+  """Display name of the group, chosen by its manager"""
+  name: String
 }
 
 enum UserGroupStatus {
@@ -6552,151 +6708,6 @@ type EventWaitlistEntryEdge {
 
   """The item at this edge"""
   node: EventWaitlistEntry!
-}
-
-"""
-Guest identity attached to an ownerless player profile of the organization
-"""
-type GuestProfile {
-  """ID of the guest player profile"""
-  playerId: ID!
-
-  """The guest player profile"""
-  player: Player!
-
-  """
-  Contact e-mail; null unless the caller is the guest, one of its guardians, or holds organization:guests:view
-  """
-  email: String
-
-  """First name, same visibility as email"""
-  firstName: String
-
-  """Last name, same visibility as email"""
-  lastName: String
-
-  """How the guest was created"""
-  origin: GuestOrigin!
-
-  """Players acting as guardians of this guest"""
-  guardianPlayerIds: [ID!]!
-
-  """Guests this player is the guardian of"""
-  wardPlayerIds: [ID!]!
-
-  """Creation date"""
-  createdAt: DateTime!
-}
-
-enum GuestOrigin {
-  ENTRY
-  INVITED
-  GUARDIAN
-  ADMIN
-}
-
-"""Magic link a guest session was opened from"""
-type GuestLinkContext {
-  id: ID!
-
-  """Purpose set by the link creator"""
-  purpose: String!
-
-  """JSON payload set by the link creator"""
-  data: String!
-  expiresAt: DateTime!
-}
-
-"""A guest session; send its token in the x-guest-session header"""
-type GuestSession {
-  """Session token, returned only when the session opens"""
-  token: String!
-
-  """Guest player the session belongs to"""
-  playerId: ID!
-  origin: GuestSessionOrigin!
-  expiresAt: DateTime!
-  link: GuestLinkContext
-}
-
-enum GuestSessionOrigin {
-  ENTRY
-  LINK
-}
-
-"""The current guest session"""
-type GuestMe {
-  """Player that owns the session"""
-  sessionPlayerId: ID!
-
-  """
-  Player the request acts as: the session player, or a ward through x-acting-player-id
-  """
-  actingPlayerId: ID!
-  origin: GuestSessionOrigin!
-  expiresAt: DateTime!
-  link: GuestLinkContext
-  profile: GuestProfile!
-  wards: [GuestProfile!]!
-}
-
-"""Read-only view of a magic link; reading it never consumes a use"""
-type GuestLinkView {
-  status: GuestLinkStatus!
-
-  """Null when INVALID"""
-  purpose: String
-
-  """Null when INVALID"""
-  expiresAt: DateTime
-
-  """Guest first name, only when VALID"""
-  firstName: String
-
-  """Link payload, only when VALID"""
-  data: String
-}
-
-enum GuestLinkStatus {
-  VALID
-  EXPIRED
-  REVOKED
-  EXHAUSTED
-  INVALID
-}
-
-"""A new magic link; the token is returned only once"""
-type GuestLinkCreated {
-  id: ID!
-  token: String!
-  expiresAt: DateTime!
-}
-
-type GuestProfileCreated {
-  profile: GuestProfile!
-
-  """False when an addressable guest with the same e-mail existed"""
-  created: Boolean!
-}
-
-"""A guardian allowed to act for a guest ward"""
-type GuestGuardianLink {
-  id: ID!
-  guardianPlayerId: ID!
-  wardPlayerId: ID!
-  createdAt: DateTime!
-}
-
-"""Guest settings of the organization"""
-type GuestConfiguration {
-  selfEntry: GuestSelfEntryMode!
-  sessionTtlMinutes: Int!
-  maxWardsPerGuardian: Int!
-}
-
-enum GuestSelfEntryMode {
-  DISABLED
-  TRUSTED_PARAMS
 }
 
 """Represents a virtual item that can be assigned to players"""
@@ -8648,6 +8659,12 @@ input UserGroupConfigurationInput {
 
   """Minimum number of accepted members required for the group to be valid"""
   minSize: Int!
+
+  """Minimum length of the group name, from 1 to 100 (default 1)"""
+  nameMinLength: Int
+
+  """Maximum length of the group name, from 1 to 100 (default 100)"""
+  nameMaxLength: Int
 }
 
 """Input for a 2D coordinate position"""
@@ -9311,6 +9328,13 @@ type Query {
   Get custom field values for multiple objects of the same type in a single query
   """
   customFieldValuesBatch(objectType: ObjectType!, objectIds: [ID!]!): [CustomFieldValuesBatchResultModel!]!
+
+  """The current guest session"""
+  guestMe: GuestMe!
+  guestConfiguration: GuestConfiguration!
+
+  """Read a magic link without consuming it"""
+  guestLinkResolve(token: String!): GuestLinkView!
   appInstallationPublicConfig(appSlug: String!): [AppConfigEntry!]!
   appInstallationConfig(appSlug: String!): [AppConfigEntry!]!
   appFunctionRead(input: AppFunctionCallInput!): AppFunctionResult!
@@ -9328,13 +9352,6 @@ type Query {
 
   """A player's registrations that count against the series limits"""
   registrationSeriesPlayerEntries(seriesId: ID!, playerId: ID!): [RegistrationSeriesEntry!]!
-
-  """The current guest session"""
-  guestMe: GuestMe!
-  guestConfiguration: GuestConfiguration!
-
-  """Read a magic link without consuming it"""
-  guestLinkResolve(token: String!): GuestLinkView!
 
   """
   Banned words and substrings applied to nicknames and team names of the current organization.
@@ -10501,10 +10518,17 @@ type Mutation {
   """
   userGroupInvite(groupId: ID!, playerId: ID!): UserGroupMember!
 
+  """
+  Rename a user group, or clear its name with null. Allowed to the group manager and to a caller holding organization:user-groups:manage on the group.
+  """
+  userGroupUpdateName(groupId: ID!, name: String): UserGroup!
+
   """Accept or decline a pending user group invitation"""
   userGroupUpdateInvite(groupId: ID!, status: UserGroupMemberStatus!): UserGroupMember!
 
-  """Remove a player from a user group or cancel a pending invitation"""
+  """
+  Remove a player from a user group or cancel a pending invitation. A caller holding organization:user-groups:manage on the group removes any member but the manager, also from a locked group.
+  """
   userGroupDeleteInvite(
     groupId: ID!
 
@@ -10649,27 +10673,6 @@ type Mutation {
   setCustomFieldValues(input: SetCustomFieldValuesInput!): [CustomFieldWithValueModel!]!
   appInstallationPin(input: AppInstallationPinInput!): MarketplaceAppInstallation!
   appFunctionsSetEnabled(appSlug: String!, function: String, enabled: Boolean!): MarketplaceAppInstallation!
-  appInstallationConfigSet(appSlug: String!, values: [AppConfigValueInput!]!): [AppConfigEntry!]!
-  appFunctionCall(input: AppFunctionCallInput!): AppFunctionResult!
-  customPermissionCreate(input: CustomPermissionInput!): PermissionDefinitionDto!
-  customPermissionUpdate(id: String!, input: CustomPermissionUpdateInput!): PermissionDefinitionDto!
-  customPermissionDelete(id: String!): Boolean!
-
-  """Create a registration series"""
-  registrationSeriesCreate(input: RegistrationSeriesCreateInput!): RegistrationSeries!
-
-  """Update a registration series"""
-  registrationSeriesUpdate(id: ID!, input: RegistrationSeriesUpdateInput!): RegistrationSeries!
-
-  """
-  Delete a registration series; its events and tournaments leave the series
-  """
-  registrationSeriesDelete(id: ID!): Boolean!
-
-  """
-  Assign events and tournaments to a series, or remove them from their series when seriesId is null
-  """
-  registrationSeriesAssign(seriesId: ID, eventIds: [ID!], tournamentIds: [ID!]): Boolean!
 
   """Create a guest ward; the session player becomes its guardian"""
   guestWardCreate(input: GuestWardCreateInput!): GuestProfile!
@@ -10705,6 +10708,27 @@ type Mutation {
   Open a guest session from trusted entry parameters; needs selfEntry TRUSTED_PARAMS
   """
   guestEnter(input: GuestEnterInput!): GuestSession!
+  appInstallationConfigSet(appSlug: String!, values: [AppConfigValueInput!]!): [AppConfigEntry!]!
+  appFunctionCall(input: AppFunctionCallInput!): AppFunctionResult!
+  customPermissionCreate(input: CustomPermissionInput!): PermissionDefinitionDto!
+  customPermissionUpdate(id: String!, input: CustomPermissionUpdateInput!): PermissionDefinitionDto!
+  customPermissionDelete(id: String!): Boolean!
+
+  """Create a registration series"""
+  registrationSeriesCreate(input: RegistrationSeriesCreateInput!): RegistrationSeries!
+
+  """Update a registration series"""
+  registrationSeriesUpdate(id: ID!, input: RegistrationSeriesUpdateInput!): RegistrationSeries!
+
+  """
+  Delete a registration series; its events and tournaments leave the series
+  """
+  registrationSeriesDelete(id: ID!): Boolean!
+
+  """
+  Assign events and tournaments to a series, or remove them from their series when seriesId is null
+  """
+  registrationSeriesAssign(seriesId: ID, eventIds: [ID!], tournamentIds: [ID!]): Boolean!
 
   """
   Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation).
@@ -13482,43 +13506,6 @@ input AppInstallationPinInput {
   grantedPermissions: [String!]
 }
 
-input AppConfigValueInput {
-  key: String!
-  value: String
-}
-
-input CustomPermissionInput {
-  name: String!
-  description: String!
-  resources: [String!]
-}
-
-input CustomPermissionUpdateInput {
-  description: String
-  resources: [String!]
-}
-
-"""Input for creating a registration series"""
-input RegistrationSeriesCreateInput {
-  """Display name of the series"""
-  name: String!
-  maxActiveRegistrations: Int = 1
-  maxActiveWaitlistEntries: Int
-  allowWaitlistWhileRegistered: Boolean = false
-  leaveWaitlistsOnRegistration: Boolean = true
-  releasePolicy: RegistrationSeriesReleasePolicy = SLOT_END
-}
-
-"""Input for updating a registration series"""
-input RegistrationSeriesUpdateInput {
-  name: String
-  maxActiveRegistrations: Int
-  maxActiveWaitlistEntries: Int
-  allowWaitlistWhileRegistered: Boolean
-  leaveWaitlistsOnRegistration: Boolean
-  releasePolicy: RegistrationSeriesReleasePolicy
-}
-
 input GuestWardCreateInput {
   firstName: String!
   lastName: String
@@ -13571,6 +13558,43 @@ input GuestEnterInput {
   email: EmailAddress!
   firstName: String!
   lastName: String!
+}
+
+input AppConfigValueInput {
+  key: String!
+  value: String
+}
+
+input CustomPermissionInput {
+  name: String!
+  description: String!
+  resources: [String!]
+}
+
+input CustomPermissionUpdateInput {
+  description: String
+  resources: [String!]
+}
+
+"""Input for creating a registration series"""
+input RegistrationSeriesCreateInput {
+  """Display name of the series"""
+  name: String!
+  maxActiveRegistrations: Int = 1
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean = false
+  leaveWaitlistsOnRegistration: Boolean = true
+  releasePolicy: RegistrationSeriesReleasePolicy = SLOT_END
+}
+
+"""Input for updating a registration series"""
+input RegistrationSeriesUpdateInput {
+  name: String
+  maxActiveRegistrations: Int
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean
+  leaveWaitlistsOnRegistration: Boolean
+  releasePolicy: RegistrationSeriesReleasePolicy
 }
 
 input OrganizationModerationInput {
