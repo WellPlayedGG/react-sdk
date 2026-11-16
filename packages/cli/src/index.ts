@@ -10,6 +10,7 @@ import { installSkillsCommand } from './commands/install-skills.js';
 import { createAppCommand } from './commands/create-app.js';
 import { createGraphqlCommand } from './commands/graphql.js';
 import { upgradeCommand } from './commands/upgrade.js';
+import { configCommand, installCommand, pinCommand } from './commands/app.js';
 
 const program = new Command();
 
@@ -27,5 +28,8 @@ program.addCommand(installSkillsCommand);
 program.addCommand(createAppCommand);
 program.addCommand(upgradeCommand);
 program.addCommand(createGraphqlCommand());
+program.addCommand(installCommand);
+program.addCommand(pinCommand);
+program.addCommand(configCommand);
 
 program.parse();
