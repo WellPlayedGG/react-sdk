@@ -4,20 +4,30 @@ import { fileURLToPath } from 'node:url';
 import { buildSchema, parse, validate } from 'graphql';
 
 const apiClientMock = vi.hoisted(() => ({ graphqlRequest: vi.fn() }));
+const undiciMock = vi.hoisted(() => ({ request: vi.fn() }));
+const appConfig = vi.hoisted(() => ({
+  name: 'demo',
+  displayName: 'Demo',
+  version: '1.2.0',
+  scopes: [] as string[],
+  extensions: [] as Array<Record<string, unknown>>,
+  platformModules: [] as Array<Record<string, unknown>>,
+}));
 
 vi.mock('../src/utils/api-client.js', () => apiClientMock);
+vi.mock('undici', () => undiciMock);
 vi.mock('../src/utils/sleep.js', () => ({ sleep: vi.fn(async () => undefined) }));
 vi.mock('../src/auth/token-store.js', () => ({ getToken: () => 'token' }));
-vi.mock('../src/config/app-config.js', () => ({
-  readAppConfig: () => ({
-    name: 'demo',
-    displayName: 'Demo',
-    version: '1.2.0',
-    scopes: [],
-    extensions: [],
-    platformModules: [],
-  }),
-}));
+vi.mock('../src/config/app-config.js', () => ({ readAppConfig: () => appConfig }));
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    readFileSync: vi.fn((...args: Parameters<typeof actual.readFileSync>) =>
+      String(args[0]).endsWith('extension.js') ? Buffer.from('bundle source') : actual.readFileSync(...args),
+    ),
+  };
+});
 
 import { log } from '../src/utils/logger.js';
 import { deployCommand } from '../src/commands/deploy';
@@ -29,7 +39,19 @@ const schema = buildSchema(
 function respondWith(releaseStatus: string, listingStatus: string): void {
   apiClientMock.graphqlRequest.mockImplementation(async (query: string) => {
     if (query.includes('appCreateRelease')) {
-      return { appCreateRelease: { release: { id: 'release-1', version: '1.2.0', status: 'PENDING_REVIEW' } } };
+      return {
+        appCreateRelease: {
+          release: { id: 'release-1', version: '1.2.0', status: 'PENDING_REVIEW' },
+          extensionUploadUrl: {
+            url: 'https://upload.example.invalid',
+            fields: [
+              { key: 'key', value: 'stg/apps/app-1/pending/u1/extension.js' },
+              { key: 'Policy', value: 'c2lnbmVk' },
+            ],
+          },
+          moduleUploadUrl: null,
+        },
+      };
     }
     if (query.includes('appFinalizeRelease')) {
       return { appFinalizeRelease: { valid: true, errors: [] } };
@@ -48,12 +70,6 @@ function respondWith(releaseStatus: string, listingStatus: string): void {
   });
 }
 
-function statusQuery(): string {
-  const call = apiClientMock.graphqlRequest.mock.calls.find(
-    ([query]: [string]) => !query.includes('appCreateRelease') && !query.includes('appFinalizeRelease'),
-  );
-  return call[0];
-}
 
 describe('wellplayed deploy review outcome', () => {
   let success: ReturnType<typeof vi.spyOn>;
@@ -62,6 +78,9 @@ describe('wellplayed deploy review outcome', () => {
 
   beforeEach(() => {
     apiClientMock.graphqlRequest.mockReset();
+    undiciMock.request.mockReset();
+    undiciMock.request.mockResolvedValue({ statusCode: 204, body: { text: async () => '' } });
+    appConfig.extensions = [];
     vi.spyOn(log, 'info').mockImplementation(() => undefined);
     vi.spyOn(log, 'step').mockImplementation(() => undefined);
     vi.spyOn(log, 'warn').mockImplementation(() => undefined);
@@ -73,7 +92,7 @@ describe('wellplayed deploy review outcome', () => {
   afterEach(() => vi.restoreAllMocks());
 
   async function deploy(): Promise<void> {
-    await deployCommand.parseAsync(['--app-id', 'app-1'], { from: 'user' });
+    await deployCommand.parseAsync(['--app-id', 'app-1', '--org', 'org-1'], { from: 'user' });
   }
 
   it('reports a publication when the approved release reached the listing', async () => {
@@ -110,11 +129,44 @@ describe('wellplayed deploy review outcome', () => {
     expect(exit).toHaveBeenCalledWith(1);
   });
 
-  it('polls with a document that is valid against the API schema', async () => {
+  it('sends only documents that are valid against the API schema', async () => {
     respondWith('APPROVED', 'PUBLISHED');
 
     await deploy();
 
-    expect(validate(schema, parse(statusQuery())).map((e) => e.message)).toEqual([]);
+    const documents = apiClientMock.graphqlRequest.mock.calls.map(([query]: [string]) => query);
+    expect(documents.some((query) => query.includes('appCreateRelease'))).toBe(true);
+    expect(documents.some((query) => query.includes('appFinalizeRelease'))).toBe(true);
+    for (const query of documents) {
+      expect(validate(schema, parse(query)).map((e) => e.message)).toEqual([]);
+    }
+  });
+
+  it('sends the organization-id of --org with every API call', async () => {
+    respondWith('APPROVED', 'PUBLISHED');
+
+    await deploy();
+
+    const calls = apiClientMock.graphqlRequest.mock.calls;
+    expect(calls.length).toBeGreaterThanOrEqual(3);
+    for (const [, , options] of calls) {
+      expect(options).toEqual({ organizationId: 'org-1' });
+    }
+  });
+
+  it('builds the upload form from the presigned field list', async () => {
+    appConfig.extensions = [{ name: 'panel', type: 'EVENT_PAGE', displayName: 'Panel', entry: 'src/panel.tsx', activePages: [] }];
+    respondWith('APPROVED', 'PUBLISHED');
+
+    await deploy();
+
+    expect(undiciMock.request).toHaveBeenCalledTimes(1);
+    const [url, init] = undiciMock.request.mock.calls[0];
+    const form = (init.body as Buffer).toString('utf-8');
+    expect(url).toBe('https://upload.example.invalid');
+    expect(form).toContain('name="key"\r\n\r\nstg/apps/app-1/pending/u1/extension.js\r\n');
+    expect(form).toContain('name="Policy"\r\n\r\nc2lnbmVk\r\n');
+    expect(form).not.toContain('[object Object]');
+    expect(form).toContain('bundle source');
   });
 });
