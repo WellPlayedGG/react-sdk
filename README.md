@@ -70,7 +70,7 @@ npm install
 wellplayed login
 wellplayed dev
 wellplayed graphql 'query { currentAccount { id email } }' --data-only
-wellplayed deploy --app-id YOUR_APP_ID
+wellplayed deploy --app-id YOUR_APP_ID --org YOUR_ORG_SHORT_ID
 ```
 
 ## Architecture
