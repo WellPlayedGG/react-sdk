@@ -2,6 +2,7 @@ import {
 	ApolloClient,
 	type FetchPolicy,
 	HttpLink,
+	type NormalizedCacheObject,
 	from,
 	split,
 } from "@apollo/client";
@@ -75,6 +76,21 @@ export type ClientProps = {
 		clientId: string;
 		clientSecret: string;
 	};
+	headers?: () => Record<string, string | undefined>;
+	persistCache?: boolean;
+};
+
+export type WellPlayedClient = ApolloClient<NormalizedCacheObject> & {
+	dispose: () => void;
+};
+
+const persistToLocalStorage = (cache: InvalidationPolicyCache) => {
+	try {
+		persistCacheSync({
+			cache,
+			storage: new LocalStorageWrapper(window.localStorage),
+		});
+	} catch {}
 };
 
 export const createWellPlayedClient = ({
@@ -87,7 +103,9 @@ export const createWellPlayedClient = ({
 	apiBaseUrl,
 	ssr,
 	application,
-}: ClientProps) => {
+	headers,
+	persistCache = true,
+}: ClientProps): WellPlayedClient => {
 	const cache = new InvalidationPolicyCache({
 		invalidationPolicies: {
 			...invalidationPolicies,
@@ -96,15 +114,25 @@ export const createWellPlayedClient = ({
 		},
 	});
 
-	if (!ssr) {
-		persistCacheSync({
-			cache,
-			storage: new LocalStorageWrapper(window.localStorage),
-		});
+	if (!ssr && persistCache) {
+		persistToLocalStorage(cache);
 	}
 
 	const graphqlUrl = `api.warrior.${apiBaseUrl ?? "well-played.gg"}/graphql`;
 	const oauthUrl = `https://oauth.warrior.${apiBaseUrl ?? "well-played.gg"}`;
+	const wsClient = createWSClient({
+		apiUrl: graphqlUrl,
+		listeners: handlers?.webSocket,
+		organizationId,
+		lazy: websocket?.lazy,
+		token,
+		application: application
+			? {
+					...application,
+					oauthUrl,
+				}
+			: undefined,
+	});
 	const link = split(
 		({ query }) => {
 			const def = getMainDefinition(query);
@@ -112,28 +140,16 @@ export const createWellPlayedClient = ({
 				def.kind === "OperationDefinition" && def.operation === "subscription"
 			);
 		},
-		new GraphQLWsLink(
-			createWSClient({
-				apiUrl: graphqlUrl,
-				listeners: handlers?.webSocket,
-				organizationId,
-				lazy: websocket?.lazy,
-				token,
-				application: application
-					? {
-							...application,
-							oauthUrl,
-						}
-					: undefined,
-			}),
-		),
+		new GraphQLWsLink(wsClient),
 		from([
-			setContext(async () => {
+			setContext(async (_, context) => {
 				return {
 					headers: omitBy(
 						{
 							"organization-id": organizationId,
 							authorization: token ? `Bearer ${token}` : undefined,
+							...headers?.(),
+							...context.headers,
 						},
 						isNil,
 					),
@@ -155,7 +171,7 @@ export const createWellPlayedClient = ({
 	);
 
 	// TODO Add batching
-	return new ApolloClient({
+	const client = new ApolloClient({
 		cache,
 		link,
 		ssrMode: ssr,
@@ -171,6 +187,13 @@ export const createWellPlayedClient = ({
 			mutate: {
 				errorPolicy: "all",
 			},
+		},
+	});
+
+	return Object.assign(client, {
+		dispose: () => {
+			client.stop();
+			wsClient.dispose();
 		},
 	});
 };
