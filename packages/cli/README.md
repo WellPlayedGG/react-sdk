@@ -193,7 +193,7 @@ The `wellplayed.json` file is the app manifest, created by `wellplayed init` and
   "version": "1.0.0",
   "displayName": "My App",
   "description": "A WellPlayed marketplace app",
-  "scopes": ["metafields:read", "metafields:write"],
+  "scopes": ["organization:marketplace:view", "organization:marketplace:install"],
   "extensions": [
     {
       "name": "sample-tab",
@@ -221,7 +221,7 @@ The `wellplayed.json` file is the app manifest, created by `wellplayed init` and
 | `version` | `string` | Semver version, sent with each release and used as the version of every platform module |
 | `displayName` | `string` | Human-readable name for the marketplace listing |
 | `description` | `string` | Short app description |
-| `scopes` | `string[]` | Permission ids the app requires, sent as the manifest's `permissions` |
+| `scopes` | `string[]` | Catalog permission ids the app requires (for example `organization:marketplace:view`), sent as the manifest's `permissions` |
 | `extensions` | `array` | Console extensions (tabs, panels, etc.) |
 | `extensions[].name` | `string` | Unique extension identifier |
 | `extensions[].type` | `string` | Extension type: `tab`, `admin-navigation` or `dashboard-widget` |
