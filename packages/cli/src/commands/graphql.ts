@@ -12,6 +12,7 @@ interface GraphqlCommandOptions {
   variables?: string;
   org?: string;
   header: string[];
+  guestSession?: string;
   dataOnly?: boolean;
 }
 
@@ -52,6 +53,10 @@ export function createGraphqlCommand(): Command {
       collectHeader,
       [] as string[],
     )
+    .option(
+      '--guest-session <token>',
+      'Call as a guest: send the token in `x-guest-session` instead of your login token (no `wellplayed login` needed)',
+    )
     .option('--data-only', 'Print only the `data` payload. Throws on any GraphQL errors.')
     .action((queryArg: string | undefined, options: GraphqlCommandOptions) =>
       runCommand(async () => {
@@ -59,11 +64,14 @@ export function createGraphqlCommand(): Command {
         const variables = buildVariables(options);
         const headers = parseHeaders(options.header ?? []);
         const organizationId = options.org !== undefined ? validateOrgId(options.org) : undefined;
+        const guestSession =
+          options.guestSession !== undefined ? validateGuestSession(options.guestSession) : undefined;
 
         if (options.dataOnly) {
           const data = await graphqlRequest<unknown>(query, variables, {
             organizationId,
             headers,
+            guestSession,
           });
           process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
           return;
@@ -72,6 +80,7 @@ export function createGraphqlCommand(): Command {
         const envelope = await graphqlRequestRaw<unknown>(query, variables, {
           organizationId,
           headers,
+          guestSession,
         });
         process.stdout.write(`${JSON.stringify(envelope, null, 2)}\n`);
         if (envelope.errors && envelope.errors.length > 0) {
@@ -318,6 +327,7 @@ const RESERVED_HEADERS: ReadonlySet<string> = new Set(['authorization', 'content
 const HEADER_NAME_RE = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const HEADER_VALUE_RE = /^[\t\x20-\x7E]*$/;
 const ORG_ID_RE = /^[A-Za-z0-9_-]+$/;
+const GUEST_SESSION_RE = /^[\x21-\x7E]+$/;
 
 export function parseHeaders(rawHeaders: string[]): Record<string, string> | undefined {
   if (rawHeaders.length === 0) return undefined;
@@ -344,6 +354,13 @@ export function parseHeaders(rawHeaders: string[]): Record<string, string> | und
     out[key] = value;
   }
   return out;
+}
+
+export function validateGuestSession(token: string): string {
+  if (!GUEST_SESSION_RE.test(token)) {
+    throw new Error('Invalid --guest-session token: it must be a single token of printable ASCII characters.');
+  }
+  return token;
 }
 
 export function validateOrgId(orgId: string): string {
