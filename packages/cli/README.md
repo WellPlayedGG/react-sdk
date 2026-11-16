@@ -264,7 +264,7 @@ The CLI is part of the `@wellplayed` SDK ecosystem:
 1. `wellplayed init` scaffolds a full app with extensions and/or platform modules.
 2. Build extensions using React. Build platform modules using `@well-played.gg/module-sdk` and `@well-played.gg/module-ui`.
 3. `wellplayed dev` runs a local Vite server for development.
-4. `wellplayed deploy --app-id <id>` packages and submits the app for marketplace review.
+4. `wellplayed deploy --app-id <id> --org <shortId>` packages and submits the app for marketplace review.
 
 For standalone modules or components outside of a full app, use `@well-played.gg/create-module` or `@well-played.gg/create-component` instead.
 
