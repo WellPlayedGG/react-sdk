@@ -1,6 +1,7 @@
 import {
 	type ApiBaseUrl,
 	type ClientProps,
+	type TypedClient,
 	type WellPlayedClient,
 	createTypedClient,
 	createWellPlayedClient,
@@ -24,7 +25,7 @@ export const useWellPlayedClient = ({
 	apiBaseUrl?: ApiBaseUrl;
 	clientConfig?: Omit<ClientProps, "token" | "organizationId">;
 	typedClientConfig?: TypedClientConfig;
-}) => {
+}): { apiClient: WellPlayedClient; typedClient: TypedClient } => {
 	const apiClient = useMemo(
 		() =>
 			createWellPlayedClient({
