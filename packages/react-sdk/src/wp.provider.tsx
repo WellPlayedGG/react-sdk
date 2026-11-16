@@ -9,13 +9,16 @@ import {
 	type OidcProviderProps,
 	useOidcAccessToken,
 } from "@axa-fr/react-oidc";
-import {
-	type ApiBaseUrl,
-	type ClientProps,
-	createTypedClient,
-	createWellPlayedClient,
+import type {
+	ApiBaseUrl,
+	ClientProps,
+	TypedClient,
 } from "@well-played.gg/typescript-sdk";
-import React, { type PropsWithChildren, createContext, useMemo } from "react";
+import React, { type PropsWithChildren, createContext } from "react";
+import {
+	type TypedClientConfig,
+	useWellPlayedClient,
+} from "./use-wellplayed-client";
 
 type WPConfigProps = {
 	/**
@@ -68,20 +71,17 @@ type WPConfigProps = {
 	/**
 	 * Typed client configuration
 	 */
-	typedClientConfig?: Omit<
-		Parameters<typeof createTypedClient>[0],
-		"url" | "headers" | "batch" | "keepalive" | "method"
-	>;
+	typedClientConfig?: TypedClientConfig;
 };
 
-// Create a context
-const WPContext = createContext<{
+type WellPlayedContextValue = {
 	organizationId: string;
 	apiClient: ApolloClient<NormalizedCacheObject>;
-	typedClient: ReturnType<typeof createTypedClient>;
+	typedClient: TypedClient;
 	accessToken?: string;
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-}>({} as any);
+};
+
+const WPContext = createContext<WellPlayedContextValue | null>(null);
 
 export const useWellPlayed = () => {
 	const context = React.useContext(WPContext);
@@ -93,42 +93,36 @@ export const useWellPlayed = () => {
 	return context;
 };
 
+export const WellPlayedContextProvider = ({
+	children,
+	...value
+}: PropsWithChildren<WellPlayedContextValue>) => (
+	<ApolloProvider client={value.apiClient}>
+		<WPContext.Provider value={value}>{children}</WPContext.Provider>
+	</ApolloProvider>
+);
+
 const ProviderWithOidc = ({
 	children,
-	clientConfig,
 	organizationId,
-	apiBaseUrl,
-	typedClientConfig,
+	...configs
 }: PropsWithChildren<Omit<WPConfigProps, "oidcConfig" | "wpAppConfig">>) => {
-	const accessToken = useOidcAccessToken();
-
-	const apiClient = useMemo(() => {
-		return createWellPlayedClient({
-			token: accessToken?.accessToken ?? undefined,
-			organizationId,
-			...clientConfig,
-			apiBaseUrl,
-		});
-	}, [accessToken?.accessToken, organizationId, clientConfig, apiBaseUrl]);
+	const accessToken = useOidcAccessToken()?.accessToken ?? undefined;
+	const { apiClient, typedClient } = useWellPlayedClient({
+		organizationId,
+		token: accessToken,
+		...configs,
+	});
 
 	return (
-		<ApolloProvider client={apiClient}>
-			<WPContext.Provider
-				value={{
-					organizationId,
-					apiClient,
-					typedClient: createTypedClient({
-						apiBaseUrl,
-						organizationId,
-						token: accessToken?.accessToken ?? undefined,
-						...typedClientConfig,
-					}),
-					accessToken: accessToken?.accessToken ?? undefined,
-				}}
-			>
-				{children}
-			</WPContext.Provider>
-		</ApolloProvider>
+		<WellPlayedContextProvider
+			organizationId={organizationId}
+			apiClient={apiClient}
+			typedClient={typedClient}
+			accessToken={accessToken}
+		>
+			{children}
+		</WellPlayedContextProvider>
 	);
 };
 
