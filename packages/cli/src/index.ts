@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { loginCommand } from './commands/login.js';
@@ -12,12 +13,14 @@ import { createGraphqlCommand } from './commands/graphql.js';
 import { upgradeCommand } from './commands/upgrade.js';
 import { configCommand, installCommand, pinCommand } from './commands/app.js';
 
+const { version }: { version: string } = createRequire(import.meta.url)('../package.json');
+
 const program = new Command();
 
 program
   .name('wellplayed')
   .description('WellPlayed Developer CLI - Create, develop, and deploy marketplace apps')
-  .version('0.4.0');
+  .version(version);
 
 program.addCommand(initCommand);
 program.addCommand(loginCommand);
