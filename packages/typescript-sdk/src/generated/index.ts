@@ -35,7 +35,7 @@ export interface Client {
 
 export const createClient = function (options?: ClientOptions): Client {
   return createClientOriginal({
-    url: 'https://api.warrior.well-played.gg/graphql',
+    url: undefined,
 
     ...options,
     queryRoot: typeMap.Query!,

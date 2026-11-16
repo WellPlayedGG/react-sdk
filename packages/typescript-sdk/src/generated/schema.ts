@@ -6,12 +6,12 @@
 export type Scalars = {
     String: string,
     Boolean: boolean,
+    ID: string,
     DateTime: any,
     Float: number,
     EmailAddress: any,
     Int: number,
     URL: any,
-    ID: string,
     PositiveInt: any,
     Void: any,
 }
@@ -771,6 +771,8 @@ export interface AccountIdentity {
     createdAt: Scalars['DateTime']
     /** When this identity was last updated */
     updatedAt: Scalars['DateTime']
+    /** Whether this is the creation identity — the oldest linked identity. The creation identity cannot be deleted. Null when not computed in this response. */
+    isCreationIdentity: (Scalars['Boolean'] | null)
     /** Resolves the public identity provider configuration for this identity */
     organizationIdentityProvider: (PublicOrganizationIdentityProvider | null)
     __typename: 'AccountIdentity'
@@ -1551,7 +1553,7 @@ export interface OrganizationApp {
     manifest: (AppManifestModel | null)
     /** Releases for this app */
     releases: AppRelease[]
-    /** Active webhooks for this app */
+    /** Active webhooks for this app. The organization that owns the app sees the webhooks of every installation. Any other organization sees only the webhook of its own installation. */
     appWebhooks: AppWebhook[]
     __typename: 'OrganizationApp'
 }
@@ -1601,6 +1603,8 @@ export interface AppWebhook {
     createdAt: Scalars['DateTime']
     /** When the webhook was last updated */
     updatedAt: Scalars['DateTime']
+    /** Secret used to sign this webhook's deliveries. Only members of the app's owner organization who hold organization:app:update on the app can read it. */
+    secret: (Scalars['String'] | null)
     __typename: 'AppWebhook'
 }
 
@@ -3679,7 +3683,7 @@ export interface Event {
     organizationId: Scalars['ID']
     /** Identifier of the account that created this event */
     createdById: Scalars['ID']
-    /** Public decryption key used for verifying ticket QR codes */
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
     decryptionKey: Scalars['String']
     /** The venue where this event is taking place */
     venue: (EventVenue | null)
@@ -3721,7 +3725,7 @@ export interface EventWithUserReservation {
     organizationId: Scalars['ID']
     /** Identifier of the account that created this event */
     createdById: Scalars['ID']
-    /** Public decryption key used for verifying ticket QR codes */
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
     decryptionKey: Scalars['String']
     /** The venue where this event is taking place */
     venue: (EventVenue | null)
@@ -5640,9 +5644,9 @@ export interface Query {
     entityMetafields: EntityMetafield[]
     /** Returns all object types that support metadata and custom fields */
     allowedObjectTypes: ObjectType[]
-    /** Get metadata entries for an object */
+    /** Get metadata entries for an object. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadata: ObjectMetadata[]
-    /** Get metadata entries for multiple objects of the same type in a single query */
+    /** Get metadata entries for multiple objects of the same type in a single query. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadataBatch: ObjectMetadataBatchResult[]
     /** List all custom field definitions for a given object type */
     customFieldDefinitions: CustomFieldDefinitionModel[]
@@ -5702,6 +5706,8 @@ export interface Mutation {
     attachOrUpdateIdentityToAccount: AccountIdentity
     /** Generates a URL to redirect the user to for linking an identity provider to their account */
     generateIdentityLinkUrl: IdentityLinkUrl
+    /** Deletes a linked identity from an account. When accountId is omitted, operates on the caller's own account (self-service). The creation identity (oldest linked identity by createdAt, then organizationIdentityProviderId, then providerId) cannot be deleted. The last remaining identity cannot be deleted. Possible errors: ACCOUNT_NOT_FOUND, IDENTITY_PROVIDER_NOT_FOUND, IDENTITY_NOT_FOUND, IDENTITY_LAST_IDENTITY_NOT_DELETABLE, IDENTITY_CREATION_IDENTITY_NOT_DELETABLE. */
+    deleteAccountIdentity: Scalars['Boolean']
     /** Updates an existing configuration preset */
     updateConfiguration: Configuration
     /** Deletes a configuration preset by ID */
@@ -5756,6 +5762,8 @@ export interface Mutation {
     deleteOrganizationApp: Scalars['Boolean']
     /** Update the working manifest for an organization app */
     updateOrganizationAppManifest: OrganizationApp
+    /** Generate a new signing secret for an app webhook. Every delivery from now on, retries included, is signed with the new secret. */
+    regenerateAppWebhookSecret: AppWebhook
     /** Create a new release for an app (snapshots current manifest) */
     createAppRelease: AppRelease
     /** Create a new webhook endpoint for the organization with a generated signing secret */
@@ -5804,7 +5812,7 @@ export interface Mutation {
     deleteTournamentStep: Scalars['Boolean']
     /** Generate the bracket structure for a tournament step based on its configuration or rule set */
     generateTournamentStep: Scalars['Boolean']
-    /** Seed teams into a generated tournament step. Accepts the caller-curated seeding order and optional manual pins; the preset rule set (SEEDING / ROUND_SEEDING rules) drives actual team-to-game assignment. Prior placements are discarded (idempotent re-seed). */
+    /** Seed teams into a generated tournament step. Provide exactly one of `input` (rule-engine seeding: caller-curated order + optional manual pins, driven by SEEDING / ROUND_SEEDING rules) or `legacyInput` (pre-migration automatic/manual seeding, translated to an ordered team list + group pins). Prior placements are discarded (idempotent re-seed). */
     seedTournamentStep: TournamentStep
     /** Persist a new seeding order on the step without re-seeding. Order must be a permutation of the tournament's teams. */
     updateSeedingOrder: TournamentStep
@@ -5930,7 +5938,7 @@ export interface Mutation {
     eventTicketConfigurationUpdate: EventTicketConfiguration
     /** Delete a ticket configuration from an event */
     eventTicketConfigurationDelete: EventTicketConfiguration
-    /** Update the status of an event reservation as an administrator */
+    /** Update the status of an event reservation as an administrator. When the reservation moves to a payment-validated status (REGISTERED, CONFIRMED, PRESENCE_CONFIRMATION_PENDING, NOT_ATTENDING) while it has no ticket, whatever its previous status, tickets are reserved automatically and their seats are marked as SOLD. Use ticketsToReserve to choose the ticket configurations, quantities and seats; when omitted, one ticket of the event single ticket configuration is reserved per ACCEPTED group member, and the call fails when the event has several ticket configurations. Seats are never assigned implicitly: if no seat is provided, tickets are created without a seat even when the event seat assignment mode is REQUIRED, and the seats must be assigned afterwards with eventReservationUpdateTickets. Reservations that already have tickets are never re-reserved. */
     eventReservationUpdateStatus: EventReservation
     /** Confirm or decline attendance for an event reservation as the group manager */
     eventReservationConfirmPresence: EventReservation
@@ -5964,7 +5972,7 @@ export interface Mutation {
     eventVenueSeatTypeDelete: EventVenueSeatType
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount: Scalars['String']
-    /** Invite a player to join a user group */
+    /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite: UserGroupMember
     /** Accept or decline a pending user group invitation */
     userGroupUpdateInvite: UserGroupMember
@@ -6030,7 +6038,7 @@ export interface Mutation {
     appCreateRelease: AppReleaseWithUploadUrls
     /** Finalize a release: validate bundles and enqueue review job */
     appFinalizeRelease: AppBundleValidationError
-    /** Manually publish a release (admin fallback) */
+    /** Publish an APPROVED release to its marketplace listing. Fails if the release has any other status or the listing is SUSPENDED or REJECTED */
     appPublishRelease: MarketplaceAppRelease
     /** Set (upsert) a module configuration on a platform */
     platformModuleConfigSet: PlatformModuleConfig
@@ -6056,6 +6064,14 @@ export interface Mutation {
     setCustomFieldValues: CustomFieldWithValueModel[]
     __typename: 'Mutation'
 }
+
+
+/** Legacy (pre-rule-engine) team-ordering algorithm. Only honored for steps without a rule set; steps with a rule set drive seeding through SEEDING / ROUND_SEEDING Lua rules instead. */
+export type SeedingMechanism = 'NONE' | 'REVERSE' | 'HALF_SHIFT' | 'REVERSE_HALF_SHIFT' | 'PAIR_FLIP'
+
+
+/** Legacy (pre-rule-engine) algorithm for distributing seeded teams across a step’s entry groups. Only honored for steps without a rule set. */
+export type GroupRepartitionMechanism = 'BALANCED' | 'SEED_OPTIMIZED'
 
 export type StripeUiMode = 'EMBEDDED' | 'HOSTED'
 
@@ -6876,6 +6892,8 @@ export interface AccountIdentityGenqlSelection{
     createdAt?: boolean | number
     /** When this identity was last updated */
     updatedAt?: boolean | number
+    /** Whether this is the creation identity — the oldest linked identity. The creation identity cannot be deleted. Null when not computed in this response. */
+    isCreationIdentity?: boolean | number
     /** Resolves the public identity provider configuration for this identity */
     organizationIdentityProvider?: PublicOrganizationIdentityProviderGenqlSelection
     __typename?: boolean | number
@@ -7687,7 +7705,7 @@ export interface OrganizationAppGenqlSelection{
     manifest?: AppManifestModelGenqlSelection
     /** Releases for this app */
     releases?: AppReleaseGenqlSelection
-    /** Active webhooks for this app */
+    /** Active webhooks for this app. The organization that owns the app sees the webhooks of every installation. Any other organization sees only the webhook of its own installation. */
     appWebhooks?: AppWebhookGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -7740,6 +7758,8 @@ export interface AppWebhookGenqlSelection{
     createdAt?: boolean | number
     /** When the webhook was last updated */
     updatedAt?: boolean | number
+    /** Secret used to sign this webhook's deliveries. Only members of the app's owner organization who hold organization:app:update on the app can read it. */
+    secret?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -9784,7 +9804,7 @@ export interface EventGenqlSelection{
     organizationId?: boolean | number
     /** Identifier of the account that created this event */
     createdById?: boolean | number
-    /** Public decryption key used for verifying ticket QR codes */
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
     decryptionKey?: boolean | number
     /** The venue where this event is taking place */
     venue?: EventVenueGenqlSelection
@@ -9823,7 +9843,7 @@ export interface EventInterfaceGenqlSelection{
     organizationId?: boolean | number
     /** Identifier of the account that created this event */
     createdById?: boolean | number
-    /** Public decryption key used for verifying ticket QR codes */
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
     decryptionKey?: boolean | number
     /** The venue where this event is taking place */
     venue?: EventVenueGenqlSelection
@@ -9864,7 +9884,7 @@ export interface EventWithUserReservationGenqlSelection{
     organizationId?: boolean | number
     /** Identifier of the account that created this event */
     createdById?: boolean | number
-    /** Public decryption key used for verifying ticket QR codes */
+    /** Private key for checking ticket QR codes offline. Reading it requires the organization:event:ticket:verify permission on this event; otherwise the field fails with MISSING_PERMISSIONS. */
     decryptionKey?: boolean | number
     /** The venue where this event is taking place */
     venue?: EventVenueGenqlSelection
@@ -12219,9 +12239,9 @@ export interface QueryGenqlSelection{
     entityMetafields?: (EntityMetafieldGenqlSelection & { __args: {entityType: Scalars['String'], entityId: Scalars['ID'], filter?: (EntityMetafieldsFilterInput | null)} })
     /** Returns all object types that support metadata and custom fields */
     allowedObjectTypes?: boolean | number
-    /** Get metadata entries for an object */
+    /** Get metadata entries for an object. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadata?: (ObjectMetadataGenqlSelection & { __args: {objectType: ObjectType, objectId: Scalars['ID']} })
-    /** Get metadata entries for multiple objects of the same type in a single query */
+    /** Get metadata entries for multiple objects of the same type in a single query. PUBLIC entries are returned to any caller. PRIVATE entries are returned only to callers holding organization:metadata:view (or organization:metadata:manage); this is permission-driven regardless of authentication, so an unauthenticated caller still receives PRIVATE entries if the organization grants that permission to its Anonymous group. */
     objectMetadataBatch?: (ObjectMetadataBatchResultGenqlSelection & { __args: {objectType: ObjectType, objectIds: Scalars['ID'][]} })
     /** List all custom field definitions for a given object type */
     customFieldDefinitions?: (CustomFieldDefinitionModelGenqlSelection & { __args: {objectType: ObjectType} })
@@ -12599,6 +12619,12 @@ export interface MutationGenqlSelection{
     attachOrUpdateIdentityToAccount?: (AccountIdentityGenqlSelection & { __args: {identityProviderId: Scalars['ID'], token: Scalars['String']} })
     /** Generates a URL to redirect the user to for linking an identity provider to their account */
     generateIdentityLinkUrl?: (IdentityLinkUrlGenqlSelection & { __args: {identityProviderId: Scalars['ID']} })
+    /** Deletes a linked identity from an account. When accountId is omitted, operates on the caller's own account (self-service). The creation identity (oldest linked identity by createdAt, then organizationIdentityProviderId, then providerId) cannot be deleted. The last remaining identity cannot be deleted. Possible errors: ACCOUNT_NOT_FOUND, IDENTITY_PROVIDER_NOT_FOUND, IDENTITY_NOT_FOUND, IDENTITY_LAST_IDENTITY_NOT_DELETABLE, IDENTITY_CREATION_IDENTITY_NOT_DELETABLE. */
+    deleteAccountIdentity?: { __args: {
+    /** The ID of the OrganizationIdentityProvider to delete */
+    identityProviderId: Scalars['ID'], 
+    /** The account to act on. When omitted, uses the caller's own account. */
+    accountId?: (Scalars['ID'] | null)} }
     /** Updates an existing configuration preset */
     updateConfiguration?: (ConfigurationGenqlSelection & { __args: {id: Scalars['ID'], input: CreateConfigurationInput} })
     /** Deletes a configuration preset by ID */
@@ -12653,6 +12679,8 @@ export interface MutationGenqlSelection{
     deleteOrganizationApp?: { __args: {id: Scalars['String']} }
     /** Update the working manifest for an organization app */
     updateOrganizationAppManifest?: (OrganizationAppGenqlSelection & { __args: {id: Scalars['String'], manifest: AppManifestInput} })
+    /** Generate a new signing secret for an app webhook. Every delivery from now on, retries included, is signed with the new secret. */
+    regenerateAppWebhookSecret?: (AppWebhookGenqlSelection & { __args: {id: Scalars['ID']} })
     /** Create a new release for an app (snapshots current manifest) */
     createAppRelease?: (AppReleaseGenqlSelection & { __args: {appId: Scalars['ID'], input: CreateAppReleaseInput} })
     /** Create a new webhook endpoint for the organization with a generated signing secret */
@@ -12701,8 +12729,8 @@ export interface MutationGenqlSelection{
     deleteTournamentStep?: { __args: {stepId: Scalars['ID']} }
     /** Generate the bracket structure for a tournament step based on its configuration or rule set */
     generateTournamentStep?: { __args: {stepId: Scalars['ID'], teamsCount?: (Scalars['Int'] | null)} }
-    /** Seed teams into a generated tournament step. Accepts the caller-curated seeding order and optional manual pins; the preset rule set (SEEDING / ROUND_SEEDING rules) drives actual team-to-game assignment. Prior placements are discarded (idempotent re-seed). */
-    seedTournamentStep?: (TournamentStepGenqlSelection & { __args: {input: SeedStepInput} })
+    /** Seed teams into a generated tournament step. Provide exactly one of `input` (rule-engine seeding: caller-curated order + optional manual pins, driven by SEEDING / ROUND_SEEDING rules) or `legacyInput` (pre-migration automatic/manual seeding, translated to an ordered team list + group pins). Prior placements are discarded (idempotent re-seed). */
+    seedTournamentStep?: (TournamentStepGenqlSelection & { __args?: {input?: (SeedStepInput | null), legacyInput?: (SeedStepLegacyInput | null)} })
     /** Persist a new seeding order on the step without re-seeding. Order must be a permutation of the tournament's teams. */
     updateSeedingOrder?: (TournamentStepGenqlSelection & { __args: {stepId: Scalars['ID'], orderedTeamIds: Scalars['ID'][]} })
     /** Persist a new manual-pin list on the step without re-seeding. Pins anchor teams to a group, a game, or a specific slot within a game. */
@@ -12831,8 +12859,12 @@ export interface MutationGenqlSelection{
     eventTicketConfigurationUpdate?: (EventTicketConfigurationGenqlSelection & { __args: {ticketConfigurationId: Scalars['ID'], input: EventTicketConfigurationUpdateInput} })
     /** Delete a ticket configuration from an event */
     eventTicketConfigurationDelete?: (EventTicketConfigurationGenqlSelection & { __args: {ticketConfigurationId: Scalars['ID']} })
-    /** Update the status of an event reservation as an administrator */
-    eventReservationUpdateStatus?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], status: EventReservationStatus, confirmPaymentRefundOrCancel?: (Scalars['Boolean'] | null)} })
+    /** Update the status of an event reservation as an administrator. When the reservation moves to a payment-validated status (REGISTERED, CONFIRMED, PRESENCE_CONFIRMATION_PENDING, NOT_ATTENDING) while it has no ticket, whatever its previous status, tickets are reserved automatically and their seats are marked as SOLD. Use ticketsToReserve to choose the ticket configurations, quantities and seats; when omitted, one ticket of the event single ticket configuration is reserved per ACCEPTED group member, and the call fails when the event has several ticket configurations. Seats are never assigned implicitly: if no seat is provided, tickets are created without a seat even when the event seat assignment mode is REQUIRED, and the seats must be assigned afterwards with eventReservationUpdateTickets. Reservations that already have tickets are never re-reserved. */
+    eventReservationUpdateStatus?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], status: EventReservationStatus, confirmPaymentRefundOrCancel?: (Scalars['Boolean'] | null), 
+    /** When false, the associated payment is left untouched by the status change: nothing is refunded and pending payments are not canceled. */
+    refundPayment?: (Scalars['Boolean'] | null), 
+    /** Ticket configurations, quantities and seats to reserve when the reservation moves to a payment-validated status while it has no ticket yet. Ignored when the reservation already has tickets or when the target status is not payment-validated. */
+    ticketsToReserve?: (EventReservationRegisterTicketsInput | null)} })
     /** Confirm or decline attendance for an event reservation as the group manager */
     eventReservationConfirmPresence?: (EventReservationGenqlSelection & { __args: {eventId: Scalars['ID'], confirmed: Scalars['Boolean']} })
     /** Validate a reservation and initiate the Stripe payment session */
@@ -12865,7 +12897,7 @@ export interface MutationGenqlSelection{
     eventVenueSeatTypeDelete?: (EventVenueSeatTypeGenqlSelection & { __args: {id: Scalars['ID']} })
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount?: boolean | number
-    /** Invite a player to join a user group */
+    /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], playerId: Scalars['ID']} })
     /** Accept or decline a pending user group invitation */
     userGroupUpdateInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], status: UserGroupMemberStatus} })
@@ -12933,7 +12965,7 @@ export interface MutationGenqlSelection{
     appCreateRelease?: (AppReleaseWithUploadUrlsGenqlSelection & { __args: {marketplaceAppId: Scalars['ID'], input: AppCreateReleaseInput} })
     /** Finalize a release: validate bundles and enqueue review job */
     appFinalizeRelease?: (AppBundleValidationErrorGenqlSelection & { __args: {releaseId: Scalars['ID']} })
-    /** Manually publish a release (admin fallback) */
+    /** Publish an APPROVED release to its marketplace listing. Fails if the release has any other status or the listing is SUSPENDED or REJECTED */
     appPublishRelease?: (MarketplaceAppReleaseGenqlSelection & { __args: {releaseId: Scalars['ID']} })
     /** Set (upsert) a module configuration on a platform */
     platformModuleConfigSet?: (PlatformModuleConfigGenqlSelection & { __args: {input: PlatformModuleConfigSetInput} })
@@ -13556,6 +13588,40 @@ pins?: (SeedingPinInput[] | null)}
 export interface SeedingPinInput {teamId: Scalars['ID'],groupId?: (Scalars['ID'] | null),gameId?: (Scalars['ID'] | null),slotIndex?: (Scalars['Int'] | null)}
 
 
+/** Legacy seeding request preserving the pre-migration seedTournamentStep semantics. Exactly one of automaticSeeding or manualSeeding must be set. */
+export interface SeedStepLegacyInput {
+/** ID of the step to seed. */
+stepId: Scalars['ID'],
+/** Use automatic seeding with a chosen algorithm. */
+automaticSeeding?: (AutomaticSeedingInput | null),
+/** Use manual seeding with explicit team-to-group assignments. */
+manualSeeding?: (ManualSeedingInput | null)}
+
+
+/** Legacy automatic seeding request. Orders the team pool with a SeedingMechanism, then spreads it across the entry groups with a GroupRepartitionMechanism. */
+export interface AutomaticSeedingInput {
+/** Algorithm to use for ordering teams during seeding. */
+seedingMechanism: SeedingMechanism,
+/** Algorithm to use for distributing teams across groups. */
+groupRepartitionMechanism: GroupRepartitionMechanism,
+/** Specific team IDs to seed; if omitted, all confirmed teams of the tournament are used. */
+teams?: (Scalars['ID'][] | null)}
+
+
+/** Legacy manual seeding request assigning teams to specific groups. */
+export interface ManualSeedingInput {
+/** List of group-to-teams assignments. */
+groups: ManualSeedingGroupInput[]}
+
+
+/** Legacy manual seeding assignment for a single group. */
+export interface ManualSeedingGroupInput {
+/** ID of the group to seed teams into. */
+group: Scalars['ID'],
+/** Ordered list of team IDs to seed into this group. */
+teams: Scalars['ID'][]}
+
+
 /** Input for updating a team score within a match */
 export interface UpdateMatchScoreInput {
 /** ID of the team whose score is being updated */
@@ -14080,6 +14146,22 @@ seatTypeId?: (Scalars['ID'] | null),
 configuration?: (EventTicketConfigurationConfigurationInput | null)}
 
 
+/** Input containing the list of ticket registrations for a reservation session */
+export interface EventReservationRegisterTicketsInput {
+/** List of ticket configurations and quantities to reserve */
+tickets: EventReservationRegisterTicketInput[]}
+
+
+/** Input for registering tickets of a specific configuration in a reservation */
+export interface EventReservationRegisterTicketInput {
+/** Identifier of the ticket configuration to reserve */
+ticketConfigurationId: Scalars['ID'],
+/** Number of tickets to reserve for this configuration */
+quantity: Scalars['Float'],
+/** List of seat IDs to reserve for these tickets */
+reservedSeats: Scalars['ID'][]}
+
+
 /** Input options for the payment session including redirect URLs and UI mode */
 export interface EventReservationValidateAndPayInput {
 /** The URL to which Stripe should send customers when payment or setup is complete. This parameter is not allowed if uiMode is "embedded". */
@@ -14108,22 +14190,6 @@ ticketIdsToRelease?: (Scalars['ID'][] | null),
 ticketIdsToAdd?: (EventReservationRegisterTicketInput[] | null),
 /** Custom field configurations to apply to specific tickets */
 ticketConfigurations?: (EventReservationTicketConfigurationInput[] | null)}
-
-
-/** Input for registering tickets of a specific configuration in a reservation */
-export interface EventReservationRegisterTicketInput {
-/** Identifier of the ticket configuration to reserve */
-ticketConfigurationId: Scalars['ID'],
-/** Number of tickets to reserve for this configuration */
-quantity: Scalars['Float'],
-/** List of seat IDs to reserve for these tickets */
-reservedSeats: Scalars['ID'][]}
-
-
-/** Input containing the list of ticket registrations for a reservation session */
-export interface EventReservationRegisterTicketsInput {
-/** List of ticket configurations and quantities to reserve */
-tickets: EventReservationRegisterTicketInput[]}
 
 
 /** Input for creating a new event venue */
@@ -14734,8 +14800,10 @@ export interface SetCustomFieldValuesInput {
 objectType: ObjectType,
 /** ID of the object to set field values on */
 objectId: Scalars['ID'],
-/** List of field key-value pairs to set */
-fields: CustomFieldValueInput[]}
+/** List of field key-value pairs to set. Omitting fields is equivalent to an empty list; combine with deleteKeys to delete only. */
+fields?: (CustomFieldValueInput[] | null),
+/** Keys whose stored value rows should be deleted. Rejected for required fields. A key must not appear in both fields and deleteKeys simultaneously. */
+deleteKeys?: (Scalars['String'][] | null)}
 
 
 /** A single key-value pair for setting a custom field */
@@ -18348,6 +18416,19 @@ export const enumEventsQueryStatus = {
    REGISTRATIONS_OPEN: 'REGISTRATIONS_OPEN' as const,
    REGISTRATIONS_ENDED: 'REGISTRATIONS_ENDED' as const,
    REGISTRATIONS_CLOSED: 'REGISTRATIONS_CLOSED' as const
+}
+
+export const enumSeedingMechanism = {
+   NONE: 'NONE' as const,
+   REVERSE: 'REVERSE' as const,
+   HALF_SHIFT: 'HALF_SHIFT' as const,
+   REVERSE_HALF_SHIFT: 'REVERSE_HALF_SHIFT' as const,
+   PAIR_FLIP: 'PAIR_FLIP' as const
+}
+
+export const enumGroupRepartitionMechanism = {
+   BALANCED: 'BALANCED' as const,
+   SEED_OPTIMIZED: 'SEED_OPTIMIZED' as const
 }
 
 export const enumStripeUiMode = {
