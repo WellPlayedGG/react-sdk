@@ -420,7 +420,7 @@ Custom fields attach typed, org-defined values to entities (players, tournament 
 **Visibility** — who can read a value (`PropertyVisibility`):
 
 - `PUBLIC` — everyone, including unauthenticated callers.
-- `OWNER` — only the object's owner (profile owner, team manager, …). Permission holders do **not** see it unless they are also the owner.
+- `OWNER` — only the object's owner. Objects with an owner: `Account`, `Organization`, `OrganizationMember`, `Clan`, `Leaderboard`, `PlayerProfile` (its account), and the member rows `TeamMember`, `TournamentTeamMember`, `ClanMember` and `UserGroupMember` (the member's account). Any other object, `TournamentTeam` and `Event` included, has no owner (a team manager does not own the team), so an `OWNER` field on it is readable by no one. Permission holders do **not** see it unless they are also the owner.
 - `OWNER_OR_PERMISSION` — the owner, or a caller holding the field's view permission.
 - `WITH_PERMISSION` — only callers holding the view permission.
 
