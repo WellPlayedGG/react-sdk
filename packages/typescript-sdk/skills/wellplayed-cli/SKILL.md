@@ -1367,7 +1367,17 @@ An open pool is a tournament step with no fixed bracket. Staff create a match be
 
 With this preset, seeding registers every seeded team with 0 points, the next match of a best-of series is created automatically, and a withdrawn team's pending matches are awarded to its opponents. For a follow-up bracket, apply `seeded-playoff` (category `SINGLE_ELIMINATION`) to the next step: it keeps the previous step's teams with `rank <= team_count` and seeds them in rank order (1 vs N). Parameters: `team_count` (required: 2, 4, 8 or 16), `best_of` (1), `final_best_of` (defaults to `best_of`), `third_place` (false), `promote_step_winners_to_tournament` (true).
 
-A custom preset script enables an open pool with `set_open_pool({ teams_per_match = 2, best_of = 1, max_matches_per_team = 0, allow_rematch = true, allow_concurrent_matches = false, auto_join = true, enforce_team_min_size = true })`; `simulateScript` then lists a `SET_OPEN_POOL` entry in `effectsSummary`. Applying a preset that does not call it turns the open pool off for that step.
+A custom preset script enables an open pool with `set_open_pool({ teams_per_match = 2, best_of = 1, max_matches_per_team = 0, allow_rematch = true, allow_concurrent_matches = false, auto_join = true, enforce_team_min_size = true })`; Applying a preset that does not call it turns the open pool off for that step. A configuration out of the ranges in the table above makes `applyBuiltinPreset` / `applyPresetScript` fail with `RULE_DEFINITION_INVALID`, `extensions.ruleExecution.effectType: "SET_OPEN_POOL"` and the reason in `extensions.ruleExecution.reason`.
+
+`SET_OPEN_POOL` is a `SimulatedEffectType` value: preview a preset with `simulateScript` (context `PRESET`) and check that `effectsSummary` holds a `SET_OPEN_POOL` entry before applying it.
+
+```bash
+wellplayed graphql --org my-org -F input.context=PRESET -F input.stepId=<stepId> \
+  --raw-field input.script='set_open_pool({ teams_per_match = 3, best_of = 1, allow_rematch = false })' \
+  'query($input: SimulateScriptInput!) {
+    simulateScript(input: $input) { success errors { message } effectsSummary { type description } }
+  }'
+```
 
 ```bash
 wellplayed graphql --org my-org \
