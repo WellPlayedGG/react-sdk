@@ -3,6 +3,16 @@ import { join } from 'node:path';
 
 const CONFIG_FILENAME = 'wellplayed.json';
 
+export interface FrontendModuleProp {
+  type: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'ROUTE_PARAM';
+  label: string;
+  description?: string;
+  required?: boolean;
+  defaultValue?: string | number | boolean;
+  options?: Array<{ label: string; value: string }>;
+  param?: string;
+}
+
 export interface WellPlayedConfig {
   name: string;
   version: string;
@@ -20,7 +30,7 @@ export interface WellPlayedConfig {
     name: string;
     displayName: string;
     entry: string;
-    propsSchema: Record<string, unknown>;
+    propsSchema: Record<string, FrontendModuleProp>;
     events: string[];
   }>;
 }
