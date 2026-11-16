@@ -3,10 +3,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { log } from '../utils/logger.js';
 import { runCommand } from '../utils/run-command.js';
-import { readAppConfig } from '../config/app-config.js';
+import { readAppConfig, type FrontendModuleProp, type WellPlayedConfig } from '../config/app-config.js';
 import { graphqlRequest } from '../utils/api-client.js';
 import { getToken } from '../auth/token-store.js';
 import { sleep } from '../utils/sleep.js';
+import { validateOrgId } from './graphql.js';
 
 const CREATE_RELEASE_MUTATION = `
   mutation appCreateRelease($marketplaceAppId: ID!, $input: AppCreateReleaseInput!) {
@@ -16,8 +17,20 @@ const CREATE_RELEASE_MUTATION = `
         version
         status
       }
-      extensionUploadUrl
-      moduleUploadUrl
+      extensionUploadUrl {
+        url
+        fields {
+          key
+          value
+        }
+      }
+      moduleUploadUrl {
+        url
+        fields {
+          key
+          value
+        }
+      }
     }
   }
 `;
@@ -37,19 +50,118 @@ const RELEASE_STATUS_QUERY = `
       id
       version
       status
-      reviewResult
+      reviewResult {
+        passed
+        checks {
+          name
+          passed
+          details
+        }
+      }
+    }
+    marketplaceApp(id: $marketplaceAppId) {
+      status
     }
   }
 `;
 
+interface PresignedUrl {
+  url: string;
+  fields: Array<{ key: string; value: string }>;
+}
+
+type MarketplaceAppReleaseStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+type MarketplaceAppStatus = 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED';
+
+interface ReleaseStatusResult {
+  appReleases: Array<{
+    id: string;
+    version: string;
+    status: MarketplaceAppReleaseStatus;
+    reviewResult: {
+      passed: boolean;
+      checks: Array<{ name: string; passed: boolean; details: string | null }>;
+    } | null;
+  }>;
+  marketplaceApp: { status: MarketplaceAppStatus };
+}
+
+type ExtensionPointType = 'ADMIN_NAVIGATION' | 'DASHBOARD_WIDGET' | 'TAB';
+
+const EXTENSION_POINT_TYPES = new Map<string, ExtensionPointType>([
+  ['tab', 'TAB'],
+  ['admin-navigation', 'ADMIN_NAVIGATION'],
+  ['dashboard-widget', 'DASHBOARD_WIDGET'],
+]);
+
+interface AppManifestInput {
+  version: string;
+  permissions: string[];
+  extensions: Array<{ type: ExtensionPointType; label: string; activePages: string[] }>;
+  webhookEvents: string[];
+  metafieldNamespaces: string[];
+  frontendModules: Array<{
+    name: string;
+    displayName: string;
+    version: string;
+    events: Array<{ name: string }>;
+    propsSchema: Array<Omit<FrontendModuleProp, 'defaultValue'> & { key: string; defaultValue?: string }>;
+  }>;
+}
+
+function toExtensionPointType(extension: WellPlayedConfig['extensions'][number]): ExtensionPointType {
+  const type = EXTENSION_POINT_TYPES.get(extension.type);
+  if (!type) {
+    throw new Error(
+      `Extension "${extension.name}" has type "${extension.type}", which WellPlayed does not support. Use one of: ${[...EXTENSION_POINT_TYPES.keys()].join(', ')}.`,
+    );
+  }
+  return type;
+}
+
+function toManifestInput(config: WellPlayedConfig): AppManifestInput {
+  return {
+    version: '1.0',
+    permissions: config.scopes,
+    extensions: config.extensions.map((e) => ({
+      type: toExtensionPointType(e),
+      label: e.displayName,
+      activePages: e.activePages,
+    })),
+    webhookEvents: [],
+    metafieldNamespaces: [],
+    frontendModules: config.platformModules.map((m) => ({
+      name: m.name,
+      displayName: m.displayName,
+      version: config.version,
+      events: m.events.map((name) => ({ name })),
+      propsSchema: Object.entries(m.propsSchema).map(([key, prop]) => ({
+        key,
+        type: prop.type,
+        label: prop.label,
+        description: prop.description,
+        required: prop.required ?? false,
+        defaultValue: prop.defaultValue === undefined ? undefined : String(prop.defaultValue),
+        options: prop.options,
+        param: prop.param,
+      })),
+    })),
+  };
+}
+
+const LOCKED_LISTING_STATUSES: ReadonlyArray<MarketplaceAppStatus> = ['SUSPENDED', 'REJECTED'];
+
 export const deployCommand = new Command('deploy')
   .description('Build and deploy your app to the WellPlayed Marketplace')
   .requiredOption('--app-id <appId>', 'Marketplace App ID')
-  .action((options: { appId: string }) =>
+  .requiredOption('-o, --org <shortId>', 'Organization short-id that owns the app (sets the `organization-id` header)')
+  .action((options: { appId: string; org: string }) =>
     runCommand(async () => {
       if (!/^[a-zA-Z0-9_-]+$/.test(options.appId)) {
         throw new Error('Invalid app ID format. Use only letters, numbers, hyphens, and underscores.');
       }
+      const requestOptions = { organizationId: validateOrgId(options.org) };
 
       const token = getToken();
       if (!token) {
@@ -87,29 +199,13 @@ export const deployCommand = new Command('deploy')
       }
 
       log.step(2, 'Creating release...');
-      const manifest = {
-        version: '1.0',
-        scopes: config.scopes,
-        extensions: config.extensions.map((e) => ({
-          type: e.type,
-          label: e.displayName,
-          activePages: e.activePages,
-        })),
-        webhookEvents: [],
-        metafieldNamespaces: [],
-        frontendModules: config.platformModules.map((m) => ({
-          name: m.name,
-          displayName: m.displayName,
-          propsSchema: m.propsSchema,
-          events: m.events,
-        })),
-      };
+      const manifest = toManifestInput(config);
 
       interface CreateReleaseResult {
         appCreateRelease: {
           release: { id: string; version: string; status: string };
-          extensionUploadUrl?: Record<string, unknown>;
-          moduleUploadUrl?: Record<string, unknown>;
+          extensionUploadUrl: PresignedUrl | null;
+          moduleUploadUrl: PresignedUrl | null;
         };
       }
 
@@ -126,6 +222,7 @@ export const deployCommand = new Command('deploy')
             moduleBundleSize,
           },
         },
+        requestOptions,
       );
 
       const { release, extensionUploadUrl, moduleUploadUrl } =
@@ -156,6 +253,7 @@ export const deployCommand = new Command('deploy')
       const finalizeResult = await graphqlRequest<FinalizeResult>(
         FINALIZE_RELEASE_MUTATION,
         { releaseId: release.id },
+        requestOptions,
       );
 
       const validation = finalizeResult.appFinalizeRelease;
@@ -173,18 +271,10 @@ export const deployCommand = new Command('deploy')
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         await sleep(5000);
 
-        interface ReleasesResult {
-          appReleases: Array<{
-            id: string;
-            version: string;
-            status: string;
-            reviewResult: Record<string, unknown>;
-          }>;
-        }
-
-        const statusResult = await graphqlRequest<ReleasesResult>(
+        const statusResult = await graphqlRequest<ReleaseStatusResult>(
           RELEASE_STATUS_QUERY,
           { marketplaceAppId: options.appId },
+          requestOptions,
         );
 
         const currentRelease = statusResult.appReleases.find(
@@ -194,6 +284,12 @@ export const deployCommand = new Command('deploy')
         if (!currentRelease) break;
 
         if (currentRelease.status === 'APPROVED') {
+          const listingStatus = statusResult.marketplaceApp.status;
+          if (LOCKED_LISTING_STATUSES.includes(listingStatus)) {
+            throw new Error(
+              `App v${config.version} passed review, but its marketplace listing is ${listingStatus}, so nothing was published.`,
+            );
+          }
           log.success(`App v${config.version} published successfully!`);
           return;
         }
@@ -213,12 +309,11 @@ export const deployCommand = new Command('deploy')
   );
 
 async function uploadToPresigned(
-  presigned: Record<string, unknown>,
+  presigned: PresignedUrl,
   content: Buffer,
 ): Promise<void> {
   const { request } = await import('undici');
-  const url = (presigned as { url?: string }).url;
-  const fields = (presigned as { fields?: Record<string, string> }).fields ?? {};
+  const { url, fields } = presigned;
 
   if (!url) {
     throw new Error('Missing presigned URL');
@@ -232,7 +327,7 @@ async function uploadToPresigned(
   const boundary = `----WPUpload${Date.now()}`;
   const parts: Buffer[] = [];
 
-  for (const [key, value] of Object.entries(fields)) {
+  for (const { key, value } of [...fields, { key: 'Content-Type', value: 'application/javascript' }]) {
     parts.push(
       Buffer.from(
         `--${boundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}\r\n`,

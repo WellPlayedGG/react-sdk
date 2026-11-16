@@ -165,12 +165,13 @@ Requires a valid `wellplayed.json` in the current directory.
 Build and deploy your app to the WellPlayed Marketplace.
 
 ```bash
-wellplayed deploy --app-id <appId>
+wellplayed deploy --app-id <appId> --org <shortId>
 ```
 
 | Option | Required | Description |
 |--------|----------|-------------|
 | `--app-id <appId>` | Yes | Your Marketplace App ID |
+| `-o, --org <shortId>` | Yes | Organization short-id that owns the app (sets the `organization-id` header) |
 
 **Prerequisites:** Run `npm run build` before deploying. The command expects production bundles at `dist/extension.js` and/or `dist/module.js` depending on your configuration.
 
@@ -180,7 +181,7 @@ wellplayed deploy --app-id <appId>
 2. **Create release** -- Sends the app manifest and version to the GraphQL API via the `appCreateRelease` mutation. Receives presigned upload URLs.
 3. **Upload bundles** -- Uploads `dist/extension.js` and/or `dist/module.js` to the presigned S3 URLs.
 4. **Finalize release** -- Calls `appFinalizeRelease` to trigger server-side bundle validation. Exits with errors if validation fails.
-5. **Poll for review** -- Polls the release status every 5 seconds (up to 5 minutes). Reports `APPROVED` or `REJECTED` with review details.
+5. **Poll for review** -- Polls the release status every 5 seconds (up to 5 minutes) and reports `APPROVED` or `REJECTED` with review details. If the release passes review while the marketplace listing is `SUSPENDED` or `REJECTED`, nothing gets published and the command exits with an error.
 
 ## Configuration (`wellplayed.json`)
 
@@ -192,7 +193,7 @@ The `wellplayed.json` file is the app manifest, created by `wellplayed init` and
   "version": "1.0.0",
   "displayName": "My App",
   "description": "A WellPlayed marketplace app",
-  "scopes": ["metafields:read", "metafields:write"],
+  "scopes": ["organization:marketplace:view", "organization:marketplace:install"],
   "extensions": [
     {
       "name": "sample-tab",
@@ -217,13 +218,13 @@ The `wellplayed.json` file is the app manifest, created by `wellplayed init` and
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | `string` | Machine-readable app identifier (lowercase, hyphens) |
-| `version` | `string` | Semver version, sent with each release |
+| `version` | `string` | Semver version, sent with each release and used as the version of every platform module |
 | `displayName` | `string` | Human-readable name for the marketplace listing |
 | `description` | `string` | Short app description |
-| `scopes` | `string[]` | API permission scopes the app requires |
+| `scopes` | `string[]` | Catalog permission ids the app requires (for example `organization:marketplace:view`), sent as the manifest's `permissions` |
 | `extensions` | `array` | Console extensions (tabs, panels, etc.) |
 | `extensions[].name` | `string` | Unique extension identifier |
-| `extensions[].type` | `string` | Extension type (e.g. `tab`) |
+| `extensions[].type` | `string` | Extension type: `tab`, `admin-navigation` or `dashboard-widget` |
 | `extensions[].displayName` | `string` | Label shown in the console UI |
 | `extensions[].entry` | `string` | Source file entry point |
 | `extensions[].activePages` | `string[]` | Console routes where the extension appears |
@@ -231,8 +232,8 @@ The `wellplayed.json` file is the app manifest, created by `wellplayed init` and
 | `platformModules[].name` | `string` | Unique module identifier |
 | `platformModules[].displayName` | `string` | Label shown in the page builder |
 | `platformModules[].entry` | `string` | Source file entry point |
-| `platformModules[].propsSchema` | `object` | JSON schema defining configurable props |
-| `platformModules[].events` | `string[]` | Events the module can emit |
+| `platformModules[].propsSchema` | `object` | Configurable props keyed by name. Each prop is `{ type, label, description?, required?, defaultValue?, options?, param? }`, with `type` one of `STRING`, `NUMBER`, `BOOLEAN`, `SELECT` or `ROUTE_PARAM` |
+| `platformModules[].events` | `string[]` | Names of the events the module can emit |
 
 ## Authentication
 
@@ -263,7 +264,7 @@ The CLI is part of the `@wellplayed` SDK ecosystem:
 1. `wellplayed init` scaffolds a full app with extensions and/or platform modules.
 2. Build extensions using React. Build platform modules using `@well-played.gg/module-sdk` and `@well-played.gg/module-ui`.
 3. `wellplayed dev` runs a local Vite server for development.
-4. `wellplayed deploy --app-id <id>` packages and submits the app for marketplace review.
+4. `wellplayed deploy --app-id <id> --org <shortId>` packages and submits the app for marketplace review.
 
 For standalone modules or components outside of a full app, use `@well-played.gg/create-module` or `@well-played.gg/create-component` instead.
 

@@ -62,7 +62,7 @@ export const initCommand = new Command('init')
       version: '1.0.0',
       displayName: answers.displayName,
       description: answers.description,
-      scopes: ['metafields:read', 'metafields:write'],
+      scopes: ['organization:marketplace:view', 'organization:marketplace:install'],
       extensions: hasExtensions
         ? [
             {
