@@ -2757,549 +2757,6 @@ type LeaderboardSeasonBucketEdge {
   node: LeaderboardSeasonBucket!
 }
 
-"""
-Credits leaderboard points to the players of a tournament from its match results and final ranks
-"""
-type LeaderboardFeed {
-  """ID of the feed"""
-  id: ID!
-
-  """ID of the leaderboard credited"""
-  leaderboardId: ID!
-
-  """ID of the tournament read"""
-  tournamentId: ID!
-
-  """Step read; null for every step of the tournament"""
-  stepId: ID
-
-  """Pinned season; null for the season active when each result is credited"""
-  seasonId: ID
-
-  """Points for a won match"""
-  winPoints: Float!
-
-  """Points for a lost match"""
-  lossPoints: Float!
-
-  """Points for a drawn match"""
-  drawPoints: Float!
-
-  """Points for a forfeited match"""
-  forfeitPoints: Float!
-
-  """Points by final rank when a fed step ends; index 0 is rank 1"""
-  placementPoints: [Float!]!
-
-  """Whether the feed credits points"""
-  enabled: Boolean!
-
-  """Date and time when the feed was created"""
-  createdAt: DateTime!
-
-  """Date and time when the feed was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Paginated list of leaderboard feeds"""
-type LeaderboardFeeds {
-  """List of edges containing cursor and node pairs"""
-  edges: [LeaderboardFeedEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [LeaderboardFeed!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type LeaderboardFeedEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: LeaderboardFeed!
-}
-
-"""Outcome of a leaderboard feed reconciliation"""
-type LeaderboardFeedReconcileResult {
-  """ID of the feed"""
-  feedId: ID!
-
-  """Matches and placements checked"""
-  sourcesChecked: Int!
-
-  """Ledger entries written"""
-  entriesWritten: Int!
-
-  """Sum of the points credited or reversed"""
-  pointsDelta: Float!
-}
-
-"""The required fields for creating or updating an identity on a provider"""
-type IdentityProviderRequirements {
-  """The list of field names that must be provided"""
-  requiredFields: [String!]!
-}
-
-"""
-A publicly visible identity provider without sensitive configuration details
-"""
-type PublicIdentityProvider {
-  """The ID of the identity provider."""
-  id: ID!
-
-  """The name of the identity provider."""
-  name: String!
-
-  """The description of the identity provider."""
-  description: String
-
-  """The icon URL of the identity provider."""
-  icon: String
-
-  """The availability of the identity provider."""
-  availability: IdentityProviderAvailability!
-
-  """Identity provider create and update requirements"""
-  requirements: IdentityProviderRequirements!
-
-  """The date and time the identity provider was created"""
-  createdAt: DateTime!
-
-  """The date and time the identity provider was last updated"""
-  updatedAt: DateTime!
-}
-
-enum IdentityProviderAvailability {
-  PUBLIC
-  PREVIEW
-  PRIVATE
-}
-
-"""A versioned release of an app with a snapshot of its manifest"""
-type AppRelease {
-  """Unique identifier of the release"""
-  id: ID!
-
-  """ID of the app"""
-  appId: ID!
-
-  """Semantic version string (e.g. 1.0.0)"""
-  version: String!
-
-  """Release notes"""
-  notes: String
-
-  """Manifest snapshot at release time"""
-  manifest: AppManifestModel!
-
-  """Current status of the release"""
-  status: AppReleaseStatus!
-
-  """Review result details"""
-  reviewResult: AppReviewResult
-
-  """When the release was created"""
-  createdAt: DateTime!
-
-  """When the release was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Status of an app release"""
-enum AppReleaseStatus {
-  DRAFT
-  PENDING_REVIEW
-  APPROVED
-  REJECTED
-}
-
-"""OAuth2 client metadata for an organization app"""
-type OrganizationAppConfigMetadata {
-  """URL where users are redirected to log in"""
-  loginUrl: String!
-
-  """URL where users are redirected to grant consent"""
-  consentUrl: String!
-
-  """ID of the account that created this app"""
-  creatorId: String!
-
-  """Whether the app requires explicit user consent during authorization"""
-  requiresConsent: Boolean!
-
-  """Whether this is a public OAuth2 client (no client secret)"""
-  public: Boolean!
-}
-
-"""OAuth2 client configuration for an organization app"""
-type OrganizationAppConfig {
-  """Display name of the OAuth2 client"""
-  name: String!
-
-  """ID of the organization that owns this app"""
-  organizationId: ID!
-
-  """Allowed OAuth2 redirect URLs after authorization"""
-  redirectUrls: [String!]!
-
-  """Allowed redirect URLs after logout"""
-  logoutRedirectUrls: [String!]!
-
-  """OAuth2 scopes available to this client"""
-  scope: String!
-
-  """Additional metadata for the OAuth2 client"""
-  metadata: OrganizationAppConfigMetadata!
-}
-
-"""An OAuth2 application registered by an organization"""
-type OrganizationApp {
-  """Unique identifier of the app (also the OAuth2 client ID)"""
-  id: String!
-
-  """Display name of the app"""
-  name: String!
-
-  """Description of the app"""
-  description: String!
-
-  """ID of the account that created this app"""
-  creatorId: ID!
-
-  """ID of the organization that owns this app"""
-  organizationId: ID!
-
-  """Timestamp when the app was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the app was last updated"""
-  updatedAt: DateTime!
-
-  """OAuth2 client secret (only returned on creation or secret reset)"""
-  secret: String
-
-  """Whether this is a public OAuth2 client (no client secret required)"""
-  public: Boolean
-
-  """App icon URL"""
-  icon: String
-
-  """Short description of the app"""
-  shortDescription: String
-
-  """OAuth2 client configuration for this app"""
-  configuration: OrganizationAppConfig!
-
-  """Account that created this app"""
-  creator: Account!
-
-  """Working copy of the app manifest"""
-  manifest: AppManifestModel
-
-  """Releases for this app"""
-  releases: [AppRelease!]!
-
-  """
-  Active webhooks for this app. The organization that owns the app sees the webhooks of every installation. Any other organization sees only the webhook of its own installation.
-  """
-  appWebhooks: [AppWebhook!]!
-}
-
-"""Paginated list of organization apps"""
-type OrganizationApps {
-  """List of edges containing cursor and node pairs"""
-  edges: [OrganizationAppEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [OrganizationApp!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type OrganizationAppEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: OrganizationApp!
-}
-
-"""A webhook auto-created when an app is installed on an organization"""
-type AppWebhook {
-  """Unique identifier of the webhook"""
-  id: ID!
-
-  """ID of the app"""
-  appId: ID!
-
-  """ID of the marketplace installation (null for private apps)"""
-  installationId: ID
-
-  """ID of the organization where the app is installed"""
-  organizationId: ID!
-
-  """URL where webhook events are sent"""
-  url: String!
-
-  """Event types this webhook subscribes to"""
-  events: [String!]!
-
-  """Whether this webhook is currently active"""
-  active: Boolean!
-
-  """When the webhook was created"""
-  createdAt: DateTime!
-
-  """When the webhook was last updated"""
-  updatedAt: DateTime!
-
-  """
-  Secret used to sign this webhook's deliveries. Only members of the app's owner organization who hold organization:app:update on the app can read it.
-  """
-  secret: String
-}
-
-"""
-An application attached to an organization with associated permissions and group assignment
-"""
-type OrganizationAttachedApp {
-  """The ID of the organization this app is attached to"""
-  organizationId: ID!
-
-  """The ID of the permission group assigned to this attached app"""
-  groupId: ID
-
-  """The unique identifier of the attached application"""
-  appId: String!
-
-  """The set of permissions granted to this attached app"""
-  permissions: [GroupPermission!]
-
-  """When this app attachment was created"""
-  createdAt: DateTime!
-
-  """When this app attachment was last updated"""
-  updatedAt: DateTime!
-
-  """The application details for this attached app"""
-  app: OrganizationApp!
-
-  """The permission group assigned to this attached app"""
-  group: OrganizationGroup
-}
-
-"""Paginated list of applications attached to an organization"""
-type OrganizationAttachedApps {
-  """List of edges containing cursor and node pairs"""
-  edges: [OrganizationAttachedAppEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [OrganizationAttachedApp!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type OrganizationAttachedAppEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: OrganizationAttachedApp!
-}
-
-"""
-An identity provider configured for an organization, supporting OAuth2 or OpenID Connect authentication
-"""
-type OrganizationIdentityProvider {
-  """Whether this identity provider is currently active"""
-  enabled: Boolean!
-
-  """Whether player accounts must be validated through this provider"""
-  requiredForPlayerValidation: Boolean!
-
-  """Whether users can log in using this identity provider"""
-  allowLogin: Boolean!
-
-  """Human-readable description of this identity provider"""
-  description: String!
-
-  """URL or identifier for the provider icon"""
-  icon: String
-
-  """Unique identifier of this identity provider"""
-  id: ID!
-
-  """Reference to the parent root identity provider, if derived from one"""
-  identityProviderId: ID
-
-  """The OAuth2 or OpenID Connect configuration for this provider"""
-  configuration: IdentityProviderConfigurations
-
-  """Display name of the identity provider"""
-  name: String!
-
-  """The organization this provider belongs to"""
-  organizationId: ID
-
-  """When this identity provider was created"""
-  createdAt: DateTime!
-
-  """When this identity provider was last updated"""
-  updatedAt: DateTime!
-
-  """The root identity provider this organization provider was derived from"""
-  parentIdentityProvider: PublicIdentityProvider
-}
-
-union IdentityProviderConfigurations = OAuthClientConfiguration | OpenidConfiguration
-
-"""Configuration for an OAuth2 identity provider client"""
-type OAuthClientConfiguration {
-  """OAuth2/OIDC authorization endpoint URL"""
-  authorizationEndpoint: String
-
-  """List of endpoints to retrieve user data from after authentication"""
-  dataRetrievers: [DataRetrievalConfig!]!
-
-  """Issuer identifier for the identity provider"""
-  issuer: String
-
-  """Type of identity provider (OPENID or OAUTH2)"""
-  providerType: IdentityProviderType!
-
-  """OAuth2 client ID issued by the identity provider"""
-  clientId: String!
-
-  """OAuth2 client secret issued by the identity provider"""
-  clientSecret: String!
-
-  """Authentication method used when calling the token endpoint"""
-  tokenEndpointAuthMethod: OauthEndpointAuthMethod
-
-  """URL to redirect users back to after authentication"""
-  redirectUrl: String!
-
-  """URL of the OAuth2 token endpoint for exchanging authorization codes"""
-  tokenEndpoint: String
-
-  """
-  URL of the OAuth2 authorization endpoint where users are redirected to authenticate
-  """
-  authorizationUrl: String
-
-  """
-  URL where users are redirected after the identity linking process completes. Required for the IDP-based identity linking flow via generateIdentityLinkUrl.
-  """
-  linkRedirectUrl: String
-}
-
-enum IdentityProviderType {
-  OPENID
-  OAUTH2
-}
-
-enum OauthEndpointAuthMethod {
-  CLIENT_SECRET_POST
-  CLIENT_SECRET_BASIC
-  CLIENT_SECRET_JWT
-  PRIVATE_KEY_JWT
-  TLS_CLIENT_AUTH
-  SELF_SIGNED_TLS_CLIENT_AUTH
-  NONE
-}
-
-"""Configuration for an OpenID Connect identity provider client"""
-type OpenidConfiguration {
-  """OAuth2/OIDC authorization endpoint URL"""
-  authorizationEndpoint: String
-
-  """List of endpoints to retrieve user data from after authentication"""
-  dataRetrievers: [DataRetrievalConfig!]!
-
-  """Issuer identifier for the identity provider"""
-  issuer: String
-
-  """Type of identity provider (OPENID or OAUTH2)"""
-  providerType: IdentityProviderType!
-
-  """OpenID Connect client ID issued by the identity provider"""
-  clientId: String!
-
-  """OpenID Connect client secret issued by the identity provider"""
-  clientSecret: String!
-
-  """URL to redirect users back to after OpenID authentication"""
-  redirectUrl: String!
-}
-
-"""
-A webhook endpoint configured to receive event notifications for an organization
-"""
-type Webhook {
-  """Unique identifier of the webhook"""
-  id: ID!
-
-  """The organization this webhook belongs to"""
-  organizationId: ID!
-
-  """The event types this webhook is subscribed to"""
-  events: [WebhookEventType!]!
-
-  """The URL that will receive webhook POST requests"""
-  url: String!
-
-  """Human-readable description of this webhook"""
-  description: String!
-
-  """Whether this webhook is currently active and receiving events"""
-  active: Boolean!
-
-  """The secret key used to sign webhook payloads for verification"""
-  secret: String!
-}
-
-"""
-A skill rating value assigned to a player for a specific rating definition
-"""
-type PlayerSkillRating {
-  """Unique identifier for this skill rating entry"""
-  id: ID!
-
-  """The ID of the player profile this rating belongs to"""
-  playerProfileId: ID!
-
-  """The ID of the skill rating definition"""
-  ratingId: ID!
-
-  """The numeric skill rating value"""
-  value: Float!
-
-  """The date and time this skill rating was created"""
-  createdAt: DateTime!
-
-  """The date and time this skill rating was last updated"""
-  updatedAt: DateTime!
-
-  """The player profile associated with this skill rating"""
-  player: Player!
-}
-
 """Timing breakdown of a Lua engine invocation, in milliseconds."""
 type RuleEngineEngineTimingStats {
   """Time spent evaluating the Lua condition expression, in ms."""
@@ -3863,6 +3320,549 @@ type TournamentOpenPoolReopenedPayload implements JournalPayload {
   stepId: ID!
 }
 
+"""
+Credits leaderboard points to the players of a tournament from its match results and final ranks
+"""
+type LeaderboardFeed {
+  """ID of the feed"""
+  id: ID!
+
+  """ID of the leaderboard credited"""
+  leaderboardId: ID!
+
+  """ID of the tournament read"""
+  tournamentId: ID!
+
+  """Step read; null for every step of the tournament"""
+  stepId: ID
+
+  """Pinned season; null for the season active when each result is credited"""
+  seasonId: ID
+
+  """Points for a won match"""
+  winPoints: Float!
+
+  """Points for a lost match"""
+  lossPoints: Float!
+
+  """Points for a drawn match"""
+  drawPoints: Float!
+
+  """Points for a forfeited match"""
+  forfeitPoints: Float!
+
+  """Points by final rank when a fed step ends; index 0 is rank 1"""
+  placementPoints: [Float!]!
+
+  """Whether the feed credits points"""
+  enabled: Boolean!
+
+  """Date and time when the feed was created"""
+  createdAt: DateTime!
+
+  """Date and time when the feed was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Paginated list of leaderboard feeds"""
+type LeaderboardFeeds {
+  """List of edges containing cursor and node pairs"""
+  edges: [LeaderboardFeedEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [LeaderboardFeed!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type LeaderboardFeedEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: LeaderboardFeed!
+}
+
+"""Outcome of a leaderboard feed reconciliation"""
+type LeaderboardFeedReconcileResult {
+  """ID of the feed"""
+  feedId: ID!
+
+  """Matches and placements checked"""
+  sourcesChecked: Int!
+
+  """Ledger entries written"""
+  entriesWritten: Int!
+
+  """Sum of the points credited or reversed"""
+  pointsDelta: Float!
+}
+
+"""The required fields for creating or updating an identity on a provider"""
+type IdentityProviderRequirements {
+  """The list of field names that must be provided"""
+  requiredFields: [String!]!
+}
+
+"""
+A publicly visible identity provider without sensitive configuration details
+"""
+type PublicIdentityProvider {
+  """The ID of the identity provider."""
+  id: ID!
+
+  """The name of the identity provider."""
+  name: String!
+
+  """The description of the identity provider."""
+  description: String
+
+  """The icon URL of the identity provider."""
+  icon: String
+
+  """The availability of the identity provider."""
+  availability: IdentityProviderAvailability!
+
+  """Identity provider create and update requirements"""
+  requirements: IdentityProviderRequirements!
+
+  """The date and time the identity provider was created"""
+  createdAt: DateTime!
+
+  """The date and time the identity provider was last updated"""
+  updatedAt: DateTime!
+}
+
+enum IdentityProviderAvailability {
+  PUBLIC
+  PREVIEW
+  PRIVATE
+}
+
+"""A versioned release of an app with a snapshot of its manifest"""
+type AppRelease {
+  """Unique identifier of the release"""
+  id: ID!
+
+  """ID of the app"""
+  appId: ID!
+
+  """Semantic version string (e.g. 1.0.0)"""
+  version: String!
+
+  """Release notes"""
+  notes: String
+
+  """Manifest snapshot at release time"""
+  manifest: AppManifestModel!
+
+  """Current status of the release"""
+  status: AppReleaseStatus!
+
+  """Review result details"""
+  reviewResult: AppReviewResult
+
+  """When the release was created"""
+  createdAt: DateTime!
+
+  """When the release was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Status of an app release"""
+enum AppReleaseStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+"""OAuth2 client metadata for an organization app"""
+type OrganizationAppConfigMetadata {
+  """URL where users are redirected to log in"""
+  loginUrl: String!
+
+  """URL where users are redirected to grant consent"""
+  consentUrl: String!
+
+  """ID of the account that created this app"""
+  creatorId: String!
+
+  """Whether the app requires explicit user consent during authorization"""
+  requiresConsent: Boolean!
+
+  """Whether this is a public OAuth2 client (no client secret)"""
+  public: Boolean!
+}
+
+"""OAuth2 client configuration for an organization app"""
+type OrganizationAppConfig {
+  """Display name of the OAuth2 client"""
+  name: String!
+
+  """ID of the organization that owns this app"""
+  organizationId: ID!
+
+  """Allowed OAuth2 redirect URLs after authorization"""
+  redirectUrls: [String!]!
+
+  """Allowed redirect URLs after logout"""
+  logoutRedirectUrls: [String!]!
+
+  """OAuth2 scopes available to this client"""
+  scope: String!
+
+  """Additional metadata for the OAuth2 client"""
+  metadata: OrganizationAppConfigMetadata!
+}
+
+"""An OAuth2 application registered by an organization"""
+type OrganizationApp {
+  """Unique identifier of the app (also the OAuth2 client ID)"""
+  id: String!
+
+  """Display name of the app"""
+  name: String!
+
+  """Description of the app"""
+  description: String!
+
+  """ID of the account that created this app"""
+  creatorId: ID!
+
+  """ID of the organization that owns this app"""
+  organizationId: ID!
+
+  """Timestamp when the app was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the app was last updated"""
+  updatedAt: DateTime!
+
+  """OAuth2 client secret (only returned on creation or secret reset)"""
+  secret: String
+
+  """Whether this is a public OAuth2 client (no client secret required)"""
+  public: Boolean
+
+  """App icon URL"""
+  icon: String
+
+  """Short description of the app"""
+  shortDescription: String
+
+  """OAuth2 client configuration for this app"""
+  configuration: OrganizationAppConfig!
+
+  """Account that created this app"""
+  creator: Account!
+
+  """Working copy of the app manifest"""
+  manifest: AppManifestModel
+
+  """Releases for this app"""
+  releases: [AppRelease!]!
+
+  """
+  Active webhooks for this app. The organization that owns the app sees the webhooks of every installation. Any other organization sees only the webhook of its own installation.
+  """
+  appWebhooks: [AppWebhook!]!
+}
+
+"""Paginated list of organization apps"""
+type OrganizationApps {
+  """List of edges containing cursor and node pairs"""
+  edges: [OrganizationAppEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [OrganizationApp!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type OrganizationAppEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: OrganizationApp!
+}
+
+"""A webhook auto-created when an app is installed on an organization"""
+type AppWebhook {
+  """Unique identifier of the webhook"""
+  id: ID!
+
+  """ID of the app"""
+  appId: ID!
+
+  """ID of the marketplace installation (null for private apps)"""
+  installationId: ID
+
+  """ID of the organization where the app is installed"""
+  organizationId: ID!
+
+  """URL where webhook events are sent"""
+  url: String!
+
+  """Event types this webhook subscribes to"""
+  events: [String!]!
+
+  """Whether this webhook is currently active"""
+  active: Boolean!
+
+  """When the webhook was created"""
+  createdAt: DateTime!
+
+  """When the webhook was last updated"""
+  updatedAt: DateTime!
+
+  """
+  Secret used to sign this webhook's deliveries. Only members of the app's owner organization who hold organization:app:update on the app can read it.
+  """
+  secret: String
+}
+
+"""
+An application attached to an organization with associated permissions and group assignment
+"""
+type OrganizationAttachedApp {
+  """The ID of the organization this app is attached to"""
+  organizationId: ID!
+
+  """The ID of the permission group assigned to this attached app"""
+  groupId: ID
+
+  """The unique identifier of the attached application"""
+  appId: String!
+
+  """The set of permissions granted to this attached app"""
+  permissions: [GroupPermission!]
+
+  """When this app attachment was created"""
+  createdAt: DateTime!
+
+  """When this app attachment was last updated"""
+  updatedAt: DateTime!
+
+  """The application details for this attached app"""
+  app: OrganizationApp!
+
+  """The permission group assigned to this attached app"""
+  group: OrganizationGroup
+}
+
+"""Paginated list of applications attached to an organization"""
+type OrganizationAttachedApps {
+  """List of edges containing cursor and node pairs"""
+  edges: [OrganizationAttachedAppEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [OrganizationAttachedApp!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type OrganizationAttachedAppEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: OrganizationAttachedApp!
+}
+
+"""
+An identity provider configured for an organization, supporting OAuth2 or OpenID Connect authentication
+"""
+type OrganizationIdentityProvider {
+  """Whether this identity provider is currently active"""
+  enabled: Boolean!
+
+  """Whether player accounts must be validated through this provider"""
+  requiredForPlayerValidation: Boolean!
+
+  """Whether users can log in using this identity provider"""
+  allowLogin: Boolean!
+
+  """Human-readable description of this identity provider"""
+  description: String!
+
+  """URL or identifier for the provider icon"""
+  icon: String
+
+  """Unique identifier of this identity provider"""
+  id: ID!
+
+  """Reference to the parent root identity provider, if derived from one"""
+  identityProviderId: ID
+
+  """The OAuth2 or OpenID Connect configuration for this provider"""
+  configuration: IdentityProviderConfigurations
+
+  """Display name of the identity provider"""
+  name: String!
+
+  """The organization this provider belongs to"""
+  organizationId: ID
+
+  """When this identity provider was created"""
+  createdAt: DateTime!
+
+  """When this identity provider was last updated"""
+  updatedAt: DateTime!
+
+  """The root identity provider this organization provider was derived from"""
+  parentIdentityProvider: PublicIdentityProvider
+}
+
+union IdentityProviderConfigurations = OAuthClientConfiguration | OpenidConfiguration
+
+"""Configuration for an OAuth2 identity provider client"""
+type OAuthClientConfiguration {
+  """OAuth2/OIDC authorization endpoint URL"""
+  authorizationEndpoint: String
+
+  """List of endpoints to retrieve user data from after authentication"""
+  dataRetrievers: [DataRetrievalConfig!]!
+
+  """Issuer identifier for the identity provider"""
+  issuer: String
+
+  """Type of identity provider (OPENID or OAUTH2)"""
+  providerType: IdentityProviderType!
+
+  """OAuth2 client ID issued by the identity provider"""
+  clientId: String!
+
+  """OAuth2 client secret issued by the identity provider"""
+  clientSecret: String!
+
+  """Authentication method used when calling the token endpoint"""
+  tokenEndpointAuthMethod: OauthEndpointAuthMethod
+
+  """URL to redirect users back to after authentication"""
+  redirectUrl: String!
+
+  """URL of the OAuth2 token endpoint for exchanging authorization codes"""
+  tokenEndpoint: String
+
+  """
+  URL of the OAuth2 authorization endpoint where users are redirected to authenticate
+  """
+  authorizationUrl: String
+
+  """
+  URL where users are redirected after the identity linking process completes. Required for the IDP-based identity linking flow via generateIdentityLinkUrl.
+  """
+  linkRedirectUrl: String
+}
+
+enum IdentityProviderType {
+  OPENID
+  OAUTH2
+}
+
+enum OauthEndpointAuthMethod {
+  CLIENT_SECRET_POST
+  CLIENT_SECRET_BASIC
+  CLIENT_SECRET_JWT
+  PRIVATE_KEY_JWT
+  TLS_CLIENT_AUTH
+  SELF_SIGNED_TLS_CLIENT_AUTH
+  NONE
+}
+
+"""Configuration for an OpenID Connect identity provider client"""
+type OpenidConfiguration {
+  """OAuth2/OIDC authorization endpoint URL"""
+  authorizationEndpoint: String
+
+  """List of endpoints to retrieve user data from after authentication"""
+  dataRetrievers: [DataRetrievalConfig!]!
+
+  """Issuer identifier for the identity provider"""
+  issuer: String
+
+  """Type of identity provider (OPENID or OAUTH2)"""
+  providerType: IdentityProviderType!
+
+  """OpenID Connect client ID issued by the identity provider"""
+  clientId: String!
+
+  """OpenID Connect client secret issued by the identity provider"""
+  clientSecret: String!
+
+  """URL to redirect users back to after OpenID authentication"""
+  redirectUrl: String!
+}
+
+"""
+A webhook endpoint configured to receive event notifications for an organization
+"""
+type Webhook {
+  """Unique identifier of the webhook"""
+  id: ID!
+
+  """The organization this webhook belongs to"""
+  organizationId: ID!
+
+  """The event types this webhook is subscribed to"""
+  events: [WebhookEventType!]!
+
+  """The URL that will receive webhook POST requests"""
+  url: String!
+
+  """Human-readable description of this webhook"""
+  description: String!
+
+  """Whether this webhook is currently active and receiving events"""
+  active: Boolean!
+
+  """The secret key used to sign webhook payloads for verification"""
+  secret: String!
+}
+
+"""
+A skill rating value assigned to a player for a specific rating definition
+"""
+type PlayerSkillRating {
+  """Unique identifier for this skill rating entry"""
+  id: ID!
+
+  """The ID of the player profile this rating belongs to"""
+  playerProfileId: ID!
+
+  """The ID of the skill rating definition"""
+  ratingId: ID!
+
+  """The numeric skill rating value"""
+  value: Float!
+
+  """The date and time this skill rating was created"""
+  createdAt: DateTime!
+
+  """The date and time this skill rating was last updated"""
+  updatedAt: DateTime!
+
+  """The player profile associated with this skill rating"""
+  player: Player!
+}
+
 """Counters describing the downstream impact of a tournament step reset."""
 type TournamentsStepResetCascadeInfo {
   """Number of downstream tournament steps affected by the reset cascade."""
@@ -4252,6 +4252,96 @@ type TournamentEdge {
 
   """The item at this edge"""
   node: Tournament!
+}
+
+"""
+A group of events and tournaments sharing one limit of active registrations per player
+"""
+type RegistrationSeries {
+  """Unique identifier of the series"""
+  id: ID!
+
+  """Display name of the series"""
+  name: String!
+
+  """Active registrations a player may hold in the series"""
+  maxActiveRegistrations: Int!
+
+  """Active waitlist entries a player may hold in the series"""
+  maxActiveWaitlistEntries: Int
+
+  """Whether a registered player may also join a waitlist"""
+  allowWaitlistWhileRegistered: Boolean!
+
+  """Whether registering ends the player's waitlist entries"""
+  leaveWaitlistsOnRegistration: Boolean!
+
+  """When a registration stops counting as active"""
+  releasePolicy: RegistrationSeriesReleasePolicy!
+
+  """Timestamp when the series was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the series was last updated"""
+  updatedAt: DateTime!
+}
+
+enum RegistrationSeriesReleasePolicy {
+  SLOT_START
+  SLOT_END
+  NEVER
+}
+
+"""Paginated list of registration series"""
+type RegistrationSeriesPage {
+  """List of edges containing cursor and node pairs"""
+  edges: [RegistrationSeriesEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [RegistrationSeries!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type RegistrationSeriesEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: RegistrationSeries!
+}
+
+"""
+A reservation, waitlist entry or tournament team counted against a series limit
+"""
+type RegistrationSeriesEntry {
+  """Kind of entry"""
+  kind: RegistrationSeriesEntryKind!
+
+  """Status of the underlying reservation, entry or team"""
+  status: String!
+
+  """Whether the player manages the reservation or team"""
+  isManager: Boolean!
+  eventId: ID
+  ticketConfigurationId: ID
+  reservationId: ID
+  waitlistEntryId: ID
+  tournamentId: ID
+  tournamentTeamId: ID
+  startsAt: DateTime
+  endsAt: DateTime
+}
+
+enum RegistrationSeriesEntryKind {
+  EVENT_RESERVATION
+  WAITLIST_ENTRY
+  TOURNAMENT_TEAM
 }
 
 """A game within a tournament round, containing matches between teams"""
@@ -5059,6 +5149,7 @@ enum SimulatedEffectType {
   ADD_TIEBREAKER
   ADD_RULE
   ADD_CROSS_STEP_RULE
+  SET_OPEN_POOL
   RESEED_STEP
 }
 
@@ -5671,337 +5762,6 @@ type ValidationEventModelEdge {
 
   """The item at this edge"""
   node: ValidationEventModel!
-}
-
-"""Rules of an open pool step, where matches are created on demand"""
-type OpenPoolConfiguration {
-  """Number of teams in each match"""
-  teamsPerMatch: Int!
-
-  """Matches per game (odd); the game winner takes the majority"""
-  bestOf: Int!
-
-  """Maximum matches a team can play in the step; 0 means unlimited"""
-  maxMatchesPerTeam: Int!
-
-  """Whether the same teams can meet more than once"""
-  allowRematch: Boolean!
-
-  """Whether a team can play several unfinished matches at once"""
-  allowConcurrentMatches: Boolean!
-
-  """
-  Whether a tournament team joins the step when its first match is created
-  """
-  autoJoin: Boolean!
-
-  """
-  Whether a team needs at least the tournament's minimum team size to play
-  """
-  enforceTeamMinSize: Boolean!
-}
-
-"""A team taking part in an open pool match"""
-type OpenPoolMatchTeam {
-  """ID of the tournament team"""
-  teamId: ID!
-
-  """The tournament team"""
-  team: TournamentTeam!
-
-  """Result of the team in this match"""
-  status: MatchScoreStatus!
-
-  """Score of the team in this match"""
-  score: Float!
-}
-
-"""A match created on demand in an open pool step"""
-type OpenPoolMatch {
-  """ID of the match"""
-  id: ID!
-
-  """ID of the game holding the match"""
-  gameId: ID!
-
-  """ID of the group (pool) of the match"""
-  groupId: ID!
-
-  """ID of the open pool step"""
-  stepId: ID!
-
-  """ID of the tournament"""
-  tournamentId: ID!
-
-  """Label given when the match was created"""
-  label: String
-
-  """Creation order of the match in its group"""
-  order: Int!
-
-  """Status of the match"""
-  status: MatchStatus!
-
-  """Teams of the match with their result"""
-  teams: [OpenPoolMatchTeam!]!
-
-  """Date and time when the match was created"""
-  createdAt: DateTime!
-
-  """Date and time when the match was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Paginated list of open pool matches"""
-type OpenPoolMatches {
-  """List of edges containing cursor and node pairs"""
-  edges: [OpenPoolMatchEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [OpenPoolMatch!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type OpenPoolMatchEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: OpenPoolMatch!
-}
-
-"""Live standing of a team in an open pool step"""
-type OpenPoolStanding {
-  """ID of the tournament team"""
-  teamId: ID!
-
-  """The tournament team"""
-  team: TournamentTeam!
-
-  """ID of the group (pool) of the standing"""
-  groupId: ID!
-
-  """Rank in the step; null until ranked"""
-  rank: Int
-
-  """Status of the team in the step"""
-  status: TeamScopeStatus!
-
-  """Points earned in the step"""
-  points: Float!
-
-  """Ended matches played"""
-  played: Int!
-
-  """Matches won"""
-  wins: Int!
-
-  """Matches lost"""
-  losses: Int!
-
-  """Matches drawn"""
-  draws: Int!
-
-  """Matches forfeited"""
-  forfeits: Int!
-}
-
-"""A virtual currency defined within an organization"""
-type Currency {
-  """Unique identifier of the currency"""
-  id: ID!
-
-  """Short symbol representing the currency (e.g., GP, CR)"""
-  symbol: String!
-
-  """Display name of the currency"""
-  name: String!
-
-  """External system identifier for third-party integrations"""
-  externalId: String
-
-  """Description of the currency purpose"""
-  description: String!
-
-  """Whether the currency is hidden from players"""
-  hidden: Boolean!
-
-  """ID of the organization that owns this currency"""
-  organizationId: ID!
-
-  """Timestamp when the currency was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the currency was last updated"""
-  updatedAt: DateTime!
-
-  """Custom metadata key-value pairs attached to the currency"""
-  metadata: [PropertyValue!]!
-}
-
-"""Paginated list of currencies"""
-type Currencies {
-  """List of edges containing cursor and node pairs"""
-  edges: [CurrencyEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [Currency!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type CurrencyEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: Currency!
-}
-
-"""A player's balance for a specific currency"""
-type PlayerCurrency {
-  """Unique identifier of the player currency record"""
-  id: ID!
-
-  """ID of the player profile that owns this balance"""
-  playerProfileId: ID!
-
-  """ID of the currency this balance is for"""
-  currencyId: ID!
-
-  """Current balance amount for this currency"""
-  balance: Float!
-
-  """Timestamp when the player currency record was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the balance was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Paginated list of player currency balances"""
-type PlayerCurrencies {
-  """List of edges containing cursor and node pairs"""
-  edges: [PlayerCurrencyEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [PlayerCurrency!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type PlayerCurrencyEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: PlayerCurrency!
-}
-
-"""
-A group of events and tournaments sharing one limit of active registrations per player
-"""
-type RegistrationSeries {
-  """Unique identifier of the series"""
-  id: ID!
-
-  """Display name of the series"""
-  name: String!
-
-  """Active registrations a player may hold in the series"""
-  maxActiveRegistrations: Int!
-
-  """Active waitlist entries a player may hold in the series"""
-  maxActiveWaitlistEntries: Int
-
-  """Whether a registered player may also join a waitlist"""
-  allowWaitlistWhileRegistered: Boolean!
-
-  """Whether registering ends the player's waitlist entries"""
-  leaveWaitlistsOnRegistration: Boolean!
-
-  """When a registration stops counting as active"""
-  releasePolicy: RegistrationSeriesReleasePolicy!
-
-  """Timestamp when the series was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the series was last updated"""
-  updatedAt: DateTime!
-}
-
-enum RegistrationSeriesReleasePolicy {
-  SLOT_START
-  SLOT_END
-  NEVER
-}
-
-"""Paginated list of registration series"""
-type RegistrationSeriesPage {
-  """List of edges containing cursor and node pairs"""
-  edges: [RegistrationSeriesEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [RegistrationSeries!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type RegistrationSeriesEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: RegistrationSeries!
-}
-
-"""
-A reservation, waitlist entry or tournament team counted against a series limit
-"""
-type RegistrationSeriesEntry {
-  """Kind of entry"""
-  kind: RegistrationSeriesEntryKind!
-
-  """Status of the underlying reservation, entry or team"""
-  status: String!
-
-  """Whether the player manages the reservation or team"""
-  isManager: Boolean!
-  eventId: ID
-  ticketConfigurationId: ID
-  reservationId: ID
-  waitlistEntryId: ID
-  tournamentId: ID
-  tournamentTeamId: ID
-  startsAt: DateTime
-  endsAt: DateTime
-}
-
-enum RegistrationSeriesEntryKind {
-  EVENT_RESERVATION
-  WAITLIST_ENTRY
-  TOURNAMENT_TEAM
 }
 
 """
@@ -6832,24 +6592,6 @@ type EventEdge {
   node: Event!
 }
 
-"""Outcome of a calendar generation run"""
-type EventCalendarGenerateResult {
-  """Events of the requested days"""
-  events: [Event!]!
-
-  """Events created by this run"""
-  createdEventCount: Int!
-
-  """Events that already existed"""
-  existingEventCount: Int!
-
-  """Slots created by this run"""
-  createdSlotCount: Int!
-
-  """Slots that already existed"""
-  existingSlotCount: Int!
-}
-
 """
 Configuration for a ticket type including custom fields that attendees must fill
 """
@@ -6942,6 +6684,24 @@ enum EventSlotEffectiveState {
   CLOSED
   BLOCKED
   PAST
+}
+
+"""Outcome of a calendar generation run"""
+type EventCalendarGenerateResult {
+  """Events of the requested days"""
+  events: [Event!]!
+
+  """Events created by this run"""
+  createdEventCount: Int!
+
+  """Events that already existed"""
+  existingEventCount: Int!
+
+  """Slots created by this run"""
+  createdSlotCount: Int!
+
+  """Slots that already existed"""
+  existingSlotCount: Int!
 }
 
 """Configuration settings for a venue seat type"""
@@ -7151,6 +6911,247 @@ type EventWaitlistEntryEdge {
 
   """The item at this edge"""
   node: EventWaitlistEntry!
+}
+
+"""Rules of an open pool step, where matches are created on demand"""
+type OpenPoolConfiguration {
+  """Number of teams in each match"""
+  teamsPerMatch: Int!
+
+  """Matches per game (odd); the game winner takes the majority"""
+  bestOf: Int!
+
+  """Maximum matches a team can play in the step; 0 means unlimited"""
+  maxMatchesPerTeam: Int!
+
+  """Whether the same teams can meet more than once"""
+  allowRematch: Boolean!
+
+  """Whether a team can play several unfinished matches at once"""
+  allowConcurrentMatches: Boolean!
+
+  """
+  Whether a tournament team joins the step when its first match is created
+  """
+  autoJoin: Boolean!
+
+  """
+  Whether a team needs at least the tournament's minimum team size to play
+  """
+  enforceTeamMinSize: Boolean!
+}
+
+"""A team taking part in an open pool match"""
+type OpenPoolMatchTeam {
+  """ID of the tournament team"""
+  teamId: ID!
+
+  """The tournament team"""
+  team: TournamentTeam!
+
+  """Result of the team in this match"""
+  status: MatchScoreStatus!
+
+  """Score of the team in this match"""
+  score: Float!
+}
+
+"""A match created on demand in an open pool step"""
+type OpenPoolMatch {
+  """ID of the match"""
+  id: ID!
+
+  """ID of the game holding the match"""
+  gameId: ID!
+
+  """ID of the group (pool) of the match"""
+  groupId: ID!
+
+  """ID of the open pool step"""
+  stepId: ID!
+
+  """ID of the tournament"""
+  tournamentId: ID!
+
+  """Label given when the match was created"""
+  label: String
+
+  """Creation order of the match in its group"""
+  order: Int!
+
+  """Status of the match"""
+  status: MatchStatus!
+
+  """Teams of the match with their result"""
+  teams: [OpenPoolMatchTeam!]!
+
+  """Date and time when the match was created"""
+  createdAt: DateTime!
+
+  """Date and time when the match was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Paginated list of open pool matches"""
+type OpenPoolMatches {
+  """List of edges containing cursor and node pairs"""
+  edges: [OpenPoolMatchEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [OpenPoolMatch!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type OpenPoolMatchEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: OpenPoolMatch!
+}
+
+"""Live standing of a team in an open pool step"""
+type OpenPoolStanding {
+  """ID of the tournament team"""
+  teamId: ID!
+
+  """The tournament team"""
+  team: TournamentTeam!
+
+  """ID of the group (pool) of the standing"""
+  groupId: ID!
+
+  """Rank in the step; null until ranked"""
+  rank: Int
+
+  """Status of the team in the step"""
+  status: TeamScopeStatus!
+
+  """Points earned in the step"""
+  points: Float!
+
+  """Ended matches played"""
+  played: Int!
+
+  """Matches won"""
+  wins: Int!
+
+  """Matches lost"""
+  losses: Int!
+
+  """Matches drawn"""
+  draws: Int!
+
+  """Matches forfeited"""
+  forfeits: Int!
+}
+
+"""A virtual currency defined within an organization"""
+type Currency {
+  """Unique identifier of the currency"""
+  id: ID!
+
+  """Short symbol representing the currency (e.g., GP, CR)"""
+  symbol: String!
+
+  """Display name of the currency"""
+  name: String!
+
+  """External system identifier for third-party integrations"""
+  externalId: String
+
+  """Description of the currency purpose"""
+  description: String!
+
+  """Whether the currency is hidden from players"""
+  hidden: Boolean!
+
+  """ID of the organization that owns this currency"""
+  organizationId: ID!
+
+  """Timestamp when the currency was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the currency was last updated"""
+  updatedAt: DateTime!
+
+  """Custom metadata key-value pairs attached to the currency"""
+  metadata: [PropertyValue!]!
+}
+
+"""Paginated list of currencies"""
+type Currencies {
+  """List of edges containing cursor and node pairs"""
+  edges: [CurrencyEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [Currency!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type CurrencyEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: Currency!
+}
+
+"""A player's balance for a specific currency"""
+type PlayerCurrency {
+  """Unique identifier of the player currency record"""
+  id: ID!
+
+  """ID of the player profile that owns this balance"""
+  playerProfileId: ID!
+
+  """ID of the currency this balance is for"""
+  currencyId: ID!
+
+  """Current balance amount for this currency"""
+  balance: Float!
+
+  """Timestamp when the player currency record was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the balance was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Paginated list of player currency balances"""
+type PlayerCurrencies {
+  """List of edges containing cursor and node pairs"""
+  edges: [PlayerCurrencyEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [PlayerCurrency!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type PlayerCurrencyEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: PlayerCurrency!
 }
 
 """Represents a virtual item that can be assigned to players"""
@@ -9595,57 +9596,17 @@ type Query {
   """List streaming events emitted by a validation job."""
   stepRuleSetValidationEvents(jobId: ID!, page: PageInfo!, kindFilter: [ValidationEventKind!]): ValidationEvents!
 
-  """
-  List all CDN files for a platform or template, optionally filtered by file type
-  """
-  platformFiles(type: PlatformCdnFileType, platformId: ID, templateId: ID): [PlatformCdnFile!]!
+  """Retrieve a registration series by ID"""
+  registrationSeries(id: ID!): RegistrationSeries!
 
-  """
-  Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors
-  """
-  platformFile(id: ID!): PlatformCdnFile!
+  """Paginated list of the registration series of the organization"""
+  registrationSeriesList(page: PageInfo!): RegistrationSeriesPage!
 
-  """List all platforms owned by the current organization"""
-  platforms: [Platform!]!
+  """The caller's registrations that count against the series limits"""
+  myActiveRegistrations(seriesId: ID!): [RegistrationSeriesEntry!]!
 
-  """Retrieve a single platform by its ID"""
-  platform(platformId: ID!): Platform
-
-  """Look up a platform by its domain name"""
-  platformFindFromDomain(domain: String!): Platform!
-
-  """Check whether a domain name is already registered to a platform"""
-  platformCheckDomainAvailability(domain: URL!): Boolean!
-
-  """List all custom domains configured for a specific platform"""
-  platformCustomDomains(platformId: ID!): [PlatformCustomDomainData!]!
-
-  """List all publicly available platform templates"""
-  platformTemplatesPublic: [PlatformTemplate!]!
-
-  """List all platform templates owned by the current organization"""
-  platformTemplates: [PlatformTemplate!]!
-
-  """Retrieve a single platform template by its ID"""
-  platformTemplate(platformTemplateId: ID!): PlatformTemplate
-
-  """Retrieve all available subscription items"""
-  subscriptionItems: [SubscriptionItem!]!
-
-  """Retrieve the current subscription items active for the organization"""
-  organizationCurrentSubscriptionItems: [OrganizationSubscriptionItem!]!
-
-  """Paginated journal entries for the current organization."""
-  journalEntries(page: PageInfo, filters: JournalFiltersInput): JournalEntries!
-
-  """A single journal entry by id."""
-  journalEntry(id: ID!): JournalEntry
-
-  """Retrieve all skill ratings for the current organization"""
-  organizationSkillRatings: [OrganizationSkillRating!]!
-
-  """Retrieve a single skill rating by its ID"""
-  organizationSkillRating(id: ID!): OrganizationSkillRating!
+  """A player's registrations that count against the series limits"""
+  registrationSeriesPlayerEntries(seriesId: ID!, playerId: ID!): [RegistrationSeriesEntry!]!
 
   """
   Retrieve a single event by ID, including the current user's reservation if any
@@ -9708,6 +9669,58 @@ type Query {
   Retrieve the payment collection configuration for the current organization, including Stripe account details and fees
   """
   organizationPaymentCollectionConfiguration: OrganizationPaymentCollectionConfiguration
+
+  """
+  List all CDN files for a platform or template, optionally filtered by file type
+  """
+  platformFiles(type: PlatformCdnFileType, platformId: ID, templateId: ID): [PlatformCdnFile!]!
+
+  """
+  Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors
+  """
+  platformFile(id: ID!): PlatformCdnFile!
+
+  """List all platforms owned by the current organization"""
+  platforms: [Platform!]!
+
+  """Retrieve a single platform by its ID"""
+  platform(platformId: ID!): Platform
+
+  """Look up a platform by its domain name"""
+  platformFindFromDomain(domain: String!): Platform!
+
+  """Check whether a domain name is already registered to a platform"""
+  platformCheckDomainAvailability(domain: URL!): Boolean!
+
+  """List all custom domains configured for a specific platform"""
+  platformCustomDomains(platformId: ID!): [PlatformCustomDomainData!]!
+
+  """List all publicly available platform templates"""
+  platformTemplatesPublic: [PlatformTemplate!]!
+
+  """List all platform templates owned by the current organization"""
+  platformTemplates: [PlatformTemplate!]!
+
+  """Retrieve a single platform template by its ID"""
+  platformTemplate(platformTemplateId: ID!): PlatformTemplate
+
+  """Retrieve all available subscription items"""
+  subscriptionItems: [SubscriptionItem!]!
+
+  """Retrieve the current subscription items active for the organization"""
+  organizationCurrentSubscriptionItems: [OrganizationSubscriptionItem!]!
+
+  """Paginated journal entries for the current organization."""
+  journalEntries(page: PageInfo, filters: JournalFiltersInput): JournalEntries!
+
+  """A single journal entry by id."""
+  journalEntry(id: ID!): JournalEntry
+
+  """Retrieve all skill ratings for the current organization"""
+  organizationSkillRatings: [OrganizationSkillRating!]!
+
+  """Retrieve a single skill rating by its ID"""
+  organizationSkillRating(id: ID!): OrganizationSkillRating!
 
   """Retrieve paginated members of specified user groups"""
   userGroupMembers(groupIds: [ID!]!, page: PageInfo!, status: UserGroupMemberStatus): UserGroupMembers!
@@ -9812,18 +9825,6 @@ type Query {
   appFunctionRead(input: AppFunctionCallInput!): AppFunctionResult!
   permissionDefinitions: [PermissionDefinitionDto!]!
   hasPermissions(checks: [PermissionCheckInput!]!): [Boolean!]!
-
-  """Retrieve a registration series by ID"""
-  registrationSeries(id: ID!): RegistrationSeries!
-
-  """Paginated list of the registration series of the organization"""
-  registrationSeriesList(page: PageInfo!): RegistrationSeriesPage!
-
-  """The caller's registrations that count against the series limits"""
-  myActiveRegistrations(seriesId: ID!): [RegistrationSeriesEntry!]!
-
-  """A player's registrations that count against the series limits"""
-  registrationSeriesPlayerEntries(seriesId: ID!, playerId: ID!): [RegistrationSeriesEntry!]!
 
   """
   Banned words and substrings applied to nicknames and team names of the current organization.
@@ -10113,55 +10114,6 @@ enum SimulationPresetParameterValueType {
   BOOLEAN
 }
 
-"""Filters for journal queries and subscriptions."""
-input JournalFiltersInput {
-  """Restrict results to one or more journal categories."""
-  categories: [JournalCategory!]
-
-  """Restrict results to an exact list of entry types."""
-  types: [String!]
-
-  """
-  Restrict results to entry types starting with the given prefix (e.g. "rule_engine.").
-  """
-  typePrefix: String
-
-  """Restrict results to a specific actor type."""
-  actorType: JournalActorType
-
-  """Restrict results to entries produced by a specific actor id."""
-  actorId: ID
-
-  """
-  Restrict results to entries whose primary resource matches the given type.
-  """
-  primaryResourceType: String
-
-  """Restrict results to entries whose primary resource has the given id."""
-  primaryResourceId: ID
-
-  """Restrict results to one or more severities."""
-  severity: [JournalSeverity!]
-
-  """When true, only return root entries (no parent)."""
-  rootOnly: Boolean
-
-  """Restrict results to direct children of a specific entry."""
-  parentEntryId: ID
-
-  """Restrict results to entries sharing the given correlation id."""
-  correlationId: ID
-
-  """Only return entries created at or after this timestamp."""
-  createdAfter: DateTime
-
-  """Only return entries created at or before this timestamp."""
-  createdBefore: DateTime
-
-  """Defaults to false. Excludes SIMULATION when false."""
-  includeSimulations: Boolean
-}
-
 """Query parameters for filtering and ordering events"""
 input EventsQuery {
   """Order by type"""
@@ -10287,6 +10239,55 @@ input EventSlotsFilter {
   Keep only open, buyable slots that have not started and still have free seats
   """
   onlyReservable: Boolean
+}
+
+"""Filters for journal queries and subscriptions."""
+input JournalFiltersInput {
+  """Restrict results to one or more journal categories."""
+  categories: [JournalCategory!]
+
+  """Restrict results to an exact list of entry types."""
+  types: [String!]
+
+  """
+  Restrict results to entry types starting with the given prefix (e.g. "rule_engine.").
+  """
+  typePrefix: String
+
+  """Restrict results to a specific actor type."""
+  actorType: JournalActorType
+
+  """Restrict results to entries produced by a specific actor id."""
+  actorId: ID
+
+  """
+  Restrict results to entries whose primary resource matches the given type.
+  """
+  primaryResourceType: String
+
+  """Restrict results to entries whose primary resource has the given id."""
+  primaryResourceId: ID
+
+  """Restrict results to one or more severities."""
+  severity: [JournalSeverity!]
+
+  """When true, only return root entries (no parent)."""
+  rootOnly: Boolean
+
+  """Restrict results to direct children of a specific entry."""
+  parentEntryId: ID
+
+  """Restrict results to entries sharing the given correlation id."""
+  correlationId: ID
+
+  """Only return entries created at or after this timestamp."""
+  createdAfter: DateTime
+
+  """Only return entries created at or before this timestamp."""
+  createdBefore: DateTime
+
+  """Defaults to false. Excludes SIMULATION when false."""
+  includeSimulations: Boolean
 }
 
 """Query input for filtering user groups by their IDs"""
@@ -10879,90 +10880,21 @@ type Mutation {
   """Cancel an in-progress or queued validation job."""
   cancelStepRuleSetValidation(jobId: ID!): ValidationJobModel!
 
-  """
-  Create a Stripe customer portal session URL for managing the organization subscription
-  """
-  stripeCreatePortalSession: String!
+  """Create a registration series"""
+  registrationSeriesCreate(input: RegistrationSeriesCreateInput!): RegistrationSeries!
 
-  """Create a new CDN file record for a platform or template"""
-  platformFileCreate(input: PlatformCdnFileCreateInput!, platformId: ID, templateId: ID): PlatformCdnFile!
-
-  """Publish the development version of a CDN file to production"""
-  platformFilePublish(id: ID!): PlatformCdnFile!
+  """Update a registration series"""
+  registrationSeriesUpdate(id: ID!, input: RegistrationSeriesUpdateInput!): RegistrationSeries!
 
   """
-  Generate a presigned S3 upload URL for uploading file content to a CDN file
+  Delete a registration series; its events and tournaments leave the series
   """
-  platformFileGenerateUploadUrl(id: ID!, size: Float!): PresignedUrl!
-
-  """
-  Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage
-  """
-  platformFileValidateFileUpload(id: ID!): PlatformCdnFile!
-
-  """Update the configuration of an existing CDN file"""
-  platformFileUpdate(id: ID!, input: PlatformFileUpdateInput!): PlatformCdnFile!
+  registrationSeriesDelete(id: ID!): Boolean!
 
   """
-  Delete a CDN file and remove its dev, tmp, and production assets from S3
+  Assign events and tournaments to a series, or remove them from their series when seriesId is null
   """
-  platformFileDelete(id: ID!): Void!
-
-  """
-  Create a new platform with a subdomain and associated OAuth application
-  """
-  platformCreate(input: CreatePlatformInput!): Platform!
-
-  """Update an existing platform name and configuration"""
-  platformUpdate(id: ID!, input: UpdatePlatformInput!): Platform!
-
-  """Delete a platform and its associated OAuth application"""
-  platformDelete(id: ID!): Void!
-
-  """Update the theme configuration for a platform"""
-  platformThemeUpdate(platformId: ID!, input: PlatformThemeInput!): Platform!
-
-  """Register a new custom domain for a platform via Cloudflare"""
-  platformRegisterCustomDomain(platformId: ID!, hostname: String!): CustomDomainData!
-
-  """Force a DNS/SSL validation recheck for a custom domain"""
-  platformForceCustomDomainRecheck(hostname: String!): CustomDomainData!
-
-  """
-  Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations
-  """
-  platformRemoveCustomDomain(hostname: String!): Void!
-
-  """Create a new platform template for the organization"""
-  platformTemplateCreate(input: CreatePlatformTemplateInput!): PlatformTemplate!
-
-  """Update an existing platform template"""
-  platformTemplateUpdate(id: ID!, input: UpdatePlatformTemplateInput!): PlatformTemplate!
-
-  """
-  Apply a template to a platform, copying all published template files to the target platform
-  """
-  platformTemplateApply(platformTemplateId: ID!, platformId: ID!): Platform!
-
-  """Delete a platform template from the organization"""
-  platformTemplateDelete(id: ID!): Void!
-
-  """
-  Update the organization subscription by changing item quantities, applying coupons or referrals
-  """
-  organizationSubscriptionItemsUpdate(items: [OrganizationSubscriptionItemUpdateInput!]!, coupon: String, referral: String): Void!
-
-  """Register a match result and update player skill ratings accordingly"""
-  organizationSkillRatingsRegisterMatch(organizationSkillRatingId: ID!, input: OrganizationSkillRatingsRegisterMatchInput!): [OrganizationSkillRatingsRegisterMatchPlayer!]!
-
-  """Create a new skill rating for the current organization"""
-  organizationSkillRatingCreate(input: OrganizationSkillRatingCreateInput!): OrganizationSkillRating!
-
-  """Update an existing skill rating configuration"""
-  organizationSkillRatingUpdate(id: ID!, input: OrganizationSkillRatingUpdateInput!): OrganizationSkillRating!
-
-  """Delete a skill rating from the current organization"""
-  organizationSkillRatingDelete(id: ID!): Void!
+  registrationSeriesAssign(seriesId: ID, eventIds: [ID!], tournamentIds: [ID!]): Boolean!
 
   """Create a new event"""
   eventCreate(input: EventCreateInput!): Event!
@@ -11097,6 +11029,91 @@ type Mutation {
   Create or update the Stripe Connect account for the organization and return the onboarding/update URL
   """
   organizationPaymentCollectionConfigurationCreateOrUpdateAccount: String!
+
+  """
+  Create a Stripe customer portal session URL for managing the organization subscription
+  """
+  stripeCreatePortalSession: String!
+
+  """Create a new CDN file record for a platform or template"""
+  platformFileCreate(input: PlatformCdnFileCreateInput!, platformId: ID, templateId: ID): PlatformCdnFile!
+
+  """Publish the development version of a CDN file to production"""
+  platformFilePublish(id: ID!): PlatformCdnFile!
+
+  """
+  Generate a presigned S3 upload URL for uploading file content to a CDN file
+  """
+  platformFileGenerateUploadUrl(id: ID!, size: Float!): PresignedUrl!
+
+  """
+  Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage
+  """
+  platformFileValidateFileUpload(id: ID!): PlatformCdnFile!
+
+  """Update the configuration of an existing CDN file"""
+  platformFileUpdate(id: ID!, input: PlatformFileUpdateInput!): PlatformCdnFile!
+
+  """
+  Delete a CDN file and remove its dev, tmp, and production assets from S3
+  """
+  platformFileDelete(id: ID!): Void!
+
+  """
+  Create a new platform with a subdomain and associated OAuth application
+  """
+  platformCreate(input: CreatePlatformInput!): Platform!
+
+  """Update an existing platform name and configuration"""
+  platformUpdate(id: ID!, input: UpdatePlatformInput!): Platform!
+
+  """Delete a platform and its associated OAuth application"""
+  platformDelete(id: ID!): Void!
+
+  """Update the theme configuration for a platform"""
+  platformThemeUpdate(platformId: ID!, input: PlatformThemeInput!): Platform!
+
+  """Register a new custom domain for a platform via Cloudflare"""
+  platformRegisterCustomDomain(platformId: ID!, hostname: String!): CustomDomainData!
+
+  """Force a DNS/SSL validation recheck for a custom domain"""
+  platformForceCustomDomainRecheck(hostname: String!): CustomDomainData!
+
+  """
+  Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations
+  """
+  platformRemoveCustomDomain(hostname: String!): Void!
+
+  """Create a new platform template for the organization"""
+  platformTemplateCreate(input: CreatePlatformTemplateInput!): PlatformTemplate!
+
+  """Update an existing platform template"""
+  platformTemplateUpdate(id: ID!, input: UpdatePlatformTemplateInput!): PlatformTemplate!
+
+  """
+  Apply a template to a platform, copying all published template files to the target platform
+  """
+  platformTemplateApply(platformTemplateId: ID!, platformId: ID!): Platform!
+
+  """Delete a platform template from the organization"""
+  platformTemplateDelete(id: ID!): Void!
+
+  """
+  Update the organization subscription by changing item quantities, applying coupons or referrals
+  """
+  organizationSubscriptionItemsUpdate(items: [OrganizationSubscriptionItemUpdateInput!]!, coupon: String, referral: String): Void!
+
+  """Register a match result and update player skill ratings accordingly"""
+  organizationSkillRatingsRegisterMatch(organizationSkillRatingId: ID!, input: OrganizationSkillRatingsRegisterMatchInput!): [OrganizationSkillRatingsRegisterMatchPlayer!]!
+
+  """Create a new skill rating for the current organization"""
+  organizationSkillRatingCreate(input: OrganizationSkillRatingCreateInput!): OrganizationSkillRating!
+
+  """Update an existing skill rating configuration"""
+  organizationSkillRatingUpdate(id: ID!, input: OrganizationSkillRatingUpdateInput!): OrganizationSkillRating!
+
+  """Delete a skill rating from the current organization"""
+  organizationSkillRatingDelete(id: ID!): Void!
 
   """
   Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED.
@@ -11303,22 +11320,6 @@ type Mutation {
   customPermissionCreate(input: CustomPermissionInput!): PermissionDefinitionDto!
   customPermissionUpdate(id: String!, input: CustomPermissionUpdateInput!): PermissionDefinitionDto!
   customPermissionDelete(id: String!): Boolean!
-
-  """Create a registration series"""
-  registrationSeriesCreate(input: RegistrationSeriesCreateInput!): RegistrationSeries!
-
-  """Update a registration series"""
-  registrationSeriesUpdate(id: ID!, input: RegistrationSeriesUpdateInput!): RegistrationSeries!
-
-  """
-  Delete a registration series; its events and tournaments leave the series
-  """
-  registrationSeriesDelete(id: ID!): Boolean!
-
-  """
-  Assign events and tournaments to a series, or remove them from their series when seriesId is null
-  """
-  registrationSeriesAssign(seriesId: ID, eventIds: [ID!], tournamentIds: [ID!]): Boolean!
 
   """
   Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation).
@@ -12824,199 +12825,25 @@ input UpdatePresetScriptInput {
   parameters: [PresetParameterInput!] = []
 }
 
-"""Input for creating a new CDN file on a platform or template"""
-input PlatformCdnFileCreateInput {
-  """The file name including path segments"""
+"""Input for creating a registration series"""
+input RegistrationSeriesCreateInput {
+  """Display name of the series"""
   name: String!
-
-  """The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE)"""
-  type: PlatformCdnFileType!
-
-  """File configuration options such as page routing config"""
-  config: PlatformCdnFileConfigsInput
+  maxActiveRegistrations: Int = 1
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean = false
+  leaveWaitlistsOnRegistration: Boolean = true
+  releasePolicy: RegistrationSeriesReleasePolicy = SLOT_END
 }
 
-"""Input for updating the configuration of an existing CDN file"""
-input PlatformFileUpdateInput {
-  """File configuration options such as page routing config"""
-  config: PlatformCdnFileConfigsInput
-}
-
-"""Input for creating a new platform with a subdomain"""
-input CreatePlatformInput {
-  """Display name of the platform"""
-  name: String!
-
-  """Platform configuration settings including white-label options"""
-  configuration: PlatformConfigurationInput
-
-  """The OAuth application ID associated with this platform"""
-  appId: String
-
-  """
-  The subdomain for the platform (3-25 alphanumeric characters with optional hyphens)
-  """
-  subdomain: String!
-}
-
-"""Input for updating an existing platform configuration"""
-input UpdatePlatformInput {
-  """Display name of the platform"""
-  name: String!
-
-  """Platform configuration settings including white-label options"""
-  configuration: PlatformConfigurationInput
-
-  """The OAuth application ID associated with this platform"""
-  appId: String
-}
-
-"""Input for updating platform theme configuration"""
-input PlatformThemeInput {
-  """Primary brand color (hex)"""
-  primaryColor: String
-
-  """Secondary brand color (hex)"""
-  secondaryColor: String
-
-  """Page background color (hex)"""
-  backgroundColor: String
-
-  """Surface/card background color (hex)"""
-  surfaceColor: String
-
-  """Primary text color (hex)"""
-  textColor: String
-
-  """Muted/secondary text color (hex)"""
-  textMutedColor: String
-
-  """Primary font family name"""
-  fontFamily: String
-
-  """Heading font family name"""
-  headingFont: String
-
-  """Border radius value (e.g. "8px", "0.5rem")"""
-  borderRadius: String
-
-  """URL of the platform logo image"""
-  logoUrl: String
-
-  """Social media links displayed on the platform"""
-  socialLinks: PlatformThemeSocialLinksInput
-
-  """Homepage section visibility and ordering configuration"""
-  sections: [PlatformThemeSectionConfigInput!]
-}
-
-"""Input for platform theme social media links"""
-input PlatformThemeSocialLinksInput {
-  """Twitter/X profile URL"""
-  twitter: String
-
-  """Discord server invite URL"""
-  discord: String
-
-  """Twitch channel URL"""
-  twitch: String
-}
-
-"""Input for a platform homepage section configuration"""
-input PlatformThemeSectionConfigInput {
-  """Section identifier name"""
-  name: String!
-
-  """Whether the section is visible on the platform"""
-  visible: Boolean!
-
-  """Display order of the section"""
-  order: Float!
-}
-
-"""Input for creating a new platform template"""
-input CreatePlatformTemplateInput {
-  """Display name of the template"""
-  name: String!
-
-  """Human-readable description of the template"""
-  description: String!
-
-  """URL of the template preview screenshot"""
-  screenshotUrl: URL!
-
-  """Whether this template is publicly available to all organizations"""
-  public: Boolean!
-}
-
-"""Input for partially updating an existing platform template"""
-input UpdatePlatformTemplateInput {
-  """Display name of the template"""
+"""Input for updating a registration series"""
+input RegistrationSeriesUpdateInput {
   name: String
-
-  """Human-readable description of the template"""
-  description: String
-
-  """URL of the template preview screenshot"""
-  screenshotUrl: URL
-
-  """Whether this template is publicly available to all organizations"""
-  public: Boolean
-}
-
-"""
-Input for updating the quantity of a subscription item for an organization
-"""
-input OrganizationSubscriptionItemUpdateInput {
-  """ID of the subscription item to update"""
-  subscriptionItemId: ID!
-
-  """New quantity for the subscription item"""
-  count: Float!
-}
-
-"""
-Input for registering a match result with team compositions and rankings
-"""
-input OrganizationSkillRatingsRegisterMatchInput {
-  """Ordered list of teams, ranked by placement (first = winner)"""
-  teams: [OrganizationSkillRatingsRegisterMatchTeamInput!]!
-}
-
-"""Input representing a team in a skill rating match registration"""
-input OrganizationSkillRatingsRegisterMatchTeamInput {
-  """List of player profile IDs on this team"""
-  players: [ID!]!
-}
-
-"""Input for creating a new organization skill rating"""
-input OrganizationSkillRatingCreateInput {
-  """Display name of the skill rating"""
-  name: String!
-
-  """Description of what this skill rating measures"""
-  description: String!
-
-  """Algorithm type used for rating calculation"""
-  type: SkillRatingType!
-
-  """Configuration options for this skill rating"""
-  configuration: SkillRatingConfigurationInput!
-}
-
-"""Input for updating an existing organization skill rating"""
-input OrganizationSkillRatingUpdateInput {
-  """Display name of the skill rating"""
-  name: String
-
-  """Description of what this skill rating measures"""
-  description: String
-
-  """Algorithm type used for rating calculation"""
-  type: SkillRatingType
-
-  """Configuration options for this skill rating"""
-  configuration: SkillRatingConfigurationInput
+  maxActiveRegistrations: Int
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean
+  leaveWaitlistsOnRegistration: Boolean
+  releasePolicy: RegistrationSeriesReleasePolicy
 }
 
 """Input for creating a new event"""
@@ -13463,6 +13290,201 @@ input EventReservationChangeTicketsInput {
 
   """Tickets replacing the current ones"""
   tickets: [EventReservationRegisterTicketInput!]!
+}
+
+"""Input for creating a new CDN file on a platform or template"""
+input PlatformCdnFileCreateInput {
+  """The file name including path segments"""
+  name: String!
+
+  """The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE)"""
+  type: PlatformCdnFileType!
+
+  """File configuration options such as page routing config"""
+  config: PlatformCdnFileConfigsInput
+}
+
+"""Input for updating the configuration of an existing CDN file"""
+input PlatformFileUpdateInput {
+  """File configuration options such as page routing config"""
+  config: PlatformCdnFileConfigsInput
+}
+
+"""Input for creating a new platform with a subdomain"""
+input CreatePlatformInput {
+  """Display name of the platform"""
+  name: String!
+
+  """Platform configuration settings including white-label options"""
+  configuration: PlatformConfigurationInput
+
+  """The OAuth application ID associated with this platform"""
+  appId: String
+
+  """
+  The subdomain for the platform (3-25 alphanumeric characters with optional hyphens)
+  """
+  subdomain: String!
+}
+
+"""Input for updating an existing platform configuration"""
+input UpdatePlatformInput {
+  """Display name of the platform"""
+  name: String!
+
+  """Platform configuration settings including white-label options"""
+  configuration: PlatformConfigurationInput
+
+  """The OAuth application ID associated with this platform"""
+  appId: String
+}
+
+"""Input for updating platform theme configuration"""
+input PlatformThemeInput {
+  """Primary brand color (hex)"""
+  primaryColor: String
+
+  """Secondary brand color (hex)"""
+  secondaryColor: String
+
+  """Page background color (hex)"""
+  backgroundColor: String
+
+  """Surface/card background color (hex)"""
+  surfaceColor: String
+
+  """Primary text color (hex)"""
+  textColor: String
+
+  """Muted/secondary text color (hex)"""
+  textMutedColor: String
+
+  """Primary font family name"""
+  fontFamily: String
+
+  """Heading font family name"""
+  headingFont: String
+
+  """Border radius value (e.g. "8px", "0.5rem")"""
+  borderRadius: String
+
+  """URL of the platform logo image"""
+  logoUrl: String
+
+  """Social media links displayed on the platform"""
+  socialLinks: PlatformThemeSocialLinksInput
+
+  """Homepage section visibility and ordering configuration"""
+  sections: [PlatformThemeSectionConfigInput!]
+}
+
+"""Input for platform theme social media links"""
+input PlatformThemeSocialLinksInput {
+  """Twitter/X profile URL"""
+  twitter: String
+
+  """Discord server invite URL"""
+  discord: String
+
+  """Twitch channel URL"""
+  twitch: String
+}
+
+"""Input for a platform homepage section configuration"""
+input PlatformThemeSectionConfigInput {
+  """Section identifier name"""
+  name: String!
+
+  """Whether the section is visible on the platform"""
+  visible: Boolean!
+
+  """Display order of the section"""
+  order: Float!
+}
+
+"""Input for creating a new platform template"""
+input CreatePlatformTemplateInput {
+  """Display name of the template"""
+  name: String!
+
+  """Human-readable description of the template"""
+  description: String!
+
+  """URL of the template preview screenshot"""
+  screenshotUrl: URL!
+
+  """Whether this template is publicly available to all organizations"""
+  public: Boolean!
+}
+
+"""Input for partially updating an existing platform template"""
+input UpdatePlatformTemplateInput {
+  """Display name of the template"""
+  name: String
+
+  """Human-readable description of the template"""
+  description: String
+
+  """URL of the template preview screenshot"""
+  screenshotUrl: URL
+
+  """Whether this template is publicly available to all organizations"""
+  public: Boolean
+}
+
+"""
+Input for updating the quantity of a subscription item for an organization
+"""
+input OrganizationSubscriptionItemUpdateInput {
+  """ID of the subscription item to update"""
+  subscriptionItemId: ID!
+
+  """New quantity for the subscription item"""
+  count: Float!
+}
+
+"""
+Input for registering a match result with team compositions and rankings
+"""
+input OrganizationSkillRatingsRegisterMatchInput {
+  """Ordered list of teams, ranked by placement (first = winner)"""
+  teams: [OrganizationSkillRatingsRegisterMatchTeamInput!]!
+}
+
+"""Input representing a team in a skill rating match registration"""
+input OrganizationSkillRatingsRegisterMatchTeamInput {
+  """List of player profile IDs on this team"""
+  players: [ID!]!
+}
+
+"""Input for creating a new organization skill rating"""
+input OrganizationSkillRatingCreateInput {
+  """Display name of the skill rating"""
+  name: String!
+
+  """Description of what this skill rating measures"""
+  description: String!
+
+  """Algorithm type used for rating calculation"""
+  type: SkillRatingType!
+
+  """Configuration options for this skill rating"""
+  configuration: SkillRatingConfigurationInput!
+}
+
+"""Input for updating an existing organization skill rating"""
+input OrganizationSkillRatingUpdateInput {
+  """Display name of the skill rating"""
+  name: String
+
+  """Description of what this skill rating measures"""
+  description: String
+
+  """Algorithm type used for rating calculation"""
+  type: SkillRatingType
+
+  """Configuration options for this skill rating"""
+  configuration: SkillRatingConfigurationInput
 }
 
 """Input for creating a new shop"""
@@ -14305,27 +14327,6 @@ input CustomPermissionInput {
 input CustomPermissionUpdateInput {
   description: String
   resources: [String!]
-}
-
-"""Input for creating a registration series"""
-input RegistrationSeriesCreateInput {
-  """Display name of the series"""
-  name: String!
-  maxActiveRegistrations: Int = 1
-  maxActiveWaitlistEntries: Int
-  allowWaitlistWhileRegistered: Boolean = false
-  leaveWaitlistsOnRegistration: Boolean = true
-  releasePolicy: RegistrationSeriesReleasePolicy = SLOT_END
-}
-
-"""Input for updating a registration series"""
-input RegistrationSeriesUpdateInput {
-  name: String
-  maxActiveRegistrations: Int
-  maxActiveWaitlistEntries: Int
-  allowWaitlistWhileRegistered: Boolean
-  leaveWaitlistsOnRegistration: Boolean
-  releasePolicy: RegistrationSeriesReleasePolicy
 }
 
 input OrganizationModerationInput {

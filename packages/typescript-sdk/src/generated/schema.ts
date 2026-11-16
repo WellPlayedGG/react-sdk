@@ -2183,6 +2183,410 @@ export interface LeaderboardSeasonBucketEdge {
 }
 
 
+/** Timing breakdown of a Lua engine invocation, in milliseconds. */
+export interface RuleEngineEngineTimingStats {
+    /** Time spent evaluating the Lua condition expression, in ms. */
+    conditionEvalMs: Scalars['Float']
+    /** Time spent executing the Lua action script, in ms. */
+    actionExecMs: Scalars['Float']
+    /** Total wall-clock time of the engine invocation (includes overhead). */
+    totalMs: Scalars['Float']
+    __typename: 'RuleEngineEngineTimingStats'
+}
+
+
+/** Outcome of evaluating the Lua condition expression of a rule. */
+export interface RuleEngineConditionEvaluationResult {
+    /** Whether the condition matched (truthy) and triggered the action. */
+    matched: Scalars['Boolean']
+    /** Stringified raw value returned by the condition expression, if any. */
+    value: (Scalars['String'] | null)
+    __typename: 'RuleEngineConditionEvaluationResult'
+}
+
+
+/** Structured failure details for a Lua engine invocation that errored. */
+export interface RuleEngineLuaExecutionErrorDetail {
+    /** Machine-readable error code. */
+    code: Scalars['String']
+    /** Human-readable error message. */
+    message: Scalars['String']
+    /** Optional remediation hint targeted at preset authors. */
+    hint: (Scalars['String'] | null)
+    /** Optional truncated Lua stack trace fragment for debugging. */
+    stackHint: (Scalars['String'] | null)
+    __typename: 'RuleEngineLuaExecutionErrorDetail'
+}
+
+
+/** Audit metadata describing a manual override applied to a rule firing. */
+export interface RuleEngineManualOverrideContext {
+    /** ID of the account that performed the override. */
+    overriddenBy: Scalars['ID']
+    /** Free-text justification supplied by the operator. */
+    reason: Scalars['String']
+    __typename: 'RuleEngineManualOverrideContext'
+}
+
+
+/** Journal payload emitted when an advancement rule fires (or is skipped). */
+export interface RuleEngineAdvancementRuleFiredPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the advancement rule. */
+    ruleId: Scalars['ID']
+    /** Human-readable rule name at the time of firing. */
+    ruleName: Scalars['String']
+    /** ID of the rule set that owns the rule. */
+    ruleSetId: Scalars['ID']
+    /** Version of the rule set snapshotted at execution time. */
+    ruleSetVersion: Scalars['Int']
+    /** Tournament lifecycle event that caused the rule to be considered (MATCH_ENDED, GAME_ENDED, ROUND_ENDED, GROUP_ENDED, STEP_ENDED, MANUAL, STEP_SEEDING, ROUND_SEEDING, TEAM_WITHDREW). */
+    triggerType: RuleTriggerType
+    /** GraphQL __typename of the trigger event payload. */
+    triggerEventTypename: Scalars['String']
+    /** Serialized JSON of the trigger event payload at execution time. */
+    triggerEventJson: Scalars['String']
+    /** Snapshotted Lua source of the rule condition. */
+    conditionSource: Scalars['String']
+    /** Outcome of evaluating the rule condition. */
+    conditionResult: RuleEngineConditionEvaluationResult
+    /** Snapshotted Lua source of the rule action script. */
+    actionSource: Scalars['String']
+    /** Timing breakdown of the engine invocation. */
+    engineTiming: RuleEngineEngineTimingStats
+    /** Lines emitted by Lua print() during execution. */
+    printOutput: Scalars['String'][]
+    /** Whether print output was truncated to fit retention/size limits. */
+    printOutputTruncated: Scalars['Boolean']
+    /** Failure details if the engine errored, otherwise null. */
+    error: (RuleEngineLuaExecutionErrorDetail | null)
+    /** Manual override audit metadata if the firing was forced/skipped by an operator. */
+    manualOverride: (RuleEngineManualOverrideContext | null)
+    __typename: 'RuleEngineAdvancementRuleFiredPayload'
+}
+
+
+/** Tournament lifecycle event that triggers a rule evaluation */
+export type RuleTriggerType = 'MATCH_ENDED' | 'GAME_ENDED' | 'ROUND_ENDED' | 'GROUP_ENDED' | 'STEP_ENDED' | 'MANUAL' | 'STEP_SEEDING' | 'ROUND_SEEDING' | 'TEAM_WITHDREW'
+
+
+/** Journal payload emitted when cross-step data is transferred between two steps. */
+export interface RuleEngineCrossStepTransferredPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the source step the data is transferred from. */
+    sourceStepId: Scalars['ID']
+    /** ID of the target step the data is transferred to. */
+    targetStepId: Scalars['ID']
+    /** Type of data pulled from the source step (TEAMS, WINNERS, QUALIFIED, ELIMINATED, WITHDRAWN, RANKINGS, SCORES). */
+    dataSource: CrossStepDataSource
+    /** Number of keys transferred during this operation. */
+    keyCount: Scalars['Int']
+    /** Up to the first ten transferred key names, for diagnostics. Caller-capped. */
+    firstKeySamples: Scalars['String'][]
+    /** Timing breakdown of the transfer invocation. */
+    engineTiming: RuleEngineEngineTimingStats
+    /** Failure details if the transfer errored, otherwise null. */
+    error: (RuleEngineLuaExecutionErrorDetail | null)
+    __typename: 'RuleEngineCrossStepTransferredPayload'
+}
+
+
+/** Type of data pulled from the source step */
+export type CrossStepDataSource = 'TEAMS' | 'WINNERS' | 'QUALIFIED' | 'ELIMINATED' | 'WITHDRAWN' | 'RANKINGS' | 'SCORES'
+
+
+/** Journal payload emitted when an ADVANCE effect is applied to a team. */
+export interface RuleEngineEffectAdvancePayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Effect kind discriminator — always JournalEffectKind.ADVANCE. */
+    effectKind: JournalEffectKind
+    /** ID of the team being advanced. */
+    targetTeamId: Scalars['ID']
+    /** ID of the step the team is advancing from. */
+    fromStepId: Scalars['ID']
+    /** ID of the step the team is advancing to. */
+    toStepId: Scalars['ID']
+    /** Team status before the effect was applied. Null when no per-step score row existed yet (e.g. first cross-step advance). */
+    beforeStatus: (TeamScopeStatus | null)
+    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
+    afterStatus: (TeamScopeStatus | null)
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied: Scalars['Boolean']
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason: (Scalars['String'] | null)
+    __typename: 'RuleEngineEffectAdvancePayload'
+}
+
+
+/** Discriminator for journal entries emitted by rule-engine effects. */
+export type JournalEffectKind = 'ADVANCE' | 'ELIMINATE' | 'CREATE_GROUP' | 'SET_METADATA' | 'END_STEP' | 'EMIT_SEEDING_PIN'
+
+
+/** Status of a team within a particular scope (game, round, group, step, tournament) */
+export type TeamScopeStatus = 'ACTIVE' | 'WINNER' | 'QUALIFIED' | 'ELIMINATED' | 'WITHDRAWN'
+
+
+/** Journal payload emitted when a CREATE_GROUP effect spawns a new group within a step. */
+export interface RuleEngineEffectCreateGroupPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Effect kind discriminator — always JournalEffectKind.CREATE_GROUP. */
+    effectKind: JournalEffectKind
+    /** ID of the step the group belongs to. */
+    stepId: Scalars['ID']
+    /** ID of the newly created group. */
+    groupId: Scalars['ID']
+    /** Zero-based ordering index of the group within the step. */
+    groupOrder: Scalars['Int']
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied: Scalars['Boolean']
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason: (Scalars['String'] | null)
+    __typename: 'RuleEngineEffectCreateGroupPayload'
+}
+
+
+/** Journal payload emitted when an ELIMINATE effect is applied to a team. */
+export interface RuleEngineEffectEliminatePayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Effect kind discriminator — always JournalEffectKind.ELIMINATE. */
+    effectKind: JournalEffectKind
+    /** ID of the team being eliminated. */
+    targetTeamId: Scalars['ID']
+    /** ID of the step in which the team was eliminated. */
+    stepId: Scalars['ID']
+    /** Team status before the effect was applied. Null when no per-step score row existed yet. */
+    beforeStatus: (TeamScopeStatus | null)
+    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
+    afterStatus: (TeamScopeStatus | null)
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied: Scalars['Boolean']
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason: (Scalars['String'] | null)
+    __typename: 'RuleEngineEffectEliminatePayload'
+}
+
+
+/** Journal payload emitted when an EMIT_SEEDING_PIN effect pins a team to a specific game slot. */
+export interface RuleEngineEffectEmitSeedingPinPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Effect kind discriminator — always JournalEffectKind.EMIT_SEEDING_PIN. */
+    effectKind: JournalEffectKind
+    /** ID of the step containing the pinned slot. */
+    stepId: Scalars['ID']
+    /** ID of the group containing the pinned slot. */
+    groupId: Scalars['ID']
+    /** ID of the game containing the pinned slot. */
+    gameId: Scalars['ID']
+    /** Zero-based slot index within the game (0 or 1 for 1v1 games). */
+    slotIndex: Scalars['Int']
+    /** ID of the team being pinned to the slot. */
+    targetTeamId: Scalars['ID']
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied: Scalars['Boolean']
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason: (Scalars['String'] | null)
+    __typename: 'RuleEngineEffectEmitSeedingPinPayload'
+}
+
+
+/** Journal payload emitted when an END_STEP effect transitions a step to its terminal state. */
+export interface RuleEngineEffectEndStepPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Effect kind discriminator — always JournalEffectKind.END_STEP. */
+    effectKind: JournalEffectKind
+    /** ID of the step being ended. */
+    stepId: Scalars['ID']
+    /** Step status before the effect was applied. */
+    beforeStepStatus: StepStatus
+    /** Step status after the effect was applied. */
+    afterStepStatus: StepStatus
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied: Scalars['Boolean']
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason: (Scalars['String'] | null)
+    __typename: 'RuleEngineEffectEndStepPayload'
+}
+
+export type StepStatus = 'CONFIGURED' | 'GENERATING' | 'GENERATED' | 'SEEDING' | 'SEEDED' | 'STARTED' | 'ENDED'
+
+
+/** Journal payload emitted when a SET_METADATA effect mutates an entity metadata key. */
+export interface RuleEngineEffectSetMetadataPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** Effect kind discriminator — always JournalEffectKind.SET_METADATA. */
+    effectKind: JournalEffectKind
+    /** Type of the target entity whose metadata is being mutated (TournamentTeam, TournamentStep, …). */
+    targetType: MetadataObjectType
+    /** ID of the target entity. */
+    targetId: Scalars['ID']
+    /** Metadata key being written. */
+    key: Scalars['String']
+    /** Serialized JSON of the previous value at this key, or null if absent. */
+    beforeValueJson: (Scalars['String'] | null)
+    /** Serialized JSON of the new value at this key, or null if cleared. */
+    afterValueJson: (Scalars['String'] | null)
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied: Scalars['Boolean']
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason: (Scalars['String'] | null)
+    __typename: 'RuleEngineEffectSetMetadataPayload'
+}
+
+
+/** Type of entity whose metadata is being mutated by a SET_METADATA effect (TournamentTeam, TournamentStep, TournamentStepGroup, TournamentStepGroupRound, TournamentStepGroupRoundGame). */
+export type MetadataObjectType = 'Tournament' | 'TournamentTeam' | 'TournamentStep' | 'TournamentStepGroup' | 'TournamentStepGroupRound' | 'TournamentStepGroupRoundGame'
+
+
+/** Journal payload emitted when a structure generation Lua script runs for a step. */
+export interface RuleEngineGenerationScriptRanPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the step the generation script targets. */
+    stepId: Scalars['ID']
+    /** Snapshotted Lua source of the generation script. */
+    script: Scalars['String']
+    /** Timing breakdown of the engine invocation. */
+    engineTiming: RuleEngineEngineTimingStats
+    /** Lines emitted by Lua print() during execution. */
+    printOutput: Scalars['String'][]
+    /** Whether print output was truncated to fit retention/size limits. */
+    printOutputTruncated: Scalars['Boolean']
+    /** Failure details if the engine errored, otherwise null. */
+    error: (RuleEngineLuaExecutionErrorDetail | null)
+    __typename: 'RuleEngineGenerationScriptRanPayload'
+}
+
+
+/** Journal payload emitted when an operator manually overrides a rule firing decision. */
+export interface RuleEngineManualOverridePayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the rule that was overridden. */
+    ruleId: Scalars['ID']
+    /** ID of the account that performed the override. */
+    overriddenBy: Scalars['ID']
+    /** Free-text justification supplied by the operator. */
+    reason: Scalars['String']
+    /** The override outcome — FIRED (forced), SKIPPED (suppressed), or REPLAYED (re-run). */
+    effect: ManualOverrideEffect
+    __typename: 'RuleEngineManualOverridePayload'
+}
+
+
+/** Outcome of a manual operator override on a rule firing decision (FIRED = operator forced the rule to fire, SKIPPED = operator suppressed the firing, REPLAYED = operator re-ran an already-applied firing). */
+export type ManualOverrideEffect = 'FIRED' | 'SKIPPED' | 'REPLAYED'
+
+
+/** Journal payload emitted when a leaderboard feed fails to reconcile one of its sources. */
+export interface LeaderboardFeedReconcileFailedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the leaderboard feed. */
+    feedId: Scalars['ID']
+    /** Key of the source that failed to reconcile. */
+    sourceKey: Scalars['String']
+    /** Message of the reconcile error. */
+    errorMessage: Scalars['String']
+    __typename: 'LeaderboardFeedReconcileFailedPayload'
+}
+
+
+/** One team score row of an open pool match. */
+export interface OpenPoolJournalScoreRow {
+    /** ID of the tournament team. */
+    tournamentTeamId: Scalars['ID']
+    /** Score of the team in the match. */
+    score: Scalars['Float']
+    /** Whether the team won the match. */
+    isWinner: Scalars['Boolean']
+    /** Whether the team forfeited the match. */
+    isForfeited: Scalars['Boolean']
+    __typename: 'OpenPoolJournalScoreRow'
+}
+
+
+/** Journal payload emitted when staff correct the scores of an open pool match. */
+export interface TournamentOpenPoolMatchCorrectedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the open pool step. */
+    stepId: Scalars['ID']
+    /** ID of the step group. */
+    groupId: Scalars['ID']
+    /** ID of the corrected match. */
+    matchId: Scalars['ID']
+    /** ID of the game holding the match. */
+    gameId: Scalars['ID']
+    /** Score rows before the correction. */
+    previousScores: OpenPoolJournalScoreRow[]
+    /** Score rows after the correction. */
+    scores: OpenPoolJournalScoreRow[]
+    __typename: 'TournamentOpenPoolMatchCorrectedPayload'
+}
+
+
+/** Journal payload emitted when staff cancel an open pool match. */
+export interface TournamentOpenPoolMatchCancelledPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the open pool step. */
+    stepId: Scalars['ID']
+    /** ID of the step group. */
+    groupId: Scalars['ID']
+    /** ID of the cancelled match. */
+    matchId: Scalars['ID']
+    /** ID of the deleted game. */
+    gameId: Scalars['ID']
+    /** Score rows before the cancellation. */
+    previousScores: OpenPoolJournalScoreRow[]
+    /** Score rows left after the cancellation. */
+    scores: OpenPoolJournalScoreRow[]
+    /** Whether the match had ended when it was cancelled. */
+    wasEnded: Scalars['Boolean']
+    /** Reason given by the staff member. */
+    cancelReason: (Scalars['String'] | null)
+    __typename: 'TournamentOpenPoolMatchCancelledPayload'
+}
+
+
+/** Journal payload emitted when staff close an open pool step. */
+export interface TournamentOpenPoolClosedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the closed step. */
+    stepId: Scalars['ID']
+    /** Number of unfinished matches cancelled by the close. */
+    cancelledMatchCount: Scalars['Int']
+    __typename: 'TournamentOpenPoolClosedPayload'
+}
+
+
+/** Journal payload emitted when staff reopen an open pool step. */
+export interface TournamentOpenPoolReopenedPayload {
+    /** GraphQL __typename of the concrete payload class. */
+    _typename: Scalars['String']
+    /** ID of the tournament. */
+    tournamentId: Scalars['ID']
+    /** ID of the reopened step. */
+    stepId: Scalars['ID']
+    __typename: 'TournamentOpenPoolReopenedPayload'
+}
+
+
 /** Credits leaderboard points to the players of a tournament from its match results and final ranks */
 export interface LeaderboardFeed {
     /** ID of the feed */
@@ -2607,410 +3011,6 @@ export interface PlayerSkillRating {
 }
 
 
-/** Timing breakdown of a Lua engine invocation, in milliseconds. */
-export interface RuleEngineEngineTimingStats {
-    /** Time spent evaluating the Lua condition expression, in ms. */
-    conditionEvalMs: Scalars['Float']
-    /** Time spent executing the Lua action script, in ms. */
-    actionExecMs: Scalars['Float']
-    /** Total wall-clock time of the engine invocation (includes overhead). */
-    totalMs: Scalars['Float']
-    __typename: 'RuleEngineEngineTimingStats'
-}
-
-
-/** Outcome of evaluating the Lua condition expression of a rule. */
-export interface RuleEngineConditionEvaluationResult {
-    /** Whether the condition matched (truthy) and triggered the action. */
-    matched: Scalars['Boolean']
-    /** Stringified raw value returned by the condition expression, if any. */
-    value: (Scalars['String'] | null)
-    __typename: 'RuleEngineConditionEvaluationResult'
-}
-
-
-/** Structured failure details for a Lua engine invocation that errored. */
-export interface RuleEngineLuaExecutionErrorDetail {
-    /** Machine-readable error code. */
-    code: Scalars['String']
-    /** Human-readable error message. */
-    message: Scalars['String']
-    /** Optional remediation hint targeted at preset authors. */
-    hint: (Scalars['String'] | null)
-    /** Optional truncated Lua stack trace fragment for debugging. */
-    stackHint: (Scalars['String'] | null)
-    __typename: 'RuleEngineLuaExecutionErrorDetail'
-}
-
-
-/** Audit metadata describing a manual override applied to a rule firing. */
-export interface RuleEngineManualOverrideContext {
-    /** ID of the account that performed the override. */
-    overriddenBy: Scalars['ID']
-    /** Free-text justification supplied by the operator. */
-    reason: Scalars['String']
-    __typename: 'RuleEngineManualOverrideContext'
-}
-
-
-/** Journal payload emitted when an advancement rule fires (or is skipped). */
-export interface RuleEngineAdvancementRuleFiredPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the advancement rule. */
-    ruleId: Scalars['ID']
-    /** Human-readable rule name at the time of firing. */
-    ruleName: Scalars['String']
-    /** ID of the rule set that owns the rule. */
-    ruleSetId: Scalars['ID']
-    /** Version of the rule set snapshotted at execution time. */
-    ruleSetVersion: Scalars['Int']
-    /** Tournament lifecycle event that caused the rule to be considered (MATCH_ENDED, GAME_ENDED, ROUND_ENDED, GROUP_ENDED, STEP_ENDED, MANUAL, STEP_SEEDING, ROUND_SEEDING, TEAM_WITHDREW). */
-    triggerType: RuleTriggerType
-    /** GraphQL __typename of the trigger event payload. */
-    triggerEventTypename: Scalars['String']
-    /** Serialized JSON of the trigger event payload at execution time. */
-    triggerEventJson: Scalars['String']
-    /** Snapshotted Lua source of the rule condition. */
-    conditionSource: Scalars['String']
-    /** Outcome of evaluating the rule condition. */
-    conditionResult: RuleEngineConditionEvaluationResult
-    /** Snapshotted Lua source of the rule action script. */
-    actionSource: Scalars['String']
-    /** Timing breakdown of the engine invocation. */
-    engineTiming: RuleEngineEngineTimingStats
-    /** Lines emitted by Lua print() during execution. */
-    printOutput: Scalars['String'][]
-    /** Whether print output was truncated to fit retention/size limits. */
-    printOutputTruncated: Scalars['Boolean']
-    /** Failure details if the engine errored, otherwise null. */
-    error: (RuleEngineLuaExecutionErrorDetail | null)
-    /** Manual override audit metadata if the firing was forced/skipped by an operator. */
-    manualOverride: (RuleEngineManualOverrideContext | null)
-    __typename: 'RuleEngineAdvancementRuleFiredPayload'
-}
-
-
-/** Tournament lifecycle event that triggers a rule evaluation */
-export type RuleTriggerType = 'MATCH_ENDED' | 'GAME_ENDED' | 'ROUND_ENDED' | 'GROUP_ENDED' | 'STEP_ENDED' | 'MANUAL' | 'STEP_SEEDING' | 'ROUND_SEEDING' | 'TEAM_WITHDREW'
-
-
-/** Journal payload emitted when cross-step data is transferred between two steps. */
-export interface RuleEngineCrossStepTransferredPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the source step the data is transferred from. */
-    sourceStepId: Scalars['ID']
-    /** ID of the target step the data is transferred to. */
-    targetStepId: Scalars['ID']
-    /** Type of data pulled from the source step (TEAMS, WINNERS, QUALIFIED, ELIMINATED, WITHDRAWN, RANKINGS, SCORES). */
-    dataSource: CrossStepDataSource
-    /** Number of keys transferred during this operation. */
-    keyCount: Scalars['Int']
-    /** Up to the first ten transferred key names, for diagnostics. Caller-capped. */
-    firstKeySamples: Scalars['String'][]
-    /** Timing breakdown of the transfer invocation. */
-    engineTiming: RuleEngineEngineTimingStats
-    /** Failure details if the transfer errored, otherwise null. */
-    error: (RuleEngineLuaExecutionErrorDetail | null)
-    __typename: 'RuleEngineCrossStepTransferredPayload'
-}
-
-
-/** Type of data pulled from the source step */
-export type CrossStepDataSource = 'TEAMS' | 'WINNERS' | 'QUALIFIED' | 'ELIMINATED' | 'WITHDRAWN' | 'RANKINGS' | 'SCORES'
-
-
-/** Journal payload emitted when an ADVANCE effect is applied to a team. */
-export interface RuleEngineEffectAdvancePayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** Effect kind discriminator — always JournalEffectKind.ADVANCE. */
-    effectKind: JournalEffectKind
-    /** ID of the team being advanced. */
-    targetTeamId: Scalars['ID']
-    /** ID of the step the team is advancing from. */
-    fromStepId: Scalars['ID']
-    /** ID of the step the team is advancing to. */
-    toStepId: Scalars['ID']
-    /** Team status before the effect was applied. Null when no per-step score row existed yet (e.g. first cross-step advance). */
-    beforeStatus: (TeamScopeStatus | null)
-    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
-    afterStatus: (TeamScopeStatus | null)
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied: Scalars['Boolean']
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason: (Scalars['String'] | null)
-    __typename: 'RuleEngineEffectAdvancePayload'
-}
-
-
-/** Discriminator for journal entries emitted by rule-engine effects. */
-export type JournalEffectKind = 'ADVANCE' | 'ELIMINATE' | 'CREATE_GROUP' | 'SET_METADATA' | 'END_STEP' | 'EMIT_SEEDING_PIN'
-
-
-/** Status of a team within a particular scope (game, round, group, step, tournament) */
-export type TeamScopeStatus = 'ACTIVE' | 'WINNER' | 'QUALIFIED' | 'ELIMINATED' | 'WITHDRAWN'
-
-
-/** Journal payload emitted when a CREATE_GROUP effect spawns a new group within a step. */
-export interface RuleEngineEffectCreateGroupPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** Effect kind discriminator — always JournalEffectKind.CREATE_GROUP. */
-    effectKind: JournalEffectKind
-    /** ID of the step the group belongs to. */
-    stepId: Scalars['ID']
-    /** ID of the newly created group. */
-    groupId: Scalars['ID']
-    /** Zero-based ordering index of the group within the step. */
-    groupOrder: Scalars['Int']
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied: Scalars['Boolean']
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason: (Scalars['String'] | null)
-    __typename: 'RuleEngineEffectCreateGroupPayload'
-}
-
-
-/** Journal payload emitted when an ELIMINATE effect is applied to a team. */
-export interface RuleEngineEffectEliminatePayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** Effect kind discriminator — always JournalEffectKind.ELIMINATE. */
-    effectKind: JournalEffectKind
-    /** ID of the team being eliminated. */
-    targetTeamId: Scalars['ID']
-    /** ID of the step in which the team was eliminated. */
-    stepId: Scalars['ID']
-    /** Team status before the effect was applied. Null when no per-step score row existed yet. */
-    beforeStatus: (TeamScopeStatus | null)
-    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
-    afterStatus: (TeamScopeStatus | null)
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied: Scalars['Boolean']
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason: (Scalars['String'] | null)
-    __typename: 'RuleEngineEffectEliminatePayload'
-}
-
-
-/** Journal payload emitted when an EMIT_SEEDING_PIN effect pins a team to a specific game slot. */
-export interface RuleEngineEffectEmitSeedingPinPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** Effect kind discriminator — always JournalEffectKind.EMIT_SEEDING_PIN. */
-    effectKind: JournalEffectKind
-    /** ID of the step containing the pinned slot. */
-    stepId: Scalars['ID']
-    /** ID of the group containing the pinned slot. */
-    groupId: Scalars['ID']
-    /** ID of the game containing the pinned slot. */
-    gameId: Scalars['ID']
-    /** Zero-based slot index within the game (0 or 1 for 1v1 games). */
-    slotIndex: Scalars['Int']
-    /** ID of the team being pinned to the slot. */
-    targetTeamId: Scalars['ID']
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied: Scalars['Boolean']
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason: (Scalars['String'] | null)
-    __typename: 'RuleEngineEffectEmitSeedingPinPayload'
-}
-
-
-/** Journal payload emitted when an END_STEP effect transitions a step to its terminal state. */
-export interface RuleEngineEffectEndStepPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** Effect kind discriminator — always JournalEffectKind.END_STEP. */
-    effectKind: JournalEffectKind
-    /** ID of the step being ended. */
-    stepId: Scalars['ID']
-    /** Step status before the effect was applied. */
-    beforeStepStatus: StepStatus
-    /** Step status after the effect was applied. */
-    afterStepStatus: StepStatus
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied: Scalars['Boolean']
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason: (Scalars['String'] | null)
-    __typename: 'RuleEngineEffectEndStepPayload'
-}
-
-export type StepStatus = 'CONFIGURED' | 'GENERATING' | 'GENERATED' | 'SEEDING' | 'SEEDED' | 'STARTED' | 'ENDED'
-
-
-/** Journal payload emitted when a SET_METADATA effect mutates an entity metadata key. */
-export interface RuleEngineEffectSetMetadataPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** Effect kind discriminator — always JournalEffectKind.SET_METADATA. */
-    effectKind: JournalEffectKind
-    /** Type of the target entity whose metadata is being mutated (TournamentTeam, TournamentStep, …). */
-    targetType: MetadataObjectType
-    /** ID of the target entity. */
-    targetId: Scalars['ID']
-    /** Metadata key being written. */
-    key: Scalars['String']
-    /** Serialized JSON of the previous value at this key, or null if absent. */
-    beforeValueJson: (Scalars['String'] | null)
-    /** Serialized JSON of the new value at this key, or null if cleared. */
-    afterValueJson: (Scalars['String'] | null)
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied: Scalars['Boolean']
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason: (Scalars['String'] | null)
-    __typename: 'RuleEngineEffectSetMetadataPayload'
-}
-
-
-/** Type of entity whose metadata is being mutated by a SET_METADATA effect (TournamentTeam, TournamentStep, TournamentStepGroup, TournamentStepGroupRound, TournamentStepGroupRoundGame). */
-export type MetadataObjectType = 'Tournament' | 'TournamentTeam' | 'TournamentStep' | 'TournamentStepGroup' | 'TournamentStepGroupRound' | 'TournamentStepGroupRoundGame'
-
-
-/** Journal payload emitted when a structure generation Lua script runs for a step. */
-export interface RuleEngineGenerationScriptRanPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the step the generation script targets. */
-    stepId: Scalars['ID']
-    /** Snapshotted Lua source of the generation script. */
-    script: Scalars['String']
-    /** Timing breakdown of the engine invocation. */
-    engineTiming: RuleEngineEngineTimingStats
-    /** Lines emitted by Lua print() during execution. */
-    printOutput: Scalars['String'][]
-    /** Whether print output was truncated to fit retention/size limits. */
-    printOutputTruncated: Scalars['Boolean']
-    /** Failure details if the engine errored, otherwise null. */
-    error: (RuleEngineLuaExecutionErrorDetail | null)
-    __typename: 'RuleEngineGenerationScriptRanPayload'
-}
-
-
-/** Journal payload emitted when an operator manually overrides a rule firing decision. */
-export interface RuleEngineManualOverridePayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the rule that was overridden. */
-    ruleId: Scalars['ID']
-    /** ID of the account that performed the override. */
-    overriddenBy: Scalars['ID']
-    /** Free-text justification supplied by the operator. */
-    reason: Scalars['String']
-    /** The override outcome — FIRED (forced), SKIPPED (suppressed), or REPLAYED (re-run). */
-    effect: ManualOverrideEffect
-    __typename: 'RuleEngineManualOverridePayload'
-}
-
-
-/** Outcome of a manual operator override on a rule firing decision (FIRED = operator forced the rule to fire, SKIPPED = operator suppressed the firing, REPLAYED = operator re-ran an already-applied firing). */
-export type ManualOverrideEffect = 'FIRED' | 'SKIPPED' | 'REPLAYED'
-
-
-/** Journal payload emitted when a leaderboard feed fails to reconcile one of its sources. */
-export interface LeaderboardFeedReconcileFailedPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the leaderboard feed. */
-    feedId: Scalars['ID']
-    /** Key of the source that failed to reconcile. */
-    sourceKey: Scalars['String']
-    /** Message of the reconcile error. */
-    errorMessage: Scalars['String']
-    __typename: 'LeaderboardFeedReconcileFailedPayload'
-}
-
-
-/** One team score row of an open pool match. */
-export interface OpenPoolJournalScoreRow {
-    /** ID of the tournament team. */
-    tournamentTeamId: Scalars['ID']
-    /** Score of the team in the match. */
-    score: Scalars['Float']
-    /** Whether the team won the match. */
-    isWinner: Scalars['Boolean']
-    /** Whether the team forfeited the match. */
-    isForfeited: Scalars['Boolean']
-    __typename: 'OpenPoolJournalScoreRow'
-}
-
-
-/** Journal payload emitted when staff correct the scores of an open pool match. */
-export interface TournamentOpenPoolMatchCorrectedPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the tournament. */
-    tournamentId: Scalars['ID']
-    /** ID of the open pool step. */
-    stepId: Scalars['ID']
-    /** ID of the step group. */
-    groupId: Scalars['ID']
-    /** ID of the corrected match. */
-    matchId: Scalars['ID']
-    /** ID of the game holding the match. */
-    gameId: Scalars['ID']
-    /** Score rows before the correction. */
-    previousScores: OpenPoolJournalScoreRow[]
-    /** Score rows after the correction. */
-    scores: OpenPoolJournalScoreRow[]
-    __typename: 'TournamentOpenPoolMatchCorrectedPayload'
-}
-
-
-/** Journal payload emitted when staff cancel an open pool match. */
-export interface TournamentOpenPoolMatchCancelledPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the tournament. */
-    tournamentId: Scalars['ID']
-    /** ID of the open pool step. */
-    stepId: Scalars['ID']
-    /** ID of the step group. */
-    groupId: Scalars['ID']
-    /** ID of the cancelled match. */
-    matchId: Scalars['ID']
-    /** ID of the deleted game. */
-    gameId: Scalars['ID']
-    /** Score rows before the cancellation. */
-    previousScores: OpenPoolJournalScoreRow[]
-    /** Score rows left after the cancellation. */
-    scores: OpenPoolJournalScoreRow[]
-    /** Whether the match had ended when it was cancelled. */
-    wasEnded: Scalars['Boolean']
-    /** Reason given by the staff member. */
-    cancelReason: (Scalars['String'] | null)
-    __typename: 'TournamentOpenPoolMatchCancelledPayload'
-}
-
-
-/** Journal payload emitted when staff close an open pool step. */
-export interface TournamentOpenPoolClosedPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the tournament. */
-    tournamentId: Scalars['ID']
-    /** ID of the closed step. */
-    stepId: Scalars['ID']
-    /** Number of unfinished matches cancelled by the close. */
-    cancelledMatchCount: Scalars['Int']
-    __typename: 'TournamentOpenPoolClosedPayload'
-}
-
-
-/** Journal payload emitted when staff reopen an open pool step. */
-export interface TournamentOpenPoolReopenedPayload {
-    /** GraphQL __typename of the concrete payload class. */
-    _typename: Scalars['String']
-    /** ID of the tournament. */
-    tournamentId: Scalars['ID']
-    /** ID of the reopened step. */
-    stepId: Scalars['ID']
-    __typename: 'TournamentOpenPoolReopenedPayload'
-}
-
-
 /** Counters describing the downstream impact of a tournament step reset. */
 export interface TournamentsStepResetCascadeInfo {
     /** Number of downstream tournament steps affected by the reset cascade. */
@@ -3309,6 +3309,78 @@ export interface TournamentEdge {
     node: Tournament
     __typename: 'TournamentEdge'
 }
+
+
+/** A group of events and tournaments sharing one limit of active registrations per player */
+export interface RegistrationSeries {
+    /** Unique identifier of the series */
+    id: Scalars['ID']
+    /** Display name of the series */
+    name: Scalars['String']
+    /** Active registrations a player may hold in the series */
+    maxActiveRegistrations: Scalars['Int']
+    /** Active waitlist entries a player may hold in the series */
+    maxActiveWaitlistEntries: (Scalars['Int'] | null)
+    /** Whether a registered player may also join a waitlist */
+    allowWaitlistWhileRegistered: Scalars['Boolean']
+    /** Whether registering ends the player's waitlist entries */
+    leaveWaitlistsOnRegistration: Scalars['Boolean']
+    /** When a registration stops counting as active */
+    releasePolicy: RegistrationSeriesReleasePolicy
+    /** Timestamp when the series was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the series was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'RegistrationSeries'
+}
+
+export type RegistrationSeriesReleasePolicy = 'SLOT_START' | 'SLOT_END' | 'NEVER'
+
+
+/** Paginated list of registration series */
+export interface RegistrationSeriesPage {
+    /** List of edges containing cursor and node pairs */
+    edges: RegistrationSeriesEdge[]
+    /** Flat list of items in the current page */
+    nodes: RegistrationSeries[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'RegistrationSeriesPage'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface RegistrationSeriesEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: RegistrationSeries
+    __typename: 'RegistrationSeriesEdge'
+}
+
+
+/** A reservation, waitlist entry or tournament team counted against a series limit */
+export interface RegistrationSeriesEntry {
+    /** Kind of entry */
+    kind: RegistrationSeriesEntryKind
+    /** Status of the underlying reservation, entry or team */
+    status: Scalars['String']
+    /** Whether the player manages the reservation or team */
+    isManager: Scalars['Boolean']
+    eventId: (Scalars['ID'] | null)
+    ticketConfigurationId: (Scalars['ID'] | null)
+    reservationId: (Scalars['ID'] | null)
+    waitlistEntryId: (Scalars['ID'] | null)
+    tournamentId: (Scalars['ID'] | null)
+    tournamentTeamId: (Scalars['ID'] | null)
+    startsAt: (Scalars['DateTime'] | null)
+    endsAt: (Scalars['DateTime'] | null)
+    __typename: 'RegistrationSeriesEntry'
+}
+
+export type RegistrationSeriesEntryKind = 'EVENT_RESERVATION' | 'WAITLIST_ENTRY' | 'TOURNAMENT_TEAM'
 
 
 /** A game within a tournament round, containing matches between teams */
@@ -3890,7 +3962,7 @@ export interface SimulatedEffectModel {
 
 
 /** Type of side-effect produced by a simulated Lua script run */
-export type SimulatedEffectType = 'ADVANCE' | 'ELIMINATE' | 'END_GAME' | 'END_ROUND' | 'END_GROUP' | 'SET_METADATA' | 'SET_CUSTOM_FIELD' | 'SET_STATUS' | 'SET_MATCH_RESULT' | 'REGISTER_TEAM' | 'CREATE_GROUP' | 'CREATE_ROUND' | 'CREATE_GAME' | 'LINK' | 'SET_SCORING' | 'ADD_TIEBREAKER' | 'ADD_RULE' | 'ADD_CROSS_STEP_RULE' | 'RESEED_STEP'
+export type SimulatedEffectType = 'ADVANCE' | 'ELIMINATE' | 'END_GAME' | 'END_ROUND' | 'END_GROUP' | 'SET_METADATA' | 'SET_CUSTOM_FIELD' | 'SET_STATUS' | 'SET_MATCH_RESULT' | 'REGISTER_TEAM' | 'CREATE_GROUP' | 'CREATE_ROUND' | 'CREATE_GAME' | 'LINK' | 'SET_SCORING' | 'ADD_TIEBREAKER' | 'ADD_RULE' | 'ADD_CROSS_STEP_RULE' | 'SET_OPEN_POOL' | 'RESEED_STEP'
 
 
 /** Result of simulating a Lua script */
@@ -4289,284 +4361,6 @@ export interface ValidationEventModelEdge {
     node: ValidationEventModel
     __typename: 'ValidationEventModelEdge'
 }
-
-
-/** Rules of an open pool step, where matches are created on demand */
-export interface OpenPoolConfiguration {
-    /** Number of teams in each match */
-    teamsPerMatch: Scalars['Int']
-    /** Matches per game (odd); the game winner takes the majority */
-    bestOf: Scalars['Int']
-    /** Maximum matches a team can play in the step; 0 means unlimited */
-    maxMatchesPerTeam: Scalars['Int']
-    /** Whether the same teams can meet more than once */
-    allowRematch: Scalars['Boolean']
-    /** Whether a team can play several unfinished matches at once */
-    allowConcurrentMatches: Scalars['Boolean']
-    /** Whether a tournament team joins the step when its first match is created */
-    autoJoin: Scalars['Boolean']
-    /** Whether a team needs at least the tournament's minimum team size to play */
-    enforceTeamMinSize: Scalars['Boolean']
-    __typename: 'OpenPoolConfiguration'
-}
-
-
-/** A team taking part in an open pool match */
-export interface OpenPoolMatchTeam {
-    /** ID of the tournament team */
-    teamId: Scalars['ID']
-    /** The tournament team */
-    team: TournamentTeam
-    /** Result of the team in this match */
-    status: MatchScoreStatus
-    /** Score of the team in this match */
-    score: Scalars['Float']
-    __typename: 'OpenPoolMatchTeam'
-}
-
-
-/** A match created on demand in an open pool step */
-export interface OpenPoolMatch {
-    /** ID of the match */
-    id: Scalars['ID']
-    /** ID of the game holding the match */
-    gameId: Scalars['ID']
-    /** ID of the group (pool) of the match */
-    groupId: Scalars['ID']
-    /** ID of the open pool step */
-    stepId: Scalars['ID']
-    /** ID of the tournament */
-    tournamentId: Scalars['ID']
-    /** Label given when the match was created */
-    label: (Scalars['String'] | null)
-    /** Creation order of the match in its group */
-    order: Scalars['Int']
-    /** Status of the match */
-    status: MatchStatus
-    /** Teams of the match with their result */
-    teams: OpenPoolMatchTeam[]
-    /** Date and time when the match was created */
-    createdAt: Scalars['DateTime']
-    /** Date and time when the match was last updated */
-    updatedAt: Scalars['DateTime']
-    __typename: 'OpenPoolMatch'
-}
-
-
-/** Paginated list of open pool matches */
-export interface OpenPoolMatches {
-    /** List of edges containing cursor and node pairs */
-    edges: OpenPoolMatchEdge[]
-    /** Flat list of items in the current page */
-    nodes: OpenPoolMatch[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'OpenPoolMatches'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface OpenPoolMatchEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: OpenPoolMatch
-    __typename: 'OpenPoolMatchEdge'
-}
-
-
-/** Live standing of a team in an open pool step */
-export interface OpenPoolStanding {
-    /** ID of the tournament team */
-    teamId: Scalars['ID']
-    /** The tournament team */
-    team: TournamentTeam
-    /** ID of the group (pool) of the standing */
-    groupId: Scalars['ID']
-    /** Rank in the step; null until ranked */
-    rank: (Scalars['Int'] | null)
-    /** Status of the team in the step */
-    status: TeamScopeStatus
-    /** Points earned in the step */
-    points: Scalars['Float']
-    /** Ended matches played */
-    played: Scalars['Int']
-    /** Matches won */
-    wins: Scalars['Int']
-    /** Matches lost */
-    losses: Scalars['Int']
-    /** Matches drawn */
-    draws: Scalars['Int']
-    /** Matches forfeited */
-    forfeits: Scalars['Int']
-    __typename: 'OpenPoolStanding'
-}
-
-
-/** A virtual currency defined within an organization */
-export interface Currency {
-    /** Unique identifier of the currency */
-    id: Scalars['ID']
-    /** Short symbol representing the currency (e.g., GP, CR) */
-    symbol: Scalars['String']
-    /** Display name of the currency */
-    name: Scalars['String']
-    /** External system identifier for third-party integrations */
-    externalId: (Scalars['String'] | null)
-    /** Description of the currency purpose */
-    description: Scalars['String']
-    /** Whether the currency is hidden from players */
-    hidden: Scalars['Boolean']
-    /** ID of the organization that owns this currency */
-    organizationId: Scalars['ID']
-    /** Timestamp when the currency was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the currency was last updated */
-    updatedAt: Scalars['DateTime']
-    /** Custom metadata key-value pairs attached to the currency */
-    metadata: PropertyValue[]
-    __typename: 'Currency'
-}
-
-
-/** Paginated list of currencies */
-export interface Currencies {
-    /** List of edges containing cursor and node pairs */
-    edges: CurrencyEdge[]
-    /** Flat list of items in the current page */
-    nodes: Currency[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'Currencies'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface CurrencyEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: Currency
-    __typename: 'CurrencyEdge'
-}
-
-
-/** A player's balance for a specific currency */
-export interface PlayerCurrency {
-    /** Unique identifier of the player currency record */
-    id: Scalars['ID']
-    /** ID of the player profile that owns this balance */
-    playerProfileId: Scalars['ID']
-    /** ID of the currency this balance is for */
-    currencyId: Scalars['ID']
-    /** Current balance amount for this currency */
-    balance: Scalars['Float']
-    /** Timestamp when the player currency record was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the balance was last updated */
-    updatedAt: Scalars['DateTime']
-    __typename: 'PlayerCurrency'
-}
-
-
-/** Paginated list of player currency balances */
-export interface PlayerCurrencies {
-    /** List of edges containing cursor and node pairs */
-    edges: PlayerCurrencyEdge[]
-    /** Flat list of items in the current page */
-    nodes: PlayerCurrency[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'PlayerCurrencies'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface PlayerCurrencyEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: PlayerCurrency
-    __typename: 'PlayerCurrencyEdge'
-}
-
-
-/** A group of events and tournaments sharing one limit of active registrations per player */
-export interface RegistrationSeries {
-    /** Unique identifier of the series */
-    id: Scalars['ID']
-    /** Display name of the series */
-    name: Scalars['String']
-    /** Active registrations a player may hold in the series */
-    maxActiveRegistrations: Scalars['Int']
-    /** Active waitlist entries a player may hold in the series */
-    maxActiveWaitlistEntries: (Scalars['Int'] | null)
-    /** Whether a registered player may also join a waitlist */
-    allowWaitlistWhileRegistered: Scalars['Boolean']
-    /** Whether registering ends the player's waitlist entries */
-    leaveWaitlistsOnRegistration: Scalars['Boolean']
-    /** When a registration stops counting as active */
-    releasePolicy: RegistrationSeriesReleasePolicy
-    /** Timestamp when the series was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the series was last updated */
-    updatedAt: Scalars['DateTime']
-    __typename: 'RegistrationSeries'
-}
-
-export type RegistrationSeriesReleasePolicy = 'SLOT_START' | 'SLOT_END' | 'NEVER'
-
-
-/** Paginated list of registration series */
-export interface RegistrationSeriesPage {
-    /** List of edges containing cursor and node pairs */
-    edges: RegistrationSeriesEdge[]
-    /** Flat list of items in the current page */
-    nodes: RegistrationSeries[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'RegistrationSeriesPage'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface RegistrationSeriesEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: RegistrationSeries
-    __typename: 'RegistrationSeriesEdge'
-}
-
-
-/** A reservation, waitlist entry or tournament team counted against a series limit */
-export interface RegistrationSeriesEntry {
-    /** Kind of entry */
-    kind: RegistrationSeriesEntryKind
-    /** Status of the underlying reservation, entry or team */
-    status: Scalars['String']
-    /** Whether the player manages the reservation or team */
-    isManager: Scalars['Boolean']
-    eventId: (Scalars['ID'] | null)
-    ticketConfigurationId: (Scalars['ID'] | null)
-    reservationId: (Scalars['ID'] | null)
-    waitlistEntryId: (Scalars['ID'] | null)
-    tournamentId: (Scalars['ID'] | null)
-    tournamentTeamId: (Scalars['ID'] | null)
-    startsAt: (Scalars['DateTime'] | null)
-    endsAt: (Scalars['DateTime'] | null)
-    __typename: 'RegistrationSeriesEntry'
-}
-
-export type RegistrationSeriesEntryKind = 'EVENT_RESERVATION' | 'WAITLIST_ENTRY' | 'TOURNAMENT_TEAM'
 
 
 /** Configuration defining size and name length constraints for a user group */
@@ -5159,22 +4953,6 @@ export interface EventEdge {
 }
 
 
-/** Outcome of a calendar generation run */
-export interface EventCalendarGenerateResult {
-    /** Events of the requested days */
-    events: Event[]
-    /** Events created by this run */
-    createdEventCount: Scalars['Int']
-    /** Events that already existed */
-    existingEventCount: Scalars['Int']
-    /** Slots created by this run */
-    createdSlotCount: Scalars['Int']
-    /** Slots that already existed */
-    existingSlotCount: Scalars['Int']
-    __typename: 'EventCalendarGenerateResult'
-}
-
-
 /** Configuration for a ticket type including custom fields that attendees must fill */
 export interface EventTicketConfigurationConfiguration {
     /** Custom fields that attendees must fill when purchasing this ticket type */
@@ -5233,6 +5011,22 @@ export type ShopCurrencies = 'USD' | 'EUR' | 'GBP'
 export type EventSlotState = 'OPEN' | 'CLOSED' | 'BLOCKED'
 
 export type EventSlotEffectiveState = 'OPEN' | 'CLOSED' | 'BLOCKED' | 'PAST'
+
+
+/** Outcome of a calendar generation run */
+export interface EventCalendarGenerateResult {
+    /** Events of the requested days */
+    events: Event[]
+    /** Events created by this run */
+    createdEventCount: Scalars['Int']
+    /** Events that already existed */
+    existingEventCount: Scalars['Int']
+    /** Slots created by this run */
+    createdSlotCount: Scalars['Int']
+    /** Slots that already existed */
+    existingSlotCount: Scalars['Int']
+    __typename: 'EventCalendarGenerateResult'
+}
 
 
 /** Configuration settings for a venue seat type */
@@ -5406,6 +5200,212 @@ export interface EventWaitlistEntryEdge {
     /** The item at this edge */
     node: EventWaitlistEntry
     __typename: 'EventWaitlistEntryEdge'
+}
+
+
+/** Rules of an open pool step, where matches are created on demand */
+export interface OpenPoolConfiguration {
+    /** Number of teams in each match */
+    teamsPerMatch: Scalars['Int']
+    /** Matches per game (odd); the game winner takes the majority */
+    bestOf: Scalars['Int']
+    /** Maximum matches a team can play in the step; 0 means unlimited */
+    maxMatchesPerTeam: Scalars['Int']
+    /** Whether the same teams can meet more than once */
+    allowRematch: Scalars['Boolean']
+    /** Whether a team can play several unfinished matches at once */
+    allowConcurrentMatches: Scalars['Boolean']
+    /** Whether a tournament team joins the step when its first match is created */
+    autoJoin: Scalars['Boolean']
+    /** Whether a team needs at least the tournament's minimum team size to play */
+    enforceTeamMinSize: Scalars['Boolean']
+    __typename: 'OpenPoolConfiguration'
+}
+
+
+/** A team taking part in an open pool match */
+export interface OpenPoolMatchTeam {
+    /** ID of the tournament team */
+    teamId: Scalars['ID']
+    /** The tournament team */
+    team: TournamentTeam
+    /** Result of the team in this match */
+    status: MatchScoreStatus
+    /** Score of the team in this match */
+    score: Scalars['Float']
+    __typename: 'OpenPoolMatchTeam'
+}
+
+
+/** A match created on demand in an open pool step */
+export interface OpenPoolMatch {
+    /** ID of the match */
+    id: Scalars['ID']
+    /** ID of the game holding the match */
+    gameId: Scalars['ID']
+    /** ID of the group (pool) of the match */
+    groupId: Scalars['ID']
+    /** ID of the open pool step */
+    stepId: Scalars['ID']
+    /** ID of the tournament */
+    tournamentId: Scalars['ID']
+    /** Label given when the match was created */
+    label: (Scalars['String'] | null)
+    /** Creation order of the match in its group */
+    order: Scalars['Int']
+    /** Status of the match */
+    status: MatchStatus
+    /** Teams of the match with their result */
+    teams: OpenPoolMatchTeam[]
+    /** Date and time when the match was created */
+    createdAt: Scalars['DateTime']
+    /** Date and time when the match was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'OpenPoolMatch'
+}
+
+
+/** Paginated list of open pool matches */
+export interface OpenPoolMatches {
+    /** List of edges containing cursor and node pairs */
+    edges: OpenPoolMatchEdge[]
+    /** Flat list of items in the current page */
+    nodes: OpenPoolMatch[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'OpenPoolMatches'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface OpenPoolMatchEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: OpenPoolMatch
+    __typename: 'OpenPoolMatchEdge'
+}
+
+
+/** Live standing of a team in an open pool step */
+export interface OpenPoolStanding {
+    /** ID of the tournament team */
+    teamId: Scalars['ID']
+    /** The tournament team */
+    team: TournamentTeam
+    /** ID of the group (pool) of the standing */
+    groupId: Scalars['ID']
+    /** Rank in the step; null until ranked */
+    rank: (Scalars['Int'] | null)
+    /** Status of the team in the step */
+    status: TeamScopeStatus
+    /** Points earned in the step */
+    points: Scalars['Float']
+    /** Ended matches played */
+    played: Scalars['Int']
+    /** Matches won */
+    wins: Scalars['Int']
+    /** Matches lost */
+    losses: Scalars['Int']
+    /** Matches drawn */
+    draws: Scalars['Int']
+    /** Matches forfeited */
+    forfeits: Scalars['Int']
+    __typename: 'OpenPoolStanding'
+}
+
+
+/** A virtual currency defined within an organization */
+export interface Currency {
+    /** Unique identifier of the currency */
+    id: Scalars['ID']
+    /** Short symbol representing the currency (e.g., GP, CR) */
+    symbol: Scalars['String']
+    /** Display name of the currency */
+    name: Scalars['String']
+    /** External system identifier for third-party integrations */
+    externalId: (Scalars['String'] | null)
+    /** Description of the currency purpose */
+    description: Scalars['String']
+    /** Whether the currency is hidden from players */
+    hidden: Scalars['Boolean']
+    /** ID of the organization that owns this currency */
+    organizationId: Scalars['ID']
+    /** Timestamp when the currency was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the currency was last updated */
+    updatedAt: Scalars['DateTime']
+    /** Custom metadata key-value pairs attached to the currency */
+    metadata: PropertyValue[]
+    __typename: 'Currency'
+}
+
+
+/** Paginated list of currencies */
+export interface Currencies {
+    /** List of edges containing cursor and node pairs */
+    edges: CurrencyEdge[]
+    /** Flat list of items in the current page */
+    nodes: Currency[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'Currencies'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface CurrencyEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: Currency
+    __typename: 'CurrencyEdge'
+}
+
+
+/** A player's balance for a specific currency */
+export interface PlayerCurrency {
+    /** Unique identifier of the player currency record */
+    id: Scalars['ID']
+    /** ID of the player profile that owns this balance */
+    playerProfileId: Scalars['ID']
+    /** ID of the currency this balance is for */
+    currencyId: Scalars['ID']
+    /** Current balance amount for this currency */
+    balance: Scalars['Float']
+    /** Timestamp when the player currency record was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the balance was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'PlayerCurrency'
+}
+
+
+/** Paginated list of player currency balances */
+export interface PlayerCurrencies {
+    /** List of edges containing cursor and node pairs */
+    edges: PlayerCurrencyEdge[]
+    /** Flat list of items in the current page */
+    nodes: PlayerCurrency[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'PlayerCurrencies'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface PlayerCurrencyEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: PlayerCurrency
+    __typename: 'PlayerCurrencyEdge'
 }
 
 
@@ -6643,38 +6643,14 @@ export interface Query {
     stepRuleSetValidationJobs: ValidationJobs
     /** List streaming events emitted by a validation job. */
     stepRuleSetValidationEvents: ValidationEvents
-    /** List all CDN files for a platform or template, optionally filtered by file type */
-    platformFiles: PlatformCdnFile[]
-    /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
-    platformFile: PlatformCdnFile
-    /** List all platforms owned by the current organization */
-    platforms: Platform[]
-    /** Retrieve a single platform by its ID */
-    platform: (Platform | null)
-    /** Look up a platform by its domain name */
-    platformFindFromDomain: Platform
-    /** Check whether a domain name is already registered to a platform */
-    platformCheckDomainAvailability: Scalars['Boolean']
-    /** List all custom domains configured for a specific platform */
-    platformCustomDomains: PlatformCustomDomainData[]
-    /** List all publicly available platform templates */
-    platformTemplatesPublic: PlatformTemplate[]
-    /** List all platform templates owned by the current organization */
-    platformTemplates: PlatformTemplate[]
-    /** Retrieve a single platform template by its ID */
-    platformTemplate: (PlatformTemplate | null)
-    /** Retrieve all available subscription items */
-    subscriptionItems: SubscriptionItem[]
-    /** Retrieve the current subscription items active for the organization */
-    organizationCurrentSubscriptionItems: OrganizationSubscriptionItem[]
-    /** Paginated journal entries for the current organization. */
-    journalEntries: JournalEntries
-    /** A single journal entry by id. */
-    journalEntry: (JournalEntry | null)
-    /** Retrieve all skill ratings for the current organization */
-    organizationSkillRatings: OrganizationSkillRating[]
-    /** Retrieve a single skill rating by its ID */
-    organizationSkillRating: OrganizationSkillRating
+    /** Retrieve a registration series by ID */
+    registrationSeries: RegistrationSeries
+    /** Paginated list of the registration series of the organization */
+    registrationSeriesList: RegistrationSeriesPage
+    /** The caller's registrations that count against the series limits */
+    myActiveRegistrations: RegistrationSeriesEntry[]
+    /** A player's registrations that count against the series limits */
+    registrationSeriesPlayerEntries: RegistrationSeriesEntry[]
     /** Retrieve a single event by ID, including the current user's reservation if any */
     event: EventWithUserReservation
     /** Retrieve a paginated list of events with optional filtering and ordering */
@@ -6707,6 +6683,38 @@ export interface Query {
     eventWaitlistEntries: EventWaitlistEntries
     /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
     organizationPaymentCollectionConfiguration: (OrganizationPaymentCollectionConfiguration | null)
+    /** List all CDN files for a platform or template, optionally filtered by file type */
+    platformFiles: PlatformCdnFile[]
+    /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
+    platformFile: PlatformCdnFile
+    /** List all platforms owned by the current organization */
+    platforms: Platform[]
+    /** Retrieve a single platform by its ID */
+    platform: (Platform | null)
+    /** Look up a platform by its domain name */
+    platformFindFromDomain: Platform
+    /** Check whether a domain name is already registered to a platform */
+    platformCheckDomainAvailability: Scalars['Boolean']
+    /** List all custom domains configured for a specific platform */
+    platformCustomDomains: PlatformCustomDomainData[]
+    /** List all publicly available platform templates */
+    platformTemplatesPublic: PlatformTemplate[]
+    /** List all platform templates owned by the current organization */
+    platformTemplates: PlatformTemplate[]
+    /** Retrieve a single platform template by its ID */
+    platformTemplate: (PlatformTemplate | null)
+    /** Retrieve all available subscription items */
+    subscriptionItems: SubscriptionItem[]
+    /** Retrieve the current subscription items active for the organization */
+    organizationCurrentSubscriptionItems: OrganizationSubscriptionItem[]
+    /** Paginated journal entries for the current organization. */
+    journalEntries: JournalEntries
+    /** A single journal entry by id. */
+    journalEntry: (JournalEntry | null)
+    /** Retrieve all skill ratings for the current organization */
+    organizationSkillRatings: OrganizationSkillRating[]
+    /** Retrieve a single skill rating by its ID */
+    organizationSkillRating: OrganizationSkillRating
     /** Retrieve paginated members of specified user groups */
     userGroupMembers: UserGroupMembers
     /** Retrieve paginated user groups by their IDs */
@@ -6771,14 +6779,6 @@ export interface Query {
     appFunctionRead: AppFunctionResult
     permissionDefinitions: PermissionDefinitionDto[]
     hasPermissions: Scalars['Boolean'][]
-    /** Retrieve a registration series by ID */
-    registrationSeries: RegistrationSeries
-    /** Paginated list of the registration series of the organization */
-    registrationSeriesList: RegistrationSeriesPage
-    /** The caller's registrations that count against the series limits */
-    myActiveRegistrations: RegistrationSeriesEntry[]
-    /** A player's registrations that count against the series limits */
-    registrationSeriesPlayerEntries: RegistrationSeriesEntry[]
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration: OrganizationModeration
     /** Tests up to 20 texts of at most 4,096 characters against the banned lists of the current organization without revealing them. */
@@ -7033,52 +7033,14 @@ export interface Mutation {
     validateStepRuleSet: ValidationJobModel
     /** Cancel an in-progress or queued validation job. */
     cancelStepRuleSetValidation: ValidationJobModel
-    /** Create a Stripe customer portal session URL for managing the organization subscription */
-    stripeCreatePortalSession: Scalars['String']
-    /** Create a new CDN file record for a platform or template */
-    platformFileCreate: PlatformCdnFile
-    /** Publish the development version of a CDN file to production */
-    platformFilePublish: PlatformCdnFile
-    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
-    platformFileGenerateUploadUrl: PresignedUrl
-    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
-    platformFileValidateFileUpload: PlatformCdnFile
-    /** Update the configuration of an existing CDN file */
-    platformFileUpdate: PlatformCdnFile
-    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
-    platformFileDelete: Scalars['Void']
-    /** Create a new platform with a subdomain and associated OAuth application */
-    platformCreate: Platform
-    /** Update an existing platform name and configuration */
-    platformUpdate: Platform
-    /** Delete a platform and its associated OAuth application */
-    platformDelete: Scalars['Void']
-    /** Update the theme configuration for a platform */
-    platformThemeUpdate: Platform
-    /** Register a new custom domain for a platform via Cloudflare */
-    platformRegisterCustomDomain: CustomDomainData
-    /** Force a DNS/SSL validation recheck for a custom domain */
-    platformForceCustomDomainRecheck: CustomDomainData
-    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
-    platformRemoveCustomDomain: Scalars['Void']
-    /** Create a new platform template for the organization */
-    platformTemplateCreate: PlatformTemplate
-    /** Update an existing platform template */
-    platformTemplateUpdate: PlatformTemplate
-    /** Apply a template to a platform, copying all published template files to the target platform */
-    platformTemplateApply: Platform
-    /** Delete a platform template from the organization */
-    platformTemplateDelete: Scalars['Void']
-    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
-    organizationSubscriptionItemsUpdate: Scalars['Void']
-    /** Register a match result and update player skill ratings accordingly */
-    organizationSkillRatingsRegisterMatch: OrganizationSkillRatingsRegisterMatchPlayer[]
-    /** Create a new skill rating for the current organization */
-    organizationSkillRatingCreate: OrganizationSkillRating
-    /** Update an existing skill rating configuration */
-    organizationSkillRatingUpdate: OrganizationSkillRating
-    /** Delete a skill rating from the current organization */
-    organizationSkillRatingDelete: Scalars['Void']
+    /** Create a registration series */
+    registrationSeriesCreate: RegistrationSeries
+    /** Update a registration series */
+    registrationSeriesUpdate: RegistrationSeries
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete: Scalars['Boolean']
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign: Scalars['Boolean']
     /** Create a new event */
     eventCreate: Event
     /** Update an event */
@@ -7137,6 +7099,52 @@ export interface Mutation {
     eventReservationReleaseTickets: EventReservation
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount: Scalars['String']
+    /** Create a Stripe customer portal session URL for managing the organization subscription */
+    stripeCreatePortalSession: Scalars['String']
+    /** Create a new CDN file record for a platform or template */
+    platformFileCreate: PlatformCdnFile
+    /** Publish the development version of a CDN file to production */
+    platformFilePublish: PlatformCdnFile
+    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
+    platformFileGenerateUploadUrl: PresignedUrl
+    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
+    platformFileValidateFileUpload: PlatformCdnFile
+    /** Update the configuration of an existing CDN file */
+    platformFileUpdate: PlatformCdnFile
+    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
+    platformFileDelete: Scalars['Void']
+    /** Create a new platform with a subdomain and associated OAuth application */
+    platformCreate: Platform
+    /** Update an existing platform name and configuration */
+    platformUpdate: Platform
+    /** Delete a platform and its associated OAuth application */
+    platformDelete: Scalars['Void']
+    /** Update the theme configuration for a platform */
+    platformThemeUpdate: Platform
+    /** Register a new custom domain for a platform via Cloudflare */
+    platformRegisterCustomDomain: CustomDomainData
+    /** Force a DNS/SSL validation recheck for a custom domain */
+    platformForceCustomDomainRecheck: CustomDomainData
+    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
+    platformRemoveCustomDomain: Scalars['Void']
+    /** Create a new platform template for the organization */
+    platformTemplateCreate: PlatformTemplate
+    /** Update an existing platform template */
+    platformTemplateUpdate: PlatformTemplate
+    /** Apply a template to a platform, copying all published template files to the target platform */
+    platformTemplateApply: Platform
+    /** Delete a platform template from the organization */
+    platformTemplateDelete: Scalars['Void']
+    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
+    organizationSubscriptionItemsUpdate: Scalars['Void']
+    /** Register a match result and update player skill ratings accordingly */
+    organizationSkillRatingsRegisterMatch: OrganizationSkillRatingsRegisterMatchPlayer[]
+    /** Create a new skill rating for the current organization */
+    organizationSkillRatingCreate: OrganizationSkillRating
+    /** Update an existing skill rating configuration */
+    organizationSkillRatingUpdate: OrganizationSkillRating
+    /** Delete a skill rating from the current organization */
+    organizationSkillRatingDelete: Scalars['Void']
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite: UserGroupMember
     /** Rename a user group, or clear its name with null. Allowed to the group manager and to a caller holding organization:user-groups:manage on the group. */
@@ -7259,14 +7267,6 @@ export interface Mutation {
     customPermissionCreate: PermissionDefinitionDto
     customPermissionUpdate: PermissionDefinitionDto
     customPermissionDelete: Scalars['Boolean']
-    /** Create a registration series */
-    registrationSeriesCreate: RegistrationSeries
-    /** Update a registration series */
-    registrationSeriesUpdate: RegistrationSeries
-    /** Delete a registration series; its events and tournaments leave the series */
-    registrationSeriesDelete: Scalars['Boolean']
-    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
-    registrationSeriesAssign: Scalars['Boolean']
     /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
     organizationModerationUpdate: OrganizationModeration
     __typename: 'Mutation'
@@ -9554,6 +9554,404 @@ export interface LeaderboardSeasonBucketEdgeGenqlSelection{
 }
 
 
+/** Timing breakdown of a Lua engine invocation, in milliseconds. */
+export interface RuleEngineEngineTimingStatsGenqlSelection{
+    /** Time spent evaluating the Lua condition expression, in ms. */
+    conditionEvalMs?: boolean | number
+    /** Time spent executing the Lua action script, in ms. */
+    actionExecMs?: boolean | number
+    /** Total wall-clock time of the engine invocation (includes overhead). */
+    totalMs?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Outcome of evaluating the Lua condition expression of a rule. */
+export interface RuleEngineConditionEvaluationResultGenqlSelection{
+    /** Whether the condition matched (truthy) and triggered the action. */
+    matched?: boolean | number
+    /** Stringified raw value returned by the condition expression, if any. */
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Structured failure details for a Lua engine invocation that errored. */
+export interface RuleEngineLuaExecutionErrorDetailGenqlSelection{
+    /** Machine-readable error code. */
+    code?: boolean | number
+    /** Human-readable error message. */
+    message?: boolean | number
+    /** Optional remediation hint targeted at preset authors. */
+    hint?: boolean | number
+    /** Optional truncated Lua stack trace fragment for debugging. */
+    stackHint?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Audit metadata describing a manual override applied to a rule firing. */
+export interface RuleEngineManualOverrideContextGenqlSelection{
+    /** ID of the account that performed the override. */
+    overriddenBy?: boolean | number
+    /** Free-text justification supplied by the operator. */
+    reason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when an advancement rule fires (or is skipped). */
+export interface RuleEngineAdvancementRuleFiredPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the advancement rule. */
+    ruleId?: boolean | number
+    /** Human-readable rule name at the time of firing. */
+    ruleName?: boolean | number
+    /** ID of the rule set that owns the rule. */
+    ruleSetId?: boolean | number
+    /** Version of the rule set snapshotted at execution time. */
+    ruleSetVersion?: boolean | number
+    /** Tournament lifecycle event that caused the rule to be considered (MATCH_ENDED, GAME_ENDED, ROUND_ENDED, GROUP_ENDED, STEP_ENDED, MANUAL, STEP_SEEDING, ROUND_SEEDING, TEAM_WITHDREW). */
+    triggerType?: boolean | number
+    /** GraphQL __typename of the trigger event payload. */
+    triggerEventTypename?: boolean | number
+    /** Serialized JSON of the trigger event payload at execution time. */
+    triggerEventJson?: boolean | number
+    /** Snapshotted Lua source of the rule condition. */
+    conditionSource?: boolean | number
+    /** Outcome of evaluating the rule condition. */
+    conditionResult?: RuleEngineConditionEvaluationResultGenqlSelection
+    /** Snapshotted Lua source of the rule action script. */
+    actionSource?: boolean | number
+    /** Timing breakdown of the engine invocation. */
+    engineTiming?: RuleEngineEngineTimingStatsGenqlSelection
+    /** Lines emitted by Lua print() during execution. */
+    printOutput?: boolean | number
+    /** Whether print output was truncated to fit retention/size limits. */
+    printOutputTruncated?: boolean | number
+    /** Failure details if the engine errored, otherwise null. */
+    error?: RuleEngineLuaExecutionErrorDetailGenqlSelection
+    /** Manual override audit metadata if the firing was forced/skipped by an operator. */
+    manualOverride?: RuleEngineManualOverrideContextGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when cross-step data is transferred between two steps. */
+export interface RuleEngineCrossStepTransferredPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the source step the data is transferred from. */
+    sourceStepId?: boolean | number
+    /** ID of the target step the data is transferred to. */
+    targetStepId?: boolean | number
+    /** Type of data pulled from the source step (TEAMS, WINNERS, QUALIFIED, ELIMINATED, WITHDRAWN, RANKINGS, SCORES). */
+    dataSource?: boolean | number
+    /** Number of keys transferred during this operation. */
+    keyCount?: boolean | number
+    /** Up to the first ten transferred key names, for diagnostics. Caller-capped. */
+    firstKeySamples?: boolean | number
+    /** Timing breakdown of the transfer invocation. */
+    engineTiming?: RuleEngineEngineTimingStatsGenqlSelection
+    /** Failure details if the transfer errored, otherwise null. */
+    error?: RuleEngineLuaExecutionErrorDetailGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when an ADVANCE effect is applied to a team. */
+export interface RuleEngineEffectAdvancePayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Effect kind discriminator — always JournalEffectKind.ADVANCE. */
+    effectKind?: boolean | number
+    /** ID of the team being advanced. */
+    targetTeamId?: boolean | number
+    /** ID of the step the team is advancing from. */
+    fromStepId?: boolean | number
+    /** ID of the step the team is advancing to. */
+    toStepId?: boolean | number
+    /** Team status before the effect was applied. Null when no per-step score row existed yet (e.g. first cross-step advance). */
+    beforeStatus?: boolean | number
+    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
+    afterStatus?: boolean | number
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied?: boolean | number
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when a CREATE_GROUP effect spawns a new group within a step. */
+export interface RuleEngineEffectCreateGroupPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Effect kind discriminator — always JournalEffectKind.CREATE_GROUP. */
+    effectKind?: boolean | number
+    /** ID of the step the group belongs to. */
+    stepId?: boolean | number
+    /** ID of the newly created group. */
+    groupId?: boolean | number
+    /** Zero-based ordering index of the group within the step. */
+    groupOrder?: boolean | number
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied?: boolean | number
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when an ELIMINATE effect is applied to a team. */
+export interface RuleEngineEffectEliminatePayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Effect kind discriminator — always JournalEffectKind.ELIMINATE. */
+    effectKind?: boolean | number
+    /** ID of the team being eliminated. */
+    targetTeamId?: boolean | number
+    /** ID of the step in which the team was eliminated. */
+    stepId?: boolean | number
+    /** Team status before the effect was applied. Null when no per-step score row existed yet. */
+    beforeStatus?: boolean | number
+    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
+    afterStatus?: boolean | number
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied?: boolean | number
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when an EMIT_SEEDING_PIN effect pins a team to a specific game slot. */
+export interface RuleEngineEffectEmitSeedingPinPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Effect kind discriminator — always JournalEffectKind.EMIT_SEEDING_PIN. */
+    effectKind?: boolean | number
+    /** ID of the step containing the pinned slot. */
+    stepId?: boolean | number
+    /** ID of the group containing the pinned slot. */
+    groupId?: boolean | number
+    /** ID of the game containing the pinned slot. */
+    gameId?: boolean | number
+    /** Zero-based slot index within the game (0 or 1 for 1v1 games). */
+    slotIndex?: boolean | number
+    /** ID of the team being pinned to the slot. */
+    targetTeamId?: boolean | number
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied?: boolean | number
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when an END_STEP effect transitions a step to its terminal state. */
+export interface RuleEngineEffectEndStepPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Effect kind discriminator — always JournalEffectKind.END_STEP. */
+    effectKind?: boolean | number
+    /** ID of the step being ended. */
+    stepId?: boolean | number
+    /** Step status before the effect was applied. */
+    beforeStepStatus?: boolean | number
+    /** Step status after the effect was applied. */
+    afterStepStatus?: boolean | number
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied?: boolean | number
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when a SET_METADATA effect mutates an entity metadata key. */
+export interface RuleEngineEffectSetMetadataPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** Effect kind discriminator — always JournalEffectKind.SET_METADATA. */
+    effectKind?: boolean | number
+    /** Type of the target entity whose metadata is being mutated (TournamentTeam, TournamentStep, …). */
+    targetType?: boolean | number
+    /** ID of the target entity. */
+    targetId?: boolean | number
+    /** Metadata key being written. */
+    key?: boolean | number
+    /** Serialized JSON of the previous value at this key, or null if absent. */
+    beforeValueJson?: boolean | number
+    /** Serialized JSON of the new value at this key, or null if cleared. */
+    afterValueJson?: boolean | number
+    /** Whether the effect was actually applied (false if skipped/no-op). */
+    applied?: boolean | number
+    /** Reason the effect was skipped, if applicable. Null when applied. */
+    skipReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when a structure generation Lua script runs for a step. */
+export interface RuleEngineGenerationScriptRanPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the step the generation script targets. */
+    stepId?: boolean | number
+    /** Snapshotted Lua source of the generation script. */
+    script?: boolean | number
+    /** Timing breakdown of the engine invocation. */
+    engineTiming?: RuleEngineEngineTimingStatsGenqlSelection
+    /** Lines emitted by Lua print() during execution. */
+    printOutput?: boolean | number
+    /** Whether print output was truncated to fit retention/size limits. */
+    printOutputTruncated?: boolean | number
+    /** Failure details if the engine errored, otherwise null. */
+    error?: RuleEngineLuaExecutionErrorDetailGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when an operator manually overrides a rule firing decision. */
+export interface RuleEngineManualOverridePayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the rule that was overridden. */
+    ruleId?: boolean | number
+    /** ID of the account that performed the override. */
+    overriddenBy?: boolean | number
+    /** Free-text justification supplied by the operator. */
+    reason?: boolean | number
+    /** The override outcome — FIRED (forced), SKIPPED (suppressed), or REPLAYED (re-run). */
+    effect?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when a leaderboard feed fails to reconcile one of its sources. */
+export interface LeaderboardFeedReconcileFailedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the leaderboard feed. */
+    feedId?: boolean | number
+    /** Key of the source that failed to reconcile. */
+    sourceKey?: boolean | number
+    /** Message of the reconcile error. */
+    errorMessage?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** One team score row of an open pool match. */
+export interface OpenPoolJournalScoreRowGenqlSelection{
+    /** ID of the tournament team. */
+    tournamentTeamId?: boolean | number
+    /** Score of the team in the match. */
+    score?: boolean | number
+    /** Whether the team won the match. */
+    isWinner?: boolean | number
+    /** Whether the team forfeited the match. */
+    isForfeited?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff correct the scores of an open pool match. */
+export interface TournamentOpenPoolMatchCorrectedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the open pool step. */
+    stepId?: boolean | number
+    /** ID of the step group. */
+    groupId?: boolean | number
+    /** ID of the corrected match. */
+    matchId?: boolean | number
+    /** ID of the game holding the match. */
+    gameId?: boolean | number
+    /** Score rows before the correction. */
+    previousScores?: OpenPoolJournalScoreRowGenqlSelection
+    /** Score rows after the correction. */
+    scores?: OpenPoolJournalScoreRowGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff cancel an open pool match. */
+export interface TournamentOpenPoolMatchCancelledPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the open pool step. */
+    stepId?: boolean | number
+    /** ID of the step group. */
+    groupId?: boolean | number
+    /** ID of the cancelled match. */
+    matchId?: boolean | number
+    /** ID of the deleted game. */
+    gameId?: boolean | number
+    /** Score rows before the cancellation. */
+    previousScores?: OpenPoolJournalScoreRowGenqlSelection
+    /** Score rows left after the cancellation. */
+    scores?: OpenPoolJournalScoreRowGenqlSelection
+    /** Whether the match had ended when it was cancelled. */
+    wasEnded?: boolean | number
+    /** Reason given by the staff member. */
+    cancelReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff close an open pool step. */
+export interface TournamentOpenPoolClosedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the closed step. */
+    stepId?: boolean | number
+    /** Number of unfinished matches cancelled by the close. */
+    cancelledMatchCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Journal payload emitted when staff reopen an open pool step. */
+export interface TournamentOpenPoolReopenedPayloadGenqlSelection{
+    /** GraphQL __typename of the concrete payload class. */
+    _typename?: boolean | number
+    /** ID of the tournament. */
+    tournamentId?: boolean | number
+    /** ID of the reopened step. */
+    stepId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** Credits leaderboard points to the players of a tournament from its match results and final ranks */
 export interface LeaderboardFeedGenqlSelection{
     /** ID of the feed */
@@ -9993,404 +10391,6 @@ export interface PlayerSkillRatingGenqlSelection{
 }
 
 
-/** Timing breakdown of a Lua engine invocation, in milliseconds. */
-export interface RuleEngineEngineTimingStatsGenqlSelection{
-    /** Time spent evaluating the Lua condition expression, in ms. */
-    conditionEvalMs?: boolean | number
-    /** Time spent executing the Lua action script, in ms. */
-    actionExecMs?: boolean | number
-    /** Total wall-clock time of the engine invocation (includes overhead). */
-    totalMs?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Outcome of evaluating the Lua condition expression of a rule. */
-export interface RuleEngineConditionEvaluationResultGenqlSelection{
-    /** Whether the condition matched (truthy) and triggered the action. */
-    matched?: boolean | number
-    /** Stringified raw value returned by the condition expression, if any. */
-    value?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Structured failure details for a Lua engine invocation that errored. */
-export interface RuleEngineLuaExecutionErrorDetailGenqlSelection{
-    /** Machine-readable error code. */
-    code?: boolean | number
-    /** Human-readable error message. */
-    message?: boolean | number
-    /** Optional remediation hint targeted at preset authors. */
-    hint?: boolean | number
-    /** Optional truncated Lua stack trace fragment for debugging. */
-    stackHint?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Audit metadata describing a manual override applied to a rule firing. */
-export interface RuleEngineManualOverrideContextGenqlSelection{
-    /** ID of the account that performed the override. */
-    overriddenBy?: boolean | number
-    /** Free-text justification supplied by the operator. */
-    reason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when an advancement rule fires (or is skipped). */
-export interface RuleEngineAdvancementRuleFiredPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the advancement rule. */
-    ruleId?: boolean | number
-    /** Human-readable rule name at the time of firing. */
-    ruleName?: boolean | number
-    /** ID of the rule set that owns the rule. */
-    ruleSetId?: boolean | number
-    /** Version of the rule set snapshotted at execution time. */
-    ruleSetVersion?: boolean | number
-    /** Tournament lifecycle event that caused the rule to be considered (MATCH_ENDED, GAME_ENDED, ROUND_ENDED, GROUP_ENDED, STEP_ENDED, MANUAL, STEP_SEEDING, ROUND_SEEDING, TEAM_WITHDREW). */
-    triggerType?: boolean | number
-    /** GraphQL __typename of the trigger event payload. */
-    triggerEventTypename?: boolean | number
-    /** Serialized JSON of the trigger event payload at execution time. */
-    triggerEventJson?: boolean | number
-    /** Snapshotted Lua source of the rule condition. */
-    conditionSource?: boolean | number
-    /** Outcome of evaluating the rule condition. */
-    conditionResult?: RuleEngineConditionEvaluationResultGenqlSelection
-    /** Snapshotted Lua source of the rule action script. */
-    actionSource?: boolean | number
-    /** Timing breakdown of the engine invocation. */
-    engineTiming?: RuleEngineEngineTimingStatsGenqlSelection
-    /** Lines emitted by Lua print() during execution. */
-    printOutput?: boolean | number
-    /** Whether print output was truncated to fit retention/size limits. */
-    printOutputTruncated?: boolean | number
-    /** Failure details if the engine errored, otherwise null. */
-    error?: RuleEngineLuaExecutionErrorDetailGenqlSelection
-    /** Manual override audit metadata if the firing was forced/skipped by an operator. */
-    manualOverride?: RuleEngineManualOverrideContextGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when cross-step data is transferred between two steps. */
-export interface RuleEngineCrossStepTransferredPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the source step the data is transferred from. */
-    sourceStepId?: boolean | number
-    /** ID of the target step the data is transferred to. */
-    targetStepId?: boolean | number
-    /** Type of data pulled from the source step (TEAMS, WINNERS, QUALIFIED, ELIMINATED, WITHDRAWN, RANKINGS, SCORES). */
-    dataSource?: boolean | number
-    /** Number of keys transferred during this operation. */
-    keyCount?: boolean | number
-    /** Up to the first ten transferred key names, for diagnostics. Caller-capped. */
-    firstKeySamples?: boolean | number
-    /** Timing breakdown of the transfer invocation. */
-    engineTiming?: RuleEngineEngineTimingStatsGenqlSelection
-    /** Failure details if the transfer errored, otherwise null. */
-    error?: RuleEngineLuaExecutionErrorDetailGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when an ADVANCE effect is applied to a team. */
-export interface RuleEngineEffectAdvancePayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** Effect kind discriminator — always JournalEffectKind.ADVANCE. */
-    effectKind?: boolean | number
-    /** ID of the team being advanced. */
-    targetTeamId?: boolean | number
-    /** ID of the step the team is advancing from. */
-    fromStepId?: boolean | number
-    /** ID of the step the team is advancing to. */
-    toStepId?: boolean | number
-    /** Team status before the effect was applied. Null when no per-step score row existed yet (e.g. first cross-step advance). */
-    beforeStatus?: boolean | number
-    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
-    afterStatus?: boolean | number
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied?: boolean | number
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when a CREATE_GROUP effect spawns a new group within a step. */
-export interface RuleEngineEffectCreateGroupPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** Effect kind discriminator — always JournalEffectKind.CREATE_GROUP. */
-    effectKind?: boolean | number
-    /** ID of the step the group belongs to. */
-    stepId?: boolean | number
-    /** ID of the newly created group. */
-    groupId?: boolean | number
-    /** Zero-based ordering index of the group within the step. */
-    groupOrder?: boolean | number
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied?: boolean | number
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when an ELIMINATE effect is applied to a team. */
-export interface RuleEngineEffectEliminatePayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** Effect kind discriminator — always JournalEffectKind.ELIMINATE. */
-    effectKind?: boolean | number
-    /** ID of the team being eliminated. */
-    targetTeamId?: boolean | number
-    /** ID of the step in which the team was eliminated. */
-    stepId?: boolean | number
-    /** Team status before the effect was applied. Null when no per-step score row existed yet. */
-    beforeStatus?: boolean | number
-    /** Team status after the effect was applied. Null when the effect was skipped before status resolution. */
-    afterStatus?: boolean | number
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied?: boolean | number
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when an EMIT_SEEDING_PIN effect pins a team to a specific game slot. */
-export interface RuleEngineEffectEmitSeedingPinPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** Effect kind discriminator — always JournalEffectKind.EMIT_SEEDING_PIN. */
-    effectKind?: boolean | number
-    /** ID of the step containing the pinned slot. */
-    stepId?: boolean | number
-    /** ID of the group containing the pinned slot. */
-    groupId?: boolean | number
-    /** ID of the game containing the pinned slot. */
-    gameId?: boolean | number
-    /** Zero-based slot index within the game (0 or 1 for 1v1 games). */
-    slotIndex?: boolean | number
-    /** ID of the team being pinned to the slot. */
-    targetTeamId?: boolean | number
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied?: boolean | number
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when an END_STEP effect transitions a step to its terminal state. */
-export interface RuleEngineEffectEndStepPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** Effect kind discriminator — always JournalEffectKind.END_STEP. */
-    effectKind?: boolean | number
-    /** ID of the step being ended. */
-    stepId?: boolean | number
-    /** Step status before the effect was applied. */
-    beforeStepStatus?: boolean | number
-    /** Step status after the effect was applied. */
-    afterStepStatus?: boolean | number
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied?: boolean | number
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when a SET_METADATA effect mutates an entity metadata key. */
-export interface RuleEngineEffectSetMetadataPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** Effect kind discriminator — always JournalEffectKind.SET_METADATA. */
-    effectKind?: boolean | number
-    /** Type of the target entity whose metadata is being mutated (TournamentTeam, TournamentStep, …). */
-    targetType?: boolean | number
-    /** ID of the target entity. */
-    targetId?: boolean | number
-    /** Metadata key being written. */
-    key?: boolean | number
-    /** Serialized JSON of the previous value at this key, or null if absent. */
-    beforeValueJson?: boolean | number
-    /** Serialized JSON of the new value at this key, or null if cleared. */
-    afterValueJson?: boolean | number
-    /** Whether the effect was actually applied (false if skipped/no-op). */
-    applied?: boolean | number
-    /** Reason the effect was skipped, if applicable. Null when applied. */
-    skipReason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when a structure generation Lua script runs for a step. */
-export interface RuleEngineGenerationScriptRanPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the step the generation script targets. */
-    stepId?: boolean | number
-    /** Snapshotted Lua source of the generation script. */
-    script?: boolean | number
-    /** Timing breakdown of the engine invocation. */
-    engineTiming?: RuleEngineEngineTimingStatsGenqlSelection
-    /** Lines emitted by Lua print() during execution. */
-    printOutput?: boolean | number
-    /** Whether print output was truncated to fit retention/size limits. */
-    printOutputTruncated?: boolean | number
-    /** Failure details if the engine errored, otherwise null. */
-    error?: RuleEngineLuaExecutionErrorDetailGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when an operator manually overrides a rule firing decision. */
-export interface RuleEngineManualOverridePayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the rule that was overridden. */
-    ruleId?: boolean | number
-    /** ID of the account that performed the override. */
-    overriddenBy?: boolean | number
-    /** Free-text justification supplied by the operator. */
-    reason?: boolean | number
-    /** The override outcome — FIRED (forced), SKIPPED (suppressed), or REPLAYED (re-run). */
-    effect?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when a leaderboard feed fails to reconcile one of its sources. */
-export interface LeaderboardFeedReconcileFailedPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the leaderboard feed. */
-    feedId?: boolean | number
-    /** Key of the source that failed to reconcile. */
-    sourceKey?: boolean | number
-    /** Message of the reconcile error. */
-    errorMessage?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** One team score row of an open pool match. */
-export interface OpenPoolJournalScoreRowGenqlSelection{
-    /** ID of the tournament team. */
-    tournamentTeamId?: boolean | number
-    /** Score of the team in the match. */
-    score?: boolean | number
-    /** Whether the team won the match. */
-    isWinner?: boolean | number
-    /** Whether the team forfeited the match. */
-    isForfeited?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when staff correct the scores of an open pool match. */
-export interface TournamentOpenPoolMatchCorrectedPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the tournament. */
-    tournamentId?: boolean | number
-    /** ID of the open pool step. */
-    stepId?: boolean | number
-    /** ID of the step group. */
-    groupId?: boolean | number
-    /** ID of the corrected match. */
-    matchId?: boolean | number
-    /** ID of the game holding the match. */
-    gameId?: boolean | number
-    /** Score rows before the correction. */
-    previousScores?: OpenPoolJournalScoreRowGenqlSelection
-    /** Score rows after the correction. */
-    scores?: OpenPoolJournalScoreRowGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when staff cancel an open pool match. */
-export interface TournamentOpenPoolMatchCancelledPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the tournament. */
-    tournamentId?: boolean | number
-    /** ID of the open pool step. */
-    stepId?: boolean | number
-    /** ID of the step group. */
-    groupId?: boolean | number
-    /** ID of the cancelled match. */
-    matchId?: boolean | number
-    /** ID of the deleted game. */
-    gameId?: boolean | number
-    /** Score rows before the cancellation. */
-    previousScores?: OpenPoolJournalScoreRowGenqlSelection
-    /** Score rows left after the cancellation. */
-    scores?: OpenPoolJournalScoreRowGenqlSelection
-    /** Whether the match had ended when it was cancelled. */
-    wasEnded?: boolean | number
-    /** Reason given by the staff member. */
-    cancelReason?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when staff close an open pool step. */
-export interface TournamentOpenPoolClosedPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the tournament. */
-    tournamentId?: boolean | number
-    /** ID of the closed step. */
-    stepId?: boolean | number
-    /** Number of unfinished matches cancelled by the close. */
-    cancelledMatchCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Journal payload emitted when staff reopen an open pool step. */
-export interface TournamentOpenPoolReopenedPayloadGenqlSelection{
-    /** GraphQL __typename of the concrete payload class. */
-    _typename?: boolean | number
-    /** ID of the tournament. */
-    tournamentId?: boolean | number
-    /** ID of the reopened step. */
-    stepId?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
 /** Counters describing the downstream impact of a tournament step reset. */
 export interface TournamentsStepResetCascadeInfoGenqlSelection{
     /** Number of downstream tournament steps affected by the reset cascade. */
@@ -10698,6 +10698,78 @@ export interface TournamentEdgeGenqlSelection{
     cursor?: boolean | number
     /** The item at this edge */
     node?: TournamentGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A group of events and tournaments sharing one limit of active registrations per player */
+export interface RegistrationSeriesGenqlSelection{
+    /** Unique identifier of the series */
+    id?: boolean | number
+    /** Display name of the series */
+    name?: boolean | number
+    /** Active registrations a player may hold in the series */
+    maxActiveRegistrations?: boolean | number
+    /** Active waitlist entries a player may hold in the series */
+    maxActiveWaitlistEntries?: boolean | number
+    /** Whether a registered player may also join a waitlist */
+    allowWaitlistWhileRegistered?: boolean | number
+    /** Whether registering ends the player's waitlist entries */
+    leaveWaitlistsOnRegistration?: boolean | number
+    /** When a registration stops counting as active */
+    releasePolicy?: boolean | number
+    /** Timestamp when the series was created */
+    createdAt?: boolean | number
+    /** Timestamp when the series was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of registration series */
+export interface RegistrationSeriesPageGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: RegistrationSeriesEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: RegistrationSeriesGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface RegistrationSeriesEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: RegistrationSeriesGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A reservation, waitlist entry or tournament team counted against a series limit */
+export interface RegistrationSeriesEntryGenqlSelection{
+    /** Kind of entry */
+    kind?: boolean | number
+    /** Status of the underlying reservation, entry or team */
+    status?: boolean | number
+    /** Whether the player manages the reservation or team */
+    isManager?: boolean | number
+    eventId?: boolean | number
+    ticketConfigurationId?: boolean | number
+    reservationId?: boolean | number
+    waitlistEntryId?: boolean | number
+    tournamentId?: boolean | number
+    tournamentTeamId?: boolean | number
+    startsAt?: boolean | number
+    endsAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -11630,296 +11702,6 @@ export interface ValidationEventModelEdgeGenqlSelection{
 }
 
 
-/** Rules of an open pool step, where matches are created on demand */
-export interface OpenPoolConfigurationGenqlSelection{
-    /** Number of teams in each match */
-    teamsPerMatch?: boolean | number
-    /** Matches per game (odd); the game winner takes the majority */
-    bestOf?: boolean | number
-    /** Maximum matches a team can play in the step; 0 means unlimited */
-    maxMatchesPerTeam?: boolean | number
-    /** Whether the same teams can meet more than once */
-    allowRematch?: boolean | number
-    /** Whether a team can play several unfinished matches at once */
-    allowConcurrentMatches?: boolean | number
-    /** Whether a tournament team joins the step when its first match is created */
-    autoJoin?: boolean | number
-    /** Whether a team needs at least the tournament's minimum team size to play */
-    enforceTeamMinSize?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A team taking part in an open pool match */
-export interface OpenPoolMatchTeamGenqlSelection{
-    /** ID of the tournament team */
-    teamId?: boolean | number
-    /** The tournament team */
-    team?: TournamentTeamGenqlSelection
-    /** Result of the team in this match */
-    status?: boolean | number
-    /** Score of the team in this match */
-    score?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A match created on demand in an open pool step */
-export interface OpenPoolMatchGenqlSelection{
-    /** ID of the match */
-    id?: boolean | number
-    /** ID of the game holding the match */
-    gameId?: boolean | number
-    /** ID of the group (pool) of the match */
-    groupId?: boolean | number
-    /** ID of the open pool step */
-    stepId?: boolean | number
-    /** ID of the tournament */
-    tournamentId?: boolean | number
-    /** Label given when the match was created */
-    label?: boolean | number
-    /** Creation order of the match in its group */
-    order?: boolean | number
-    /** Status of the match */
-    status?: boolean | number
-    /** Teams of the match with their result */
-    teams?: OpenPoolMatchTeamGenqlSelection
-    /** Date and time when the match was created */
-    createdAt?: boolean | number
-    /** Date and time when the match was last updated */
-    updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of open pool matches */
-export interface OpenPoolMatchesGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: OpenPoolMatchEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: OpenPoolMatchGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface OpenPoolMatchEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: OpenPoolMatchGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Live standing of a team in an open pool step */
-export interface OpenPoolStandingGenqlSelection{
-    /** ID of the tournament team */
-    teamId?: boolean | number
-    /** The tournament team */
-    team?: TournamentTeamGenqlSelection
-    /** ID of the group (pool) of the standing */
-    groupId?: boolean | number
-    /** Rank in the step; null until ranked */
-    rank?: boolean | number
-    /** Status of the team in the step */
-    status?: boolean | number
-    /** Points earned in the step */
-    points?: boolean | number
-    /** Ended matches played */
-    played?: boolean | number
-    /** Matches won */
-    wins?: boolean | number
-    /** Matches lost */
-    losses?: boolean | number
-    /** Matches drawn */
-    draws?: boolean | number
-    /** Matches forfeited */
-    forfeits?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A virtual currency defined within an organization */
-export interface CurrencyGenqlSelection{
-    /** Unique identifier of the currency */
-    id?: boolean | number
-    /** Short symbol representing the currency (e.g., GP, CR) */
-    symbol?: boolean | number
-    /** Display name of the currency */
-    name?: boolean | number
-    /** External system identifier for third-party integrations */
-    externalId?: boolean | number
-    /** Description of the currency purpose */
-    description?: boolean | number
-    /** Whether the currency is hidden from players */
-    hidden?: boolean | number
-    /** ID of the organization that owns this currency */
-    organizationId?: boolean | number
-    /** Timestamp when the currency was created */
-    createdAt?: boolean | number
-    /** Timestamp when the currency was last updated */
-    updatedAt?: boolean | number
-    /** Custom metadata key-value pairs attached to the currency */
-    metadata?: PropertyValueGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of currencies */
-export interface CurrenciesGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: CurrencyEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: CurrencyGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface CurrencyEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: CurrencyGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A player's balance for a specific currency */
-export interface PlayerCurrencyGenqlSelection{
-    /** Unique identifier of the player currency record */
-    id?: boolean | number
-    /** ID of the player profile that owns this balance */
-    playerProfileId?: boolean | number
-    /** ID of the currency this balance is for */
-    currencyId?: boolean | number
-    /** Current balance amount for this currency */
-    balance?: boolean | number
-    /** Timestamp when the player currency record was created */
-    createdAt?: boolean | number
-    /** Timestamp when the balance was last updated */
-    updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of player currency balances */
-export interface PlayerCurrenciesGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: PlayerCurrencyEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: PlayerCurrencyGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface PlayerCurrencyEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: PlayerCurrencyGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A group of events and tournaments sharing one limit of active registrations per player */
-export interface RegistrationSeriesGenqlSelection{
-    /** Unique identifier of the series */
-    id?: boolean | number
-    /** Display name of the series */
-    name?: boolean | number
-    /** Active registrations a player may hold in the series */
-    maxActiveRegistrations?: boolean | number
-    /** Active waitlist entries a player may hold in the series */
-    maxActiveWaitlistEntries?: boolean | number
-    /** Whether a registered player may also join a waitlist */
-    allowWaitlistWhileRegistered?: boolean | number
-    /** Whether registering ends the player's waitlist entries */
-    leaveWaitlistsOnRegistration?: boolean | number
-    /** When a registration stops counting as active */
-    releasePolicy?: boolean | number
-    /** Timestamp when the series was created */
-    createdAt?: boolean | number
-    /** Timestamp when the series was last updated */
-    updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of registration series */
-export interface RegistrationSeriesPageGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: RegistrationSeriesEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: RegistrationSeriesGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface RegistrationSeriesEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: RegistrationSeriesGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A reservation, waitlist entry or tournament team counted against a series limit */
-export interface RegistrationSeriesEntryGenqlSelection{
-    /** Kind of entry */
-    kind?: boolean | number
-    /** Status of the underlying reservation, entry or team */
-    status?: boolean | number
-    /** Whether the player manages the reservation or team */
-    isManager?: boolean | number
-    eventId?: boolean | number
-    ticketConfigurationId?: boolean | number
-    reservationId?: boolean | number
-    waitlistEntryId?: boolean | number
-    tournamentId?: boolean | number
-    tournamentTeamId?: boolean | number
-    startsAt?: boolean | number
-    endsAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
 /** Configuration defining size and name length constraints for a user group */
 export interface UserGroupConfigurationGenqlSelection{
     /** Maximum number of accepted members allowed in the group */
@@ -12567,23 +12349,6 @@ export interface EventEdgeGenqlSelection{
 }
 
 
-/** Outcome of a calendar generation run */
-export interface EventCalendarGenerateResultGenqlSelection{
-    /** Events of the requested days */
-    events?: EventGenqlSelection
-    /** Events created by this run */
-    createdEventCount?: boolean | number
-    /** Events that already existed */
-    existingEventCount?: boolean | number
-    /** Slots created by this run */
-    createdSlotCount?: boolean | number
-    /** Slots that already existed */
-    existingSlotCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
 /** Configuration for a ticket type including custom fields that attendees must fill */
 export interface EventTicketConfigurationConfigurationGenqlSelection{
     /** Custom fields that attendees must fill when purchasing this ticket type */
@@ -12635,6 +12400,23 @@ export interface EventTicketConfigurationGenqlSelection{
     freeCount?: boolean | number
     /** State of the slot at the time of the request, PAST once started */
     effectiveState?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Outcome of a calendar generation run */
+export interface EventCalendarGenerateResultGenqlSelection{
+    /** Events of the requested days */
+    events?: EventGenqlSelection
+    /** Events created by this run */
+    createdEventCount?: boolean | number
+    /** Events that already existed */
+    existingEventCount?: boolean | number
+    /** Slots created by this run */
+    createdSlotCount?: boolean | number
+    /** Slots that already existed */
+    existingSlotCount?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -12816,6 +12598,224 @@ export interface EventWaitlistEntryEdgeGenqlSelection{
     cursor?: boolean | number
     /** The item at this edge */
     node?: EventWaitlistEntryGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Rules of an open pool step, where matches are created on demand */
+export interface OpenPoolConfigurationGenqlSelection{
+    /** Number of teams in each match */
+    teamsPerMatch?: boolean | number
+    /** Matches per game (odd); the game winner takes the majority */
+    bestOf?: boolean | number
+    /** Maximum matches a team can play in the step; 0 means unlimited */
+    maxMatchesPerTeam?: boolean | number
+    /** Whether the same teams can meet more than once */
+    allowRematch?: boolean | number
+    /** Whether a team can play several unfinished matches at once */
+    allowConcurrentMatches?: boolean | number
+    /** Whether a tournament team joins the step when its first match is created */
+    autoJoin?: boolean | number
+    /** Whether a team needs at least the tournament's minimum team size to play */
+    enforceTeamMinSize?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A team taking part in an open pool match */
+export interface OpenPoolMatchTeamGenqlSelection{
+    /** ID of the tournament team */
+    teamId?: boolean | number
+    /** The tournament team */
+    team?: TournamentTeamGenqlSelection
+    /** Result of the team in this match */
+    status?: boolean | number
+    /** Score of the team in this match */
+    score?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A match created on demand in an open pool step */
+export interface OpenPoolMatchGenqlSelection{
+    /** ID of the match */
+    id?: boolean | number
+    /** ID of the game holding the match */
+    gameId?: boolean | number
+    /** ID of the group (pool) of the match */
+    groupId?: boolean | number
+    /** ID of the open pool step */
+    stepId?: boolean | number
+    /** ID of the tournament */
+    tournamentId?: boolean | number
+    /** Label given when the match was created */
+    label?: boolean | number
+    /** Creation order of the match in its group */
+    order?: boolean | number
+    /** Status of the match */
+    status?: boolean | number
+    /** Teams of the match with their result */
+    teams?: OpenPoolMatchTeamGenqlSelection
+    /** Date and time when the match was created */
+    createdAt?: boolean | number
+    /** Date and time when the match was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of open pool matches */
+export interface OpenPoolMatchesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: OpenPoolMatchEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: OpenPoolMatchGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface OpenPoolMatchEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: OpenPoolMatchGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Live standing of a team in an open pool step */
+export interface OpenPoolStandingGenqlSelection{
+    /** ID of the tournament team */
+    teamId?: boolean | number
+    /** The tournament team */
+    team?: TournamentTeamGenqlSelection
+    /** ID of the group (pool) of the standing */
+    groupId?: boolean | number
+    /** Rank in the step; null until ranked */
+    rank?: boolean | number
+    /** Status of the team in the step */
+    status?: boolean | number
+    /** Points earned in the step */
+    points?: boolean | number
+    /** Ended matches played */
+    played?: boolean | number
+    /** Matches won */
+    wins?: boolean | number
+    /** Matches lost */
+    losses?: boolean | number
+    /** Matches drawn */
+    draws?: boolean | number
+    /** Matches forfeited */
+    forfeits?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A virtual currency defined within an organization */
+export interface CurrencyGenqlSelection{
+    /** Unique identifier of the currency */
+    id?: boolean | number
+    /** Short symbol representing the currency (e.g., GP, CR) */
+    symbol?: boolean | number
+    /** Display name of the currency */
+    name?: boolean | number
+    /** External system identifier for third-party integrations */
+    externalId?: boolean | number
+    /** Description of the currency purpose */
+    description?: boolean | number
+    /** Whether the currency is hidden from players */
+    hidden?: boolean | number
+    /** ID of the organization that owns this currency */
+    organizationId?: boolean | number
+    /** Timestamp when the currency was created */
+    createdAt?: boolean | number
+    /** Timestamp when the currency was last updated */
+    updatedAt?: boolean | number
+    /** Custom metadata key-value pairs attached to the currency */
+    metadata?: PropertyValueGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of currencies */
+export interface CurrenciesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: CurrencyEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: CurrencyGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface CurrencyEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: CurrencyGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A player's balance for a specific currency */
+export interface PlayerCurrencyGenqlSelection{
+    /** Unique identifier of the player currency record */
+    id?: boolean | number
+    /** ID of the player profile that owns this balance */
+    playerProfileId?: boolean | number
+    /** ID of the currency this balance is for */
+    currencyId?: boolean | number
+    /** Current balance amount for this currency */
+    balance?: boolean | number
+    /** Timestamp when the player currency record was created */
+    createdAt?: boolean | number
+    /** Timestamp when the balance was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of player currency balances */
+export interface PlayerCurrenciesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: PlayerCurrencyEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: PlayerCurrencyGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface PlayerCurrencyEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: PlayerCurrencyGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -14504,38 +14504,14 @@ export interface QueryGenqlSelection{
     stepRuleSetValidationJobs?: (ValidationJobsGenqlSelection & { __args: {stepRuleSetId: Scalars['ID'], page: PageInfo} })
     /** List streaming events emitted by a validation job. */
     stepRuleSetValidationEvents?: (ValidationEventsGenqlSelection & { __args: {jobId: Scalars['ID'], page: PageInfo, kindFilter?: (ValidationEventKind[] | null)} })
-    /** List all CDN files for a platform or template, optionally filtered by file type */
-    platformFiles?: (PlatformCdnFileGenqlSelection & { __args?: {type?: (PlatformCdnFileType | null), platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
-    /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
-    platformFile?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** List all platforms owned by the current organization */
-    platforms?: PlatformGenqlSelection
-    /** Retrieve a single platform by its ID */
-    platform?: (PlatformGenqlSelection & { __args: {platformId: Scalars['ID']} })
-    /** Look up a platform by its domain name */
-    platformFindFromDomain?: (PlatformGenqlSelection & { __args: {domain: Scalars['String']} })
-    /** Check whether a domain name is already registered to a platform */
-    platformCheckDomainAvailability?: { __args: {domain: Scalars['URL']} }
-    /** List all custom domains configured for a specific platform */
-    platformCustomDomains?: (PlatformCustomDomainDataGenqlSelection & { __args: {platformId: Scalars['ID']} })
-    /** List all publicly available platform templates */
-    platformTemplatesPublic?: PlatformTemplateGenqlSelection
-    /** List all platform templates owned by the current organization */
-    platformTemplates?: PlatformTemplateGenqlSelection
-    /** Retrieve a single platform template by its ID */
-    platformTemplate?: (PlatformTemplateGenqlSelection & { __args: {platformTemplateId: Scalars['ID']} })
-    /** Retrieve all available subscription items */
-    subscriptionItems?: SubscriptionItemGenqlSelection
-    /** Retrieve the current subscription items active for the organization */
-    organizationCurrentSubscriptionItems?: OrganizationSubscriptionItemGenqlSelection
-    /** Paginated journal entries for the current organization. */
-    journalEntries?: (JournalEntriesGenqlSelection & { __args?: {page?: (PageInfo | null), filters?: (JournalFiltersInput | null)} })
-    /** A single journal entry by id. */
-    journalEntry?: (JournalEntryGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Retrieve all skill ratings for the current organization */
-    organizationSkillRatings?: OrganizationSkillRatingGenqlSelection
-    /** Retrieve a single skill rating by its ID */
-    organizationSkillRating?: (OrganizationSkillRatingGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Retrieve a registration series by ID */
+    registrationSeries?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Paginated list of the registration series of the organization */
+    registrationSeriesList?: (RegistrationSeriesPageGenqlSelection & { __args: {page: PageInfo} })
+    /** The caller's registrations that count against the series limits */
+    myActiveRegistrations?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID']} })
+    /** A player's registrations that count against the series limits */
+    registrationSeriesPlayerEntries?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID'], playerId: Scalars['ID']} })
     /** Retrieve a single event by ID, including the current user's reservation if any */
     event?: (EventWithUserReservationGenqlSelection & { __args: {id: Scalars['ID']} })
     /** Retrieve a paginated list of events with optional filtering and ordering */
@@ -14568,6 +14544,38 @@ export interface QueryGenqlSelection{
     eventWaitlistEntries?: (EventWaitlistEntriesGenqlSelection & { __args: {eventId: Scalars['ID'], ticketConfigurationId?: (Scalars['ID'] | null), statuses?: (EventWaitlistEntryStatus[] | null), page: PageInfo} })
     /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
     organizationPaymentCollectionConfiguration?: OrganizationPaymentCollectionConfigurationGenqlSelection
+    /** List all CDN files for a platform or template, optionally filtered by file type */
+    platformFiles?: (PlatformCdnFileGenqlSelection & { __args?: {type?: (PlatformCdnFileType | null), platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
+    /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
+    platformFile?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** List all platforms owned by the current organization */
+    platforms?: PlatformGenqlSelection
+    /** Retrieve a single platform by its ID */
+    platform?: (PlatformGenqlSelection & { __args: {platformId: Scalars['ID']} })
+    /** Look up a platform by its domain name */
+    platformFindFromDomain?: (PlatformGenqlSelection & { __args: {domain: Scalars['String']} })
+    /** Check whether a domain name is already registered to a platform */
+    platformCheckDomainAvailability?: { __args: {domain: Scalars['URL']} }
+    /** List all custom domains configured for a specific platform */
+    platformCustomDomains?: (PlatformCustomDomainDataGenqlSelection & { __args: {platformId: Scalars['ID']} })
+    /** List all publicly available platform templates */
+    platformTemplatesPublic?: PlatformTemplateGenqlSelection
+    /** List all platform templates owned by the current organization */
+    platformTemplates?: PlatformTemplateGenqlSelection
+    /** Retrieve a single platform template by its ID */
+    platformTemplate?: (PlatformTemplateGenqlSelection & { __args: {platformTemplateId: Scalars['ID']} })
+    /** Retrieve all available subscription items */
+    subscriptionItems?: SubscriptionItemGenqlSelection
+    /** Retrieve the current subscription items active for the organization */
+    organizationCurrentSubscriptionItems?: OrganizationSubscriptionItemGenqlSelection
+    /** Paginated journal entries for the current organization. */
+    journalEntries?: (JournalEntriesGenqlSelection & { __args?: {page?: (PageInfo | null), filters?: (JournalFiltersInput | null)} })
+    /** A single journal entry by id. */
+    journalEntry?: (JournalEntryGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Retrieve all skill ratings for the current organization */
+    organizationSkillRatings?: OrganizationSkillRatingGenqlSelection
+    /** Retrieve a single skill rating by its ID */
+    organizationSkillRating?: (OrganizationSkillRatingGenqlSelection & { __args: {id: Scalars['ID']} })
     /** Retrieve paginated members of specified user groups */
     userGroupMembers?: (UserGroupMembersGenqlSelection & { __args: {groupIds: Scalars['ID'][], page: PageInfo, status?: (UserGroupMemberStatus | null)} })
     /** Retrieve paginated user groups by their IDs */
@@ -14632,14 +14640,6 @@ export interface QueryGenqlSelection{
     appFunctionRead?: (AppFunctionResultGenqlSelection & { __args: {input: AppFunctionCallInput} })
     permissionDefinitions?: PermissionDefinitionDtoGenqlSelection
     hasPermissions?: { __args: {checks: PermissionCheckInput[]} }
-    /** Retrieve a registration series by ID */
-    registrationSeries?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Paginated list of the registration series of the organization */
-    registrationSeriesList?: (RegistrationSeriesPageGenqlSelection & { __args: {page: PageInfo} })
-    /** The caller's registrations that count against the series limits */
-    myActiveRegistrations?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID']} })
-    /** A player's registrations that count against the series limits */
-    registrationSeriesPlayerEntries?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID'], playerId: Scalars['ID']} })
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration?: OrganizationModerationGenqlSelection
     /** Tests up to 20 texts of at most 4,096 characters against the banned lists of the current organization without revealing them. */
@@ -14816,38 +14816,6 @@ numberValue?: (Scalars['Float'] | null),
 booleanValue?: (Scalars['Boolean'] | null)}
 
 
-/** Filters for journal queries and subscriptions. */
-export interface JournalFiltersInput {
-/** Restrict results to one or more journal categories. */
-categories?: (JournalCategory[] | null),
-/** Restrict results to an exact list of entry types. */
-types?: (Scalars['String'][] | null),
-/** Restrict results to entry types starting with the given prefix (e.g. "rule_engine."). */
-typePrefix?: (Scalars['String'] | null),
-/** Restrict results to a specific actor type. */
-actorType?: (JournalActorType | null),
-/** Restrict results to entries produced by a specific actor id. */
-actorId?: (Scalars['ID'] | null),
-/** Restrict results to entries whose primary resource matches the given type. */
-primaryResourceType?: (Scalars['String'] | null),
-/** Restrict results to entries whose primary resource has the given id. */
-primaryResourceId?: (Scalars['ID'] | null),
-/** Restrict results to one or more severities. */
-severity?: (JournalSeverity[] | null),
-/** When true, only return root entries (no parent). */
-rootOnly?: (Scalars['Boolean'] | null),
-/** Restrict results to direct children of a specific entry. */
-parentEntryId?: (Scalars['ID'] | null),
-/** Restrict results to entries sharing the given correlation id. */
-correlationId?: (Scalars['ID'] | null),
-/** Only return entries created at or after this timestamp. */
-createdAfter?: (Scalars['DateTime'] | null),
-/** Only return entries created at or before this timestamp. */
-createdBefore?: (Scalars['DateTime'] | null),
-/** Defaults to false. Excludes SIMULATION when false. */
-includeSimulations?: (Scalars['Boolean'] | null)}
-
-
 /** Query parameters for filtering and ordering events */
 export interface EventsQuery {
 /** Order by type */
@@ -14922,6 +14890,38 @@ from?: (Scalars['DateTime'] | null),
 to?: (Scalars['DateTime'] | null),
 /** Keep only open, buyable slots that have not started and still have free seats */
 onlyReservable?: (Scalars['Boolean'] | null)}
+
+
+/** Filters for journal queries and subscriptions. */
+export interface JournalFiltersInput {
+/** Restrict results to one or more journal categories. */
+categories?: (JournalCategory[] | null),
+/** Restrict results to an exact list of entry types. */
+types?: (Scalars['String'][] | null),
+/** Restrict results to entry types starting with the given prefix (e.g. "rule_engine."). */
+typePrefix?: (Scalars['String'] | null),
+/** Restrict results to a specific actor type. */
+actorType?: (JournalActorType | null),
+/** Restrict results to entries produced by a specific actor id. */
+actorId?: (Scalars['ID'] | null),
+/** Restrict results to entries whose primary resource matches the given type. */
+primaryResourceType?: (Scalars['String'] | null),
+/** Restrict results to entries whose primary resource has the given id. */
+primaryResourceId?: (Scalars['ID'] | null),
+/** Restrict results to one or more severities. */
+severity?: (JournalSeverity[] | null),
+/** When true, only return root entries (no parent). */
+rootOnly?: (Scalars['Boolean'] | null),
+/** Restrict results to direct children of a specific entry. */
+parentEntryId?: (Scalars['ID'] | null),
+/** Restrict results to entries sharing the given correlation id. */
+correlationId?: (Scalars['ID'] | null),
+/** Only return entries created at or after this timestamp. */
+createdAfter?: (Scalars['DateTime'] | null),
+/** Only return entries created at or before this timestamp. */
+createdBefore?: (Scalars['DateTime'] | null),
+/** Defaults to false. Excludes SIMULATION when false. */
+includeSimulations?: (Scalars['Boolean'] | null)}
 
 
 /** Query input for filtering user groups by their IDs */
@@ -15264,52 +15264,14 @@ export interface MutationGenqlSelection{
     validateStepRuleSet?: (ValidationJobModelGenqlSelection & { __args: {stepRuleSetId: Scalars['ID']} })
     /** Cancel an in-progress or queued validation job. */
     cancelStepRuleSetValidation?: (ValidationJobModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
-    /** Create a Stripe customer portal session URL for managing the organization subscription */
-    stripeCreatePortalSession?: boolean | number
-    /** Create a new CDN file record for a platform or template */
-    platformFileCreate?: (PlatformCdnFileGenqlSelection & { __args: {input: PlatformCdnFileCreateInput, platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
-    /** Publish the development version of a CDN file to production */
-    platformFilePublish?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
-    platformFileGenerateUploadUrl?: (PresignedUrlGenqlSelection & { __args: {id: Scalars['ID'], size: Scalars['Float']} })
-    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
-    platformFileValidateFileUpload?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Update the configuration of an existing CDN file */
-    platformFileUpdate?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID'], input: PlatformFileUpdateInput} })
-    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
-    platformFileDelete?: { __args: {id: Scalars['ID']} }
-    /** Create a new platform with a subdomain and associated OAuth application */
-    platformCreate?: (PlatformGenqlSelection & { __args: {input: CreatePlatformInput} })
-    /** Update an existing platform name and configuration */
-    platformUpdate?: (PlatformGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformInput} })
-    /** Delete a platform and its associated OAuth application */
-    platformDelete?: { __args: {id: Scalars['ID']} }
-    /** Update the theme configuration for a platform */
-    platformThemeUpdate?: (PlatformGenqlSelection & { __args: {platformId: Scalars['ID'], input: PlatformThemeInput} })
-    /** Register a new custom domain for a platform via Cloudflare */
-    platformRegisterCustomDomain?: (CustomDomainDataGenqlSelection & { __args: {platformId: Scalars['ID'], hostname: Scalars['String']} })
-    /** Force a DNS/SSL validation recheck for a custom domain */
-    platformForceCustomDomainRecheck?: (CustomDomainDataGenqlSelection & { __args: {hostname: Scalars['String']} })
-    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
-    platformRemoveCustomDomain?: { __args: {hostname: Scalars['String']} }
-    /** Create a new platform template for the organization */
-    platformTemplateCreate?: (PlatformTemplateGenqlSelection & { __args: {input: CreatePlatformTemplateInput} })
-    /** Update an existing platform template */
-    platformTemplateUpdate?: (PlatformTemplateGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformTemplateInput} })
-    /** Apply a template to a platform, copying all published template files to the target platform */
-    platformTemplateApply?: (PlatformGenqlSelection & { __args: {platformTemplateId: Scalars['ID'], platformId: Scalars['ID']} })
-    /** Delete a platform template from the organization */
-    platformTemplateDelete?: { __args: {id: Scalars['ID']} }
-    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
-    organizationSubscriptionItemsUpdate?: { __args: {items: OrganizationSubscriptionItemUpdateInput[], coupon?: (Scalars['String'] | null), referral?: (Scalars['String'] | null)} }
-    /** Register a match result and update player skill ratings accordingly */
-    organizationSkillRatingsRegisterMatch?: (OrganizationSkillRatingsRegisterMatchPlayerGenqlSelection & { __args: {organizationSkillRatingId: Scalars['ID'], input: OrganizationSkillRatingsRegisterMatchInput} })
-    /** Create a new skill rating for the current organization */
-    organizationSkillRatingCreate?: (OrganizationSkillRatingGenqlSelection & { __args: {input: OrganizationSkillRatingCreateInput} })
-    /** Update an existing skill rating configuration */
-    organizationSkillRatingUpdate?: (OrganizationSkillRatingGenqlSelection & { __args: {id: Scalars['ID'], input: OrganizationSkillRatingUpdateInput} })
-    /** Delete a skill rating from the current organization */
-    organizationSkillRatingDelete?: { __args: {id: Scalars['ID']} }
+    /** Create a registration series */
+    registrationSeriesCreate?: (RegistrationSeriesGenqlSelection & { __args: {input: RegistrationSeriesCreateInput} })
+    /** Update a registration series */
+    registrationSeriesUpdate?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID'], input: RegistrationSeriesUpdateInput} })
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete?: { __args: {id: Scalars['ID']} }
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign?: { __args: {seriesId?: (Scalars['ID'] | null), eventIds?: (Scalars['ID'][] | null), tournamentIds?: (Scalars['ID'][] | null)} } | boolean | number
     /** Create a new event */
     eventCreate?: (EventGenqlSelection & { __args: {input: EventCreateInput} })
     /** Update an event */
@@ -15376,6 +15338,52 @@ export interface MutationGenqlSelection{
     eventReservationReleaseTickets?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], reservationTicketIds: Scalars['ID'][]} })
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount?: boolean | number
+    /** Create a Stripe customer portal session URL for managing the organization subscription */
+    stripeCreatePortalSession?: boolean | number
+    /** Create a new CDN file record for a platform or template */
+    platformFileCreate?: (PlatformCdnFileGenqlSelection & { __args: {input: PlatformCdnFileCreateInput, platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
+    /** Publish the development version of a CDN file to production */
+    platformFilePublish?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
+    platformFileGenerateUploadUrl?: (PresignedUrlGenqlSelection & { __args: {id: Scalars['ID'], size: Scalars['Float']} })
+    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
+    platformFileValidateFileUpload?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Update the configuration of an existing CDN file */
+    platformFileUpdate?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID'], input: PlatformFileUpdateInput} })
+    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
+    platformFileDelete?: { __args: {id: Scalars['ID']} }
+    /** Create a new platform with a subdomain and associated OAuth application */
+    platformCreate?: (PlatformGenqlSelection & { __args: {input: CreatePlatformInput} })
+    /** Update an existing platform name and configuration */
+    platformUpdate?: (PlatformGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformInput} })
+    /** Delete a platform and its associated OAuth application */
+    platformDelete?: { __args: {id: Scalars['ID']} }
+    /** Update the theme configuration for a platform */
+    platformThemeUpdate?: (PlatformGenqlSelection & { __args: {platformId: Scalars['ID'], input: PlatformThemeInput} })
+    /** Register a new custom domain for a platform via Cloudflare */
+    platformRegisterCustomDomain?: (CustomDomainDataGenqlSelection & { __args: {platformId: Scalars['ID'], hostname: Scalars['String']} })
+    /** Force a DNS/SSL validation recheck for a custom domain */
+    platformForceCustomDomainRecheck?: (CustomDomainDataGenqlSelection & { __args: {hostname: Scalars['String']} })
+    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
+    platformRemoveCustomDomain?: { __args: {hostname: Scalars['String']} }
+    /** Create a new platform template for the organization */
+    platformTemplateCreate?: (PlatformTemplateGenqlSelection & { __args: {input: CreatePlatformTemplateInput} })
+    /** Update an existing platform template */
+    platformTemplateUpdate?: (PlatformTemplateGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformTemplateInput} })
+    /** Apply a template to a platform, copying all published template files to the target platform */
+    platformTemplateApply?: (PlatformGenqlSelection & { __args: {platformTemplateId: Scalars['ID'], platformId: Scalars['ID']} })
+    /** Delete a platform template from the organization */
+    platformTemplateDelete?: { __args: {id: Scalars['ID']} }
+    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
+    organizationSubscriptionItemsUpdate?: { __args: {items: OrganizationSubscriptionItemUpdateInput[], coupon?: (Scalars['String'] | null), referral?: (Scalars['String'] | null)} }
+    /** Register a match result and update player skill ratings accordingly */
+    organizationSkillRatingsRegisterMatch?: (OrganizationSkillRatingsRegisterMatchPlayerGenqlSelection & { __args: {organizationSkillRatingId: Scalars['ID'], input: OrganizationSkillRatingsRegisterMatchInput} })
+    /** Create a new skill rating for the current organization */
+    organizationSkillRatingCreate?: (OrganizationSkillRatingGenqlSelection & { __args: {input: OrganizationSkillRatingCreateInput} })
+    /** Update an existing skill rating configuration */
+    organizationSkillRatingUpdate?: (OrganizationSkillRatingGenqlSelection & { __args: {id: Scalars['ID'], input: OrganizationSkillRatingUpdateInput} })
+    /** Delete a skill rating from the current organization */
+    organizationSkillRatingDelete?: { __args: {id: Scalars['ID']} }
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], playerId: Scalars['ID']} })
     /** Rename a user group, or clear its name with null. Allowed to the group manager and to a caller holding organization:user-groups:manage on the group. */
@@ -15500,14 +15508,6 @@ export interface MutationGenqlSelection{
     customPermissionCreate?: (PermissionDefinitionDtoGenqlSelection & { __args: {input: CustomPermissionInput} })
     customPermissionUpdate?: (PermissionDefinitionDtoGenqlSelection & { __args: {id: Scalars['String'], input: CustomPermissionUpdateInput} })
     customPermissionDelete?: { __args: {id: Scalars['String']} }
-    /** Create a registration series */
-    registrationSeriesCreate?: (RegistrationSeriesGenqlSelection & { __args: {input: RegistrationSeriesCreateInput} })
-    /** Update a registration series */
-    registrationSeriesUpdate?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID'], input: RegistrationSeriesUpdateInput} })
-    /** Delete a registration series; its events and tournaments leave the series */
-    registrationSeriesDelete?: { __args: {id: Scalars['ID']} }
-    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
-    registrationSeriesAssign?: { __args: {seriesId?: (Scalars['ID'] | null), eventIds?: (Scalars['ID'][] | null), tournamentIds?: (Scalars['ID'][] | null)} } | boolean | number
     /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
     organizationModerationUpdate?: (OrganizationModerationGenqlSelection & { __args: {input: OrganizationModerationInput} })
     __typename?: boolean | number
@@ -16563,158 +16563,14 @@ script?: (Scalars['String'] | null),
 parameters?: (PresetParameterInput[] | null)}
 
 
-/** Input for creating a new CDN file on a platform or template */
-export interface PlatformCdnFileCreateInput {
-/** The file name including path segments */
-name: Scalars['String'],
-/** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
-type: PlatformCdnFileType,
-/** File configuration options such as page routing config */
-config?: (PlatformCdnFileConfigsInput | null)}
+/** Input for creating a registration series */
+export interface RegistrationSeriesCreateInput {
+/** Display name of the series */
+name: Scalars['String'],maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
 
 
-/** Input for updating the configuration of an existing CDN file */
-export interface PlatformFileUpdateInput {
-/** File configuration options such as page routing config */
-config?: (PlatformCdnFileConfigsInput | null)}
-
-
-/** Input for creating a new platform with a subdomain */
-export interface CreatePlatformInput {
-/** Display name of the platform */
-name: Scalars['String'],
-/** Platform configuration settings including white-label options */
-configuration?: (PlatformConfigurationInput | null),
-/** The OAuth application ID associated with this platform */
-appId?: (Scalars['String'] | null),
-/** The subdomain for the platform (3-25 alphanumeric characters with optional hyphens) */
-subdomain: Scalars['String']}
-
-
-/** Input for updating an existing platform configuration */
-export interface UpdatePlatformInput {
-/** Display name of the platform */
-name: Scalars['String'],
-/** Platform configuration settings including white-label options */
-configuration?: (PlatformConfigurationInput | null),
-/** The OAuth application ID associated with this platform */
-appId?: (Scalars['String'] | null)}
-
-
-/** Input for updating platform theme configuration */
-export interface PlatformThemeInput {
-/** Primary brand color (hex) */
-primaryColor?: (Scalars['String'] | null),
-/** Secondary brand color (hex) */
-secondaryColor?: (Scalars['String'] | null),
-/** Page background color (hex) */
-backgroundColor?: (Scalars['String'] | null),
-/** Surface/card background color (hex) */
-surfaceColor?: (Scalars['String'] | null),
-/** Primary text color (hex) */
-textColor?: (Scalars['String'] | null),
-/** Muted/secondary text color (hex) */
-textMutedColor?: (Scalars['String'] | null),
-/** Primary font family name */
-fontFamily?: (Scalars['String'] | null),
-/** Heading font family name */
-headingFont?: (Scalars['String'] | null),
-/** Border radius value (e.g. "8px", "0.5rem") */
-borderRadius?: (Scalars['String'] | null),
-/** URL of the platform logo image */
-logoUrl?: (Scalars['String'] | null),
-/** Social media links displayed on the platform */
-socialLinks?: (PlatformThemeSocialLinksInput | null),
-/** Homepage section visibility and ordering configuration */
-sections?: (PlatformThemeSectionConfigInput[] | null)}
-
-
-/** Input for platform theme social media links */
-export interface PlatformThemeSocialLinksInput {
-/** Twitter/X profile URL */
-twitter?: (Scalars['String'] | null),
-/** Discord server invite URL */
-discord?: (Scalars['String'] | null),
-/** Twitch channel URL */
-twitch?: (Scalars['String'] | null)}
-
-
-/** Input for a platform homepage section configuration */
-export interface PlatformThemeSectionConfigInput {
-/** Section identifier name */
-name: Scalars['String'],
-/** Whether the section is visible on the platform */
-visible: Scalars['Boolean'],
-/** Display order of the section */
-order: Scalars['Float']}
-
-
-/** Input for creating a new platform template */
-export interface CreatePlatformTemplateInput {
-/** Display name of the template */
-name: Scalars['String'],
-/** Human-readable description of the template */
-description: Scalars['String'],
-/** URL of the template preview screenshot */
-screenshotUrl: Scalars['URL'],
-/** Whether this template is publicly available to all organizations */
-public: Scalars['Boolean']}
-
-
-/** Input for partially updating an existing platform template */
-export interface UpdatePlatformTemplateInput {
-/** Display name of the template */
-name?: (Scalars['String'] | null),
-/** Human-readable description of the template */
-description?: (Scalars['String'] | null),
-/** URL of the template preview screenshot */
-screenshotUrl?: (Scalars['URL'] | null),
-/** Whether this template is publicly available to all organizations */
-public?: (Scalars['Boolean'] | null)}
-
-
-/** Input for updating the quantity of a subscription item for an organization */
-export interface OrganizationSubscriptionItemUpdateInput {
-/** ID of the subscription item to update */
-subscriptionItemId: Scalars['ID'],
-/** New quantity for the subscription item */
-count: Scalars['Float']}
-
-
-/** Input for registering a match result with team compositions and rankings */
-export interface OrganizationSkillRatingsRegisterMatchInput {
-/** Ordered list of teams, ranked by placement (first = winner) */
-teams: OrganizationSkillRatingsRegisterMatchTeamInput[]}
-
-
-/** Input representing a team in a skill rating match registration */
-export interface OrganizationSkillRatingsRegisterMatchTeamInput {
-/** List of player profile IDs on this team */
-players: Scalars['ID'][]}
-
-
-/** Input for creating a new organization skill rating */
-export interface OrganizationSkillRatingCreateInput {
-/** Display name of the skill rating */
-name: Scalars['String'],
-/** Description of what this skill rating measures */
-description: Scalars['String'],
-/** Algorithm type used for rating calculation */
-type: SkillRatingType,
-/** Configuration options for this skill rating */
-configuration: SkillRatingConfigurationInput}
-
-
-/** Input for updating an existing organization skill rating */
-export interface OrganizationSkillRatingUpdateInput {
-/** Display name of the skill rating */
-name?: (Scalars['String'] | null),
-/** Description of what this skill rating measures */
-description?: (Scalars['String'] | null),
-/** Algorithm type used for rating calculation */
-type?: (SkillRatingType | null),
-/** Configuration options for this skill rating */
-configuration?: (SkillRatingConfigurationInput | null)}
+/** Input for updating a registration series */
+export interface RegistrationSeriesUpdateInput {name?: (Scalars['String'] | null),maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
 
 
 /** Input for creating a new event */
@@ -17035,6 +16891,160 @@ export interface EventReservationChangeTicketsInput {
 targetEventId?: (Scalars['ID'] | null),
 /** Tickets replacing the current ones */
 tickets: EventReservationRegisterTicketInput[]}
+
+
+/** Input for creating a new CDN file on a platform or template */
+export interface PlatformCdnFileCreateInput {
+/** The file name including path segments */
+name: Scalars['String'],
+/** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
+type: PlatformCdnFileType,
+/** File configuration options such as page routing config */
+config?: (PlatformCdnFileConfigsInput | null)}
+
+
+/** Input for updating the configuration of an existing CDN file */
+export interface PlatformFileUpdateInput {
+/** File configuration options such as page routing config */
+config?: (PlatformCdnFileConfigsInput | null)}
+
+
+/** Input for creating a new platform with a subdomain */
+export interface CreatePlatformInput {
+/** Display name of the platform */
+name: Scalars['String'],
+/** Platform configuration settings including white-label options */
+configuration?: (PlatformConfigurationInput | null),
+/** The OAuth application ID associated with this platform */
+appId?: (Scalars['String'] | null),
+/** The subdomain for the platform (3-25 alphanumeric characters with optional hyphens) */
+subdomain: Scalars['String']}
+
+
+/** Input for updating an existing platform configuration */
+export interface UpdatePlatformInput {
+/** Display name of the platform */
+name: Scalars['String'],
+/** Platform configuration settings including white-label options */
+configuration?: (PlatformConfigurationInput | null),
+/** The OAuth application ID associated with this platform */
+appId?: (Scalars['String'] | null)}
+
+
+/** Input for updating platform theme configuration */
+export interface PlatformThemeInput {
+/** Primary brand color (hex) */
+primaryColor?: (Scalars['String'] | null),
+/** Secondary brand color (hex) */
+secondaryColor?: (Scalars['String'] | null),
+/** Page background color (hex) */
+backgroundColor?: (Scalars['String'] | null),
+/** Surface/card background color (hex) */
+surfaceColor?: (Scalars['String'] | null),
+/** Primary text color (hex) */
+textColor?: (Scalars['String'] | null),
+/** Muted/secondary text color (hex) */
+textMutedColor?: (Scalars['String'] | null),
+/** Primary font family name */
+fontFamily?: (Scalars['String'] | null),
+/** Heading font family name */
+headingFont?: (Scalars['String'] | null),
+/** Border radius value (e.g. "8px", "0.5rem") */
+borderRadius?: (Scalars['String'] | null),
+/** URL of the platform logo image */
+logoUrl?: (Scalars['String'] | null),
+/** Social media links displayed on the platform */
+socialLinks?: (PlatformThemeSocialLinksInput | null),
+/** Homepage section visibility and ordering configuration */
+sections?: (PlatformThemeSectionConfigInput[] | null)}
+
+
+/** Input for platform theme social media links */
+export interface PlatformThemeSocialLinksInput {
+/** Twitter/X profile URL */
+twitter?: (Scalars['String'] | null),
+/** Discord server invite URL */
+discord?: (Scalars['String'] | null),
+/** Twitch channel URL */
+twitch?: (Scalars['String'] | null)}
+
+
+/** Input for a platform homepage section configuration */
+export interface PlatformThemeSectionConfigInput {
+/** Section identifier name */
+name: Scalars['String'],
+/** Whether the section is visible on the platform */
+visible: Scalars['Boolean'],
+/** Display order of the section */
+order: Scalars['Float']}
+
+
+/** Input for creating a new platform template */
+export interface CreatePlatformTemplateInput {
+/** Display name of the template */
+name: Scalars['String'],
+/** Human-readable description of the template */
+description: Scalars['String'],
+/** URL of the template preview screenshot */
+screenshotUrl: Scalars['URL'],
+/** Whether this template is publicly available to all organizations */
+public: Scalars['Boolean']}
+
+
+/** Input for partially updating an existing platform template */
+export interface UpdatePlatformTemplateInput {
+/** Display name of the template */
+name?: (Scalars['String'] | null),
+/** Human-readable description of the template */
+description?: (Scalars['String'] | null),
+/** URL of the template preview screenshot */
+screenshotUrl?: (Scalars['URL'] | null),
+/** Whether this template is publicly available to all organizations */
+public?: (Scalars['Boolean'] | null)}
+
+
+/** Input for updating the quantity of a subscription item for an organization */
+export interface OrganizationSubscriptionItemUpdateInput {
+/** ID of the subscription item to update */
+subscriptionItemId: Scalars['ID'],
+/** New quantity for the subscription item */
+count: Scalars['Float']}
+
+
+/** Input for registering a match result with team compositions and rankings */
+export interface OrganizationSkillRatingsRegisterMatchInput {
+/** Ordered list of teams, ranked by placement (first = winner) */
+teams: OrganizationSkillRatingsRegisterMatchTeamInput[]}
+
+
+/** Input representing a team in a skill rating match registration */
+export interface OrganizationSkillRatingsRegisterMatchTeamInput {
+/** List of player profile IDs on this team */
+players: Scalars['ID'][]}
+
+
+/** Input for creating a new organization skill rating */
+export interface OrganizationSkillRatingCreateInput {
+/** Display name of the skill rating */
+name: Scalars['String'],
+/** Description of what this skill rating measures */
+description: Scalars['String'],
+/** Algorithm type used for rating calculation */
+type: SkillRatingType,
+/** Configuration options for this skill rating */
+configuration: SkillRatingConfigurationInput}
+
+
+/** Input for updating an existing organization skill rating */
+export interface OrganizationSkillRatingUpdateInput {
+/** Display name of the skill rating */
+name?: (Scalars['String'] | null),
+/** Description of what this skill rating measures */
+description?: (Scalars['String'] | null),
+/** Algorithm type used for rating calculation */
+type?: (SkillRatingType | null),
+/** Configuration options for this skill rating */
+configuration?: (SkillRatingConfigurationInput | null)}
 
 
 /** Input for creating a new shop */
@@ -17639,16 +17649,6 @@ export interface AppConfigValueInput {key: Scalars['String'],value?: (Scalars['S
 export interface CustomPermissionInput {name: Scalars['String'],description: Scalars['String'],resources?: (Scalars['String'][] | null)}
 
 export interface CustomPermissionUpdateInput {description?: (Scalars['String'] | null),resources?: (Scalars['String'][] | null)}
-
-
-/** Input for creating a registration series */
-export interface RegistrationSeriesCreateInput {
-/** Display name of the series */
-name: Scalars['String'],maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
-
-
-/** Input for updating a registration series */
-export interface RegistrationSeriesUpdateInput {name?: (Scalars['String'] | null),maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
 
 export interface OrganizationModerationInput {blockedWords: Scalars['String'][],blockedSubstrings: Scalars['String'][]}
 
@@ -18794,6 +18794,166 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const RuleEngineEngineTimingStats_possibleTypes: string[] = ['RuleEngineEngineTimingStats']
+    export const isRuleEngineEngineTimingStats = (obj?: { __typename?: any } | null): obj is RuleEngineEngineTimingStats => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEngineTimingStats"')
+      return RuleEngineEngineTimingStats_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineConditionEvaluationResult_possibleTypes: string[] = ['RuleEngineConditionEvaluationResult']
+    export const isRuleEngineConditionEvaluationResult = (obj?: { __typename?: any } | null): obj is RuleEngineConditionEvaluationResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineConditionEvaluationResult"')
+      return RuleEngineConditionEvaluationResult_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineLuaExecutionErrorDetail_possibleTypes: string[] = ['RuleEngineLuaExecutionErrorDetail']
+    export const isRuleEngineLuaExecutionErrorDetail = (obj?: { __typename?: any } | null): obj is RuleEngineLuaExecutionErrorDetail => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineLuaExecutionErrorDetail"')
+      return RuleEngineLuaExecutionErrorDetail_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineManualOverrideContext_possibleTypes: string[] = ['RuleEngineManualOverrideContext']
+    export const isRuleEngineManualOverrideContext = (obj?: { __typename?: any } | null): obj is RuleEngineManualOverrideContext => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineManualOverrideContext"')
+      return RuleEngineManualOverrideContext_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineAdvancementRuleFiredPayload_possibleTypes: string[] = ['RuleEngineAdvancementRuleFiredPayload']
+    export const isRuleEngineAdvancementRuleFiredPayload = (obj?: { __typename?: any } | null): obj is RuleEngineAdvancementRuleFiredPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineAdvancementRuleFiredPayload"')
+      return RuleEngineAdvancementRuleFiredPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineCrossStepTransferredPayload_possibleTypes: string[] = ['RuleEngineCrossStepTransferredPayload']
+    export const isRuleEngineCrossStepTransferredPayload = (obj?: { __typename?: any } | null): obj is RuleEngineCrossStepTransferredPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineCrossStepTransferredPayload"')
+      return RuleEngineCrossStepTransferredPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineEffectAdvancePayload_possibleTypes: string[] = ['RuleEngineEffectAdvancePayload']
+    export const isRuleEngineEffectAdvancePayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectAdvancePayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectAdvancePayload"')
+      return RuleEngineEffectAdvancePayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineEffectCreateGroupPayload_possibleTypes: string[] = ['RuleEngineEffectCreateGroupPayload']
+    export const isRuleEngineEffectCreateGroupPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectCreateGroupPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectCreateGroupPayload"')
+      return RuleEngineEffectCreateGroupPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineEffectEliminatePayload_possibleTypes: string[] = ['RuleEngineEffectEliminatePayload']
+    export const isRuleEngineEffectEliminatePayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectEliminatePayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectEliminatePayload"')
+      return RuleEngineEffectEliminatePayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineEffectEmitSeedingPinPayload_possibleTypes: string[] = ['RuleEngineEffectEmitSeedingPinPayload']
+    export const isRuleEngineEffectEmitSeedingPinPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectEmitSeedingPinPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectEmitSeedingPinPayload"')
+      return RuleEngineEffectEmitSeedingPinPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineEffectEndStepPayload_possibleTypes: string[] = ['RuleEngineEffectEndStepPayload']
+    export const isRuleEngineEffectEndStepPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectEndStepPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectEndStepPayload"')
+      return RuleEngineEffectEndStepPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineEffectSetMetadataPayload_possibleTypes: string[] = ['RuleEngineEffectSetMetadataPayload']
+    export const isRuleEngineEffectSetMetadataPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectSetMetadataPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectSetMetadataPayload"')
+      return RuleEngineEffectSetMetadataPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineGenerationScriptRanPayload_possibleTypes: string[] = ['RuleEngineGenerationScriptRanPayload']
+    export const isRuleEngineGenerationScriptRanPayload = (obj?: { __typename?: any } | null): obj is RuleEngineGenerationScriptRanPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineGenerationScriptRanPayload"')
+      return RuleEngineGenerationScriptRanPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RuleEngineManualOverridePayload_possibleTypes: string[] = ['RuleEngineManualOverridePayload']
+    export const isRuleEngineManualOverridePayload = (obj?: { __typename?: any } | null): obj is RuleEngineManualOverridePayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineManualOverridePayload"')
+      return RuleEngineManualOverridePayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const LeaderboardFeedReconcileFailedPayload_possibleTypes: string[] = ['LeaderboardFeedReconcileFailedPayload']
+    export const isLeaderboardFeedReconcileFailedPayload = (obj?: { __typename?: any } | null): obj is LeaderboardFeedReconcileFailedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeedReconcileFailedPayload"')
+      return LeaderboardFeedReconcileFailedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolJournalScoreRow_possibleTypes: string[] = ['OpenPoolJournalScoreRow']
+    export const isOpenPoolJournalScoreRow = (obj?: { __typename?: any } | null): obj is OpenPoolJournalScoreRow => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolJournalScoreRow"')
+      return OpenPoolJournalScoreRow_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolMatchCorrectedPayload_possibleTypes: string[] = ['TournamentOpenPoolMatchCorrectedPayload']
+    export const isTournamentOpenPoolMatchCorrectedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolMatchCorrectedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolMatchCorrectedPayload"')
+      return TournamentOpenPoolMatchCorrectedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolMatchCancelledPayload_possibleTypes: string[] = ['TournamentOpenPoolMatchCancelledPayload']
+    export const isTournamentOpenPoolMatchCancelledPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolMatchCancelledPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolMatchCancelledPayload"')
+      return TournamentOpenPoolMatchCancelledPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolClosedPayload_possibleTypes: string[] = ['TournamentOpenPoolClosedPayload']
+    export const isTournamentOpenPoolClosedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolClosedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolClosedPayload"')
+      return TournamentOpenPoolClosedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const TournamentOpenPoolReopenedPayload_possibleTypes: string[] = ['TournamentOpenPoolReopenedPayload']
+    export const isTournamentOpenPoolReopenedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolReopenedPayload => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolReopenedPayload"')
+      return TournamentOpenPoolReopenedPayload_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const LeaderboardFeed_possibleTypes: string[] = ['LeaderboardFeed']
     export const isLeaderboardFeed = (obj?: { __typename?: any } | null): obj is LeaderboardFeed => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeed"')
@@ -18970,166 +19130,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const RuleEngineEngineTimingStats_possibleTypes: string[] = ['RuleEngineEngineTimingStats']
-    export const isRuleEngineEngineTimingStats = (obj?: { __typename?: any } | null): obj is RuleEngineEngineTimingStats => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEngineTimingStats"')
-      return RuleEngineEngineTimingStats_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineConditionEvaluationResult_possibleTypes: string[] = ['RuleEngineConditionEvaluationResult']
-    export const isRuleEngineConditionEvaluationResult = (obj?: { __typename?: any } | null): obj is RuleEngineConditionEvaluationResult => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineConditionEvaluationResult"')
-      return RuleEngineConditionEvaluationResult_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineLuaExecutionErrorDetail_possibleTypes: string[] = ['RuleEngineLuaExecutionErrorDetail']
-    export const isRuleEngineLuaExecutionErrorDetail = (obj?: { __typename?: any } | null): obj is RuleEngineLuaExecutionErrorDetail => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineLuaExecutionErrorDetail"')
-      return RuleEngineLuaExecutionErrorDetail_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineManualOverrideContext_possibleTypes: string[] = ['RuleEngineManualOverrideContext']
-    export const isRuleEngineManualOverrideContext = (obj?: { __typename?: any } | null): obj is RuleEngineManualOverrideContext => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineManualOverrideContext"')
-      return RuleEngineManualOverrideContext_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineAdvancementRuleFiredPayload_possibleTypes: string[] = ['RuleEngineAdvancementRuleFiredPayload']
-    export const isRuleEngineAdvancementRuleFiredPayload = (obj?: { __typename?: any } | null): obj is RuleEngineAdvancementRuleFiredPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineAdvancementRuleFiredPayload"')
-      return RuleEngineAdvancementRuleFiredPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineCrossStepTransferredPayload_possibleTypes: string[] = ['RuleEngineCrossStepTransferredPayload']
-    export const isRuleEngineCrossStepTransferredPayload = (obj?: { __typename?: any } | null): obj is RuleEngineCrossStepTransferredPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineCrossStepTransferredPayload"')
-      return RuleEngineCrossStepTransferredPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineEffectAdvancePayload_possibleTypes: string[] = ['RuleEngineEffectAdvancePayload']
-    export const isRuleEngineEffectAdvancePayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectAdvancePayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectAdvancePayload"')
-      return RuleEngineEffectAdvancePayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineEffectCreateGroupPayload_possibleTypes: string[] = ['RuleEngineEffectCreateGroupPayload']
-    export const isRuleEngineEffectCreateGroupPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectCreateGroupPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectCreateGroupPayload"')
-      return RuleEngineEffectCreateGroupPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineEffectEliminatePayload_possibleTypes: string[] = ['RuleEngineEffectEliminatePayload']
-    export const isRuleEngineEffectEliminatePayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectEliminatePayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectEliminatePayload"')
-      return RuleEngineEffectEliminatePayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineEffectEmitSeedingPinPayload_possibleTypes: string[] = ['RuleEngineEffectEmitSeedingPinPayload']
-    export const isRuleEngineEffectEmitSeedingPinPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectEmitSeedingPinPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectEmitSeedingPinPayload"')
-      return RuleEngineEffectEmitSeedingPinPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineEffectEndStepPayload_possibleTypes: string[] = ['RuleEngineEffectEndStepPayload']
-    export const isRuleEngineEffectEndStepPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectEndStepPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectEndStepPayload"')
-      return RuleEngineEffectEndStepPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineEffectSetMetadataPayload_possibleTypes: string[] = ['RuleEngineEffectSetMetadataPayload']
-    export const isRuleEngineEffectSetMetadataPayload = (obj?: { __typename?: any } | null): obj is RuleEngineEffectSetMetadataPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineEffectSetMetadataPayload"')
-      return RuleEngineEffectSetMetadataPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineGenerationScriptRanPayload_possibleTypes: string[] = ['RuleEngineGenerationScriptRanPayload']
-    export const isRuleEngineGenerationScriptRanPayload = (obj?: { __typename?: any } | null): obj is RuleEngineGenerationScriptRanPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineGenerationScriptRanPayload"')
-      return RuleEngineGenerationScriptRanPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RuleEngineManualOverridePayload_possibleTypes: string[] = ['RuleEngineManualOverridePayload']
-    export const isRuleEngineManualOverridePayload = (obj?: { __typename?: any } | null): obj is RuleEngineManualOverridePayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRuleEngineManualOverridePayload"')
-      return RuleEngineManualOverridePayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const LeaderboardFeedReconcileFailedPayload_possibleTypes: string[] = ['LeaderboardFeedReconcileFailedPayload']
-    export const isLeaderboardFeedReconcileFailedPayload = (obj?: { __typename?: any } | null): obj is LeaderboardFeedReconcileFailedPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isLeaderboardFeedReconcileFailedPayload"')
-      return LeaderboardFeedReconcileFailedPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolJournalScoreRow_possibleTypes: string[] = ['OpenPoolJournalScoreRow']
-    export const isOpenPoolJournalScoreRow = (obj?: { __typename?: any } | null): obj is OpenPoolJournalScoreRow => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolJournalScoreRow"')
-      return OpenPoolJournalScoreRow_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const TournamentOpenPoolMatchCorrectedPayload_possibleTypes: string[] = ['TournamentOpenPoolMatchCorrectedPayload']
-    export const isTournamentOpenPoolMatchCorrectedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolMatchCorrectedPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolMatchCorrectedPayload"')
-      return TournamentOpenPoolMatchCorrectedPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const TournamentOpenPoolMatchCancelledPayload_possibleTypes: string[] = ['TournamentOpenPoolMatchCancelledPayload']
-    export const isTournamentOpenPoolMatchCancelledPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolMatchCancelledPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolMatchCancelledPayload"')
-      return TournamentOpenPoolMatchCancelledPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const TournamentOpenPoolClosedPayload_possibleTypes: string[] = ['TournamentOpenPoolClosedPayload']
-    export const isTournamentOpenPoolClosedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolClosedPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolClosedPayload"')
-      return TournamentOpenPoolClosedPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const TournamentOpenPoolReopenedPayload_possibleTypes: string[] = ['TournamentOpenPoolReopenedPayload']
-    export const isTournamentOpenPoolReopenedPayload = (obj?: { __typename?: any } | null): obj is TournamentOpenPoolReopenedPayload => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentOpenPoolReopenedPayload"')
-      return TournamentOpenPoolReopenedPayload_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const TournamentsStepResetCascadeInfo_possibleTypes: string[] = ['TournamentsStepResetCascadeInfo']
     export const isTournamentsStepResetCascadeInfo = (obj?: { __typename?: any } | null): obj is TournamentsStepResetCascadeInfo => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentsStepResetCascadeInfo"')
@@ -19270,6 +19270,38 @@ export interface SubscriptionGenqlSelection{
     export const isTournamentEdge = (obj?: { __typename?: any } | null): obj is TournamentEdge => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isTournamentEdge"')
       return TournamentEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RegistrationSeries_possibleTypes: string[] = ['RegistrationSeries']
+    export const isRegistrationSeries = (obj?: { __typename?: any } | null): obj is RegistrationSeries => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeries"')
+      return RegistrationSeries_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RegistrationSeriesPage_possibleTypes: string[] = ['RegistrationSeriesPage']
+    export const isRegistrationSeriesPage = (obj?: { __typename?: any } | null): obj is RegistrationSeriesPage => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesPage"')
+      return RegistrationSeriesPage_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RegistrationSeriesEdge_possibleTypes: string[] = ['RegistrationSeriesEdge']
+    export const isRegistrationSeriesEdge = (obj?: { __typename?: any } | null): obj is RegistrationSeriesEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesEdge"')
+      return RegistrationSeriesEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RegistrationSeriesEntry_possibleTypes: string[] = ['RegistrationSeriesEntry']
+    export const isRegistrationSeriesEntry = (obj?: { __typename?: any } | null): obj is RegistrationSeriesEntry => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesEntry"')
+      return RegistrationSeriesEntry_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -19666,134 +19698,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const OpenPoolConfiguration_possibleTypes: string[] = ['OpenPoolConfiguration']
-    export const isOpenPoolConfiguration = (obj?: { __typename?: any } | null): obj is OpenPoolConfiguration => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolConfiguration"')
-      return OpenPoolConfiguration_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatchTeam_possibleTypes: string[] = ['OpenPoolMatchTeam']
-    export const isOpenPoolMatchTeam = (obj?: { __typename?: any } | null): obj is OpenPoolMatchTeam => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchTeam"')
-      return OpenPoolMatchTeam_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatch_possibleTypes: string[] = ['OpenPoolMatch']
-    export const isOpenPoolMatch = (obj?: { __typename?: any } | null): obj is OpenPoolMatch => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatch"')
-      return OpenPoolMatch_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatches_possibleTypes: string[] = ['OpenPoolMatches']
-    export const isOpenPoolMatches = (obj?: { __typename?: any } | null): obj is OpenPoolMatches => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatches"')
-      return OpenPoolMatches_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatchEdge_possibleTypes: string[] = ['OpenPoolMatchEdge']
-    export const isOpenPoolMatchEdge = (obj?: { __typename?: any } | null): obj is OpenPoolMatchEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchEdge"')
-      return OpenPoolMatchEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolStanding_possibleTypes: string[] = ['OpenPoolStanding']
-    export const isOpenPoolStanding = (obj?: { __typename?: any } | null): obj is OpenPoolStanding => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolStanding"')
-      return OpenPoolStanding_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const Currency_possibleTypes: string[] = ['Currency']
-    export const isCurrency = (obj?: { __typename?: any } | null): obj is Currency => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrency"')
-      return Currency_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const Currencies_possibleTypes: string[] = ['Currencies']
-    export const isCurrencies = (obj?: { __typename?: any } | null): obj is Currencies => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencies"')
-      return Currencies_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CurrencyEdge_possibleTypes: string[] = ['CurrencyEdge']
-    export const isCurrencyEdge = (obj?: { __typename?: any } | null): obj is CurrencyEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencyEdge"')
-      return CurrencyEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlayerCurrency_possibleTypes: string[] = ['PlayerCurrency']
-    export const isPlayerCurrency = (obj?: { __typename?: any } | null): obj is PlayerCurrency => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrency"')
-      return PlayerCurrency_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlayerCurrencies_possibleTypes: string[] = ['PlayerCurrencies']
-    export const isPlayerCurrencies = (obj?: { __typename?: any } | null): obj is PlayerCurrencies => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencies"')
-      return PlayerCurrencies_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlayerCurrencyEdge_possibleTypes: string[] = ['PlayerCurrencyEdge']
-    export const isPlayerCurrencyEdge = (obj?: { __typename?: any } | null): obj is PlayerCurrencyEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencyEdge"')
-      return PlayerCurrencyEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RegistrationSeries_possibleTypes: string[] = ['RegistrationSeries']
-    export const isRegistrationSeries = (obj?: { __typename?: any } | null): obj is RegistrationSeries => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeries"')
-      return RegistrationSeries_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RegistrationSeriesPage_possibleTypes: string[] = ['RegistrationSeriesPage']
-    export const isRegistrationSeriesPage = (obj?: { __typename?: any } | null): obj is RegistrationSeriesPage => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesPage"')
-      return RegistrationSeriesPage_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RegistrationSeriesEdge_possibleTypes: string[] = ['RegistrationSeriesEdge']
-    export const isRegistrationSeriesEdge = (obj?: { __typename?: any } | null): obj is RegistrationSeriesEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesEdge"')
-      return RegistrationSeriesEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const RegistrationSeriesEntry_possibleTypes: string[] = ['RegistrationSeriesEntry']
-    export const isRegistrationSeriesEntry = (obj?: { __typename?: any } | null): obj is RegistrationSeriesEntry => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isRegistrationSeriesEntry"')
-      return RegistrationSeriesEntry_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const UserGroupConfiguration_possibleTypes: string[] = ['UserGroupConfiguration']
     export const isUserGroupConfiguration = (obj?: { __typename?: any } | null): obj is UserGroupConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isUserGroupConfiguration"')
@@ -20058,14 +19962,6 @@ export interface SubscriptionGenqlSelection{
     
 
 
-    const EventCalendarGenerateResult_possibleTypes: string[] = ['EventCalendarGenerateResult']
-    export const isEventCalendarGenerateResult = (obj?: { __typename?: any } | null): obj is EventCalendarGenerateResult => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isEventCalendarGenerateResult"')
-      return EventCalendarGenerateResult_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const EventTicketConfigurationConfiguration_possibleTypes: string[] = ['EventTicketConfigurationConfiguration']
     export const isEventTicketConfigurationConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfigurationConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfigurationConfiguration"')
@@ -20078,6 +19974,14 @@ export interface SubscriptionGenqlSelection{
     export const isEventTicketConfiguration = (obj?: { __typename?: any } | null): obj is EventTicketConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventTicketConfiguration"')
       return EventTicketConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const EventCalendarGenerateResult_possibleTypes: string[] = ['EventCalendarGenerateResult']
+    export const isEventCalendarGenerateResult = (obj?: { __typename?: any } | null): obj is EventCalendarGenerateResult => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isEventCalendarGenerateResult"')
+      return EventCalendarGenerateResult_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -20166,6 +20070,102 @@ export interface SubscriptionGenqlSelection{
     export const isEventWaitlistEntryEdge = (obj?: { __typename?: any } | null): obj is EventWaitlistEntryEdge => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventWaitlistEntryEdge"')
       return EventWaitlistEntryEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolConfiguration_possibleTypes: string[] = ['OpenPoolConfiguration']
+    export const isOpenPoolConfiguration = (obj?: { __typename?: any } | null): obj is OpenPoolConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolConfiguration"')
+      return OpenPoolConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatchTeam_possibleTypes: string[] = ['OpenPoolMatchTeam']
+    export const isOpenPoolMatchTeam = (obj?: { __typename?: any } | null): obj is OpenPoolMatchTeam => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchTeam"')
+      return OpenPoolMatchTeam_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatch_possibleTypes: string[] = ['OpenPoolMatch']
+    export const isOpenPoolMatch = (obj?: { __typename?: any } | null): obj is OpenPoolMatch => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatch"')
+      return OpenPoolMatch_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatches_possibleTypes: string[] = ['OpenPoolMatches']
+    export const isOpenPoolMatches = (obj?: { __typename?: any } | null): obj is OpenPoolMatches => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatches"')
+      return OpenPoolMatches_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatchEdge_possibleTypes: string[] = ['OpenPoolMatchEdge']
+    export const isOpenPoolMatchEdge = (obj?: { __typename?: any } | null): obj is OpenPoolMatchEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchEdge"')
+      return OpenPoolMatchEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolStanding_possibleTypes: string[] = ['OpenPoolStanding']
+    export const isOpenPoolStanding = (obj?: { __typename?: any } | null): obj is OpenPoolStanding => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolStanding"')
+      return OpenPoolStanding_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Currency_possibleTypes: string[] = ['Currency']
+    export const isCurrency = (obj?: { __typename?: any } | null): obj is Currency => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrency"')
+      return Currency_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Currencies_possibleTypes: string[] = ['Currencies']
+    export const isCurrencies = (obj?: { __typename?: any } | null): obj is Currencies => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencies"')
+      return Currencies_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CurrencyEdge_possibleTypes: string[] = ['CurrencyEdge']
+    export const isCurrencyEdge = (obj?: { __typename?: any } | null): obj is CurrencyEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencyEdge"')
+      return CurrencyEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrency_possibleTypes: string[] = ['PlayerCurrency']
+    export const isPlayerCurrency = (obj?: { __typename?: any } | null): obj is PlayerCurrency => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrency"')
+      return PlayerCurrency_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrencies_possibleTypes: string[] = ['PlayerCurrencies']
+    export const isPlayerCurrencies = (obj?: { __typename?: any } | null): obj is PlayerCurrencies => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencies"')
+      return PlayerCurrencies_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrencyEdge_possibleTypes: string[] = ['PlayerCurrencyEdge']
+    export const isPlayerCurrencyEdge = (obj?: { __typename?: any } | null): obj is PlayerCurrencyEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencyEdge"')
+      return PlayerCurrencyEdge_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -21198,34 +21198,6 @@ export const enumLeaderboardScoreCalculationType = {
    SCORE: 'SCORE' as const
 }
 
-export const enumIdentityProviderAvailability = {
-   PUBLIC: 'PUBLIC' as const,
-   PREVIEW: 'PREVIEW' as const,
-   PRIVATE: 'PRIVATE' as const
-}
-
-export const enumAppReleaseStatus = {
-   DRAFT: 'DRAFT' as const,
-   PENDING_REVIEW: 'PENDING_REVIEW' as const,
-   APPROVED: 'APPROVED' as const,
-   REJECTED: 'REJECTED' as const
-}
-
-export const enumIdentityProviderType = {
-   OPENID: 'OPENID' as const,
-   OAUTH2: 'OAUTH2' as const
-}
-
-export const enumOauthEndpointAuthMethod = {
-   CLIENT_SECRET_POST: 'CLIENT_SECRET_POST' as const,
-   CLIENT_SECRET_BASIC: 'CLIENT_SECRET_BASIC' as const,
-   CLIENT_SECRET_JWT: 'CLIENT_SECRET_JWT' as const,
-   PRIVATE_KEY_JWT: 'PRIVATE_KEY_JWT' as const,
-   TLS_CLIENT_AUTH: 'TLS_CLIENT_AUTH' as const,
-   SELF_SIGNED_TLS_CLIENT_AUTH: 'SELF_SIGNED_TLS_CLIENT_AUTH' as const,
-   NONE: 'NONE' as const
-}
-
 export const enumRuleTriggerType = {
    MATCH_ENDED: 'MATCH_ENDED' as const,
    GAME_ENDED: 'GAME_ENDED' as const,
@@ -21290,6 +21262,34 @@ export const enumManualOverrideEffect = {
    REPLAYED: 'REPLAYED' as const
 }
 
+export const enumIdentityProviderAvailability = {
+   PUBLIC: 'PUBLIC' as const,
+   PREVIEW: 'PREVIEW' as const,
+   PRIVATE: 'PRIVATE' as const
+}
+
+export const enumAppReleaseStatus = {
+   DRAFT: 'DRAFT' as const,
+   PENDING_REVIEW: 'PENDING_REVIEW' as const,
+   APPROVED: 'APPROVED' as const,
+   REJECTED: 'REJECTED' as const
+}
+
+export const enumIdentityProviderType = {
+   OPENID: 'OPENID' as const,
+   OAUTH2: 'OAUTH2' as const
+}
+
+export const enumOauthEndpointAuthMethod = {
+   CLIENT_SECRET_POST: 'CLIENT_SECRET_POST' as const,
+   CLIENT_SECRET_BASIC: 'CLIENT_SECRET_BASIC' as const,
+   CLIENT_SECRET_JWT: 'CLIENT_SECRET_JWT' as const,
+   PRIVATE_KEY_JWT: 'PRIVATE_KEY_JWT' as const,
+   TLS_CLIENT_AUTH: 'TLS_CLIENT_AUTH' as const,
+   SELF_SIGNED_TLS_CLIENT_AUTH: 'SELF_SIGNED_TLS_CLIENT_AUTH' as const,
+   NONE: 'NONE' as const
+}
+
 export const enumMatchStatus = {
    WAITING: 'WAITING' as const,
    STARTED: 'STARTED' as const,
@@ -21308,6 +21308,18 @@ export const enumStepType = {
    SINGLE_ELIM: 'SINGLE_ELIM' as const,
    DOUBLE_ELIM: 'DOUBLE_ELIM' as const,
    CUSTOM: 'CUSTOM' as const
+}
+
+export const enumRegistrationSeriesReleasePolicy = {
+   SLOT_START: 'SLOT_START' as const,
+   SLOT_END: 'SLOT_END' as const,
+   NEVER: 'NEVER' as const
+}
+
+export const enumRegistrationSeriesEntryKind = {
+   EVENT_RESERVATION: 'EVENT_RESERVATION' as const,
+   WAITLIST_ENTRY: 'WAITLIST_ENTRY' as const,
+   TOURNAMENT_TEAM: 'TOURNAMENT_TEAM' as const
 }
 
 export const enumTournamentGameStatus = {
@@ -21448,6 +21460,7 @@ export const enumSimulatedEffectType = {
    ADD_TIEBREAKER: 'ADD_TIEBREAKER' as const,
    ADD_RULE: 'ADD_RULE' as const,
    ADD_CROSS_STEP_RULE: 'ADD_CROSS_STEP_RULE' as const,
+   SET_OPEN_POOL: 'SET_OPEN_POOL' as const,
    RESEED_STEP: 'RESEED_STEP' as const
 }
 
@@ -21620,18 +21633,6 @@ export const enumValidationStatus = {
    STEP_SEEDED: 'STEP_SEEDED' as const,
    STEP_STARTED: 'STEP_STARTED' as const,
    STEP_ENDED: 'STEP_ENDED' as const
-}
-
-export const enumRegistrationSeriesReleasePolicy = {
-   SLOT_START: 'SLOT_START' as const,
-   SLOT_END: 'SLOT_END' as const,
-   NEVER: 'NEVER' as const
-}
-
-export const enumRegistrationSeriesEntryKind = {
-   EVENT_RESERVATION: 'EVENT_RESERVATION' as const,
-   WAITLIST_ENTRY: 'WAITLIST_ENTRY' as const,
-   TOURNAMENT_TEAM: 'TOURNAMENT_TEAM' as const
 }
 
 export const enumUserGroupMemberStatus = {
