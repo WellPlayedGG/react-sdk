@@ -699,15 +699,17 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 | `wp.store.incr(col, key, by, { min, max, ttlSeconds })` | `{ value, version }` or `nil, err` | Starts at 0; `OUT_OF_RANGE` |
 | `wp.store.del(col, key)`, `wp.store.list(col, prefix, { after, limit })` | boolean, `{ items, nextCursor }` | `list` orders by key, `limit` at most 100 |
 | `wp.lock.acquire(key, ttlMs, { waitMs })`, `wp.lock.release(token)` | token or `nil, err`, boolean | `LOCKED` after `waitMs` (at most 2000); every lock is released when the run ends |
-| `wp.timers.schedule({ fn, key, at \| delaySeconds, payload })`, `wp.timers.cancel(key)` | `{ key, runAt }`, `true` | `fn` is a `TIMER` function; key `^[A-Za-z0-9:._-]{1,150}$`; at most 180 days ahead; the same key replaces the timer |
-| `wp.email.send({ template, to = { playerId }, cc, vars, attachTicketQr })` | `{ deliveryId }` | The installation must hold `organization:emails:send`; `vars` are strings; `attachTicketQr = "<ticketId>"` adds the ticket QR as inline image `cid:ticket`; a ward without an address goes to its guardian; no address at all is skipped |
+| `wp.timers.schedule({ fn, key, at \| delaySeconds, payload, dedupeKey })`, `wp.timers.cancel(key)` | `{ key, runAt }`, `true` | `fn` is a `TIMER` function; key `^[A-Za-z0-9:._-]{1,150}$`; at most 180 days ahead; the same key replaces the timer; `dedupeKey` below |
+| `wp.email.send({ template, to = { playerId }, cc, vars, attachTicketQr })` | `{ deliveryId }` | The installation must hold `organization:emails:send`; `vars` are strings; `attachTicketQr = "<ticketId>"` adds the ticket QR as inline image `cid:ticket`; a ward without an address goes to its guardian; no address at all is skipped; `dedupeKey` below |
 | `wp.auth.check(permission, resource)`, `wp.auth.require(...)` | boolean, nothing | Caller's own permissions, never the app's; `require` ends the run with `FORBIDDEN` |
-| `wp.audit.log(type, data, { subject = { type, id } })` | `true` | Declared `auditTypes` only, data at most 4 KB; IP and user agent are stamped |
+| `wp.audit.log(type, data, { subject = { type, id }, dedupeKey })` | `true` | Declared `auditTypes` only, data at most 4 KB; IP and user agent are stamped; `dedupeKey` below |
 | `wp.log.debug/info/warn/error(message, fields)` | nothing | Lines past the budget are dropped |
 | `wp.crypto.hmac(data)`, `.sha256(data)`, `.randomId()` | hex, hex, UUID | `hmac` uses a per-installation key no one can read |
 | `wp.time.now()`, `.at(date, "HH:MM", tz)`, `.add(iso, s)`, `.diff(a, b)`, `.parts(iso, tz)` | ISO strings, seconds, `{ year, month, day, hour, minute, weekday, date, time }` | `weekday` 1 is Monday |
 | `wp.json.encode(value)`, `wp.json.decode(text)` | string, value | At most 256 KB |
 | `wp.error(code, message, { field, details })` | does not return | Ends the run with `kind: APP`; `code` `^[A-Z][A-Z0-9_]{0,63}$`, `field` a dotted path, `details` a table |
+
+E-mails, timers and audit entries go out only when the run succeeds, so a retry must send them again. Give each one a `dedupeKey` (`^[A-Za-z0-9:._-]{1,200}$`, ids only, never an e-mail address or a name): it goes out only if no run of the same installation sent the same kind with that key in the last 24 hours, and concurrent runs send it once. Keys are per installation and per kind; an entry without a key always goes out; a failed queueing frees the key. A deduplicated `wp.email.send` still returns a `deliveryId` that is not the sent one.
 
 `HOOK` and `readOnly` `CALL` functions only get `wp.op` (queries), `wp.store.get/list`, `wp.auth`, `wp.log`, `wp.time`, `wp.json`, `wp.crypto` and `wp.error`; the other modules are nil there. Globals are limited to `assert error ipairs next pairs select tonumber tostring type setmetatable getmetatable` and the `string`, `table`, `math`, `utf8` libraries: no `io`, `os`, `require`, `load`, `pcall`, `coroutine` or `debug`. `wp.*` cannot be called from a `table.sort` comparator, a `gsub` callback or `tostring`.
 
