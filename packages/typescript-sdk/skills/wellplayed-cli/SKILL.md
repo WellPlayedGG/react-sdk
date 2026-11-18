@@ -692,7 +692,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 
 | Call | Returns | Rules |
 |---|---|---|
-| `wp.op(name, vars, { as = "APP" \| "INVOKER" })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code |
+| `wp.op(name, vars, { as = "APP" \| "INVOKER", idempotencyKey = "..." })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code. `idempotencyKey` (`^[A-Za-z0-9:._@-]{1,100}$`, mutations only, queries ignore it): the first success is kept 24 h per installation, operation and key, and any later call with that key, from any execution, gets the kept `data` without running the mutation again; a failure frees the key; a call made while the first still runs gets `IDEMPOTENCY_IN_PROGRESS`. Build the key from the work (`"walkin-team:" .. input.ticketId`) so a retry reuses it |
 | `wp.store.get(col, key)` | `{ value, version, expiresAt }` or nil | Key `^[A-Za-z0-9:._@-]{1,200}$` |
 | `wp.store.put(col, key, value, { ifAbsent, ttlSeconds, subject = { type = "PLAYER", id } })` | `{ version }` or `nil, err` | Value at most 16 KB; `ALREADY_EXISTS` with `ifAbsent` |
 | `wp.store.cas(col, key, expectedVersion, patch, { ttlSeconds })` | `{ version, value }` or `nil, err` | Shallow merge; `VERSION_CONFLICT`, `NOT_FOUND` |
@@ -847,7 +847,7 @@ GQL
 
 `APP_SLUG_TAKEN`, `APP_SLUG_REQUIRED` (functions declared, no slug), `MARKETPLACE_APP_NOT_FOUND` (private app outside its organizations, or slug not installed), `APP_RELEASE_FILES_TOO_LARGE`, `APP_RELEASE_NOT_APPROVED`, `APP_PIN_CONSENT_REQUIRED` (`extensions.addedPermissions`: pin again with `--grant`), `MARKETPLACE_INSTALLATION_NOT_FOUND`, `APP_CONFIG_INVALID` (`extensions.key`), `CONFLICT` (concurrent config change, retry), `APP_HOOK_DENIED`, `PERMISSION_DEFINITION_CONFLICT`, `INVALID_PERMISSION` (unknown or app-owned id), `BAD_REQUEST` (over 100 checks, undeclared function name, duplicate release file).
 
-- A failed run (including `wp.error`) drops its queued e-mails, timers and audit entries, but `wp.store` writes and `wp.op` mutations already made stay: check first, write last, or use `cas`.
+- A failed run (including `wp.error`) drops its queued e-mails, timers and audit entries, but `wp.store` writes and `wp.op` mutations already made stay: check first, write last, or use `cas`. A retried event, timer or call runs as a new execution, so give every `wp.op` mutation that creates something an `idempotencyKey`: the retry then gets the first result instead of a second object.
 - `EVENT` functions get retried, so make them idempotent (store markers with `ifAbsent`).
 - `payload` is a string: `JSON.stringify` it in code, `--raw-field` it in the CLI (`-F` parses a `{...}` literal into an object).
 
