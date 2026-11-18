@@ -821,7 +821,7 @@ Field declarations (`input`, `output`, audit `fields`): `name` (`^[a-zA-Z][a-zA-
 
 | `trigger.type` | Keys | Runs when |
 |---|---|---|
-| `CALL` | `readOnly` (false), `cacheSeconds` 0-300 (needs `readOnly`) | `appFunctionCall` or `appFunctionRead` |
+| `CALL` | `readOnly` (false), `cacheSeconds` 0-300 (needs `readOnly`), `timeoutMs` 100-15000 (5000) | `appFunctionCall` or `appFunctionRead` |
 | `HOOK` | `hookPoint: EVENT_RESERVATION_VALIDATE`, `onError: DENY \| ALLOW`, `timeoutMs` 100-2000 (1000) | A reservation session opens or a reservation is validated |
 | `EVENT` | `events` (1-20 `WebhookEventType`), `selfTrigger` (false) | A matching event in the organization; with `selfTrigger: false`, events caused by this installation are skipped |
 | `TIMER` | none | `wp.timers.schedule` fires it |
@@ -873,7 +873,7 @@ E-mails, timers and audit entries go out only when the run succeeds, so a retry 
 
 | Budget per run | `CALL` | `HOOK` | `EVENT`, `TIMER`, `CRON`, `LIFECYCLE` |
 |---|---|---|---|
-| Wall clock | 5 s | `timeoutMs` | 30 s |
+| Wall clock | `timeoutMs` (5 s, at most 15 s) | `timeoutMs` (1 s, at most 2 s) | 30 s |
 | Lua instructions / memory | 5 M / 16 MiB | 1 M / 16 MiB | 20 M / 32 MiB |
 | `wp.*` calls / `wp.op` calls | 1 000 / 50 | 200 / 10 | 4 000 / 200 |
 | E-mails / timers | 10 / 20 | 0 / 0 | 500 / 200 |
