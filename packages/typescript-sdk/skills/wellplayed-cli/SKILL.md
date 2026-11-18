@@ -683,6 +683,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 | `ctx` field | Content |
 |---|---|
 | `executionId`, `correlationId`, `causationDepth` | Ids of this run and of the chain it belongs to |
+| `idempotencyKey` | The `idempotencyKey` the client sent to `appFunctionCall`; nil without one, outside `appFunctionCall`, or when it does not match `^[A-Za-z0-9:._@-]{1,100}$`. Client input: prefix it with the intent (and the caller for an `APP` operation) before using it as a `wp.op` key |
 | `org.id`; `app.slug`, `app.installationId`, `app.releaseVersion` | Where it runs |
 | `trigger` | `type`, `name`, plus `hookPoint`, `event { type, messageId }`, `timer { key, scheduledFor, firedAt }`, `cron { scheduledFor, firedAt }` or `lifecycle { transition, previousReleaseVersion, changedKeys }` |
 | `caller` | `kind` (`ANONYMOUS`, `PLAYER`, `GUEST`, `MEMBER`, or `SYSTEM` outside `CALL`), `classes`, `accountId`, `playerId`, `guest { sessionId, sessionPlayerId, origin, link { id, purpose, data, expiresAt } }`. A guardian acting for a ward: `playerId` is the ward, `guest.sessionPlayerId` the guardian |
@@ -692,7 +693,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 
 | Call | Returns | Rules |
 |---|---|---|
-| `wp.op(name, vars, { as = "APP" \| "INVOKER", idempotencyKey = "..." })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code. `idempotencyKey` (`^[A-Za-z0-9:._@-]{1,100}$`, mutations only, queries ignore it): the first success is kept 24 h per installation, operation and key, and any later call with that key, from any execution, gets the kept `data` without running the mutation again; a failure frees the key; a call made while the first still runs gets `IDEMPOTENCY_IN_PROGRESS`. Build the key from the work (`"walkin-team:" .. input.ticketId`) so a retry reuses it |
+| `wp.op(name, vars, { as = "APP" \| "INVOKER", idempotencyKey = "..." })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code. `idempotencyKey` (`^[A-Za-z0-9:._@-]{1,200}$`, mutations only, queries ignore it): the first success is kept 24 h per installation, operation and key (and per caller for `INVOKER`), and any later call with that key, from any execution, gets the kept `data` without running the mutation again; a failure frees the key; a call made while the first still runs gets `IDEMPOTENCY_IN_PROGRESS`. Build the key from the work (`"walkin-team:" .. input.ticketId`) so a retry reuses it |
 | `wp.store.get(col, key)` | `{ value, version, expiresAt }` or nil | Key `^[A-Za-z0-9:._@-]{1,200}$` |
 | `wp.store.put(col, key, value, { ifAbsent, ttlSeconds, subject = { type = "PLAYER", id } })` | `{ version }` or `nil, err` | Value at most 16 KB; `ALREADY_EXISTS` with `ifAbsent` |
 | `wp.store.cas(col, key, expectedVersion, patch, { ttlSeconds })` | `{ version, value }` or `nil, err` | Shallow merge; `VERSION_CONFLICT`, `NOT_FOUND` |
