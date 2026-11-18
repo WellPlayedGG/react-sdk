@@ -839,6 +839,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 | `ctx` field | Content |
 |---|---|
 | `executionId`, `correlationId`, `causationDepth` | Ids of this run and of the chain it belongs to |
+| `idempotencyKey` | The `idempotencyKey` the client sent to `appFunctionCall`; nil without one, outside `appFunctionCall`, or when it does not match `^[A-Za-z0-9:._@-]{1,100}$`. Client input: prefix it with the intent (and the caller for an `APP` operation) before using it as a `wp.op` key |
 | `org.id`; `app.slug`, `app.installationId`, `app.releaseVersion` | Where it runs |
 | `trigger` | `type`, `name`, plus `hookPoint`, `event { type, messageId }`, `timer { key, scheduledFor, firedAt }`, `cron { scheduledFor, firedAt }` or `lifecycle { transition, previousReleaseVersion, changedKeys }` |
 | `caller` | `kind` (`ANONYMOUS`, `PLAYER`, `GUEST`, `MEMBER`, or `SYSTEM` outside `CALL`), `classes`, `accountId`, `playerId`, `guest { sessionId, sessionPlayerId, origin, link { id, purpose, data, expiresAt } }`. A guardian acting for a ward: `playerId` is the ward, `guest.sessionPlayerId` the guardian |
@@ -848,7 +849,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 
 | Call | Returns | Rules |
 |---|---|---|
-| `wp.op(name, vars, { as = "APP" \| "INVOKER", idempotencyKey = "..." })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code. `idempotencyKey` (`^[A-Za-z0-9:._@-]{1,100}$`, mutations only, queries ignore it): the first success is kept 24 h per installation, operation and key, and any later call with that key, from any execution, gets the kept `data` without running the mutation again; a failure frees the key; a call made while the first still runs gets `IDEMPOTENCY_IN_PROGRESS`. Build the key from the work (`"walkin-team:" .. input.ticketId`) so a retry reuses it |
+| `wp.op(name, vars, { as = "APP" \| "INVOKER", idempotencyKey = "..." })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code. `idempotencyKey` (`^[A-Za-z0-9:._@-]{1,200}$`, mutations only, queries ignore it): the first success is kept 24 h per installation, operation and key (and per caller for `INVOKER`), and any later call with that key and the same `vars`, from any execution, gets the kept `data` without running the mutation again; the same key with other `vars` ends the run with `IDEMPOTENCY_KEY_REUSED`; a failure frees the key; a call made while the first still runs gets `IDEMPOTENCY_IN_PROGRESS`. Build the key from the work (`"walkin-team:" .. input.ticketId`) so a retry reuses it |
 | `wp.store.get(col, key)` | `{ value, version, expiresAt }` or nil | Key `^[A-Za-z0-9:._@-]{1,200}$` |
 | `wp.store.put(col, key, value, { ifAbsent, ttlSeconds, subject = { type = "PLAYER", id } })` | `{ version }` or `nil, err` | Value at most 16 KB; `ALREADY_EXISTS` with `ifAbsent` |
 | `wp.store.cas(col, key, expectedVersion, patch, { ttlSeconds })` | `{ version, value }` or `nil, err` | Shallow merge; `VERSION_CONFLICT`, `NOT_FOUND` |
@@ -881,7 +882,7 @@ E-mails, timers and audit entries go out only when the run succeeds, so a retry 
 
 Preloaded data is capped at 2 MB. Recoverable `wp.*` failures return `nil, err` with `err = { code, message, path }`: `VERSION_CONFLICT`, `ALREADY_EXISTS`, `NOT_FOUND`, `OUT_OF_RANGE`, `LOCKED`, `INVALID_ARGUMENT`, `FORBIDDEN`, or the GraphQL code for `wp.op`. A bad argument or an undeclared operation, collection or template ends the run with `SCRIPT_ERROR`.
 
-Failed async runs: `EVENT` retries up to 10 times with exponential backoff (a `wp.error` is retried too; `NOT_FOUND`, `NOT_CONFIGURED`, `DISABLED`, `INPUT_INVALID`, `FORBIDDEN`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED` and `OUTPUT_TOO_LARGE` are not), `CRON` and `LIFECYCLE` up to 5 times, `TIMER` never. A run that gives up is journaled as `app.function.dead_letter`. An event fans out to at most 10 functions per installation.
+Failed async runs: `EVENT` retries up to 10 times with exponential backoff (a `wp.error` is retried too; `NOT_FOUND`, `NOT_CONFIGURED`, `DISABLED`, `INPUT_INVALID`, `FORBIDDEN`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED`, `OUTPUT_TOO_LARGE` and `IDEMPOTENCY_KEY_REUSED` are not), `CRON` and `LIFECYCLE` up to 5 times, `TIMER` never. A run that gives up is journaled as `app.function.dead_letter`. An event fans out to at most 10 functions per installation.
 
 ### Deploy, install, pin, configure (CLI)
 
@@ -910,7 +911,7 @@ Find ids with `marketplaceApps(filter: { ownedByMe: true }) { nodes { id slug ve
 | `error.kind` | `code` | Meaning |
 |---|---|---|
 | `APP` | From `wp.error` | `field` and `details` (JSON string) as the function set them; `platformCode` is null |
-| `PLATFORM` | Same as `platformCode` | `NOT_FOUND` (app not installed, no pinned release, unknown or non-`CALL` function), `NOT_CONFIGURED` (`field` = config key), `DISABLED`, `INVOKER_NOT_ALLOWED`, `INPUT_INVALID` (`field` = input path), `FORBIDDEN`, `QUOTA_EXCEEDED` and `UNAVAILABLE` (both may set `retryAfterSeconds`), `IDEMPOTENCY_IN_PROGRESS`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED`, `TIMEOUT`, `SCRIPT_ERROR`, `OUTPUT_TOO_LARGE` |
+| `PLATFORM` | Same as `platformCode` | `NOT_FOUND` (app not installed, no pinned release, unknown or non-`CALL` function), `NOT_CONFIGURED` (`field` = config key), `DISABLED`, `INVOKER_NOT_ALLOWED`, `INPUT_INVALID` (`field` = input path), `FORBIDDEN`, `QUOTA_EXCEEDED` and `UNAVAILABLE` (both may set `retryAfterSeconds`), `IDEMPOTENCY_IN_PROGRESS`, `IDEMPOTENCY_KEY_REUSED` (a `wp.op` key reused with other `vars`), `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED`, `TIMEOUT`, `SCRIPT_ERROR`, `OUTPUT_TOO_LARGE` |
 
 In a component, a `readOnly` function such as `listNotes` goes through `useQuery` on `appFunctionRead` with the same input and fields (`cached: true` marks a cached answer). `apiClient` from `useWellPlayed()` calls as the signed-in account; inside `WellPlayedGuestProvider` the same `apiClient` sends `x-guest-session` (and `x-acting-player-id` after `actAs`), so the function sees a `GUEST` caller. Keep one `idempotencyKey` per submission, reuse it on retry and mint a new one after a success. The SDK client defaults `useQuery` to `errorPolicy: "ignore"`, which drops GraphQL errors (`error` stays undefined); pass `errorPolicy: "all"` wherever the screen must show `error.graphQLErrors[0].extensions.code`. Mutations already return their errors. The component also reads the public config:
 
