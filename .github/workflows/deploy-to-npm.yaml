@@ -41,7 +41,7 @@ jobs:
       #    schema-dependent packages: typescript-sdk and react-sdk).
       # ------------------------------------------------------------------
       - name: Save current schema
-        run: cp schema.graphql schema.graphql.before
+        run: cp schema.graphql schema.before.graphql
 
       - name: Fetch latest schema from API
         run: yarn graphql:generate
@@ -49,15 +49,15 @@ jobs:
       - name: Classify schema change
         id: schema
         run: |
-          if diff -q schema.graphql.before schema.graphql > /dev/null 2>&1; then
+          if diff -q schema.before.graphql schema.graphql > /dev/null 2>&1; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "bump=patch" >> "$GITHUB_OUTPUT"
             echo "No schema changes detected."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            DIFF_OUTPUT=$(yarn graphql-inspector diff schema.graphql.before schema.graphql 2>&1 || true)
+            DIFF_OUTPUT=$(yarn graphql-inspector diff schema.before.graphql schema.graphql 2>&1 || true)
             echo "$DIFF_OUTPUT"
-            if echo "$DIFF_OUTPUT" | grep -qi "BREAKING"; then
+            if echo "$DIFF_OUTPUT" | grep -qE "Detected [0-9]+ breaking change"; then
               echo "bump=minor" >> "$GITHUB_OUTPUT"
               echo "Breaking/dangerous changes detected → minor bump"
             else
@@ -65,12 +65,12 @@ jobs:
               echo "Safe/additive changes detected → patch bump"
             fi
           fi
-          rm -f schema.graphql.before
+          rm -f schema.before.graphql
 
       # ------------------------------------------------------------------
       # 2. For every package, bump the version when its own source has
-      #    changed since its last publish. Schema-dependent packages
-      #    inherit the schema bump level when the schema changed.
+      #    changed since its last publish. Schema-dependent packages are
+      #    also bumped, at the schema bump level, when the schema changed.
       # ------------------------------------------------------------------
       - name: Bump versions for changed packages
         id: bumps
@@ -114,7 +114,8 @@ jobs:
           # Prints one of: skip-bump | unchanged | changed
           #   skip-bump: not published yet, or local version already ahead of npm
           #   unchanged: nothing in the package dir changed since last publish
-          #   changed:   source changed since last publish → bump needed
+          #   changed:   source changed since last publish, or the schema
+          #              changed for a schema-dependent package → bump needed
           needs_bump() {
             local pkg=$1 pkg_name local_version published_version git_head
             pkg_name=$(node -p "require('./packages/$pkg/package.json').name")
@@ -123,6 +124,13 @@ jobs:
 
             if [ -z "$published_version" ] || [ "$local_version" != "$published_version" ]; then
               echo "skip-bump"
+              return
+            fi
+
+            # graphql:generate leaves the regenerated schema files uncommitted,
+            # so a schema-only change never shows in the git diff below.
+            if is_schema_dependent "$pkg" && [ "$SCHEMA_CHANGED" = "true" ]; then
+              echo "changed"
               return
             fi
 
