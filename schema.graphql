@@ -635,7 +635,7 @@ enum AppFunctionStatus {
 }
 
 """
-What runs a function. CALL: readOnly, cacheSeconds. HOOK: hookPoint, onError, timeoutMs. EVENT: events, selfTrigger. CRON: cron, timezone. LIFECYCLE: lifecycle
+What runs a function. CALL: readOnly, cacheSeconds, timeoutMs. HOOK: hookPoint, onError, timeoutMs. EVENT: events, selfTrigger. CRON: cron, timezone. LIFECYCLE: lifecycle
 """
 input AppFunctionTriggerInput {
   cacheSeconds: Int
