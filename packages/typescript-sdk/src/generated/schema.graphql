@@ -1127,7 +1127,7 @@ type Account {
 """
 A field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 """
-scalar EmailAddress @specifiedBy(url: "https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address")
+scalar EmailAddress
 
 """Contains a URL for linking an identity provider to an account"""
 type IdentityLinkUrl {
@@ -1160,7 +1160,6 @@ enum AppFunctionPlatformErrorCode {
   QUOTA_EXCEEDED
   UNAVAILABLE
   IDEMPOTENCY_IN_PROGRESS
-  IDEMPOTENCY_KEY_REUSED
   CAUSATION_DEPTH_EXCEEDED
   LIMIT_EXCEEDED
   TIMEOUT
@@ -5765,6 +5764,247 @@ type ValidationEventModelEdge {
   node: ValidationEventModel!
 }
 
+"""Rules of an open pool step, where matches are created on demand"""
+type OpenPoolConfiguration {
+  """Number of teams in each match"""
+  teamsPerMatch: Int!
+
+  """Matches per game (odd); the game winner takes the majority"""
+  bestOf: Int!
+
+  """Maximum matches a team can play in the step; 0 means unlimited"""
+  maxMatchesPerTeam: Int!
+
+  """Whether the same teams can meet more than once"""
+  allowRematch: Boolean!
+
+  """Whether a team can play several unfinished matches at once"""
+  allowConcurrentMatches: Boolean!
+
+  """
+  Whether a tournament team joins the step when its first match is created
+  """
+  autoJoin: Boolean!
+
+  """
+  Whether a team needs at least the tournament's minimum team size to play
+  """
+  enforceTeamMinSize: Boolean!
+}
+
+"""A team taking part in an open pool match"""
+type OpenPoolMatchTeam {
+  """ID of the tournament team"""
+  teamId: ID!
+
+  """The tournament team"""
+  team: TournamentTeam!
+
+  """Result of the team in this match"""
+  status: MatchScoreStatus!
+
+  """Score of the team in this match"""
+  score: Float!
+}
+
+"""A match created on demand in an open pool step"""
+type OpenPoolMatch {
+  """ID of the match"""
+  id: ID!
+
+  """ID of the game holding the match"""
+  gameId: ID!
+
+  """ID of the group (pool) of the match"""
+  groupId: ID!
+
+  """ID of the open pool step"""
+  stepId: ID!
+
+  """ID of the tournament"""
+  tournamentId: ID!
+
+  """Label given when the match was created"""
+  label: String
+
+  """Creation order of the match in its group"""
+  order: Int!
+
+  """Status of the match"""
+  status: MatchStatus!
+
+  """Teams of the match with their result"""
+  teams: [OpenPoolMatchTeam!]!
+
+  """Date and time when the match was created"""
+  createdAt: DateTime!
+
+  """Date and time when the match was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Paginated list of open pool matches"""
+type OpenPoolMatches {
+  """List of edges containing cursor and node pairs"""
+  edges: [OpenPoolMatchEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [OpenPoolMatch!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type OpenPoolMatchEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: OpenPoolMatch!
+}
+
+"""Live standing of a team in an open pool step"""
+type OpenPoolStanding {
+  """ID of the tournament team"""
+  teamId: ID!
+
+  """The tournament team"""
+  team: TournamentTeam!
+
+  """ID of the group (pool) of the standing"""
+  groupId: ID!
+
+  """Rank in the step; null until ranked"""
+  rank: Int
+
+  """Status of the team in the step"""
+  status: TeamScopeStatus!
+
+  """Points earned in the step"""
+  points: Float!
+
+  """Ended matches played"""
+  played: Int!
+
+  """Matches won"""
+  wins: Int!
+
+  """Matches lost"""
+  losses: Int!
+
+  """Matches drawn"""
+  draws: Int!
+
+  """Matches forfeited"""
+  forfeits: Int!
+}
+
+"""A virtual currency defined within an organization"""
+type Currency {
+  """Unique identifier of the currency"""
+  id: ID!
+
+  """Short symbol representing the currency (e.g., GP, CR)"""
+  symbol: String!
+
+  """Display name of the currency"""
+  name: String!
+
+  """External system identifier for third-party integrations"""
+  externalId: String
+
+  """Description of the currency purpose"""
+  description: String!
+
+  """Whether the currency is hidden from players"""
+  hidden: Boolean!
+
+  """ID of the organization that owns this currency"""
+  organizationId: ID!
+
+  """Timestamp when the currency was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the currency was last updated"""
+  updatedAt: DateTime!
+
+  """Custom metadata key-value pairs attached to the currency"""
+  metadata: [PropertyValue!]!
+}
+
+"""Paginated list of currencies"""
+type Currencies {
+  """List of edges containing cursor and node pairs"""
+  edges: [CurrencyEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [Currency!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type CurrencyEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: Currency!
+}
+
+"""A player's balance for a specific currency"""
+type PlayerCurrency {
+  """Unique identifier of the player currency record"""
+  id: ID!
+
+  """ID of the player profile that owns this balance"""
+  playerProfileId: ID!
+
+  """ID of the currency this balance is for"""
+  currencyId: ID!
+
+  """Current balance amount for this currency"""
+  balance: Float!
+
+  """Timestamp when the player currency record was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the balance was last updated"""
+  updatedAt: DateTime!
+}
+
+"""Paginated list of player currency balances"""
+type PlayerCurrencies {
+  """List of edges containing cursor and node pairs"""
+  edges: [PlayerCurrencyEdge!]!
+
+  """Flat list of items in the current page"""
+  nodes: [PlayerCurrency!]!
+
+  """Pagination metadata for navigating between pages"""
+  pageInfo: ResponsePageInfo!
+
+  """Total number of items across all pages"""
+  totalCount: Float
+}
+
+"""An edge in a paginated connection containing a cursor and node"""
+type PlayerCurrencyEdge {
+  """Opaque cursor string for this edge, used for pagination"""
+  cursor: String!
+
+  """The item at this edge"""
+  node: PlayerCurrency!
+}
+
 """
 Configuration defining size and name length constraints for a user group
 """
@@ -6912,247 +7152,6 @@ type EventWaitlistEntryEdge {
 
   """The item at this edge"""
   node: EventWaitlistEntry!
-}
-
-"""Rules of an open pool step, where matches are created on demand"""
-type OpenPoolConfiguration {
-  """Number of teams in each match"""
-  teamsPerMatch: Int!
-
-  """Matches per game (odd); the game winner takes the majority"""
-  bestOf: Int!
-
-  """Maximum matches a team can play in the step; 0 means unlimited"""
-  maxMatchesPerTeam: Int!
-
-  """Whether the same teams can meet more than once"""
-  allowRematch: Boolean!
-
-  """Whether a team can play several unfinished matches at once"""
-  allowConcurrentMatches: Boolean!
-
-  """
-  Whether a tournament team joins the step when its first match is created
-  """
-  autoJoin: Boolean!
-
-  """
-  Whether a team needs at least the tournament's minimum team size to play
-  """
-  enforceTeamMinSize: Boolean!
-}
-
-"""A team taking part in an open pool match"""
-type OpenPoolMatchTeam {
-  """ID of the tournament team"""
-  teamId: ID!
-
-  """The tournament team"""
-  team: TournamentTeam!
-
-  """Result of the team in this match"""
-  status: MatchScoreStatus!
-
-  """Score of the team in this match"""
-  score: Float!
-}
-
-"""A match created on demand in an open pool step"""
-type OpenPoolMatch {
-  """ID of the match"""
-  id: ID!
-
-  """ID of the game holding the match"""
-  gameId: ID!
-
-  """ID of the group (pool) of the match"""
-  groupId: ID!
-
-  """ID of the open pool step"""
-  stepId: ID!
-
-  """ID of the tournament"""
-  tournamentId: ID!
-
-  """Label given when the match was created"""
-  label: String
-
-  """Creation order of the match in its group"""
-  order: Int!
-
-  """Status of the match"""
-  status: MatchStatus!
-
-  """Teams of the match with their result"""
-  teams: [OpenPoolMatchTeam!]!
-
-  """Date and time when the match was created"""
-  createdAt: DateTime!
-
-  """Date and time when the match was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Paginated list of open pool matches"""
-type OpenPoolMatches {
-  """List of edges containing cursor and node pairs"""
-  edges: [OpenPoolMatchEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [OpenPoolMatch!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type OpenPoolMatchEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: OpenPoolMatch!
-}
-
-"""Live standing of a team in an open pool step"""
-type OpenPoolStanding {
-  """ID of the tournament team"""
-  teamId: ID!
-
-  """The tournament team"""
-  team: TournamentTeam!
-
-  """ID of the group (pool) of the standing"""
-  groupId: ID!
-
-  """Rank in the step; null until ranked"""
-  rank: Int
-
-  """Status of the team in the step"""
-  status: TeamScopeStatus!
-
-  """Points earned in the step"""
-  points: Float!
-
-  """Ended matches played"""
-  played: Int!
-
-  """Matches won"""
-  wins: Int!
-
-  """Matches lost"""
-  losses: Int!
-
-  """Matches drawn"""
-  draws: Int!
-
-  """Matches forfeited"""
-  forfeits: Int!
-}
-
-"""A virtual currency defined within an organization"""
-type Currency {
-  """Unique identifier of the currency"""
-  id: ID!
-
-  """Short symbol representing the currency (e.g., GP, CR)"""
-  symbol: String!
-
-  """Display name of the currency"""
-  name: String!
-
-  """External system identifier for third-party integrations"""
-  externalId: String
-
-  """Description of the currency purpose"""
-  description: String!
-
-  """Whether the currency is hidden from players"""
-  hidden: Boolean!
-
-  """ID of the organization that owns this currency"""
-  organizationId: ID!
-
-  """Timestamp when the currency was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the currency was last updated"""
-  updatedAt: DateTime!
-
-  """Custom metadata key-value pairs attached to the currency"""
-  metadata: [PropertyValue!]!
-}
-
-"""Paginated list of currencies"""
-type Currencies {
-  """List of edges containing cursor and node pairs"""
-  edges: [CurrencyEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [Currency!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type CurrencyEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: Currency!
-}
-
-"""A player's balance for a specific currency"""
-type PlayerCurrency {
-  """Unique identifier of the player currency record"""
-  id: ID!
-
-  """ID of the player profile that owns this balance"""
-  playerProfileId: ID!
-
-  """ID of the currency this balance is for"""
-  currencyId: ID!
-
-  """Current balance amount for this currency"""
-  balance: Float!
-
-  """Timestamp when the player currency record was created"""
-  createdAt: DateTime!
-
-  """Timestamp when the balance was last updated"""
-  updatedAt: DateTime!
-}
-
-"""Paginated list of player currency balances"""
-type PlayerCurrencies {
-  """List of edges containing cursor and node pairs"""
-  edges: [PlayerCurrencyEdge!]!
-
-  """Flat list of items in the current page"""
-  nodes: [PlayerCurrency!]!
-
-  """Pagination metadata for navigating between pages"""
-  pageInfo: ResponsePageInfo!
-
-  """Total number of items across all pages"""
-  totalCount: Float
-}
-
-"""An edge in a paginated connection containing a cursor and node"""
-type PlayerCurrencyEdge {
-  """Opaque cursor string for this edge, used for pagination"""
-  cursor: String!
-
-  """The item at this edge"""
-  node: PlayerCurrency!
 }
 
 """Represents a virtual item that can be assigned to players"""
@@ -8830,11 +8829,6 @@ input PropertyInput {
   """Whether the value must be unique across all entities"""
   unique: Boolean!
 
-  """
-  Whether the property is publicly visible (deprecated, use visibility instead)
-  """
-  public: Boolean @deprecated(reason: "use visibility instead")
-
   """Visibility level controlling who can view this property value"""
   visibility: PropertyVisibility
 
@@ -8878,9 +8872,6 @@ input MatchConfigurationInput {
 
 """Input for game-level configuration within a round"""
 input GameConfigurationInput {
-  """Number of match wins required to win the game (best-of format)"""
-  wonMatchCountToWinGame: Float @deprecated(reason: "Use MATCH_SERIES_RESOLUTION advancement rule instead. Kept for legacy tournaments without rule sets.")
-
   """Whether individual match scores are aggregated as the game score"""
   useMatchScoresAsGameScore: Boolean!
 
@@ -8928,9 +8919,6 @@ input GroupConfigurationInput {
 input StepConfigurationInput {
   """Discriminator type, always STEP for step configurations"""
   type: ConfigurationType! = STEP
-
-  """List of group configurations within this step"""
-  groups: [GroupConfigurationInput!] @deprecated(reason: "Legacy groups system. Will be removed in a future version.")
 }
 
 """Input for a numeric comparison condition"""
@@ -9597,17 +9585,57 @@ type Query {
   """List streaming events emitted by a validation job."""
   stepRuleSetValidationEvents(jobId: ID!, page: PageInfo!, kindFilter: [ValidationEventKind!]): ValidationEvents!
 
-  """Retrieve a registration series by ID"""
-  registrationSeries(id: ID!): RegistrationSeries!
+  """
+  List all CDN files for a platform or template, optionally filtered by file type
+  """
+  platformFiles(type: PlatformCdnFileType, platformId: ID, templateId: ID): [PlatformCdnFile!]!
 
-  """Paginated list of the registration series of the organization"""
-  registrationSeriesList(page: PageInfo!): RegistrationSeriesPage!
+  """
+  Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors
+  """
+  platformFile(id: ID!): PlatformCdnFile!
 
-  """The caller's registrations that count against the series limits"""
-  myActiveRegistrations(seriesId: ID!): [RegistrationSeriesEntry!]!
+  """List all platforms owned by the current organization"""
+  platforms: [Platform!]!
 
-  """A player's registrations that count against the series limits"""
-  registrationSeriesPlayerEntries(seriesId: ID!, playerId: ID!): [RegistrationSeriesEntry!]!
+  """Retrieve a single platform by its ID"""
+  platform(platformId: ID!): Platform
+
+  """Look up a platform by its domain name"""
+  platformFindFromDomain(domain: String!): Platform!
+
+  """Check whether a domain name is already registered to a platform"""
+  platformCheckDomainAvailability(domain: URL!): Boolean!
+
+  """List all custom domains configured for a specific platform"""
+  platformCustomDomains(platformId: ID!): [PlatformCustomDomainData!]!
+
+  """List all publicly available platform templates"""
+  platformTemplatesPublic: [PlatformTemplate!]!
+
+  """List all platform templates owned by the current organization"""
+  platformTemplates: [PlatformTemplate!]!
+
+  """Retrieve a single platform template by its ID"""
+  platformTemplate(platformTemplateId: ID!): PlatformTemplate
+
+  """Retrieve all available subscription items"""
+  subscriptionItems: [SubscriptionItem!]!
+
+  """Retrieve the current subscription items active for the organization"""
+  organizationCurrentSubscriptionItems: [OrganizationSubscriptionItem!]!
+
+  """Paginated journal entries for the current organization."""
+  journalEntries(page: PageInfo, filters: JournalFiltersInput): JournalEntries!
+
+  """A single journal entry by id."""
+  journalEntry(id: ID!): JournalEntry
+
+  """Retrieve all skill ratings for the current organization"""
+  organizationSkillRatings: [OrganizationSkillRating!]!
+
+  """Retrieve a single skill rating by its ID"""
+  organizationSkillRating(id: ID!): OrganizationSkillRating!
 
   """
   Retrieve a single event by ID, including the current user's reservation if any
@@ -9670,58 +9698,6 @@ type Query {
   Retrieve the payment collection configuration for the current organization, including Stripe account details and fees
   """
   organizationPaymentCollectionConfiguration: OrganizationPaymentCollectionConfiguration
-
-  """
-  List all CDN files for a platform or template, optionally filtered by file type
-  """
-  platformFiles(type: PlatformCdnFileType, platformId: ID, templateId: ID): [PlatformCdnFile!]!
-
-  """
-  Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors
-  """
-  platformFile(id: ID!): PlatformCdnFile!
-
-  """List all platforms owned by the current organization"""
-  platforms: [Platform!]!
-
-  """Retrieve a single platform by its ID"""
-  platform(platformId: ID!): Platform
-
-  """Look up a platform by its domain name"""
-  platformFindFromDomain(domain: String!): Platform!
-
-  """Check whether a domain name is already registered to a platform"""
-  platformCheckDomainAvailability(domain: URL!): Boolean!
-
-  """List all custom domains configured for a specific platform"""
-  platformCustomDomains(platformId: ID!): [PlatformCustomDomainData!]!
-
-  """List all publicly available platform templates"""
-  platformTemplatesPublic: [PlatformTemplate!]!
-
-  """List all platform templates owned by the current organization"""
-  platformTemplates: [PlatformTemplate!]!
-
-  """Retrieve a single platform template by its ID"""
-  platformTemplate(platformTemplateId: ID!): PlatformTemplate
-
-  """Retrieve all available subscription items"""
-  subscriptionItems: [SubscriptionItem!]!
-
-  """Retrieve the current subscription items active for the organization"""
-  organizationCurrentSubscriptionItems: [OrganizationSubscriptionItem!]!
-
-  """Paginated journal entries for the current organization."""
-  journalEntries(page: PageInfo, filters: JournalFiltersInput): JournalEntries!
-
-  """A single journal entry by id."""
-  journalEntry(id: ID!): JournalEntry
-
-  """Retrieve all skill ratings for the current organization"""
-  organizationSkillRatings: [OrganizationSkillRating!]!
-
-  """Retrieve a single skill rating by its ID"""
-  organizationSkillRating(id: ID!): OrganizationSkillRating!
 
   """Retrieve paginated members of specified user groups"""
   userGroupMembers(groupIds: [ID!]!, page: PageInfo!, status: UserGroupMemberStatus): UserGroupMembers!
@@ -9826,6 +9802,18 @@ type Query {
   appFunctionRead(input: AppFunctionCallInput!): AppFunctionResult!
   permissionDefinitions: [PermissionDefinitionDto!]!
   hasPermissions(checks: [PermissionCheckInput!]!): [Boolean!]!
+
+  """Retrieve a registration series by ID"""
+  registrationSeries(id: ID!): RegistrationSeries!
+
+  """Paginated list of the registration series of the organization"""
+  registrationSeriesList(page: PageInfo!): RegistrationSeriesPage!
+
+  """The caller's registrations that count against the series limits"""
+  myActiveRegistrations(seriesId: ID!): [RegistrationSeriesEntry!]!
+
+  """A player's registrations that count against the series limits"""
+  registrationSeriesPlayerEntries(seriesId: ID!, playerId: ID!): [RegistrationSeriesEntry!]!
 
   """
   Banned words and substrings applied to nicknames and team names of the current organization.
@@ -9992,11 +9980,6 @@ input SimulateScriptInput {
   context: ScriptContextType!
 
   """
-  DEPRECATED: JSON-encoded mock parameters for simulation. Violates the no-JSON-in-GraphQL contract. Use `overrides` instead — when both are supplied, `overrides` wins. This field will be removed in the next major release.
-  """
-  parameters: String @deprecated(reason: "Use `overrides: SimulationContextOverridesInput` for typed parameter overrides.")
-
-  """
   Structured overrides applied on top of the synthetic mock fixture before the run. Preferred replacement for the deprecated `parameters` JSON blob — covers fixture sizing, per-team metadata seeding, and preset-parameter overrides.
   """
   overrides: SimulationContextOverridesInput
@@ -10113,6 +10096,55 @@ enum SimulationPresetParameterValueType {
   STRING
   NUMBER
   BOOLEAN
+}
+
+"""Filters for journal queries and subscriptions."""
+input JournalFiltersInput {
+  """Restrict results to one or more journal categories."""
+  categories: [JournalCategory!]
+
+  """Restrict results to an exact list of entry types."""
+  types: [String!]
+
+  """
+  Restrict results to entry types starting with the given prefix (e.g. "rule_engine.").
+  """
+  typePrefix: String
+
+  """Restrict results to a specific actor type."""
+  actorType: JournalActorType
+
+  """Restrict results to entries produced by a specific actor id."""
+  actorId: ID
+
+  """
+  Restrict results to entries whose primary resource matches the given type.
+  """
+  primaryResourceType: String
+
+  """Restrict results to entries whose primary resource has the given id."""
+  primaryResourceId: ID
+
+  """Restrict results to one or more severities."""
+  severity: [JournalSeverity!]
+
+  """When true, only return root entries (no parent)."""
+  rootOnly: Boolean
+
+  """Restrict results to direct children of a specific entry."""
+  parentEntryId: ID
+
+  """Restrict results to entries sharing the given correlation id."""
+  correlationId: ID
+
+  """Only return entries created at or after this timestamp."""
+  createdAfter: DateTime
+
+  """Only return entries created at or before this timestamp."""
+  createdBefore: DateTime
+
+  """Defaults to false. Excludes SIMULATION when false."""
+  includeSimulations: Boolean
 }
 
 """Query parameters for filtering and ordering events"""
@@ -10240,55 +10272,6 @@ input EventSlotsFilter {
   Keep only open, buyable slots that have not started and still have free seats
   """
   onlyReservable: Boolean
-}
-
-"""Filters for journal queries and subscriptions."""
-input JournalFiltersInput {
-  """Restrict results to one or more journal categories."""
-  categories: [JournalCategory!]
-
-  """Restrict results to an exact list of entry types."""
-  types: [String!]
-
-  """
-  Restrict results to entry types starting with the given prefix (e.g. "rule_engine.").
-  """
-  typePrefix: String
-
-  """Restrict results to a specific actor type."""
-  actorType: JournalActorType
-
-  """Restrict results to entries produced by a specific actor id."""
-  actorId: ID
-
-  """
-  Restrict results to entries whose primary resource matches the given type.
-  """
-  primaryResourceType: String
-
-  """Restrict results to entries whose primary resource has the given id."""
-  primaryResourceId: ID
-
-  """Restrict results to one or more severities."""
-  severity: [JournalSeverity!]
-
-  """When true, only return root entries (no parent)."""
-  rootOnly: Boolean
-
-  """Restrict results to direct children of a specific entry."""
-  parentEntryId: ID
-
-  """Restrict results to entries sharing the given correlation id."""
-  correlationId: ID
-
-  """Only return entries created at or after this timestamp."""
-  createdAfter: DateTime
-
-  """Only return entries created at or before this timestamp."""
-  createdBefore: DateTime
-
-  """Defaults to false. Excludes SIMULATION when false."""
-  includeSimulations: Boolean
 }
 
 """Query input for filtering user groups by their IDs"""
@@ -10881,21 +10864,90 @@ type Mutation {
   """Cancel an in-progress or queued validation job."""
   cancelStepRuleSetValidation(jobId: ID!): ValidationJobModel!
 
-  """Create a registration series"""
-  registrationSeriesCreate(input: RegistrationSeriesCreateInput!): RegistrationSeries!
+  """
+  Create a Stripe customer portal session URL for managing the organization subscription
+  """
+  stripeCreatePortalSession: String!
 
-  """Update a registration series"""
-  registrationSeriesUpdate(id: ID!, input: RegistrationSeriesUpdateInput!): RegistrationSeries!
+  """Create a new CDN file record for a platform or template"""
+  platformFileCreate(input: PlatformCdnFileCreateInput!, platformId: ID, templateId: ID): PlatformCdnFile!
+
+  """Publish the development version of a CDN file to production"""
+  platformFilePublish(id: ID!): PlatformCdnFile!
 
   """
-  Delete a registration series; its events and tournaments leave the series
+  Generate a presigned S3 upload URL for uploading file content to a CDN file
   """
-  registrationSeriesDelete(id: ID!): Boolean!
+  platformFileGenerateUploadUrl(id: ID!, size: Float!): PresignedUrl!
 
   """
-  Assign events and tournaments to a series, or remove them from their series when seriesId is null
+  Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage
   """
-  registrationSeriesAssign(seriesId: ID, eventIds: [ID!], tournamentIds: [ID!]): Boolean!
+  platformFileValidateFileUpload(id: ID!): PlatformCdnFile!
+
+  """Update the configuration of an existing CDN file"""
+  platformFileUpdate(id: ID!, input: PlatformFileUpdateInput!): PlatformCdnFile!
+
+  """
+  Delete a CDN file and remove its dev, tmp, and production assets from S3
+  """
+  platformFileDelete(id: ID!): Void!
+
+  """
+  Create a new platform with a subdomain and associated OAuth application
+  """
+  platformCreate(input: CreatePlatformInput!): Platform!
+
+  """Update an existing platform name and configuration"""
+  platformUpdate(id: ID!, input: UpdatePlatformInput!): Platform!
+
+  """Delete a platform and its associated OAuth application"""
+  platformDelete(id: ID!): Void!
+
+  """Update the theme configuration for a platform"""
+  platformThemeUpdate(platformId: ID!, input: PlatformThemeInput!): Platform!
+
+  """Register a new custom domain for a platform via Cloudflare"""
+  platformRegisterCustomDomain(platformId: ID!, hostname: String!): CustomDomainData!
+
+  """Force a DNS/SSL validation recheck for a custom domain"""
+  platformForceCustomDomainRecheck(hostname: String!): CustomDomainData!
+
+  """
+  Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations
+  """
+  platformRemoveCustomDomain(hostname: String!): Void!
+
+  """Create a new platform template for the organization"""
+  platformTemplateCreate(input: CreatePlatformTemplateInput!): PlatformTemplate!
+
+  """Update an existing platform template"""
+  platformTemplateUpdate(id: ID!, input: UpdatePlatformTemplateInput!): PlatformTemplate!
+
+  """
+  Apply a template to a platform, copying all published template files to the target platform
+  """
+  platformTemplateApply(platformTemplateId: ID!, platformId: ID!): Platform!
+
+  """Delete a platform template from the organization"""
+  platformTemplateDelete(id: ID!): Void!
+
+  """
+  Update the organization subscription by changing item quantities, applying coupons or referrals
+  """
+  organizationSubscriptionItemsUpdate(items: [OrganizationSubscriptionItemUpdateInput!]!, coupon: String, referral: String): Void!
+
+  """Register a match result and update player skill ratings accordingly"""
+  organizationSkillRatingsRegisterMatch(organizationSkillRatingId: ID!, input: OrganizationSkillRatingsRegisterMatchInput!): [OrganizationSkillRatingsRegisterMatchPlayer!]!
+
+  """Create a new skill rating for the current organization"""
+  organizationSkillRatingCreate(input: OrganizationSkillRatingCreateInput!): OrganizationSkillRating!
+
+  """Update an existing skill rating configuration"""
+  organizationSkillRatingUpdate(id: ID!, input: OrganizationSkillRatingUpdateInput!): OrganizationSkillRating!
+
+  """Delete a skill rating from the current organization"""
+  organizationSkillRatingDelete(id: ID!): Void!
 
   """Create a new event"""
   eventCreate(input: EventCreateInput!): Event!
@@ -11030,91 +11082,6 @@ type Mutation {
   Create or update the Stripe Connect account for the organization and return the onboarding/update URL
   """
   organizationPaymentCollectionConfigurationCreateOrUpdateAccount: String!
-
-  """
-  Create a Stripe customer portal session URL for managing the organization subscription
-  """
-  stripeCreatePortalSession: String!
-
-  """Create a new CDN file record for a platform or template"""
-  platformFileCreate(input: PlatformCdnFileCreateInput!, platformId: ID, templateId: ID): PlatformCdnFile!
-
-  """Publish the development version of a CDN file to production"""
-  platformFilePublish(id: ID!): PlatformCdnFile!
-
-  """
-  Generate a presigned S3 upload URL for uploading file content to a CDN file
-  """
-  platformFileGenerateUploadUrl(id: ID!, size: Float!): PresignedUrl!
-
-  """
-  Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage
-  """
-  platformFileValidateFileUpload(id: ID!): PlatformCdnFile!
-
-  """Update the configuration of an existing CDN file"""
-  platformFileUpdate(id: ID!, input: PlatformFileUpdateInput!): PlatformCdnFile!
-
-  """
-  Delete a CDN file and remove its dev, tmp, and production assets from S3
-  """
-  platformFileDelete(id: ID!): Void!
-
-  """
-  Create a new platform with a subdomain and associated OAuth application
-  """
-  platformCreate(input: CreatePlatformInput!): Platform!
-
-  """Update an existing platform name and configuration"""
-  platformUpdate(id: ID!, input: UpdatePlatformInput!): Platform!
-
-  """Delete a platform and its associated OAuth application"""
-  platformDelete(id: ID!): Void!
-
-  """Update the theme configuration for a platform"""
-  platformThemeUpdate(platformId: ID!, input: PlatformThemeInput!): Platform!
-
-  """Register a new custom domain for a platform via Cloudflare"""
-  platformRegisterCustomDomain(platformId: ID!, hostname: String!): CustomDomainData!
-
-  """Force a DNS/SSL validation recheck for a custom domain"""
-  platformForceCustomDomainRecheck(hostname: String!): CustomDomainData!
-
-  """
-  Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations
-  """
-  platformRemoveCustomDomain(hostname: String!): Void!
-
-  """Create a new platform template for the organization"""
-  platformTemplateCreate(input: CreatePlatformTemplateInput!): PlatformTemplate!
-
-  """Update an existing platform template"""
-  platformTemplateUpdate(id: ID!, input: UpdatePlatformTemplateInput!): PlatformTemplate!
-
-  """
-  Apply a template to a platform, copying all published template files to the target platform
-  """
-  platformTemplateApply(platformTemplateId: ID!, platformId: ID!): Platform!
-
-  """Delete a platform template from the organization"""
-  platformTemplateDelete(id: ID!): Void!
-
-  """
-  Update the organization subscription by changing item quantities, applying coupons or referrals
-  """
-  organizationSubscriptionItemsUpdate(items: [OrganizationSubscriptionItemUpdateInput!]!, coupon: String, referral: String): Void!
-
-  """Register a match result and update player skill ratings accordingly"""
-  organizationSkillRatingsRegisterMatch(organizationSkillRatingId: ID!, input: OrganizationSkillRatingsRegisterMatchInput!): [OrganizationSkillRatingsRegisterMatchPlayer!]!
-
-  """Create a new skill rating for the current organization"""
-  organizationSkillRatingCreate(input: OrganizationSkillRatingCreateInput!): OrganizationSkillRating!
-
-  """Update an existing skill rating configuration"""
-  organizationSkillRatingUpdate(id: ID!, input: OrganizationSkillRatingUpdateInput!): OrganizationSkillRating!
-
-  """Delete a skill rating from the current organization"""
-  organizationSkillRatingDelete(id: ID!): Void!
 
   """
   Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED.
@@ -11321,6 +11288,22 @@ type Mutation {
   customPermissionCreate(input: CustomPermissionInput!): PermissionDefinitionDto!
   customPermissionUpdate(id: String!, input: CustomPermissionUpdateInput!): PermissionDefinitionDto!
   customPermissionDelete(id: String!): Boolean!
+
+  """Create a registration series"""
+  registrationSeriesCreate(input: RegistrationSeriesCreateInput!): RegistrationSeries!
+
+  """Update a registration series"""
+  registrationSeriesUpdate(id: ID!, input: RegistrationSeriesUpdateInput!): RegistrationSeries!
+
+  """
+  Delete a registration series; its events and tournaments leave the series
+  """
+  registrationSeriesDelete(id: ID!): Boolean!
+
+  """
+  Assign events and tournaments to a series, or remove them from their series when seriesId is null
+  """
+  registrationSeriesAssign(seriesId: ID, eventIds: [ID!], tournamentIds: [ID!]): Boolean!
 
   """
   Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation).
@@ -12826,25 +12809,199 @@ input UpdatePresetScriptInput {
   parameters: [PresetParameterInput!] = []
 }
 
-"""Input for creating a registration series"""
-input RegistrationSeriesCreateInput {
-  """Display name of the series"""
+"""Input for creating a new CDN file on a platform or template"""
+input PlatformCdnFileCreateInput {
+  """The file name including path segments"""
   name: String!
-  maxActiveRegistrations: Int = 1
-  maxActiveWaitlistEntries: Int
-  allowWaitlistWhileRegistered: Boolean = false
-  leaveWaitlistsOnRegistration: Boolean = true
-  releasePolicy: RegistrationSeriesReleasePolicy = SLOT_END
+
+  """The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE)"""
+  type: PlatformCdnFileType!
+
+  """File configuration options such as page routing config"""
+  config: PlatformCdnFileConfigsInput
 }
 
-"""Input for updating a registration series"""
-input RegistrationSeriesUpdateInput {
+"""Input for updating the configuration of an existing CDN file"""
+input PlatformFileUpdateInput {
+  """File configuration options such as page routing config"""
+  config: PlatformCdnFileConfigsInput
+}
+
+"""Input for creating a new platform with a subdomain"""
+input CreatePlatformInput {
+  """Display name of the platform"""
+  name: String!
+
+  """Platform configuration settings including white-label options"""
+  configuration: PlatformConfigurationInput
+
+  """The OAuth application ID associated with this platform"""
+  appId: String
+
+  """
+  The subdomain for the platform (3-25 alphanumeric characters with optional hyphens)
+  """
+  subdomain: String!
+}
+
+"""Input for updating an existing platform configuration"""
+input UpdatePlatformInput {
+  """Display name of the platform"""
+  name: String!
+
+  """Platform configuration settings including white-label options"""
+  configuration: PlatformConfigurationInput
+
+  """The OAuth application ID associated with this platform"""
+  appId: String
+}
+
+"""Input for updating platform theme configuration"""
+input PlatformThemeInput {
+  """Primary brand color (hex)"""
+  primaryColor: String
+
+  """Secondary brand color (hex)"""
+  secondaryColor: String
+
+  """Page background color (hex)"""
+  backgroundColor: String
+
+  """Surface/card background color (hex)"""
+  surfaceColor: String
+
+  """Primary text color (hex)"""
+  textColor: String
+
+  """Muted/secondary text color (hex)"""
+  textMutedColor: String
+
+  """Primary font family name"""
+  fontFamily: String
+
+  """Heading font family name"""
+  headingFont: String
+
+  """Border radius value (e.g. "8px", "0.5rem")"""
+  borderRadius: String
+
+  """URL of the platform logo image"""
+  logoUrl: String
+
+  """Social media links displayed on the platform"""
+  socialLinks: PlatformThemeSocialLinksInput
+
+  """Homepage section visibility and ordering configuration"""
+  sections: [PlatformThemeSectionConfigInput!]
+}
+
+"""Input for platform theme social media links"""
+input PlatformThemeSocialLinksInput {
+  """Twitter/X profile URL"""
+  twitter: String
+
+  """Discord server invite URL"""
+  discord: String
+
+  """Twitch channel URL"""
+  twitch: String
+}
+
+"""Input for a platform homepage section configuration"""
+input PlatformThemeSectionConfigInput {
+  """Section identifier name"""
+  name: String!
+
+  """Whether the section is visible on the platform"""
+  visible: Boolean!
+
+  """Display order of the section"""
+  order: Float!
+}
+
+"""Input for creating a new platform template"""
+input CreatePlatformTemplateInput {
+  """Display name of the template"""
+  name: String!
+
+  """Human-readable description of the template"""
+  description: String!
+
+  """URL of the template preview screenshot"""
+  screenshotUrl: URL!
+
+  """Whether this template is publicly available to all organizations"""
+  public: Boolean!
+}
+
+"""Input for partially updating an existing platform template"""
+input UpdatePlatformTemplateInput {
+  """Display name of the template"""
   name: String
-  maxActiveRegistrations: Int
-  maxActiveWaitlistEntries: Int
-  allowWaitlistWhileRegistered: Boolean
-  leaveWaitlistsOnRegistration: Boolean
-  releasePolicy: RegistrationSeriesReleasePolicy
+
+  """Human-readable description of the template"""
+  description: String
+
+  """URL of the template preview screenshot"""
+  screenshotUrl: URL
+
+  """Whether this template is publicly available to all organizations"""
+  public: Boolean
+}
+
+"""
+Input for updating the quantity of a subscription item for an organization
+"""
+input OrganizationSubscriptionItemUpdateInput {
+  """ID of the subscription item to update"""
+  subscriptionItemId: ID!
+
+  """New quantity for the subscription item"""
+  count: Float!
+}
+
+"""
+Input for registering a match result with team compositions and rankings
+"""
+input OrganizationSkillRatingsRegisterMatchInput {
+  """Ordered list of teams, ranked by placement (first = winner)"""
+  teams: [OrganizationSkillRatingsRegisterMatchTeamInput!]!
+}
+
+"""Input representing a team in a skill rating match registration"""
+input OrganizationSkillRatingsRegisterMatchTeamInput {
+  """List of player profile IDs on this team"""
+  players: [ID!]!
+}
+
+"""Input for creating a new organization skill rating"""
+input OrganizationSkillRatingCreateInput {
+  """Display name of the skill rating"""
+  name: String!
+
+  """Description of what this skill rating measures"""
+  description: String!
+
+  """Algorithm type used for rating calculation"""
+  type: SkillRatingType!
+
+  """Configuration options for this skill rating"""
+  configuration: SkillRatingConfigurationInput!
+}
+
+"""Input for updating an existing organization skill rating"""
+input OrganizationSkillRatingUpdateInput {
+  """Display name of the skill rating"""
+  name: String
+
+  """Description of what this skill rating measures"""
+  description: String
+
+  """Algorithm type used for rating calculation"""
+  type: SkillRatingType
+
+  """Configuration options for this skill rating"""
+  configuration: SkillRatingConfigurationInput
 }
 
 """Input for creating a new event"""
@@ -13291,201 +13448,6 @@ input EventReservationChangeTicketsInput {
 
   """Tickets replacing the current ones"""
   tickets: [EventReservationRegisterTicketInput!]!
-}
-
-"""Input for creating a new CDN file on a platform or template"""
-input PlatformCdnFileCreateInput {
-  """The file name including path segments"""
-  name: String!
-
-  """The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE)"""
-  type: PlatformCdnFileType!
-
-  """File configuration options such as page routing config"""
-  config: PlatformCdnFileConfigsInput
-}
-
-"""Input for updating the configuration of an existing CDN file"""
-input PlatformFileUpdateInput {
-  """File configuration options such as page routing config"""
-  config: PlatformCdnFileConfigsInput
-}
-
-"""Input for creating a new platform with a subdomain"""
-input CreatePlatformInput {
-  """Display name of the platform"""
-  name: String!
-
-  """Platform configuration settings including white-label options"""
-  configuration: PlatformConfigurationInput
-
-  """The OAuth application ID associated with this platform"""
-  appId: String
-
-  """
-  The subdomain for the platform (3-25 alphanumeric characters with optional hyphens)
-  """
-  subdomain: String!
-}
-
-"""Input for updating an existing platform configuration"""
-input UpdatePlatformInput {
-  """Display name of the platform"""
-  name: String!
-
-  """Platform configuration settings including white-label options"""
-  configuration: PlatformConfigurationInput
-
-  """The OAuth application ID associated with this platform"""
-  appId: String
-}
-
-"""Input for updating platform theme configuration"""
-input PlatformThemeInput {
-  """Primary brand color (hex)"""
-  primaryColor: String
-
-  """Secondary brand color (hex)"""
-  secondaryColor: String
-
-  """Page background color (hex)"""
-  backgroundColor: String
-
-  """Surface/card background color (hex)"""
-  surfaceColor: String
-
-  """Primary text color (hex)"""
-  textColor: String
-
-  """Muted/secondary text color (hex)"""
-  textMutedColor: String
-
-  """Primary font family name"""
-  fontFamily: String
-
-  """Heading font family name"""
-  headingFont: String
-
-  """Border radius value (e.g. "8px", "0.5rem")"""
-  borderRadius: String
-
-  """URL of the platform logo image"""
-  logoUrl: String
-
-  """Social media links displayed on the platform"""
-  socialLinks: PlatformThemeSocialLinksInput
-
-  """Homepage section visibility and ordering configuration"""
-  sections: [PlatformThemeSectionConfigInput!]
-}
-
-"""Input for platform theme social media links"""
-input PlatformThemeSocialLinksInput {
-  """Twitter/X profile URL"""
-  twitter: String
-
-  """Discord server invite URL"""
-  discord: String
-
-  """Twitch channel URL"""
-  twitch: String
-}
-
-"""Input for a platform homepage section configuration"""
-input PlatformThemeSectionConfigInput {
-  """Section identifier name"""
-  name: String!
-
-  """Whether the section is visible on the platform"""
-  visible: Boolean!
-
-  """Display order of the section"""
-  order: Float!
-}
-
-"""Input for creating a new platform template"""
-input CreatePlatformTemplateInput {
-  """Display name of the template"""
-  name: String!
-
-  """Human-readable description of the template"""
-  description: String!
-
-  """URL of the template preview screenshot"""
-  screenshotUrl: URL!
-
-  """Whether this template is publicly available to all organizations"""
-  public: Boolean!
-}
-
-"""Input for partially updating an existing platform template"""
-input UpdatePlatformTemplateInput {
-  """Display name of the template"""
-  name: String
-
-  """Human-readable description of the template"""
-  description: String
-
-  """URL of the template preview screenshot"""
-  screenshotUrl: URL
-
-  """Whether this template is publicly available to all organizations"""
-  public: Boolean
-}
-
-"""
-Input for updating the quantity of a subscription item for an organization
-"""
-input OrganizationSubscriptionItemUpdateInput {
-  """ID of the subscription item to update"""
-  subscriptionItemId: ID!
-
-  """New quantity for the subscription item"""
-  count: Float!
-}
-
-"""
-Input for registering a match result with team compositions and rankings
-"""
-input OrganizationSkillRatingsRegisterMatchInput {
-  """Ordered list of teams, ranked by placement (first = winner)"""
-  teams: [OrganizationSkillRatingsRegisterMatchTeamInput!]!
-}
-
-"""Input representing a team in a skill rating match registration"""
-input OrganizationSkillRatingsRegisterMatchTeamInput {
-  """List of player profile IDs on this team"""
-  players: [ID!]!
-}
-
-"""Input for creating a new organization skill rating"""
-input OrganizationSkillRatingCreateInput {
-  """Display name of the skill rating"""
-  name: String!
-
-  """Description of what this skill rating measures"""
-  description: String!
-
-  """Algorithm type used for rating calculation"""
-  type: SkillRatingType!
-
-  """Configuration options for this skill rating"""
-  configuration: SkillRatingConfigurationInput!
-}
-
-"""Input for updating an existing organization skill rating"""
-input OrganizationSkillRatingUpdateInput {
-  """Display name of the skill rating"""
-  name: String
-
-  """Description of what this skill rating measures"""
-  description: String
-
-  """Algorithm type used for rating calculation"""
-  type: SkillRatingType
-
-  """Configuration options for this skill rating"""
-  configuration: SkillRatingConfigurationInput
 }
 
 """Input for creating a new shop"""
@@ -14328,6 +14290,27 @@ input CustomPermissionInput {
 input CustomPermissionUpdateInput {
   description: String
   resources: [String!]
+}
+
+"""Input for creating a registration series"""
+input RegistrationSeriesCreateInput {
+  """Display name of the series"""
+  name: String!
+  maxActiveRegistrations: Int = 1
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean = false
+  leaveWaitlistsOnRegistration: Boolean = true
+  releasePolicy: RegistrationSeriesReleasePolicy = SLOT_END
+}
+
+"""Input for updating a registration series"""
+input RegistrationSeriesUpdateInput {
+  name: String
+  maxActiveRegistrations: Int
+  maxActiveWaitlistEntries: Int
+  allowWaitlistWhileRegistered: Boolean
+  leaveWaitlistsOnRegistration: Boolean
+  releasePolicy: RegistrationSeriesReleasePolicy
 }
 
 input OrganizationModerationInput {
