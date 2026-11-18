@@ -6,12 +6,12 @@
 export type Scalars = {
     String: string,
     Boolean: boolean,
-    ID: string,
     DateTime: any,
     Float: number,
     EmailAddress: any,
     Int: number,
     URL: any,
+    ID: string,
     Void: any,
     PositiveInt: any,
 }
@@ -4363,6 +4363,212 @@ export interface ValidationEventModelEdge {
 }
 
 
+/** Rules of an open pool step, where matches are created on demand */
+export interface OpenPoolConfiguration {
+    /** Number of teams in each match */
+    teamsPerMatch: Scalars['Int']
+    /** Matches per game (odd); the game winner takes the majority */
+    bestOf: Scalars['Int']
+    /** Maximum matches a team can play in the step; 0 means unlimited */
+    maxMatchesPerTeam: Scalars['Int']
+    /** Whether the same teams can meet more than once */
+    allowRematch: Scalars['Boolean']
+    /** Whether a team can play several unfinished matches at once */
+    allowConcurrentMatches: Scalars['Boolean']
+    /** Whether a tournament team joins the step when its first match is created */
+    autoJoin: Scalars['Boolean']
+    /** Whether a team needs at least the tournament's minimum team size to play */
+    enforceTeamMinSize: Scalars['Boolean']
+    __typename: 'OpenPoolConfiguration'
+}
+
+
+/** A team taking part in an open pool match */
+export interface OpenPoolMatchTeam {
+    /** ID of the tournament team */
+    teamId: Scalars['ID']
+    /** The tournament team */
+    team: TournamentTeam
+    /** Result of the team in this match */
+    status: MatchScoreStatus
+    /** Score of the team in this match */
+    score: Scalars['Float']
+    __typename: 'OpenPoolMatchTeam'
+}
+
+
+/** A match created on demand in an open pool step */
+export interface OpenPoolMatch {
+    /** ID of the match */
+    id: Scalars['ID']
+    /** ID of the game holding the match */
+    gameId: Scalars['ID']
+    /** ID of the group (pool) of the match */
+    groupId: Scalars['ID']
+    /** ID of the open pool step */
+    stepId: Scalars['ID']
+    /** ID of the tournament */
+    tournamentId: Scalars['ID']
+    /** Label given when the match was created */
+    label: (Scalars['String'] | null)
+    /** Creation order of the match in its group */
+    order: Scalars['Int']
+    /** Status of the match */
+    status: MatchStatus
+    /** Teams of the match with their result */
+    teams: OpenPoolMatchTeam[]
+    /** Date and time when the match was created */
+    createdAt: Scalars['DateTime']
+    /** Date and time when the match was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'OpenPoolMatch'
+}
+
+
+/** Paginated list of open pool matches */
+export interface OpenPoolMatches {
+    /** List of edges containing cursor and node pairs */
+    edges: OpenPoolMatchEdge[]
+    /** Flat list of items in the current page */
+    nodes: OpenPoolMatch[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'OpenPoolMatches'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface OpenPoolMatchEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: OpenPoolMatch
+    __typename: 'OpenPoolMatchEdge'
+}
+
+
+/** Live standing of a team in an open pool step */
+export interface OpenPoolStanding {
+    /** ID of the tournament team */
+    teamId: Scalars['ID']
+    /** The tournament team */
+    team: TournamentTeam
+    /** ID of the group (pool) of the standing */
+    groupId: Scalars['ID']
+    /** Rank in the step; null until ranked */
+    rank: (Scalars['Int'] | null)
+    /** Status of the team in the step */
+    status: TeamScopeStatus
+    /** Points earned in the step */
+    points: Scalars['Float']
+    /** Ended matches played */
+    played: Scalars['Int']
+    /** Matches won */
+    wins: Scalars['Int']
+    /** Matches lost */
+    losses: Scalars['Int']
+    /** Matches drawn */
+    draws: Scalars['Int']
+    /** Matches forfeited */
+    forfeits: Scalars['Int']
+    __typename: 'OpenPoolStanding'
+}
+
+
+/** A virtual currency defined within an organization */
+export interface Currency {
+    /** Unique identifier of the currency */
+    id: Scalars['ID']
+    /** Short symbol representing the currency (e.g., GP, CR) */
+    symbol: Scalars['String']
+    /** Display name of the currency */
+    name: Scalars['String']
+    /** External system identifier for third-party integrations */
+    externalId: (Scalars['String'] | null)
+    /** Description of the currency purpose */
+    description: Scalars['String']
+    /** Whether the currency is hidden from players */
+    hidden: Scalars['Boolean']
+    /** ID of the organization that owns this currency */
+    organizationId: Scalars['ID']
+    /** Timestamp when the currency was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the currency was last updated */
+    updatedAt: Scalars['DateTime']
+    /** Custom metadata key-value pairs attached to the currency */
+    metadata: PropertyValue[]
+    __typename: 'Currency'
+}
+
+
+/** Paginated list of currencies */
+export interface Currencies {
+    /** List of edges containing cursor and node pairs */
+    edges: CurrencyEdge[]
+    /** Flat list of items in the current page */
+    nodes: Currency[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'Currencies'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface CurrencyEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: Currency
+    __typename: 'CurrencyEdge'
+}
+
+
+/** A player's balance for a specific currency */
+export interface PlayerCurrency {
+    /** Unique identifier of the player currency record */
+    id: Scalars['ID']
+    /** ID of the player profile that owns this balance */
+    playerProfileId: Scalars['ID']
+    /** ID of the currency this balance is for */
+    currencyId: Scalars['ID']
+    /** Current balance amount for this currency */
+    balance: Scalars['Float']
+    /** Timestamp when the player currency record was created */
+    createdAt: Scalars['DateTime']
+    /** Timestamp when the balance was last updated */
+    updatedAt: Scalars['DateTime']
+    __typename: 'PlayerCurrency'
+}
+
+
+/** Paginated list of player currency balances */
+export interface PlayerCurrencies {
+    /** List of edges containing cursor and node pairs */
+    edges: PlayerCurrencyEdge[]
+    /** Flat list of items in the current page */
+    nodes: PlayerCurrency[]
+    /** Pagination metadata for navigating between pages */
+    pageInfo: ResponsePageInfo
+    /** Total number of items across all pages */
+    totalCount: (Scalars['Float'] | null)
+    __typename: 'PlayerCurrencies'
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface PlayerCurrencyEdge {
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor: Scalars['String']
+    /** The item at this edge */
+    node: PlayerCurrency
+    __typename: 'PlayerCurrencyEdge'
+}
+
+
 /** Configuration defining size and name length constraints for a user group */
 export interface UserGroupConfiguration {
     /** Maximum number of accepted members allowed in the group */
@@ -5200,212 +5406,6 @@ export interface EventWaitlistEntryEdge {
     /** The item at this edge */
     node: EventWaitlistEntry
     __typename: 'EventWaitlistEntryEdge'
-}
-
-
-/** Rules of an open pool step, where matches are created on demand */
-export interface OpenPoolConfiguration {
-    /** Number of teams in each match */
-    teamsPerMatch: Scalars['Int']
-    /** Matches per game (odd); the game winner takes the majority */
-    bestOf: Scalars['Int']
-    /** Maximum matches a team can play in the step; 0 means unlimited */
-    maxMatchesPerTeam: Scalars['Int']
-    /** Whether the same teams can meet more than once */
-    allowRematch: Scalars['Boolean']
-    /** Whether a team can play several unfinished matches at once */
-    allowConcurrentMatches: Scalars['Boolean']
-    /** Whether a tournament team joins the step when its first match is created */
-    autoJoin: Scalars['Boolean']
-    /** Whether a team needs at least the tournament's minimum team size to play */
-    enforceTeamMinSize: Scalars['Boolean']
-    __typename: 'OpenPoolConfiguration'
-}
-
-
-/** A team taking part in an open pool match */
-export interface OpenPoolMatchTeam {
-    /** ID of the tournament team */
-    teamId: Scalars['ID']
-    /** The tournament team */
-    team: TournamentTeam
-    /** Result of the team in this match */
-    status: MatchScoreStatus
-    /** Score of the team in this match */
-    score: Scalars['Float']
-    __typename: 'OpenPoolMatchTeam'
-}
-
-
-/** A match created on demand in an open pool step */
-export interface OpenPoolMatch {
-    /** ID of the match */
-    id: Scalars['ID']
-    /** ID of the game holding the match */
-    gameId: Scalars['ID']
-    /** ID of the group (pool) of the match */
-    groupId: Scalars['ID']
-    /** ID of the open pool step */
-    stepId: Scalars['ID']
-    /** ID of the tournament */
-    tournamentId: Scalars['ID']
-    /** Label given when the match was created */
-    label: (Scalars['String'] | null)
-    /** Creation order of the match in its group */
-    order: Scalars['Int']
-    /** Status of the match */
-    status: MatchStatus
-    /** Teams of the match with their result */
-    teams: OpenPoolMatchTeam[]
-    /** Date and time when the match was created */
-    createdAt: Scalars['DateTime']
-    /** Date and time when the match was last updated */
-    updatedAt: Scalars['DateTime']
-    __typename: 'OpenPoolMatch'
-}
-
-
-/** Paginated list of open pool matches */
-export interface OpenPoolMatches {
-    /** List of edges containing cursor and node pairs */
-    edges: OpenPoolMatchEdge[]
-    /** Flat list of items in the current page */
-    nodes: OpenPoolMatch[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'OpenPoolMatches'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface OpenPoolMatchEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: OpenPoolMatch
-    __typename: 'OpenPoolMatchEdge'
-}
-
-
-/** Live standing of a team in an open pool step */
-export interface OpenPoolStanding {
-    /** ID of the tournament team */
-    teamId: Scalars['ID']
-    /** The tournament team */
-    team: TournamentTeam
-    /** ID of the group (pool) of the standing */
-    groupId: Scalars['ID']
-    /** Rank in the step; null until ranked */
-    rank: (Scalars['Int'] | null)
-    /** Status of the team in the step */
-    status: TeamScopeStatus
-    /** Points earned in the step */
-    points: Scalars['Float']
-    /** Ended matches played */
-    played: Scalars['Int']
-    /** Matches won */
-    wins: Scalars['Int']
-    /** Matches lost */
-    losses: Scalars['Int']
-    /** Matches drawn */
-    draws: Scalars['Int']
-    /** Matches forfeited */
-    forfeits: Scalars['Int']
-    __typename: 'OpenPoolStanding'
-}
-
-
-/** A virtual currency defined within an organization */
-export interface Currency {
-    /** Unique identifier of the currency */
-    id: Scalars['ID']
-    /** Short symbol representing the currency (e.g., GP, CR) */
-    symbol: Scalars['String']
-    /** Display name of the currency */
-    name: Scalars['String']
-    /** External system identifier for third-party integrations */
-    externalId: (Scalars['String'] | null)
-    /** Description of the currency purpose */
-    description: Scalars['String']
-    /** Whether the currency is hidden from players */
-    hidden: Scalars['Boolean']
-    /** ID of the organization that owns this currency */
-    organizationId: Scalars['ID']
-    /** Timestamp when the currency was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the currency was last updated */
-    updatedAt: Scalars['DateTime']
-    /** Custom metadata key-value pairs attached to the currency */
-    metadata: PropertyValue[]
-    __typename: 'Currency'
-}
-
-
-/** Paginated list of currencies */
-export interface Currencies {
-    /** List of edges containing cursor and node pairs */
-    edges: CurrencyEdge[]
-    /** Flat list of items in the current page */
-    nodes: Currency[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'Currencies'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface CurrencyEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: Currency
-    __typename: 'CurrencyEdge'
-}
-
-
-/** A player's balance for a specific currency */
-export interface PlayerCurrency {
-    /** Unique identifier of the player currency record */
-    id: Scalars['ID']
-    /** ID of the player profile that owns this balance */
-    playerProfileId: Scalars['ID']
-    /** ID of the currency this balance is for */
-    currencyId: Scalars['ID']
-    /** Current balance amount for this currency */
-    balance: Scalars['Float']
-    /** Timestamp when the player currency record was created */
-    createdAt: Scalars['DateTime']
-    /** Timestamp when the balance was last updated */
-    updatedAt: Scalars['DateTime']
-    __typename: 'PlayerCurrency'
-}
-
-
-/** Paginated list of player currency balances */
-export interface PlayerCurrencies {
-    /** List of edges containing cursor and node pairs */
-    edges: PlayerCurrencyEdge[]
-    /** Flat list of items in the current page */
-    nodes: PlayerCurrency[]
-    /** Pagination metadata for navigating between pages */
-    pageInfo: ResponsePageInfo
-    /** Total number of items across all pages */
-    totalCount: (Scalars['Float'] | null)
-    __typename: 'PlayerCurrencies'
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface PlayerCurrencyEdge {
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor: Scalars['String']
-    /** The item at this edge */
-    node: PlayerCurrency
-    __typename: 'PlayerCurrencyEdge'
 }
 
 
@@ -6643,46 +6643,6 @@ export interface Query {
     stepRuleSetValidationJobs: ValidationJobs
     /** List streaming events emitted by a validation job. */
     stepRuleSetValidationEvents: ValidationEvents
-    /** Retrieve a registration series by ID */
-    registrationSeries: RegistrationSeries
-    /** Paginated list of the registration series of the organization */
-    registrationSeriesList: RegistrationSeriesPage
-    /** The caller's registrations that count against the series limits */
-    myActiveRegistrations: RegistrationSeriesEntry[]
-    /** A player's registrations that count against the series limits */
-    registrationSeriesPlayerEntries: RegistrationSeriesEntry[]
-    /** Retrieve a single event by ID, including the current user's reservation if any */
-    event: EventWithUserReservation
-    /** Retrieve a paginated list of events with optional filtering and ordering */
-    events: Events
-    /** Retrieve a single ticket configuration by ID */
-    eventTicketConfiguration: EventTicketConfiguration
-    /** Retrieve all ticket configurations for a specific event */
-    eventTicketConfigurations: EventTicketConfiguration[]
-    /** Retrieve the current player's event reservations with optional status and event filters */
-    eventReservationsMyReservations: EventReservations
-    /** Retrieve a single event reservation by ID with ticket and custom field details */
-    eventReservation: EventReservation
-    /** Retrieve a paginated list of seat statuses for a specific event */
-    eventSeats: EventSeats
-    /** Retrieve a paginated list of reservations for a specific event with advanced filtering */
-    eventReservations: EventReservations
-    /** Retrieve a paginated list of event venues for the organization */
-    eventVenues: EventVenues
-    /** Retrieve a single event venue by ID */
-    eventVenue: EventVenue
-    /** Retrieve a paginated list of seats for a venue, optionally filtered by seat type */
-    eventVenueSeats: EventVenueSeats
-    /** Retrieve a paginated list of seat types for a specific venue */
-    eventVenueSeatTypes: EventVenueSeatTypes
-    /** Time slots matching the filter, ordered by start time */
-    eventSlots: EventTicketConfiguration[]
-    /** Waitlist entries of the caller's player */
-    myWaitlistEntries: EventWaitlistEntry[]
-    /** Waitlist entries of an event, in queue order */
-    eventWaitlistEntries: EventWaitlistEntries
-    /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
-    organizationPaymentCollectionConfiguration: (OrganizationPaymentCollectionConfiguration | null)
     /** List all CDN files for a platform or template, optionally filtered by file type */
     platformFiles: PlatformCdnFile[]
     /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
@@ -6715,6 +6675,38 @@ export interface Query {
     organizationSkillRatings: OrganizationSkillRating[]
     /** Retrieve a single skill rating by its ID */
     organizationSkillRating: OrganizationSkillRating
+    /** Retrieve a single event by ID, including the current user's reservation if any */
+    event: EventWithUserReservation
+    /** Retrieve a paginated list of events with optional filtering and ordering */
+    events: Events
+    /** Retrieve a single ticket configuration by ID */
+    eventTicketConfiguration: EventTicketConfiguration
+    /** Retrieve all ticket configurations for a specific event */
+    eventTicketConfigurations: EventTicketConfiguration[]
+    /** Retrieve the current player's event reservations with optional status and event filters */
+    eventReservationsMyReservations: EventReservations
+    /** Retrieve a single event reservation by ID with ticket and custom field details */
+    eventReservation: EventReservation
+    /** Retrieve a paginated list of seat statuses for a specific event */
+    eventSeats: EventSeats
+    /** Retrieve a paginated list of reservations for a specific event with advanced filtering */
+    eventReservations: EventReservations
+    /** Retrieve a paginated list of event venues for the organization */
+    eventVenues: EventVenues
+    /** Retrieve a single event venue by ID */
+    eventVenue: EventVenue
+    /** Retrieve a paginated list of seats for a venue, optionally filtered by seat type */
+    eventVenueSeats: EventVenueSeats
+    /** Retrieve a paginated list of seat types for a specific venue */
+    eventVenueSeatTypes: EventVenueSeatTypes
+    /** Time slots matching the filter, ordered by start time */
+    eventSlots: EventTicketConfiguration[]
+    /** Waitlist entries of the caller's player */
+    myWaitlistEntries: EventWaitlistEntry[]
+    /** Waitlist entries of an event, in queue order */
+    eventWaitlistEntries: EventWaitlistEntries
+    /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
+    organizationPaymentCollectionConfiguration: (OrganizationPaymentCollectionConfiguration | null)
     /** Retrieve paginated members of specified user groups */
     userGroupMembers: UserGroupMembers
     /** Retrieve paginated user groups by their IDs */
@@ -6779,6 +6771,14 @@ export interface Query {
     appFunctionRead: AppFunctionResult
     permissionDefinitions: PermissionDefinitionDto[]
     hasPermissions: Scalars['Boolean'][]
+    /** Retrieve a registration series by ID */
+    registrationSeries: RegistrationSeries
+    /** Paginated list of the registration series of the organization */
+    registrationSeriesList: RegistrationSeriesPage
+    /** The caller's registrations that count against the series limits */
+    myActiveRegistrations: RegistrationSeriesEntry[]
+    /** A player's registrations that count against the series limits */
+    registrationSeriesPlayerEntries: RegistrationSeriesEntry[]
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration: OrganizationModeration
     /** Tests up to 20 texts of at most 4,096 characters against the banned lists of the current organization without revealing them. */
@@ -7033,14 +7033,52 @@ export interface Mutation {
     validateStepRuleSet: ValidationJobModel
     /** Cancel an in-progress or queued validation job. */
     cancelStepRuleSetValidation: ValidationJobModel
-    /** Create a registration series */
-    registrationSeriesCreate: RegistrationSeries
-    /** Update a registration series */
-    registrationSeriesUpdate: RegistrationSeries
-    /** Delete a registration series; its events and tournaments leave the series */
-    registrationSeriesDelete: Scalars['Boolean']
-    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
-    registrationSeriesAssign: Scalars['Boolean']
+    /** Create a Stripe customer portal session URL for managing the organization subscription */
+    stripeCreatePortalSession: Scalars['String']
+    /** Create a new CDN file record for a platform or template */
+    platformFileCreate: PlatformCdnFile
+    /** Publish the development version of a CDN file to production */
+    platformFilePublish: PlatformCdnFile
+    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
+    platformFileGenerateUploadUrl: PresignedUrl
+    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
+    platformFileValidateFileUpload: PlatformCdnFile
+    /** Update the configuration of an existing CDN file */
+    platformFileUpdate: PlatformCdnFile
+    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
+    platformFileDelete: Scalars['Void']
+    /** Create a new platform with a subdomain and associated OAuth application */
+    platformCreate: Platform
+    /** Update an existing platform name and configuration */
+    platformUpdate: Platform
+    /** Delete a platform and its associated OAuth application */
+    platformDelete: Scalars['Void']
+    /** Update the theme configuration for a platform */
+    platformThemeUpdate: Platform
+    /** Register a new custom domain for a platform via Cloudflare */
+    platformRegisterCustomDomain: CustomDomainData
+    /** Force a DNS/SSL validation recheck for a custom domain */
+    platformForceCustomDomainRecheck: CustomDomainData
+    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
+    platformRemoveCustomDomain: Scalars['Void']
+    /** Create a new platform template for the organization */
+    platformTemplateCreate: PlatformTemplate
+    /** Update an existing platform template */
+    platformTemplateUpdate: PlatformTemplate
+    /** Apply a template to a platform, copying all published template files to the target platform */
+    platformTemplateApply: Platform
+    /** Delete a platform template from the organization */
+    platformTemplateDelete: Scalars['Void']
+    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
+    organizationSubscriptionItemsUpdate: Scalars['Void']
+    /** Register a match result and update player skill ratings accordingly */
+    organizationSkillRatingsRegisterMatch: OrganizationSkillRatingsRegisterMatchPlayer[]
+    /** Create a new skill rating for the current organization */
+    organizationSkillRatingCreate: OrganizationSkillRating
+    /** Update an existing skill rating configuration */
+    organizationSkillRatingUpdate: OrganizationSkillRating
+    /** Delete a skill rating from the current organization */
+    organizationSkillRatingDelete: Scalars['Void']
     /** Create a new event */
     eventCreate: Event
     /** Update an event */
@@ -7099,52 +7137,6 @@ export interface Mutation {
     eventReservationReleaseTickets: EventReservation
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount: Scalars['String']
-    /** Create a Stripe customer portal session URL for managing the organization subscription */
-    stripeCreatePortalSession: Scalars['String']
-    /** Create a new CDN file record for a platform or template */
-    platformFileCreate: PlatformCdnFile
-    /** Publish the development version of a CDN file to production */
-    platformFilePublish: PlatformCdnFile
-    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
-    platformFileGenerateUploadUrl: PresignedUrl
-    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
-    platformFileValidateFileUpload: PlatformCdnFile
-    /** Update the configuration of an existing CDN file */
-    platformFileUpdate: PlatformCdnFile
-    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
-    platformFileDelete: Scalars['Void']
-    /** Create a new platform with a subdomain and associated OAuth application */
-    platformCreate: Platform
-    /** Update an existing platform name and configuration */
-    platformUpdate: Platform
-    /** Delete a platform and its associated OAuth application */
-    platformDelete: Scalars['Void']
-    /** Update the theme configuration for a platform */
-    platformThemeUpdate: Platform
-    /** Register a new custom domain for a platform via Cloudflare */
-    platformRegisterCustomDomain: CustomDomainData
-    /** Force a DNS/SSL validation recheck for a custom domain */
-    platformForceCustomDomainRecheck: CustomDomainData
-    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
-    platformRemoveCustomDomain: Scalars['Void']
-    /** Create a new platform template for the organization */
-    platformTemplateCreate: PlatformTemplate
-    /** Update an existing platform template */
-    platformTemplateUpdate: PlatformTemplate
-    /** Apply a template to a platform, copying all published template files to the target platform */
-    platformTemplateApply: Platform
-    /** Delete a platform template from the organization */
-    platformTemplateDelete: Scalars['Void']
-    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
-    organizationSubscriptionItemsUpdate: Scalars['Void']
-    /** Register a match result and update player skill ratings accordingly */
-    organizationSkillRatingsRegisterMatch: OrganizationSkillRatingsRegisterMatchPlayer[]
-    /** Create a new skill rating for the current organization */
-    organizationSkillRatingCreate: OrganizationSkillRating
-    /** Update an existing skill rating configuration */
-    organizationSkillRatingUpdate: OrganizationSkillRating
-    /** Delete a skill rating from the current organization */
-    organizationSkillRatingDelete: Scalars['Void']
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite: UserGroupMember
     /** Rename a user group, or clear its name with null. Allowed to the group manager and to a caller holding organization:user-groups:manage on the group. */
@@ -7267,6 +7259,14 @@ export interface Mutation {
     customPermissionCreate: PermissionDefinitionDto
     customPermissionUpdate: PermissionDefinitionDto
     customPermissionDelete: Scalars['Boolean']
+    /** Create a registration series */
+    registrationSeriesCreate: RegistrationSeries
+    /** Update a registration series */
+    registrationSeriesUpdate: RegistrationSeries
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete: Scalars['Boolean']
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign: Scalars['Boolean']
     /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
     organizationModerationUpdate: OrganizationModeration
     __typename: 'Mutation'
@@ -11702,6 +11702,224 @@ export interface ValidationEventModelEdgeGenqlSelection{
 }
 
 
+/** Rules of an open pool step, where matches are created on demand */
+export interface OpenPoolConfigurationGenqlSelection{
+    /** Number of teams in each match */
+    teamsPerMatch?: boolean | number
+    /** Matches per game (odd); the game winner takes the majority */
+    bestOf?: boolean | number
+    /** Maximum matches a team can play in the step; 0 means unlimited */
+    maxMatchesPerTeam?: boolean | number
+    /** Whether the same teams can meet more than once */
+    allowRematch?: boolean | number
+    /** Whether a team can play several unfinished matches at once */
+    allowConcurrentMatches?: boolean | number
+    /** Whether a tournament team joins the step when its first match is created */
+    autoJoin?: boolean | number
+    /** Whether a team needs at least the tournament's minimum team size to play */
+    enforceTeamMinSize?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A team taking part in an open pool match */
+export interface OpenPoolMatchTeamGenqlSelection{
+    /** ID of the tournament team */
+    teamId?: boolean | number
+    /** The tournament team */
+    team?: TournamentTeamGenqlSelection
+    /** Result of the team in this match */
+    status?: boolean | number
+    /** Score of the team in this match */
+    score?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A match created on demand in an open pool step */
+export interface OpenPoolMatchGenqlSelection{
+    /** ID of the match */
+    id?: boolean | number
+    /** ID of the game holding the match */
+    gameId?: boolean | number
+    /** ID of the group (pool) of the match */
+    groupId?: boolean | number
+    /** ID of the open pool step */
+    stepId?: boolean | number
+    /** ID of the tournament */
+    tournamentId?: boolean | number
+    /** Label given when the match was created */
+    label?: boolean | number
+    /** Creation order of the match in its group */
+    order?: boolean | number
+    /** Status of the match */
+    status?: boolean | number
+    /** Teams of the match with their result */
+    teams?: OpenPoolMatchTeamGenqlSelection
+    /** Date and time when the match was created */
+    createdAt?: boolean | number
+    /** Date and time when the match was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of open pool matches */
+export interface OpenPoolMatchesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: OpenPoolMatchEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: OpenPoolMatchGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface OpenPoolMatchEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: OpenPoolMatchGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Live standing of a team in an open pool step */
+export interface OpenPoolStandingGenqlSelection{
+    /** ID of the tournament team */
+    teamId?: boolean | number
+    /** The tournament team */
+    team?: TournamentTeamGenqlSelection
+    /** ID of the group (pool) of the standing */
+    groupId?: boolean | number
+    /** Rank in the step; null until ranked */
+    rank?: boolean | number
+    /** Status of the team in the step */
+    status?: boolean | number
+    /** Points earned in the step */
+    points?: boolean | number
+    /** Ended matches played */
+    played?: boolean | number
+    /** Matches won */
+    wins?: boolean | number
+    /** Matches lost */
+    losses?: boolean | number
+    /** Matches drawn */
+    draws?: boolean | number
+    /** Matches forfeited */
+    forfeits?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A virtual currency defined within an organization */
+export interface CurrencyGenqlSelection{
+    /** Unique identifier of the currency */
+    id?: boolean | number
+    /** Short symbol representing the currency (e.g., GP, CR) */
+    symbol?: boolean | number
+    /** Display name of the currency */
+    name?: boolean | number
+    /** External system identifier for third-party integrations */
+    externalId?: boolean | number
+    /** Description of the currency purpose */
+    description?: boolean | number
+    /** Whether the currency is hidden from players */
+    hidden?: boolean | number
+    /** ID of the organization that owns this currency */
+    organizationId?: boolean | number
+    /** Timestamp when the currency was created */
+    createdAt?: boolean | number
+    /** Timestamp when the currency was last updated */
+    updatedAt?: boolean | number
+    /** Custom metadata key-value pairs attached to the currency */
+    metadata?: PropertyValueGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of currencies */
+export interface CurrenciesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: CurrencyEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: CurrencyGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface CurrencyEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: CurrencyGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** A player's balance for a specific currency */
+export interface PlayerCurrencyGenqlSelection{
+    /** Unique identifier of the player currency record */
+    id?: boolean | number
+    /** ID of the player profile that owns this balance */
+    playerProfileId?: boolean | number
+    /** ID of the currency this balance is for */
+    currencyId?: boolean | number
+    /** Current balance amount for this currency */
+    balance?: boolean | number
+    /** Timestamp when the player currency record was created */
+    createdAt?: boolean | number
+    /** Timestamp when the balance was last updated */
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Paginated list of player currency balances */
+export interface PlayerCurrenciesGenqlSelection{
+    /** List of edges containing cursor and node pairs */
+    edges?: PlayerCurrencyEdgeGenqlSelection
+    /** Flat list of items in the current page */
+    nodes?: PlayerCurrencyGenqlSelection
+    /** Pagination metadata for navigating between pages */
+    pageInfo?: ResponsePageInfoGenqlSelection
+    /** Total number of items across all pages */
+    totalCount?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An edge in a paginated connection containing a cursor and node */
+export interface PlayerCurrencyEdgeGenqlSelection{
+    /** Opaque cursor string for this edge, used for pagination */
+    cursor?: boolean | number
+    /** The item at this edge */
+    node?: PlayerCurrencyGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** Configuration defining size and name length constraints for a user group */
 export interface UserGroupConfigurationGenqlSelection{
     /** Maximum number of accepted members allowed in the group */
@@ -12598,224 +12816,6 @@ export interface EventWaitlistEntryEdgeGenqlSelection{
     cursor?: boolean | number
     /** The item at this edge */
     node?: EventWaitlistEntryGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Rules of an open pool step, where matches are created on demand */
-export interface OpenPoolConfigurationGenqlSelection{
-    /** Number of teams in each match */
-    teamsPerMatch?: boolean | number
-    /** Matches per game (odd); the game winner takes the majority */
-    bestOf?: boolean | number
-    /** Maximum matches a team can play in the step; 0 means unlimited */
-    maxMatchesPerTeam?: boolean | number
-    /** Whether the same teams can meet more than once */
-    allowRematch?: boolean | number
-    /** Whether a team can play several unfinished matches at once */
-    allowConcurrentMatches?: boolean | number
-    /** Whether a tournament team joins the step when its first match is created */
-    autoJoin?: boolean | number
-    /** Whether a team needs at least the tournament's minimum team size to play */
-    enforceTeamMinSize?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A team taking part in an open pool match */
-export interface OpenPoolMatchTeamGenqlSelection{
-    /** ID of the tournament team */
-    teamId?: boolean | number
-    /** The tournament team */
-    team?: TournamentTeamGenqlSelection
-    /** Result of the team in this match */
-    status?: boolean | number
-    /** Score of the team in this match */
-    score?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A match created on demand in an open pool step */
-export interface OpenPoolMatchGenqlSelection{
-    /** ID of the match */
-    id?: boolean | number
-    /** ID of the game holding the match */
-    gameId?: boolean | number
-    /** ID of the group (pool) of the match */
-    groupId?: boolean | number
-    /** ID of the open pool step */
-    stepId?: boolean | number
-    /** ID of the tournament */
-    tournamentId?: boolean | number
-    /** Label given when the match was created */
-    label?: boolean | number
-    /** Creation order of the match in its group */
-    order?: boolean | number
-    /** Status of the match */
-    status?: boolean | number
-    /** Teams of the match with their result */
-    teams?: OpenPoolMatchTeamGenqlSelection
-    /** Date and time when the match was created */
-    createdAt?: boolean | number
-    /** Date and time when the match was last updated */
-    updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of open pool matches */
-export interface OpenPoolMatchesGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: OpenPoolMatchEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: OpenPoolMatchGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface OpenPoolMatchEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: OpenPoolMatchGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Live standing of a team in an open pool step */
-export interface OpenPoolStandingGenqlSelection{
-    /** ID of the tournament team */
-    teamId?: boolean | number
-    /** The tournament team */
-    team?: TournamentTeamGenqlSelection
-    /** ID of the group (pool) of the standing */
-    groupId?: boolean | number
-    /** Rank in the step; null until ranked */
-    rank?: boolean | number
-    /** Status of the team in the step */
-    status?: boolean | number
-    /** Points earned in the step */
-    points?: boolean | number
-    /** Ended matches played */
-    played?: boolean | number
-    /** Matches won */
-    wins?: boolean | number
-    /** Matches lost */
-    losses?: boolean | number
-    /** Matches drawn */
-    draws?: boolean | number
-    /** Matches forfeited */
-    forfeits?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A virtual currency defined within an organization */
-export interface CurrencyGenqlSelection{
-    /** Unique identifier of the currency */
-    id?: boolean | number
-    /** Short symbol representing the currency (e.g., GP, CR) */
-    symbol?: boolean | number
-    /** Display name of the currency */
-    name?: boolean | number
-    /** External system identifier for third-party integrations */
-    externalId?: boolean | number
-    /** Description of the currency purpose */
-    description?: boolean | number
-    /** Whether the currency is hidden from players */
-    hidden?: boolean | number
-    /** ID of the organization that owns this currency */
-    organizationId?: boolean | number
-    /** Timestamp when the currency was created */
-    createdAt?: boolean | number
-    /** Timestamp when the currency was last updated */
-    updatedAt?: boolean | number
-    /** Custom metadata key-value pairs attached to the currency */
-    metadata?: PropertyValueGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of currencies */
-export interface CurrenciesGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: CurrencyEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: CurrencyGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface CurrencyEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: CurrencyGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** A player's balance for a specific currency */
-export interface PlayerCurrencyGenqlSelection{
-    /** Unique identifier of the player currency record */
-    id?: boolean | number
-    /** ID of the player profile that owns this balance */
-    playerProfileId?: boolean | number
-    /** ID of the currency this balance is for */
-    currencyId?: boolean | number
-    /** Current balance amount for this currency */
-    balance?: boolean | number
-    /** Timestamp when the player currency record was created */
-    createdAt?: boolean | number
-    /** Timestamp when the balance was last updated */
-    updatedAt?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** Paginated list of player currency balances */
-export interface PlayerCurrenciesGenqlSelection{
-    /** List of edges containing cursor and node pairs */
-    edges?: PlayerCurrencyEdgeGenqlSelection
-    /** Flat list of items in the current page */
-    nodes?: PlayerCurrencyGenqlSelection
-    /** Pagination metadata for navigating between pages */
-    pageInfo?: ResponsePageInfoGenqlSelection
-    /** Total number of items across all pages */
-    totalCount?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** An edge in a paginated connection containing a cursor and node */
-export interface PlayerCurrencyEdgeGenqlSelection{
-    /** Opaque cursor string for this edge, used for pagination */
-    cursor?: boolean | number
-    /** The item at this edge */
-    node?: PlayerCurrencyGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -13974,8 +13974,6 @@ required: Scalars['Boolean'],
 order: Scalars['Float'],
 /** Whether the value must be unique across all entities */
 unique: Scalars['Boolean'],
-/** Whether the property is publicly visible (deprecated, use visibility instead) */
-public?: (Scalars['Boolean'] | null),
 /** Visibility level controlling who can view this property value */
 visibility?: (PropertyVisibility | null),
 /** Editability rule controlling when and by whom this property can be modified */
@@ -14010,8 +14008,6 @@ scoreFormula?: (Scalars['String'] | null)}
 
 /** Input for game-level configuration within a round */
 export interface GameConfigurationInput {
-/** Number of match wins required to win the game (best-of format) */
-wonMatchCountToWinGame?: (Scalars['Float'] | null),
 /** Whether individual match scores are aggregated as the game score */
 useMatchScoresAsGameScore: Scalars['Boolean'],
 /** Number of teams participating in each game */
@@ -14051,9 +14047,7 @@ description?: (Scalars['String'] | null)}
 /** Input for a tournament step configuration */
 export interface StepConfigurationInput {
 /** Discriminator type, always STEP for step configurations */
-type?: ConfigurationType,
-/** List of group configurations within this step */
-groups?: (GroupConfigurationInput[] | null)}
+type?: ConfigurationType}
 
 
 /** Input for a numeric comparison condition */
@@ -14504,46 +14498,6 @@ export interface QueryGenqlSelection{
     stepRuleSetValidationJobs?: (ValidationJobsGenqlSelection & { __args: {stepRuleSetId: Scalars['ID'], page: PageInfo} })
     /** List streaming events emitted by a validation job. */
     stepRuleSetValidationEvents?: (ValidationEventsGenqlSelection & { __args: {jobId: Scalars['ID'], page: PageInfo, kindFilter?: (ValidationEventKind[] | null)} })
-    /** Retrieve a registration series by ID */
-    registrationSeries?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Paginated list of the registration series of the organization */
-    registrationSeriesList?: (RegistrationSeriesPageGenqlSelection & { __args: {page: PageInfo} })
-    /** The caller's registrations that count against the series limits */
-    myActiveRegistrations?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID']} })
-    /** A player's registrations that count against the series limits */
-    registrationSeriesPlayerEntries?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID'], playerId: Scalars['ID']} })
-    /** Retrieve a single event by ID, including the current user's reservation if any */
-    event?: (EventWithUserReservationGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Retrieve a paginated list of events with optional filtering and ordering */
-    events?: (EventsGenqlSelection & { __args: {page: PageInfo, query?: (EventsQuery | null), eventIds?: (Scalars['ID'][] | null)} })
-    /** Retrieve a single ticket configuration by ID */
-    eventTicketConfiguration?: (EventTicketConfigurationGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Retrieve all ticket configurations for a specific event */
-    eventTicketConfigurations?: (EventTicketConfigurationGenqlSelection & { __args: {eventId: Scalars['ID']} })
-    /** Retrieve the current player's event reservations with optional status and event filters */
-    eventReservationsMyReservations?: (EventReservationsGenqlSelection & { __args: {page: PageInfo, status?: (EventReservationStatus | null), groupStatus?: (UserGroupStatus | null), eventIds?: (Scalars['ID'][] | null)} })
-    /** Retrieve a single event reservation by ID with ticket and custom field details */
-    eventReservation?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID']} })
-    /** Retrieve a paginated list of seat statuses for a specific event */
-    eventSeats?: (EventSeatsGenqlSelection & { __args: {eventId: Scalars['ID'], page: PageInfo, eventVenueId?: (Scalars['ID'] | null), reservationIds?: (Scalars['ID'][] | null)} })
-    /** Retrieve a paginated list of reservations for a specific event with advanced filtering */
-    eventReservations?: (EventReservationsGenqlSelection & { __args: {eventId: Scalars['ID'], page: PageInfo, query: EventReservationsQueryInput} })
-    /** Retrieve a paginated list of event venues for the organization */
-    eventVenues?: (EventVenuesGenqlSelection & { __args: {page: PageInfo} })
-    /** Retrieve a single event venue by ID */
-    eventVenue?: (EventVenueGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Retrieve a paginated list of seats for a venue, optionally filtered by seat type */
-    eventVenueSeats?: (EventVenueSeatsGenqlSelection & { __args: {venueId: Scalars['ID'], page: PageInfo, seatTypeId?: (Scalars['ID'] | null)} })
-    /** Retrieve a paginated list of seat types for a specific venue */
-    eventVenueSeatTypes?: (EventVenueSeatTypesGenqlSelection & { __args: {venueId: Scalars['ID'], page: PageInfo} })
-    /** Time slots matching the filter, ordered by start time */
-    eventSlots?: (EventTicketConfigurationGenqlSelection & { __args: {filter: EventSlotsFilter} })
-    /** Waitlist entries of the caller's player */
-    myWaitlistEntries?: (EventWaitlistEntryGenqlSelection & { __args?: {eventIds?: (Scalars['ID'][] | null), activeOnly?: (Scalars['Boolean'] | null)} })
-    /** Waitlist entries of an event, in queue order */
-    eventWaitlistEntries?: (EventWaitlistEntriesGenqlSelection & { __args: {eventId: Scalars['ID'], ticketConfigurationId?: (Scalars['ID'] | null), statuses?: (EventWaitlistEntryStatus[] | null), page: PageInfo} })
-    /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
-    organizationPaymentCollectionConfiguration?: OrganizationPaymentCollectionConfigurationGenqlSelection
     /** List all CDN files for a platform or template, optionally filtered by file type */
     platformFiles?: (PlatformCdnFileGenqlSelection & { __args?: {type?: (PlatformCdnFileType | null), platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
     /** Retrieve a single CDN file by its ID, including a signed dev URL for authorized editors */
@@ -14576,6 +14530,38 @@ export interface QueryGenqlSelection{
     organizationSkillRatings?: OrganizationSkillRatingGenqlSelection
     /** Retrieve a single skill rating by its ID */
     organizationSkillRating?: (OrganizationSkillRatingGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Retrieve a single event by ID, including the current user's reservation if any */
+    event?: (EventWithUserReservationGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Retrieve a paginated list of events with optional filtering and ordering */
+    events?: (EventsGenqlSelection & { __args: {page: PageInfo, query?: (EventsQuery | null), eventIds?: (Scalars['ID'][] | null)} })
+    /** Retrieve a single ticket configuration by ID */
+    eventTicketConfiguration?: (EventTicketConfigurationGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Retrieve all ticket configurations for a specific event */
+    eventTicketConfigurations?: (EventTicketConfigurationGenqlSelection & { __args: {eventId: Scalars['ID']} })
+    /** Retrieve the current player's event reservations with optional status and event filters */
+    eventReservationsMyReservations?: (EventReservationsGenqlSelection & { __args: {page: PageInfo, status?: (EventReservationStatus | null), groupStatus?: (UserGroupStatus | null), eventIds?: (Scalars['ID'][] | null)} })
+    /** Retrieve a single event reservation by ID with ticket and custom field details */
+    eventReservation?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID']} })
+    /** Retrieve a paginated list of seat statuses for a specific event */
+    eventSeats?: (EventSeatsGenqlSelection & { __args: {eventId: Scalars['ID'], page: PageInfo, eventVenueId?: (Scalars['ID'] | null), reservationIds?: (Scalars['ID'][] | null)} })
+    /** Retrieve a paginated list of reservations for a specific event with advanced filtering */
+    eventReservations?: (EventReservationsGenqlSelection & { __args: {eventId: Scalars['ID'], page: PageInfo, query: EventReservationsQueryInput} })
+    /** Retrieve a paginated list of event venues for the organization */
+    eventVenues?: (EventVenuesGenqlSelection & { __args: {page: PageInfo} })
+    /** Retrieve a single event venue by ID */
+    eventVenue?: (EventVenueGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Retrieve a paginated list of seats for a venue, optionally filtered by seat type */
+    eventVenueSeats?: (EventVenueSeatsGenqlSelection & { __args: {venueId: Scalars['ID'], page: PageInfo, seatTypeId?: (Scalars['ID'] | null)} })
+    /** Retrieve a paginated list of seat types for a specific venue */
+    eventVenueSeatTypes?: (EventVenueSeatTypesGenqlSelection & { __args: {venueId: Scalars['ID'], page: PageInfo} })
+    /** Time slots matching the filter, ordered by start time */
+    eventSlots?: (EventTicketConfigurationGenqlSelection & { __args: {filter: EventSlotsFilter} })
+    /** Waitlist entries of the caller's player */
+    myWaitlistEntries?: (EventWaitlistEntryGenqlSelection & { __args?: {eventIds?: (Scalars['ID'][] | null), activeOnly?: (Scalars['Boolean'] | null)} })
+    /** Waitlist entries of an event, in queue order */
+    eventWaitlistEntries?: (EventWaitlistEntriesGenqlSelection & { __args: {eventId: Scalars['ID'], ticketConfigurationId?: (Scalars['ID'] | null), statuses?: (EventWaitlistEntryStatus[] | null), page: PageInfo} })
+    /** Retrieve the payment collection configuration for the current organization, including Stripe account details and fees */
+    organizationPaymentCollectionConfiguration?: OrganizationPaymentCollectionConfigurationGenqlSelection
     /** Retrieve paginated members of specified user groups */
     userGroupMembers?: (UserGroupMembersGenqlSelection & { __args: {groupIds: Scalars['ID'][], page: PageInfo, status?: (UserGroupMemberStatus | null)} })
     /** Retrieve paginated user groups by their IDs */
@@ -14640,6 +14626,14 @@ export interface QueryGenqlSelection{
     appFunctionRead?: (AppFunctionResultGenqlSelection & { __args: {input: AppFunctionCallInput} })
     permissionDefinitions?: PermissionDefinitionDtoGenqlSelection
     hasPermissions?: { __args: {checks: PermissionCheckInput[]} }
+    /** Retrieve a registration series by ID */
+    registrationSeries?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Paginated list of the registration series of the organization */
+    registrationSeriesList?: (RegistrationSeriesPageGenqlSelection & { __args: {page: PageInfo} })
+    /** The caller's registrations that count against the series limits */
+    myActiveRegistrations?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID']} })
+    /** A player's registrations that count against the series limits */
+    registrationSeriesPlayerEntries?: (RegistrationSeriesEntryGenqlSelection & { __args: {seriesId: Scalars['ID'], playerId: Scalars['ID']} })
     /** Banned words and substrings applied to nicknames and team names of the current organization. */
     organizationModeration?: OrganizationModerationGenqlSelection
     /** Tests up to 20 texts of at most 4,096 characters against the banned lists of the current organization without revealing them. */
@@ -14758,8 +14752,6 @@ export interface SimulateScriptInput {
 script: Scalars['String'],
 /** Execution context the script is intended for */
 context: ScriptContextType,
-/** DEPRECATED: JSON-encoded mock parameters for simulation. Violates the no-JSON-in-GraphQL contract. Use `overrides` instead — when both are supplied, `overrides` wins. This field will be removed in the next major release. */
-parameters?: (Scalars['String'] | null),
 /** Structured overrides applied on top of the synthetic mock fixture before the run. Preferred replacement for the deprecated `parameters` JSON blob — covers fixture sizing, per-team metadata seeding, and preset-parameter overrides. */
 overrides?: (SimulationContextOverridesInput | null),
 /** Optional: simulate against a real tournament step */
@@ -14814,6 +14806,38 @@ stringValue?: (Scalars['String'] | null),
 numberValue?: (Scalars['Float'] | null),
 /** Value when type=BOOLEAN. */
 booleanValue?: (Scalars['Boolean'] | null)}
+
+
+/** Filters for journal queries and subscriptions. */
+export interface JournalFiltersInput {
+/** Restrict results to one or more journal categories. */
+categories?: (JournalCategory[] | null),
+/** Restrict results to an exact list of entry types. */
+types?: (Scalars['String'][] | null),
+/** Restrict results to entry types starting with the given prefix (e.g. "rule_engine."). */
+typePrefix?: (Scalars['String'] | null),
+/** Restrict results to a specific actor type. */
+actorType?: (JournalActorType | null),
+/** Restrict results to entries produced by a specific actor id. */
+actorId?: (Scalars['ID'] | null),
+/** Restrict results to entries whose primary resource matches the given type. */
+primaryResourceType?: (Scalars['String'] | null),
+/** Restrict results to entries whose primary resource has the given id. */
+primaryResourceId?: (Scalars['ID'] | null),
+/** Restrict results to one or more severities. */
+severity?: (JournalSeverity[] | null),
+/** When true, only return root entries (no parent). */
+rootOnly?: (Scalars['Boolean'] | null),
+/** Restrict results to direct children of a specific entry. */
+parentEntryId?: (Scalars['ID'] | null),
+/** Restrict results to entries sharing the given correlation id. */
+correlationId?: (Scalars['ID'] | null),
+/** Only return entries created at or after this timestamp. */
+createdAfter?: (Scalars['DateTime'] | null),
+/** Only return entries created at or before this timestamp. */
+createdBefore?: (Scalars['DateTime'] | null),
+/** Defaults to false. Excludes SIMULATION when false. */
+includeSimulations?: (Scalars['Boolean'] | null)}
 
 
 /** Query parameters for filtering and ordering events */
@@ -14890,38 +14914,6 @@ from?: (Scalars['DateTime'] | null),
 to?: (Scalars['DateTime'] | null),
 /** Keep only open, buyable slots that have not started and still have free seats */
 onlyReservable?: (Scalars['Boolean'] | null)}
-
-
-/** Filters for journal queries and subscriptions. */
-export interface JournalFiltersInput {
-/** Restrict results to one or more journal categories. */
-categories?: (JournalCategory[] | null),
-/** Restrict results to an exact list of entry types. */
-types?: (Scalars['String'][] | null),
-/** Restrict results to entry types starting with the given prefix (e.g. "rule_engine."). */
-typePrefix?: (Scalars['String'] | null),
-/** Restrict results to a specific actor type. */
-actorType?: (JournalActorType | null),
-/** Restrict results to entries produced by a specific actor id. */
-actorId?: (Scalars['ID'] | null),
-/** Restrict results to entries whose primary resource matches the given type. */
-primaryResourceType?: (Scalars['String'] | null),
-/** Restrict results to entries whose primary resource has the given id. */
-primaryResourceId?: (Scalars['ID'] | null),
-/** Restrict results to one or more severities. */
-severity?: (JournalSeverity[] | null),
-/** When true, only return root entries (no parent). */
-rootOnly?: (Scalars['Boolean'] | null),
-/** Restrict results to direct children of a specific entry. */
-parentEntryId?: (Scalars['ID'] | null),
-/** Restrict results to entries sharing the given correlation id. */
-correlationId?: (Scalars['ID'] | null),
-/** Only return entries created at or after this timestamp. */
-createdAfter?: (Scalars['DateTime'] | null),
-/** Only return entries created at or before this timestamp. */
-createdBefore?: (Scalars['DateTime'] | null),
-/** Defaults to false. Excludes SIMULATION when false. */
-includeSimulations?: (Scalars['Boolean'] | null)}
 
 
 /** Query input for filtering user groups by their IDs */
@@ -15264,14 +15256,52 @@ export interface MutationGenqlSelection{
     validateStepRuleSet?: (ValidationJobModelGenqlSelection & { __args: {stepRuleSetId: Scalars['ID']} })
     /** Cancel an in-progress or queued validation job. */
     cancelStepRuleSetValidation?: (ValidationJobModelGenqlSelection & { __args: {jobId: Scalars['ID']} })
-    /** Create a registration series */
-    registrationSeriesCreate?: (RegistrationSeriesGenqlSelection & { __args: {input: RegistrationSeriesCreateInput} })
-    /** Update a registration series */
-    registrationSeriesUpdate?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID'], input: RegistrationSeriesUpdateInput} })
-    /** Delete a registration series; its events and tournaments leave the series */
-    registrationSeriesDelete?: { __args: {id: Scalars['ID']} }
-    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
-    registrationSeriesAssign?: { __args: {seriesId?: (Scalars['ID'] | null), eventIds?: (Scalars['ID'][] | null), tournamentIds?: (Scalars['ID'][] | null)} } | boolean | number
+    /** Create a Stripe customer portal session URL for managing the organization subscription */
+    stripeCreatePortalSession?: boolean | number
+    /** Create a new CDN file record for a platform or template */
+    platformFileCreate?: (PlatformCdnFileGenqlSelection & { __args: {input: PlatformCdnFileCreateInput, platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
+    /** Publish the development version of a CDN file to production */
+    platformFilePublish?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
+    platformFileGenerateUploadUrl?: (PresignedUrlGenqlSelection & { __args: {id: Scalars['ID'], size: Scalars['Float']} })
+    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
+    platformFileValidateFileUpload?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
+    /** Update the configuration of an existing CDN file */
+    platformFileUpdate?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID'], input: PlatformFileUpdateInput} })
+    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
+    platformFileDelete?: { __args: {id: Scalars['ID']} }
+    /** Create a new platform with a subdomain and associated OAuth application */
+    platformCreate?: (PlatformGenqlSelection & { __args: {input: CreatePlatformInput} })
+    /** Update an existing platform name and configuration */
+    platformUpdate?: (PlatformGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformInput} })
+    /** Delete a platform and its associated OAuth application */
+    platformDelete?: { __args: {id: Scalars['ID']} }
+    /** Update the theme configuration for a platform */
+    platformThemeUpdate?: (PlatformGenqlSelection & { __args: {platformId: Scalars['ID'], input: PlatformThemeInput} })
+    /** Register a new custom domain for a platform via Cloudflare */
+    platformRegisterCustomDomain?: (CustomDomainDataGenqlSelection & { __args: {platformId: Scalars['ID'], hostname: Scalars['String']} })
+    /** Force a DNS/SSL validation recheck for a custom domain */
+    platformForceCustomDomainRecheck?: (CustomDomainDataGenqlSelection & { __args: {hostname: Scalars['String']} })
+    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
+    platformRemoveCustomDomain?: { __args: {hostname: Scalars['String']} }
+    /** Create a new platform template for the organization */
+    platformTemplateCreate?: (PlatformTemplateGenqlSelection & { __args: {input: CreatePlatformTemplateInput} })
+    /** Update an existing platform template */
+    platformTemplateUpdate?: (PlatformTemplateGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformTemplateInput} })
+    /** Apply a template to a platform, copying all published template files to the target platform */
+    platformTemplateApply?: (PlatformGenqlSelection & { __args: {platformTemplateId: Scalars['ID'], platformId: Scalars['ID']} })
+    /** Delete a platform template from the organization */
+    platformTemplateDelete?: { __args: {id: Scalars['ID']} }
+    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
+    organizationSubscriptionItemsUpdate?: { __args: {items: OrganizationSubscriptionItemUpdateInput[], coupon?: (Scalars['String'] | null), referral?: (Scalars['String'] | null)} }
+    /** Register a match result and update player skill ratings accordingly */
+    organizationSkillRatingsRegisterMatch?: (OrganizationSkillRatingsRegisterMatchPlayerGenqlSelection & { __args: {organizationSkillRatingId: Scalars['ID'], input: OrganizationSkillRatingsRegisterMatchInput} })
+    /** Create a new skill rating for the current organization */
+    organizationSkillRatingCreate?: (OrganizationSkillRatingGenqlSelection & { __args: {input: OrganizationSkillRatingCreateInput} })
+    /** Update an existing skill rating configuration */
+    organizationSkillRatingUpdate?: (OrganizationSkillRatingGenqlSelection & { __args: {id: Scalars['ID'], input: OrganizationSkillRatingUpdateInput} })
+    /** Delete a skill rating from the current organization */
+    organizationSkillRatingDelete?: { __args: {id: Scalars['ID']} }
     /** Create a new event */
     eventCreate?: (EventGenqlSelection & { __args: {input: EventCreateInput} })
     /** Update an event */
@@ -15338,52 +15368,6 @@ export interface MutationGenqlSelection{
     eventReservationReleaseTickets?: (EventReservationGenqlSelection & { __args: {reservationId: Scalars['ID'], reservationTicketIds: Scalars['ID'][]} })
     /** Create or update the Stripe Connect account for the organization and return the onboarding/update URL */
     organizationPaymentCollectionConfigurationCreateOrUpdateAccount?: boolean | number
-    /** Create a Stripe customer portal session URL for managing the organization subscription */
-    stripeCreatePortalSession?: boolean | number
-    /** Create a new CDN file record for a platform or template */
-    platformFileCreate?: (PlatformCdnFileGenqlSelection & { __args: {input: PlatformCdnFileCreateInput, platformId?: (Scalars['ID'] | null), templateId?: (Scalars['ID'] | null)} })
-    /** Publish the development version of a CDN file to production */
-    platformFilePublish?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Generate a presigned S3 upload URL for uploading file content to a CDN file */
-    platformFileGenerateUploadUrl?: (PresignedUrlGenqlSelection & { __args: {id: Scalars['ID'], size: Scalars['Float']} })
-    /** Validate and finalize an uploaded file, checking content type and moving it from temporary to dev storage */
-    platformFileValidateFileUpload?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID']} })
-    /** Update the configuration of an existing CDN file */
-    platformFileUpdate?: (PlatformCdnFileGenqlSelection & { __args: {id: Scalars['ID'], input: PlatformFileUpdateInput} })
-    /** Delete a CDN file and remove its dev, tmp, and production assets from S3 */
-    platformFileDelete?: { __args: {id: Scalars['ID']} }
-    /** Create a new platform with a subdomain and associated OAuth application */
-    platformCreate?: (PlatformGenqlSelection & { __args: {input: CreatePlatformInput} })
-    /** Update an existing platform name and configuration */
-    platformUpdate?: (PlatformGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformInput} })
-    /** Delete a platform and its associated OAuth application */
-    platformDelete?: { __args: {id: Scalars['ID']} }
-    /** Update the theme configuration for a platform */
-    platformThemeUpdate?: (PlatformGenqlSelection & { __args: {platformId: Scalars['ID'], input: PlatformThemeInput} })
-    /** Register a new custom domain for a platform via Cloudflare */
-    platformRegisterCustomDomain?: (CustomDomainDataGenqlSelection & { __args: {platformId: Scalars['ID'], hostname: Scalars['String']} })
-    /** Force a DNS/SSL validation recheck for a custom domain */
-    platformForceCustomDomainRecheck?: (CustomDomainDataGenqlSelection & { __args: {hostname: Scalars['String']} })
-    /** Remove a custom domain from a platform and clean up Cloudflare and OAuth configurations */
-    platformRemoveCustomDomain?: { __args: {hostname: Scalars['String']} }
-    /** Create a new platform template for the organization */
-    platformTemplateCreate?: (PlatformTemplateGenqlSelection & { __args: {input: CreatePlatformTemplateInput} })
-    /** Update an existing platform template */
-    platformTemplateUpdate?: (PlatformTemplateGenqlSelection & { __args: {id: Scalars['ID'], input: UpdatePlatformTemplateInput} })
-    /** Apply a template to a platform, copying all published template files to the target platform */
-    platformTemplateApply?: (PlatformGenqlSelection & { __args: {platformTemplateId: Scalars['ID'], platformId: Scalars['ID']} })
-    /** Delete a platform template from the organization */
-    platformTemplateDelete?: { __args: {id: Scalars['ID']} }
-    /** Update the organization subscription by changing item quantities, applying coupons or referrals */
-    organizationSubscriptionItemsUpdate?: { __args: {items: OrganizationSubscriptionItemUpdateInput[], coupon?: (Scalars['String'] | null), referral?: (Scalars['String'] | null)} }
-    /** Register a match result and update player skill ratings accordingly */
-    organizationSkillRatingsRegisterMatch?: (OrganizationSkillRatingsRegisterMatchPlayerGenqlSelection & { __args: {organizationSkillRatingId: Scalars['ID'], input: OrganizationSkillRatingsRegisterMatchInput} })
-    /** Create a new skill rating for the current organization */
-    organizationSkillRatingCreate?: (OrganizationSkillRatingGenqlSelection & { __args: {input: OrganizationSkillRatingCreateInput} })
-    /** Update an existing skill rating configuration */
-    organizationSkillRatingUpdate?: (OrganizationSkillRatingGenqlSelection & { __args: {id: Scalars['ID'], input: OrganizationSkillRatingUpdateInput} })
-    /** Delete a skill rating from the current organization */
-    organizationSkillRatingDelete?: { __args: {id: Scalars['ID']} }
     /** Add a player to a user group. An invite from the group manager stays PENDING until the player accepts it; a caller holding organization:user-groups:manage on the group adds the player directly as ACCEPTED. */
     userGroupInvite?: (UserGroupMemberGenqlSelection & { __args: {groupId: Scalars['ID'], playerId: Scalars['ID']} })
     /** Rename a user group, or clear its name with null. Allowed to the group manager and to a caller holding organization:user-groups:manage on the group. */
@@ -15508,6 +15492,14 @@ export interface MutationGenqlSelection{
     customPermissionCreate?: (PermissionDefinitionDtoGenqlSelection & { __args: {input: CustomPermissionInput} })
     customPermissionUpdate?: (PermissionDefinitionDtoGenqlSelection & { __args: {id: Scalars['String'], input: CustomPermissionUpdateInput} })
     customPermissionDelete?: { __args: {id: Scalars['String']} }
+    /** Create a registration series */
+    registrationSeriesCreate?: (RegistrationSeriesGenqlSelection & { __args: {input: RegistrationSeriesCreateInput} })
+    /** Update a registration series */
+    registrationSeriesUpdate?: (RegistrationSeriesGenqlSelection & { __args: {id: Scalars['ID'], input: RegistrationSeriesUpdateInput} })
+    /** Delete a registration series; its events and tournaments leave the series */
+    registrationSeriesDelete?: { __args: {id: Scalars['ID']} }
+    /** Assign events and tournaments to a series, or remove them from their series when seriesId is null */
+    registrationSeriesAssign?: { __args: {seriesId?: (Scalars['ID'] | null), eventIds?: (Scalars['ID'][] | null), tournamentIds?: (Scalars['ID'][] | null)} } | boolean | number
     /** Replaces both banned lists of the current organization (at most 5,000 entries of 1 to 64 characters each, deduplicated after normalisation). */
     organizationModerationUpdate?: (OrganizationModerationGenqlSelection & { __args: {input: OrganizationModerationInput} })
     __typename?: boolean | number
@@ -16563,14 +16555,158 @@ script?: (Scalars['String'] | null),
 parameters?: (PresetParameterInput[] | null)}
 
 
-/** Input for creating a registration series */
-export interface RegistrationSeriesCreateInput {
-/** Display name of the series */
-name: Scalars['String'],maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
+/** Input for creating a new CDN file on a platform or template */
+export interface PlatformCdnFileCreateInput {
+/** The file name including path segments */
+name: Scalars['String'],
+/** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
+type: PlatformCdnFileType,
+/** File configuration options such as page routing config */
+config?: (PlatformCdnFileConfigsInput | null)}
 
 
-/** Input for updating a registration series */
-export interface RegistrationSeriesUpdateInput {name?: (Scalars['String'] | null),maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
+/** Input for updating the configuration of an existing CDN file */
+export interface PlatformFileUpdateInput {
+/** File configuration options such as page routing config */
+config?: (PlatformCdnFileConfigsInput | null)}
+
+
+/** Input for creating a new platform with a subdomain */
+export interface CreatePlatformInput {
+/** Display name of the platform */
+name: Scalars['String'],
+/** Platform configuration settings including white-label options */
+configuration?: (PlatformConfigurationInput | null),
+/** The OAuth application ID associated with this platform */
+appId?: (Scalars['String'] | null),
+/** The subdomain for the platform (3-25 alphanumeric characters with optional hyphens) */
+subdomain: Scalars['String']}
+
+
+/** Input for updating an existing platform configuration */
+export interface UpdatePlatformInput {
+/** Display name of the platform */
+name: Scalars['String'],
+/** Platform configuration settings including white-label options */
+configuration?: (PlatformConfigurationInput | null),
+/** The OAuth application ID associated with this platform */
+appId?: (Scalars['String'] | null)}
+
+
+/** Input for updating platform theme configuration */
+export interface PlatformThemeInput {
+/** Primary brand color (hex) */
+primaryColor?: (Scalars['String'] | null),
+/** Secondary brand color (hex) */
+secondaryColor?: (Scalars['String'] | null),
+/** Page background color (hex) */
+backgroundColor?: (Scalars['String'] | null),
+/** Surface/card background color (hex) */
+surfaceColor?: (Scalars['String'] | null),
+/** Primary text color (hex) */
+textColor?: (Scalars['String'] | null),
+/** Muted/secondary text color (hex) */
+textMutedColor?: (Scalars['String'] | null),
+/** Primary font family name */
+fontFamily?: (Scalars['String'] | null),
+/** Heading font family name */
+headingFont?: (Scalars['String'] | null),
+/** Border radius value (e.g. "8px", "0.5rem") */
+borderRadius?: (Scalars['String'] | null),
+/** URL of the platform logo image */
+logoUrl?: (Scalars['String'] | null),
+/** Social media links displayed on the platform */
+socialLinks?: (PlatformThemeSocialLinksInput | null),
+/** Homepage section visibility and ordering configuration */
+sections?: (PlatformThemeSectionConfigInput[] | null)}
+
+
+/** Input for platform theme social media links */
+export interface PlatformThemeSocialLinksInput {
+/** Twitter/X profile URL */
+twitter?: (Scalars['String'] | null),
+/** Discord server invite URL */
+discord?: (Scalars['String'] | null),
+/** Twitch channel URL */
+twitch?: (Scalars['String'] | null)}
+
+
+/** Input for a platform homepage section configuration */
+export interface PlatformThemeSectionConfigInput {
+/** Section identifier name */
+name: Scalars['String'],
+/** Whether the section is visible on the platform */
+visible: Scalars['Boolean'],
+/** Display order of the section */
+order: Scalars['Float']}
+
+
+/** Input for creating a new platform template */
+export interface CreatePlatformTemplateInput {
+/** Display name of the template */
+name: Scalars['String'],
+/** Human-readable description of the template */
+description: Scalars['String'],
+/** URL of the template preview screenshot */
+screenshotUrl: Scalars['URL'],
+/** Whether this template is publicly available to all organizations */
+public: Scalars['Boolean']}
+
+
+/** Input for partially updating an existing platform template */
+export interface UpdatePlatformTemplateInput {
+/** Display name of the template */
+name?: (Scalars['String'] | null),
+/** Human-readable description of the template */
+description?: (Scalars['String'] | null),
+/** URL of the template preview screenshot */
+screenshotUrl?: (Scalars['URL'] | null),
+/** Whether this template is publicly available to all organizations */
+public?: (Scalars['Boolean'] | null)}
+
+
+/** Input for updating the quantity of a subscription item for an organization */
+export interface OrganizationSubscriptionItemUpdateInput {
+/** ID of the subscription item to update */
+subscriptionItemId: Scalars['ID'],
+/** New quantity for the subscription item */
+count: Scalars['Float']}
+
+
+/** Input for registering a match result with team compositions and rankings */
+export interface OrganizationSkillRatingsRegisterMatchInput {
+/** Ordered list of teams, ranked by placement (first = winner) */
+teams: OrganizationSkillRatingsRegisterMatchTeamInput[]}
+
+
+/** Input representing a team in a skill rating match registration */
+export interface OrganizationSkillRatingsRegisterMatchTeamInput {
+/** List of player profile IDs on this team */
+players: Scalars['ID'][]}
+
+
+/** Input for creating a new organization skill rating */
+export interface OrganizationSkillRatingCreateInput {
+/** Display name of the skill rating */
+name: Scalars['String'],
+/** Description of what this skill rating measures */
+description: Scalars['String'],
+/** Algorithm type used for rating calculation */
+type: SkillRatingType,
+/** Configuration options for this skill rating */
+configuration: SkillRatingConfigurationInput}
+
+
+/** Input for updating an existing organization skill rating */
+export interface OrganizationSkillRatingUpdateInput {
+/** Display name of the skill rating */
+name?: (Scalars['String'] | null),
+/** Description of what this skill rating measures */
+description?: (Scalars['String'] | null),
+/** Algorithm type used for rating calculation */
+type?: (SkillRatingType | null),
+/** Configuration options for this skill rating */
+configuration?: (SkillRatingConfigurationInput | null)}
 
 
 /** Input for creating a new event */
@@ -16891,160 +17027,6 @@ export interface EventReservationChangeTicketsInput {
 targetEventId?: (Scalars['ID'] | null),
 /** Tickets replacing the current ones */
 tickets: EventReservationRegisterTicketInput[]}
-
-
-/** Input for creating a new CDN file on a platform or template */
-export interface PlatformCdnFileCreateInput {
-/** The file name including path segments */
-name: Scalars['String'],
-/** The type of CDN file (PAGE, COMPONENT, TEXT, or IMAGE) */
-type: PlatformCdnFileType,
-/** File configuration options such as page routing config */
-config?: (PlatformCdnFileConfigsInput | null)}
-
-
-/** Input for updating the configuration of an existing CDN file */
-export interface PlatformFileUpdateInput {
-/** File configuration options such as page routing config */
-config?: (PlatformCdnFileConfigsInput | null)}
-
-
-/** Input for creating a new platform with a subdomain */
-export interface CreatePlatformInput {
-/** Display name of the platform */
-name: Scalars['String'],
-/** Platform configuration settings including white-label options */
-configuration?: (PlatformConfigurationInput | null),
-/** The OAuth application ID associated with this platform */
-appId?: (Scalars['String'] | null),
-/** The subdomain for the platform (3-25 alphanumeric characters with optional hyphens) */
-subdomain: Scalars['String']}
-
-
-/** Input for updating an existing platform configuration */
-export interface UpdatePlatformInput {
-/** Display name of the platform */
-name: Scalars['String'],
-/** Platform configuration settings including white-label options */
-configuration?: (PlatformConfigurationInput | null),
-/** The OAuth application ID associated with this platform */
-appId?: (Scalars['String'] | null)}
-
-
-/** Input for updating platform theme configuration */
-export interface PlatformThemeInput {
-/** Primary brand color (hex) */
-primaryColor?: (Scalars['String'] | null),
-/** Secondary brand color (hex) */
-secondaryColor?: (Scalars['String'] | null),
-/** Page background color (hex) */
-backgroundColor?: (Scalars['String'] | null),
-/** Surface/card background color (hex) */
-surfaceColor?: (Scalars['String'] | null),
-/** Primary text color (hex) */
-textColor?: (Scalars['String'] | null),
-/** Muted/secondary text color (hex) */
-textMutedColor?: (Scalars['String'] | null),
-/** Primary font family name */
-fontFamily?: (Scalars['String'] | null),
-/** Heading font family name */
-headingFont?: (Scalars['String'] | null),
-/** Border radius value (e.g. "8px", "0.5rem") */
-borderRadius?: (Scalars['String'] | null),
-/** URL of the platform logo image */
-logoUrl?: (Scalars['String'] | null),
-/** Social media links displayed on the platform */
-socialLinks?: (PlatformThemeSocialLinksInput | null),
-/** Homepage section visibility and ordering configuration */
-sections?: (PlatformThemeSectionConfigInput[] | null)}
-
-
-/** Input for platform theme social media links */
-export interface PlatformThemeSocialLinksInput {
-/** Twitter/X profile URL */
-twitter?: (Scalars['String'] | null),
-/** Discord server invite URL */
-discord?: (Scalars['String'] | null),
-/** Twitch channel URL */
-twitch?: (Scalars['String'] | null)}
-
-
-/** Input for a platform homepage section configuration */
-export interface PlatformThemeSectionConfigInput {
-/** Section identifier name */
-name: Scalars['String'],
-/** Whether the section is visible on the platform */
-visible: Scalars['Boolean'],
-/** Display order of the section */
-order: Scalars['Float']}
-
-
-/** Input for creating a new platform template */
-export interface CreatePlatformTemplateInput {
-/** Display name of the template */
-name: Scalars['String'],
-/** Human-readable description of the template */
-description: Scalars['String'],
-/** URL of the template preview screenshot */
-screenshotUrl: Scalars['URL'],
-/** Whether this template is publicly available to all organizations */
-public: Scalars['Boolean']}
-
-
-/** Input for partially updating an existing platform template */
-export interface UpdatePlatformTemplateInput {
-/** Display name of the template */
-name?: (Scalars['String'] | null),
-/** Human-readable description of the template */
-description?: (Scalars['String'] | null),
-/** URL of the template preview screenshot */
-screenshotUrl?: (Scalars['URL'] | null),
-/** Whether this template is publicly available to all organizations */
-public?: (Scalars['Boolean'] | null)}
-
-
-/** Input for updating the quantity of a subscription item for an organization */
-export interface OrganizationSubscriptionItemUpdateInput {
-/** ID of the subscription item to update */
-subscriptionItemId: Scalars['ID'],
-/** New quantity for the subscription item */
-count: Scalars['Float']}
-
-
-/** Input for registering a match result with team compositions and rankings */
-export interface OrganizationSkillRatingsRegisterMatchInput {
-/** Ordered list of teams, ranked by placement (first = winner) */
-teams: OrganizationSkillRatingsRegisterMatchTeamInput[]}
-
-
-/** Input representing a team in a skill rating match registration */
-export interface OrganizationSkillRatingsRegisterMatchTeamInput {
-/** List of player profile IDs on this team */
-players: Scalars['ID'][]}
-
-
-/** Input for creating a new organization skill rating */
-export interface OrganizationSkillRatingCreateInput {
-/** Display name of the skill rating */
-name: Scalars['String'],
-/** Description of what this skill rating measures */
-description: Scalars['String'],
-/** Algorithm type used for rating calculation */
-type: SkillRatingType,
-/** Configuration options for this skill rating */
-configuration: SkillRatingConfigurationInput}
-
-
-/** Input for updating an existing organization skill rating */
-export interface OrganizationSkillRatingUpdateInput {
-/** Display name of the skill rating */
-name?: (Scalars['String'] | null),
-/** Description of what this skill rating measures */
-description?: (Scalars['String'] | null),
-/** Algorithm type used for rating calculation */
-type?: (SkillRatingType | null),
-/** Configuration options for this skill rating */
-configuration?: (SkillRatingConfigurationInput | null)}
 
 
 /** Input for creating a new shop */
@@ -17649,6 +17631,16 @@ export interface AppConfigValueInput {key: Scalars['String'],value?: (Scalars['S
 export interface CustomPermissionInput {name: Scalars['String'],description: Scalars['String'],resources?: (Scalars['String'][] | null)}
 
 export interface CustomPermissionUpdateInput {description?: (Scalars['String'] | null),resources?: (Scalars['String'][] | null)}
+
+
+/** Input for creating a registration series */
+export interface RegistrationSeriesCreateInput {
+/** Display name of the series */
+name: Scalars['String'],maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
+
+
+/** Input for updating a registration series */
+export interface RegistrationSeriesUpdateInput {name?: (Scalars['String'] | null),maxActiveRegistrations?: (Scalars['Int'] | null),maxActiveWaitlistEntries?: (Scalars['Int'] | null),allowWaitlistWhileRegistered?: (Scalars['Boolean'] | null),leaveWaitlistsOnRegistration?: (Scalars['Boolean'] | null),releasePolicy?: (RegistrationSeriesReleasePolicy | null)}
 
 export interface OrganizationModerationInput {blockedWords: Scalars['String'][],blockedSubstrings: Scalars['String'][]}
 
@@ -19698,6 +19690,102 @@ export interface SubscriptionGenqlSelection{
     
 
 
+    const OpenPoolConfiguration_possibleTypes: string[] = ['OpenPoolConfiguration']
+    export const isOpenPoolConfiguration = (obj?: { __typename?: any } | null): obj is OpenPoolConfiguration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolConfiguration"')
+      return OpenPoolConfiguration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatchTeam_possibleTypes: string[] = ['OpenPoolMatchTeam']
+    export const isOpenPoolMatchTeam = (obj?: { __typename?: any } | null): obj is OpenPoolMatchTeam => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchTeam"')
+      return OpenPoolMatchTeam_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatch_possibleTypes: string[] = ['OpenPoolMatch']
+    export const isOpenPoolMatch = (obj?: { __typename?: any } | null): obj is OpenPoolMatch => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatch"')
+      return OpenPoolMatch_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatches_possibleTypes: string[] = ['OpenPoolMatches']
+    export const isOpenPoolMatches = (obj?: { __typename?: any } | null): obj is OpenPoolMatches => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatches"')
+      return OpenPoolMatches_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolMatchEdge_possibleTypes: string[] = ['OpenPoolMatchEdge']
+    export const isOpenPoolMatchEdge = (obj?: { __typename?: any } | null): obj is OpenPoolMatchEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchEdge"')
+      return OpenPoolMatchEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const OpenPoolStanding_possibleTypes: string[] = ['OpenPoolStanding']
+    export const isOpenPoolStanding = (obj?: { __typename?: any } | null): obj is OpenPoolStanding => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolStanding"')
+      return OpenPoolStanding_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Currency_possibleTypes: string[] = ['Currency']
+    export const isCurrency = (obj?: { __typename?: any } | null): obj is Currency => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrency"')
+      return Currency_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Currencies_possibleTypes: string[] = ['Currencies']
+    export const isCurrencies = (obj?: { __typename?: any } | null): obj is Currencies => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencies"')
+      return Currencies_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CurrencyEdge_possibleTypes: string[] = ['CurrencyEdge']
+    export const isCurrencyEdge = (obj?: { __typename?: any } | null): obj is CurrencyEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencyEdge"')
+      return CurrencyEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrency_possibleTypes: string[] = ['PlayerCurrency']
+    export const isPlayerCurrency = (obj?: { __typename?: any } | null): obj is PlayerCurrency => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrency"')
+      return PlayerCurrency_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrencies_possibleTypes: string[] = ['PlayerCurrencies']
+    export const isPlayerCurrencies = (obj?: { __typename?: any } | null): obj is PlayerCurrencies => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencies"')
+      return PlayerCurrencies_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PlayerCurrencyEdge_possibleTypes: string[] = ['PlayerCurrencyEdge']
+    export const isPlayerCurrencyEdge = (obj?: { __typename?: any } | null): obj is PlayerCurrencyEdge => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencyEdge"')
+      return PlayerCurrencyEdge_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const UserGroupConfiguration_possibleTypes: string[] = ['UserGroupConfiguration']
     export const isUserGroupConfiguration = (obj?: { __typename?: any } | null): obj is UserGroupConfiguration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isUserGroupConfiguration"')
@@ -20070,102 +20158,6 @@ export interface SubscriptionGenqlSelection{
     export const isEventWaitlistEntryEdge = (obj?: { __typename?: any } | null): obj is EventWaitlistEntryEdge => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventWaitlistEntryEdge"')
       return EventWaitlistEntryEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolConfiguration_possibleTypes: string[] = ['OpenPoolConfiguration']
-    export const isOpenPoolConfiguration = (obj?: { __typename?: any } | null): obj is OpenPoolConfiguration => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolConfiguration"')
-      return OpenPoolConfiguration_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatchTeam_possibleTypes: string[] = ['OpenPoolMatchTeam']
-    export const isOpenPoolMatchTeam = (obj?: { __typename?: any } | null): obj is OpenPoolMatchTeam => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchTeam"')
-      return OpenPoolMatchTeam_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatch_possibleTypes: string[] = ['OpenPoolMatch']
-    export const isOpenPoolMatch = (obj?: { __typename?: any } | null): obj is OpenPoolMatch => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatch"')
-      return OpenPoolMatch_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatches_possibleTypes: string[] = ['OpenPoolMatches']
-    export const isOpenPoolMatches = (obj?: { __typename?: any } | null): obj is OpenPoolMatches => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatches"')
-      return OpenPoolMatches_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolMatchEdge_possibleTypes: string[] = ['OpenPoolMatchEdge']
-    export const isOpenPoolMatchEdge = (obj?: { __typename?: any } | null): obj is OpenPoolMatchEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolMatchEdge"')
-      return OpenPoolMatchEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const OpenPoolStanding_possibleTypes: string[] = ['OpenPoolStanding']
-    export const isOpenPoolStanding = (obj?: { __typename?: any } | null): obj is OpenPoolStanding => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isOpenPoolStanding"')
-      return OpenPoolStanding_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const Currency_possibleTypes: string[] = ['Currency']
-    export const isCurrency = (obj?: { __typename?: any } | null): obj is Currency => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrency"')
-      return Currency_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const Currencies_possibleTypes: string[] = ['Currencies']
-    export const isCurrencies = (obj?: { __typename?: any } | null): obj is Currencies => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencies"')
-      return Currencies_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const CurrencyEdge_possibleTypes: string[] = ['CurrencyEdge']
-    export const isCurrencyEdge = (obj?: { __typename?: any } | null): obj is CurrencyEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isCurrencyEdge"')
-      return CurrencyEdge_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlayerCurrency_possibleTypes: string[] = ['PlayerCurrency']
-    export const isPlayerCurrency = (obj?: { __typename?: any } | null): obj is PlayerCurrency => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrency"')
-      return PlayerCurrency_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlayerCurrencies_possibleTypes: string[] = ['PlayerCurrencies']
-    export const isPlayerCurrencies = (obj?: { __typename?: any } | null): obj is PlayerCurrencies => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencies"')
-      return PlayerCurrencies_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const PlayerCurrencyEdge_possibleTypes: string[] = ['PlayerCurrencyEdge']
-    export const isPlayerCurrencyEdge = (obj?: { __typename?: any } | null): obj is PlayerCurrencyEdge => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isPlayerCurrencyEdge"')
-      return PlayerCurrencyEdge_possibleTypes.includes(obj.__typename)
     }
     
 
