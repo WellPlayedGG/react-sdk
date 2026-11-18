@@ -839,6 +839,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 | `ctx` field | Content |
 |---|---|
 | `executionId`, `correlationId`, `causationDepth` | Ids of this run and of the chain it belongs to |
+| `idempotencyKey` | The `idempotencyKey` the client sent to `appFunctionCall`; nil without one, outside `appFunctionCall`, or when it does not match `^[A-Za-z0-9:._@-]{1,100}$`. Client input: prefix it with the intent (and the caller for an `APP` operation) before using it as a `wp.op` key |
 | `org.id`; `app.slug`, `app.installationId`, `app.releaseVersion` | Where it runs |
 | `trigger` | `type`, `name`, plus `hookPoint`, `event { type, messageId }`, `timer { key, scheduledFor, firedAt }`, `cron { scheduledFor, firedAt }` or `lifecycle { transition, previousReleaseVersion, changedKeys }` |
 | `caller` | `kind` (`ANONYMOUS`, `PLAYER`, `GUEST`, `MEMBER`, or `SYSTEM` outside `CALL`), `classes`, `accountId`, `playerId`, `guest { sessionId, sessionPlayerId, origin, link { id, purpose, data, expiresAt } }`. A guardian acting for a ward: `playerId` is the ward, `guest.sessionPlayerId` the guardian |
@@ -848,24 +849,27 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 
 | Call | Returns | Rules |
 |---|---|---|
-| `wp.op(name, vars, { as = "APP" \| "INVOKER" })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code |
+| `wp.op(name, vars, { as = "APP" \| "INVOKER", idempotencyKey = "..." })` | `data, err` | Declared operations only; `as` defaults to `runAs`; `INVOKER` needs a caller with an account or a guest session; `err.code` is the first GraphQL error code. `idempotencyKey` (`^[A-Za-z0-9:._@-]{1,200}$`, mutations only, queries ignore it): the first success is kept 24 h per installation, operation and key (and per caller for `INVOKER`), and any later call with that key and the same `vars`, from any execution, gets the kept `data` without running the mutation again; the same key with other `vars` ends the run with `IDEMPOTENCY_KEY_REUSED`; a failure frees the key; a call made while the first still runs gets `IDEMPOTENCY_IN_PROGRESS`. Build the key from the work (`"walkin-team:" .. input.ticketId`) so a retry reuses it |
 | `wp.store.get(col, key)` | `{ value, version, expiresAt }` or nil | Key `^[A-Za-z0-9:._@-]{1,200}$` |
 | `wp.store.put(col, key, value, { ifAbsent, ttlSeconds, subject = { type = "PLAYER", id } })` | `{ version }` or `nil, err` | Value at most 16 KB; `ALREADY_EXISTS` with `ifAbsent` |
 | `wp.store.cas(col, key, expectedVersion, patch, { ttlSeconds })` | `{ version, value }` or `nil, err` | Shallow merge; `VERSION_CONFLICT`, `NOT_FOUND` |
 | `wp.store.incr(col, key, by, { min, max, ttlSeconds })` | `{ value, version }` or `nil, err` | Starts at 0; `OUT_OF_RANGE` |
 | `wp.store.del(col, key)`, `wp.store.list(col, prefix, { after, limit })` | boolean, `{ items, nextCursor }` | `list` orders by key, `limit` at most 100 |
 | `wp.lock.acquire(key, ttlMs, { waitMs })`, `wp.lock.release(token)` | token or `nil, err`, boolean | `LOCKED` after `waitMs` (at most 2000); every lock is released when the run ends |
-| `wp.timers.schedule({ fn, key, at \| delaySeconds, payload })`, `wp.timers.cancel(key)` | `{ key, runAt }`, `true` | `fn` is a `TIMER` function; key `^[A-Za-z0-9:._-]{1,150}$`; at most 180 days ahead; the same key replaces the timer |
-| `wp.email.send({ template, to = { playerId }, cc, vars, attachTicketQr })` | `{ deliveryId }` | The installation must hold `organization:emails:send`; `vars` are strings; `attachTicketQr = "<ticketId>"` adds the ticket QR as inline image `cid:ticket`; a ward without an address goes to its guardian; no address at all is skipped |
+| `wp.timers.schedule({ fn, key, at \| delaySeconds, payload, dedupeKey })`, `wp.timers.cancel(key)` | `{ key, runAt }`, `true` | `fn` is a `TIMER` function; key `^[A-Za-z0-9:._-]{1,150}$`; at most 180 days ahead; the same key replaces the timer; `dedupeKey` below |
+| `wp.email.send({ template, to = { playerId }, cc, vars, attachTicketQr })` | `{ deliveryId }` | The installation must hold `organization:emails:send`; `vars` are strings; `attachTicketQr = "<ticketId>"` adds the ticket QR as inline image `cid:ticket`; a ward without an address goes to its guardian; no address at all is skipped; `dedupeKey` below |
+| `wp.outbox.isPublished(kind, dedupeKey)` | boolean | `kind` is `"email"`, `"timer"` or `"audit"`; `true` only when this installation queued that kind with that `dedupeKey` in the last 24 hours (pending, unknown or another installation's key: `false`); read-only, every trigger |
 | `wp.auth.check(permission, resource)`, `wp.auth.require(...)` | boolean, nothing | Caller's own permissions, never the app's; `require` ends the run with `FORBIDDEN` |
-| `wp.audit.log(type, data, { subject = { type, id } })` | `true` | Declared `auditTypes` only, data at most 4 KB; IP and user agent are stamped |
+| `wp.audit.log(type, data, { subject = { type, id }, dedupeKey })` | `true` | Declared `auditTypes` only, data at most 4 KB; IP and user agent are stamped; `dedupeKey` below |
 | `wp.log.debug/info/warn/error(message, fields)` | nothing | Lines past the budget are dropped |
 | `wp.crypto.hmac(data)`, `.sha256(data)`, `.randomId()` | hex, hex, UUID | `hmac` uses a per-installation key no one can read |
 | `wp.time.now()`, `.at(date, "HH:MM", tz)`, `.add(iso, s)`, `.diff(a, b)`, `.parts(iso, tz)` | ISO strings, seconds, `{ year, month, day, hour, minute, weekday, date, time }` | `weekday` 1 is Monday |
-| `wp.json.encode(value)`, `wp.json.decode(text)` | string, value | At most 256 KB |
+| `wp.json.encode(value)`, `wp.json.decode(text)` | string, value | At most 256 KB. `encode` sorts object keys at every depth and keeps array order, so the same table gives the same string in every execution. |
 | `wp.error(code, message, { field, details })` | does not return | Ends the run with `kind: APP`; `code` `^[A-Z][A-Z0-9_]{0,63}$`, `field` a dotted path, `details` a table |
 
-`HOOK` and `readOnly` `CALL` functions only get `wp.op` (queries), `wp.store.get/list`, `wp.auth`, `wp.log`, `wp.time`, `wp.json`, `wp.crypto` and `wp.error`; the other modules are nil there. Globals are limited to `assert error ipairs next pairs select tonumber tostring type setmetatable getmetatable` and the `string`, `table`, `math`, `utf8` libraries: no `io`, `os`, `require`, `load`, `pcall`, `coroutine` or `debug`. `wp.*` cannot be called from a `table.sort` comparator, a `gsub` callback or `tostring`.
+E-mails, timers and audit entries go out only when the run succeeds, so a retry must send them again. Give each one a `dedupeKey` (`^[A-Za-z0-9:._-]{1,200}$`, ids only, never an e-mail address or a name): it goes out only if no run of the same installation sent the same kind with that key in the last 24 hours, and concurrent runs send it once. Keys are per installation and per kind; an entry without a key always goes out; a failed queueing frees the key, and the claim of a run that dies before queueing lapses after 60 seconds so the next retry sends. A deduplicated `wp.email.send` still returns a `deliveryId` that is not the sent one.
+
+`HOOK` and `readOnly` `CALL` functions only get `wp.op` (queries), `wp.store.get/list`, `wp.outbox.isPublished`, `wp.auth`, `wp.log`, `wp.time`, `wp.json`, `wp.crypto` and `wp.error`; the other modules are nil there. Globals are limited to `assert error ipairs next pairs select tonumber tostring type setmetatable getmetatable` and the `string`, `table`, `math`, `utf8` libraries: no `io`, `os`, `require`, `load`, `pcall`, `coroutine` or `debug`. `wp.*` cannot be called from a `table.sort` comparator, a `gsub` callback or `tostring`.
 
 | Budget per run | `CALL` | `HOOK` | `EVENT`, `TIMER`, `CRON`, `LIFECYCLE` |
 |---|---|---|---|
@@ -878,7 +882,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 
 Preloaded data is capped at 2 MB. Recoverable `wp.*` failures return `nil, err` with `err = { code, message, path }`: `VERSION_CONFLICT`, `ALREADY_EXISTS`, `NOT_FOUND`, `OUT_OF_RANGE`, `LOCKED`, `INVALID_ARGUMENT`, `FORBIDDEN`, or the GraphQL code for `wp.op`. A bad argument or an undeclared operation, collection or template ends the run with `SCRIPT_ERROR`.
 
-Failed async runs: `EVENT` retries up to 10 times with exponential backoff (a `wp.error` is retried too; `NOT_FOUND`, `NOT_CONFIGURED`, `DISABLED`, `INPUT_INVALID`, `FORBIDDEN`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED` and `OUTPUT_TOO_LARGE` are not), `CRON` and `LIFECYCLE` up to 5 times, `TIMER` never. A run that gives up is journaled as `app.function.dead_letter`. An event fans out to at most 10 functions per installation.
+Failed async runs: `EVENT` retries up to 10 times with exponential backoff (a `wp.error` is retried too; `NOT_FOUND`, `NOT_CONFIGURED`, `DISABLED`, `INPUT_INVALID`, `FORBIDDEN`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED`, `OUTPUT_TOO_LARGE` and `IDEMPOTENCY_KEY_REUSED` are not), `CRON` and `LIFECYCLE` up to 5 times, `TIMER` never. A run that gives up is journaled as `app.function.dead_letter`. An event fans out to at most 10 functions per installation.
 
 ### Deploy, install, pin, configure (CLI)
 
@@ -907,7 +911,7 @@ Find ids with `marketplaceApps(filter: { ownedByMe: true }) { nodes { id slug ve
 | `error.kind` | `code` | Meaning |
 |---|---|---|
 | `APP` | From `wp.error` | `field` and `details` (JSON string) as the function set them; `platformCode` is null |
-| `PLATFORM` | Same as `platformCode` | `NOT_FOUND` (app not installed, no pinned release, unknown or non-`CALL` function), `NOT_CONFIGURED` (`field` = config key), `DISABLED`, `INVOKER_NOT_ALLOWED`, `INPUT_INVALID` (`field` = input path), `FORBIDDEN`, `QUOTA_EXCEEDED` and `UNAVAILABLE` (both may set `retryAfterSeconds`), `IDEMPOTENCY_IN_PROGRESS`, `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED`, `TIMEOUT`, `SCRIPT_ERROR`, `OUTPUT_TOO_LARGE` |
+| `PLATFORM` | Same as `platformCode` | `NOT_FOUND` (app not installed, no pinned release, unknown or non-`CALL` function), `NOT_CONFIGURED` (`field` = config key), `DISABLED`, `INVOKER_NOT_ALLOWED`, `INPUT_INVALID` (`field` = input path), `FORBIDDEN`, `QUOTA_EXCEEDED` and `UNAVAILABLE` (both may set `retryAfterSeconds`), `IDEMPOTENCY_IN_PROGRESS`, `IDEMPOTENCY_KEY_REUSED` (a `wp.op` key reused with other `vars`), `CAUSATION_DEPTH_EXCEEDED`, `LIMIT_EXCEEDED`, `TIMEOUT`, `SCRIPT_ERROR`, `OUTPUT_TOO_LARGE` |
 
 In a component, a `readOnly` function such as `listNotes` goes through `useQuery` on `appFunctionRead` with the same input and fields (`cached: true` marks a cached answer). `apiClient` from `useWellPlayed()` calls as the signed-in account; inside `WellPlayedGuestProvider` the same `apiClient` sends `x-guest-session` (and `x-acting-player-id` after `actAs`), so the function sees a `GUEST` caller. Keep one `idempotencyKey` per submission, reuse it on retry and mint a new one after a success. The SDK client defaults `useQuery` to `errorPolicy: "ignore"`, which drops GraphQL errors (`error` stays undefined); pass `errorPolicy: "all"` wherever the screen must show `error.graphQLErrors[0].extensions.code`. Mutations already return their errors. The component also reads the public config:
 
@@ -1014,7 +1018,7 @@ GQL
 
 `APP_SLUG_TAKEN`, `APP_SLUG_REQUIRED` (functions declared, no slug), `MARKETPLACE_APP_NOT_FOUND` (private app outside its organizations, or slug not installed), `APP_RELEASE_FILES_TOO_LARGE`, `APP_RELEASE_NOT_APPROVED`, `APP_PIN_CONSENT_REQUIRED` (`extensions.addedPermissions`: pin again with `--grant`), `MARKETPLACE_INSTALLATION_NOT_FOUND`, `APP_CONFIG_INVALID` (`extensions.key`), `CONFLICT` (concurrent config change, retry), `APP_HOOK_DENIED`, `PERMISSION_DEFINITION_CONFLICT`, `INVALID_PERMISSION` (unknown or app-owned id), `BAD_REQUEST` (over 100 checks, undeclared function name, duplicate release file).
 
-- A failed run (including `wp.error`) drops its queued e-mails, timers and audit entries, but `wp.store` writes and `wp.op` mutations already made stay: check first, write last, or use `cas`.
+- A failed run (including `wp.error`) drops its queued e-mails, timers and audit entries, but `wp.store` writes and `wp.op` mutations already made stay: check first, write last, or use `cas`. A retried event, timer or call runs as a new execution, so give every `wp.op` mutation that creates something an `idempotencyKey`: the retry then gets the first result instead of a second object.
 - `EVENT` functions get retried, so make them idempotent (store markers with `ifAbsent`).
 - `payload` is a string: `JSON.stringify` it in code, `--raw-field` it in the CLI (`-F` parses a `{...}` literal into an object).
 
