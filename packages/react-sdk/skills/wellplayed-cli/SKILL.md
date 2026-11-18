@@ -864,7 +864,7 @@ The automated review rejects a release with one `reviewResult.checks` entry per 
 | `wp.log.debug/info/warn/error(message, fields)` | nothing | Lines past the budget are dropped |
 | `wp.crypto.hmac(data)`, `.sha256(data)`, `.randomId()` | hex, hex, UUID | `hmac` uses a per-installation key no one can read |
 | `wp.time.now()`, `.at(date, "HH:MM", tz)`, `.add(iso, s)`, `.diff(a, b)`, `.parts(iso, tz)` | ISO strings, seconds, `{ year, month, day, hour, minute, weekday, date, time }` | `weekday` 1 is Monday |
-| `wp.json.encode(value)`, `wp.json.decode(text)` | string, value | At most 256 KB |
+| `wp.json.encode(value)`, `wp.json.decode(text)` | string, value | At most 256 KB. `encode` sorts object keys at every depth and keeps array order, so the same table gives the same string in every execution. |
 | `wp.error(code, message, { field, details })` | does not return | Ends the run with `kind: APP`; `code` `^[A-Z][A-Z0-9_]{0,63}$`, `field` a dotted path, `details` a table |
 
 E-mails, timers and audit entries go out only when the run succeeds, so a retry must send them again. Give each one a `dedupeKey` (`^[A-Za-z0-9:._-]{1,200}$`, ids only, never an e-mail address or a name): it goes out only if no run of the same installation sent the same kind with that key in the last 24 hours, and concurrent runs send it once. Keys are per installation and per kind; an entry without a key always goes out; a failed queueing frees the key, and the claim of a run that dies before queueing lapses after 60 seconds so the next retry sends. A deduplicated `wp.email.send` still returns a `deliveryId` that is not the sent one.
