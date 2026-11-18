@@ -34,7 +34,7 @@ createRoot(document.getElementById('root')!).render(
       wpAppConfig={{
         client_id: clientId,
         redirect_uri: redirectUri,
-        scope: 'openid profile email offline_access',
+        scope: 'openid offline_access',
       }}
     >
       {isCallback ? <Callback /> : <App />}
