@@ -3557,6 +3557,11 @@ type OrganizationApp {
   """Short description of the app"""
   shortDescription: String
 
+  """
+  Whether users sign in to this app with their WellPlayed account on the WellPlayed sign-in page, whatever identity providers the organization has. When this is on, WellPlayed ignores the app's loginUrl and only members and the owner of the organization can sign in.
+  """
+  wellPlayedAccountLogin: Boolean!
+
   """OAuth2 client configuration for this app"""
   configuration: OrganizationAppConfig!
 
@@ -11705,6 +11710,11 @@ input CreateOrganizationAppInput {
   """Short description of the app"""
   shortDescription: String
 
+  """
+  Whether users sign in to this app with their WellPlayed account on the WellPlayed sign-in page, whatever identity providers the organization has. Defaults to false. When this is on, WellPlayed ignores the app's loginUrl. Only the organization owner can turn it on, but anyone who can update the app can turn it off.
+  """
+  wellPlayedAccountLogin: Boolean
+
   """Allowed OAuth2 redirect URLs after authorization"""
   redirectUrls: [String!]!
 
@@ -11734,6 +11744,11 @@ input UpdateOrganizationAppInput {
 
   """Short description of the app"""
   shortDescription: String
+
+  """
+  Whether users sign in to this app with their WellPlayed account on the WellPlayed sign-in page, whatever identity providers the organization has. Defaults to false. When this is on, WellPlayed ignores the app's loginUrl. Only the organization owner can turn it on, but anyone who can update the app can turn it off.
+  """
+  wellPlayedAccountLogin: Boolean
 
   """Allowed OAuth2 redirect URLs after authorization"""
   redirectUrls: [String!]!

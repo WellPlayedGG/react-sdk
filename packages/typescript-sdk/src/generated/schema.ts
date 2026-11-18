@@ -2775,6 +2775,8 @@ export interface OrganizationApp {
     icon: (Scalars['String'] | null)
     /** Short description of the app */
     shortDescription: (Scalars['String'] | null)
+    /** Whether users sign in to this app with their WellPlayed account on the WellPlayed sign-in page, whatever identity providers the organization has. When this is on, WellPlayed ignores the app's loginUrl and only members and the owner of the organization can sign in. */
+    wellPlayedAccountLogin: Scalars['Boolean']
     /** OAuth2 client configuration for this app */
     configuration: OrganizationAppConfig
     /** Account that created this app */
@@ -10143,6 +10145,8 @@ export interface OrganizationAppGenqlSelection{
     icon?: boolean | number
     /** Short description of the app */
     shortDescription?: boolean | number
+    /** Whether users sign in to this app with their WellPlayed account on the WellPlayed sign-in page, whatever identity providers the organization has. When this is on, WellPlayed ignores the app's loginUrl and only members and the owner of the organization can sign in. */
+    wellPlayedAccountLogin?: boolean | number
     /** OAuth2 client configuration for this app */
     configuration?: OrganizationAppConfigGenqlSelection
     /** Account that created this app */
@@ -15785,6 +15789,8 @@ public?: (Scalars['Boolean'] | null),
 icon?: (Scalars['String'] | null),
 /** Short description of the app */
 shortDescription?: (Scalars['String'] | null),
+/** Whether users sign in to this app with their WellPlayed account on the WellPlayed sign-in page, whatever identity providers the organization has. Defaults to false. When this is on, WellPlayed ignores the app's loginUrl. Only the organization owner can turn it on, but anyone who can update the app can turn it off. */
+wellPlayedAccountLogin?: (Scalars['Boolean'] | null),
 /** Allowed OAuth2 redirect URLs after authorization */
 redirectUrls: Scalars['String'][],
 /** Allowed redirect URLs after logout */
@@ -15807,6 +15813,8 @@ description?: (Scalars['String'] | null),
 icon?: (Scalars['String'] | null),
 /** Short description of the app */
 shortDescription?: (Scalars['String'] | null),
+/** Whether users sign in to this app with their WellPlayed account on the WellPlayed sign-in page, whatever identity providers the organization has. Defaults to false. When this is on, WellPlayed ignores the app's loginUrl. Only the organization owner can turn it on, but anyone who can update the app can turn it off. */
+wellPlayedAccountLogin?: (Scalars['Boolean'] | null),
 /** Allowed OAuth2 redirect URLs after authorization */
 redirectUrls: Scalars['String'][],
 /** Allowed redirect URLs after logout */

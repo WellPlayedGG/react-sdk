@@ -3788,6 +3788,9 @@ export default {
             "shortDescription": [
                 1
             ],
+            "wellPlayedAccountLogin": [
+                4
+            ],
             "configuration": [
                 231
             ],
@@ -13874,6 +13877,9 @@ export default {
             "shortDescription": [
                 1
             ],
+            "wellPlayedAccountLogin": [
+                4
+            ],
             "redirectUrls": [
                 1
             ],
@@ -13905,6 +13911,9 @@ export default {
             ],
             "shortDescription": [
                 1
+            ],
+            "wellPlayedAccountLogin": [
+                4
             ],
             "redirectUrls": [
                 1
