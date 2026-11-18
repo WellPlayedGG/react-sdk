@@ -15951,7 +15951,7 @@ export interface AppFieldDeclInput {name: Scalars['String'],type: AppFieldType,r
 export interface AppFunctionDeclInput {name: Scalars['String'],file: Scalars['String'],trigger: AppFunctionTriggerInput,invoker?: (AppFunctionInvokerKind[] | null),runAs?: (AppFunctionRunAs | null),input?: (AppFieldDeclInput[] | null),output?: (AppFieldDeclInput[] | null),preload?: (AppFunctionPreloadDeclInput[] | null),requires?: (AppFunctionRequirementDeclInput[] | null)}
 
 
-/** What runs a function. CALL: readOnly, cacheSeconds. HOOK: hookPoint, onError, timeoutMs. EVENT: events, selfTrigger. CRON: cron, timezone. LIFECYCLE: lifecycle */
+/** What runs a function. CALL: readOnly, cacheSeconds, timeoutMs. HOOK: hookPoint, onError, timeoutMs. EVENT: events, selfTrigger. CRON: cron, timezone. LIFECYCLE: lifecycle */
 export interface AppFunctionTriggerInput {type: AppFunctionTriggerType,readOnly?: (Scalars['Boolean'] | null),cacheSeconds?: (Scalars['Int'] | null),hookPoint?: (AppHookPoint | null),onError?: (AppHookErrorPolicy | null),timeoutMs?: (Scalars['Int'] | null),events?: (WebhookEventType[] | null),selfTrigger?: (Scalars['Boolean'] | null),cron?: (Scalars['String'] | null),timezone?: (Scalars['String'] | null),lifecycle?: (AppLifecycleTransition[] | null)}
 
 
