@@ -15,14 +15,16 @@
 	"homepage": "https://github.com/WellPlayedGG/react-sdk#readme",
 	"files": [
 		"dist",
-		"skills"
+		"skills",
+		"src/generated/schema.graphql"
 	],
 	"exports": {
 		".": {
 			"import": "./dist/wp-ts-sdk.es.js",
 			"require": "./dist/wp-ts-sdk.cjs.js",
 			"types": "./dist/index.d.ts"
-		}
+		},
+		"./schema.graphql": "./src/generated/schema.graphql"
 	},
 	"devDependencies": {
 		"@apollo/client": "^3.11.10",
