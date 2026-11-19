@@ -1,9 +1,24 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 const CONFIG_DIR = join(homedir(), '.wellplayed');
 const CREDENTIALS_FILE = join(CONFIG_DIR, 'credentials.json');
+const LOCK_FILE = `${CREDENTIALS_FILE}.lock`;
+const LOCK_STALE_MS = 30_000;
+const LOCK_POLL_MS = 50;
 
 /** Skew applied when checking access-token expiry, in milliseconds. */
 const EXPIRY_SKEW_MS = 30_000;
@@ -40,7 +55,40 @@ function isStoredCredentials(value: unknown): value is StoredCredentials {
 /** Persist credentials with mode 0o600. Overwrites any existing file. */
 export function saveCredentials(creds: StoredCredentials): void {
   ensureConfigDir();
-  writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), { mode: 0o600 });
+  const tempFile = `${CREDENTIALS_FILE}.${process.pid}.tmp`;
+  writeFileSync(tempFile, JSON.stringify(creds, null, 2), { mode: 0o600 });
+  renameSync(tempFile, CREDENTIALS_FILE);
+}
+
+function tryAcquireLock(): boolean {
+  try {
+    closeSync(openSync(LOCK_FILE, 'wx', 0o600));
+    return true;
+  } catch (err) {
+    if (err instanceof Error && 'code' in err && err.code === 'EEXIST') return false;
+    throw err;
+  }
+}
+
+function isLockStale(): boolean {
+  try {
+    return Date.now() - statSync(LOCK_FILE).mtimeMs > LOCK_STALE_MS;
+  } catch {
+    return false;
+  }
+}
+
+export async function withCredentialsLock<T>(fn: () => Promise<T>): Promise<T> {
+  ensureConfigDir();
+  while (!tryAcquireLock()) {
+    if (isLockStale()) rmSync(LOCK_FILE, { force: true });
+    else await sleep(LOCK_POLL_MS);
+  }
+  try {
+    return await fn();
+  } finally {
+    rmSync(LOCK_FILE, { force: true });
+  }
 }
 
 /**

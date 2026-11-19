@@ -4,6 +4,7 @@ import {
   getCredentials,
   isCredentialsExpired,
   saveCredentials,
+  withCredentialsLock,
   type StoredCredentials,
 } from '../auth/token-store.js';
 import { refreshAccessToken, RefreshTokenInvalidError } from '../auth/refresh.js';
@@ -130,23 +131,32 @@ export async function graphqlRequestRaw<T>(
   return attempt.parsed;
 }
 
-async function performRefresh(refreshToken: string): Promise<StoredCredentials> {
-  try {
-    const tokens = await refreshAccessToken(refreshToken);
-    const refreshed: StoredCredentials = {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresAt: Date.now() + tokens.expiresIn * 1000,
-    };
-    saveCredentials(refreshed);
-    return refreshed;
-  } catch (err) {
-    if (err instanceof RefreshTokenInvalidError) {
-      clearCredentials();
-      throw new Error('Session expired. Run `wellplayed login` to re-authenticate.');
+function performRefresh(staleAccessToken: string): Promise<StoredCredentials> {
+  return withCredentialsLock(async () => {
+    const current = getCredentials();
+    if (!current) {
+      throw new Error('Not authenticated. Run `wellplayed login` first.');
     }
-    throw err;
-  }
+    if (current.accessToken !== staleAccessToken && !isCredentialsExpired(current)) {
+      return current;
+    }
+    try {
+      const tokens = await refreshAccessToken(current.refreshToken);
+      const refreshed: StoredCredentials = {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: Date.now() + tokens.expiresIn * 1000,
+      };
+      saveCredentials(refreshed);
+      return refreshed;
+    } catch (err) {
+      if (err instanceof RefreshTokenInvalidError) {
+        clearCredentials();
+        throw new Error('Session expired. Run `wellplayed login` to re-authenticate.');
+      }
+      throw err;
+    }
+  });
 }
 
 async function graphqlRequestWithRefresh<T>(
@@ -174,7 +184,7 @@ async function graphqlRequestWithRefresh<T>(
   }
 
   if (isCredentialsExpired(creds)) {
-    creds = await performRefresh(creds.refreshToken);
+    creds = await performRefresh(creds.accessToken);
   }
 
   const bearer = (accessToken: string): Record<string, string> => ({
@@ -186,7 +196,7 @@ async function graphqlRequestWithRefresh<T>(
     return first;
   }
 
-  const refreshed = await performRefresh(creds.refreshToken);
+  const refreshed = await performRefresh(creds.accessToken);
   const retry = await send(bearer(refreshed.accessToken));
   if (retry.statusCode === 401) {
     throw new Error(`GraphQL error 401: ${first.text}`);
