@@ -115,15 +115,8 @@ export function clearCredentials(): void {
   }
 }
 
-/**
- * Backward-compat helper for call sites that don't want to manage refresh.
- * Returns the access token if stored AND not expired (within a 30s skew).
- */
 export function getToken(): string | null {
-  const creds = getCredentials();
-  if (!creds) return null;
-  if (isCredentialsExpired(creds)) return null;
-  return creds.accessToken;
+  return getCredentials()?.accessToken ?? null;
 }
 
 /**
